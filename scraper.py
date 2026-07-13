@@ -105,15 +105,23 @@ def detect_columns(df: pd.DataFrame):
 
 def fetch_existing_irl_numbers():
     print(f"WEB_APP_URL length: {len(WEB_APP_URL)} | starts: {WEB_APP_URL[:45]!r} | ends: {WEB_APP_URL[-15:]!r}")
-    resp = requests.get(WEB_APP_URL, params={"action": "raw"}, timeout=30)
-    print(f"Existing-rows fetch status: {resp.status_code} | first 300 chars of body: {resp.text[:300]!r}")
-    resp.raise_for_status()
-    rows = resp.json()
-    return {r["irl"] for r in rows}
+    last_err = None
+    for attempt in range(1, 4):
+        try:
+            print(f"Attempt {attempt}: fetching existing rows...")
+            resp = requests.get(WEB_APP_URL, params={"action": "raw"}, timeout=90)
+            print(f"Existing-rows fetch status: {resp.status_code} | first 300 chars of body: {resp.text[:300]!r}")
+            resp.raise_for_status()
+            rows = resp.json()
+            return {r["irl"] for r in rows}
+        except (requests.exceptions.ReadTimeout, requests.exceptions.ConnectionError) as e:
+            print(f"Attempt {attempt} failed: {e}")
+            last_err = e
+    raise last_err
 
 
 def push_new_rows(rows):
-    resp = requests.post(WEB_APP_URL, json={"action": "append_rows", "rows": rows}, timeout=60)
+    resp = requests.post(WEB_APP_URL, json={"action": "append_rows", "rows": rows}, timeout=90)
     resp.raise_for_status()
     print("Server response:", resp.json())
 
