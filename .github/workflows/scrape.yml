@@ -1,0 +1,26 @@
+name: Scrape Visa Decisions
+
+on:
+  workflow_dispatch: {}   # manual "Run workflow" button — for testing
+  # schedule:
+  #   - cron: '30 3 * * *'  # uncomment later for daily automation (UTC time)
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run scraper
+        env:
+          WEB_APP_URL: ${{ secrets.WEB_APP_URL }}
+        run: python scraper.py
