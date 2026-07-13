@@ -61,8 +61,31 @@ def download_and_parse_ods(ods_url: str):
     print(f"ODS fetch status: {resp.status_code} | bytes: {len(resp.content)}")
     if resp.status_code != 200:
         raise RuntimeError(f"Blocked fetching .ods — status {resp.status_code}")
-    df = pd.read_excel(io.BytesIO(resp.content), engine="odf")
+
+    # Read raw, no assumed header row — some govt files have a title row above the real headers.
+    raw = pd.read_excel(io.BytesIO(resp.content), engine="odf", header=None)
+    header_row_idx = find_header_row(raw)
+    print(f"Detected header row at index {header_row_idx}: {list(raw.iloc[header_row_idx])}")
+
+    df = raw.iloc[header_row_idx + 1:].copy()
+    df.columns = raw.iloc[header_row_idx]
+    df = df.reset_index(drop=True)
     return filename, df
+
+
+def find_header_row(raw: pd.DataFrame, scan_rows: int = 25) -> int:
+    """Scan the first N rows for one containing both an IRL/application marker and a decision marker."""
+    for i in range(min(scan_rows, len(raw))):
+        row_vals = [str(v).lower() for v in raw.iloc[i].tolist()]
+        has_app = any(("irl" in v or "application" in v) for v in row_vals)
+        has_dec = any(("decision" in v or "outcome" in v) for v in row_vals)
+        if has_app and has_dec:
+            return i
+    raise RuntimeError(
+        f"Could not find a header row containing both an IRL/application marker "
+        f"and a decision marker in the first {scan_rows} rows. First rows:\n"
+        + str(raw.head(scan_rows))
+    )
 
 
 def detect_columns(df: pd.DataFrame):
