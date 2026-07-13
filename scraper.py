@@ -74,16 +74,20 @@ def download_and_parse_ods(ods_url: str):
 
 
 def find_header_row(raw: pd.DataFrame, scan_rows: int = 25) -> int:
-    """Scan the first N rows for one containing both an IRL/application marker and a decision marker."""
+    """Scan the first N rows for one containing both an IRL/application marker and a
+    decision marker, in DIFFERENT cells (avoids matching a single title like
+    'Application Decisions:' which contains both words in one cell)."""
     for i in range(min(scan_rows, len(raw))):
         row_vals = [str(v).lower() for v in raw.iloc[i].tolist()]
-        has_app = any(("irl" in v or "application" in v) for v in row_vals)
-        has_dec = any(("decision" in v or "outcome" in v) for v in row_vals)
-        if has_app and has_dec:
-            return i
+        app_cols = [j for j, v in enumerate(row_vals) if ("irl" in v or "application" in v)]
+        dec_cols = [j for j, v in enumerate(row_vals) if ("decision" in v or "outcome" in v)]
+        if app_cols and dec_cols and set(app_cols) != set(dec_cols):
+            # also require they're not the exact same single cell
+            if not (len(app_cols) == 1 and len(dec_cols) == 1 and app_cols[0] == dec_cols[0]):
+                return i
     raise RuntimeError(
         f"Could not find a header row containing both an IRL/application marker "
-        f"and a decision marker in the first {scan_rows} rows. First rows:\n"
+        f"and a decision marker in separate cells within the first {scan_rows} rows. First rows:\n"
         + str(raw.head(scan_rows))
     )
 
