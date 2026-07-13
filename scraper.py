@@ -103,7 +103,15 @@ def detect_columns(df: pd.DataFrame):
     return app_col, decision_col
 
 
-def fetch_existing_irl_numbers():
+def ist_today_str() -> str:
+    """Today's date in IST (matches the timezone the visa office publishes in)."""
+    from datetime import timezone, timedelta
+    ist = timezone(timedelta(hours=5, minutes=30))
+    return datetime.now(ist).strftime("%Y-%m-%d")
+
+
+def fetch_existing_rows():
+    """Full existing Raw sheet contents: list of [date, irl, decision]. Retries on cold-start timeouts."""
     print(f"WEB_APP_URL length: {len(WEB_APP_URL)} | starts: {WEB_APP_URL[:45]!r} | ends: {WEB_APP_URL[-15:]!r}")
     last_err = None
     for attempt in range(1, 4):
@@ -112,8 +120,7 @@ def fetch_existing_irl_numbers():
             resp = requests.get(WEB_APP_URL, params={"action": "raw"}, timeout=90)
             print(f"Existing-rows fetch status: {resp.status_code} | first 300 chars of body: {resp.text[:300]!r}")
             resp.raise_for_status()
-            rows = resp.json()
-            return {r["irl"] for r in rows}
+            return resp.json()  # list of [date, irl, decision]
         except (requests.exceptions.ReadTimeout, requests.exceptions.ConnectionError) as e:
             print(f"Attempt {attempt} failed: {e}")
             last_err = e
@@ -131,6 +138,15 @@ def main():
         print("ERROR: WEB_APP_URL env var not set.")
         sys.exit(1)
 
+    today_ist = ist_today_str()
+    existing_rows = fetch_existing_rows()
+    existing_dates = {r[0] for r in existing_rows}
+    existing_irl = {r[1] for r in existing_rows}
+
+    if today_ist in existing_dates:
+        print(f"Data already present for {today_ist} — skipping this run entirely, no site fetch needed.")
+        return
+
     ods_url = find_ods_link()
     filename, df = download_and_parse_ods(ods_url)
     fetch_date = parse_date_from_filename(filename)
@@ -140,23 +156,31 @@ def main():
         print("Could not detect columns. Headers seen:", list(df.columns))
         sys.exit(1)
 
-    existing = fetch_existing_irl_numbers()
-    print(f"{len(existing)} existing IRL numbers already on record.")
+    print(f"{len(existing_irl)} existing IRL numbers already on record.")
 
     new_rows = []
     for _, r in df.iterrows():
         irl = str(r[app_col]).strip()
         decision = str(r[decision_col]).strip()
-        if not irl or irl in existing or irl.lower() == "nan":
+        if not irl or irl in existing_irl or irl.lower() == "nan":
             continue
         new_rows.append({"date": fetch_date, "irl": irl, "decision": decision})
-        existing.add(irl)
+        existing_irl.add(irl)
 
     print(f"{len(new_rows)} new rows to push (out of {len(df)} rows in file).")
     if new_rows:
         push_new_rows(new_rows)
     else:
         print("Nothing new — Sheet already up to date.")
+
+    is_final_run = os.environ.get("IS_FINAL_RUN", "false").lower() == "true"
+    if is_final_run and today_ist not in existing_dates and not new_rows:
+        print(f"Final run of the day and still nothing for {today_ist} — adding No Data / Public Holiday row.")
+        push_new_rows([{
+            "date": today_ist,
+            "irl": f"NO_DATA_{today_ist}",
+            "decision": "No Data / Public Holiday",
+        }])
 
 
 if __name__ == "__main__":
