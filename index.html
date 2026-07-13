@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Irish Visa Decision Tracker</title>
+</head>
+<body>
+<div id="visa-dash"></div>
+<style>
+  #visa-dash * { box-sizing: border-box; }
+  #visa-dash {
+    --ink: #12213A;
+    --ink-soft: #4A5670;
+    --parchment: #F6F3EC;
+    --card: #FFFFFF;
+    --green: #2F6E51;
+    --green-soft: #E6EFE9;
+    --amber: #B5762A;
+    --amber-soft: #F5EADC;
+    --red: #A13D3D;
+    --red-soft: #F5E4E2;
+    --line: #E1DBCC;
+    font-family: -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+    background: var(--parchment);
+    color: var(--ink);
+    min-height: 100%;
+    padding: 28px;
+  }
+  #visa-dash .mono { font-family: "SF Mono", Consolas, Menlo, monospace; }
+  #visa-dash .eyebrow {
+    font-size: 11px; letter-spacing: .14em; text-transform: uppercase;
+    color: var(--green); font-weight: 700; margin-bottom: 4px;
+  }
+  #visa-dash h1 { font-size: 26px; margin: 0 0 2px; letter-spacing: -.01em; }
+  #visa-dash .sub { color: var(--ink-soft); font-size: 13px; margin-bottom: 18px; }
+  #visa-dash .tabs { display: flex; gap: 6px; border-bottom: 2px solid var(--line); margin-bottom: 20px; flex-wrap: wrap; }
+  #visa-dash .tab {
+    padding: 9px 16px; font-size: 13.5px; font-weight: 600; color: var(--ink-soft);
+    cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px;
+  }
+  #visa-dash .tab.active { color: var(--green); border-bottom-color: var(--green); }
+  #visa-dash .cards { display: grid; grid-template-columns: repeat(auto-fit,minmax(150px,1fr)); gap: 12px; margin-bottom: 22px; }
+  #visa-dash .card {
+    background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+    padding: 14px 16px;
+  }
+  #visa-dash .card .label { font-size: 11px; color: var(--ink-soft); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 6px; }
+  #visa-dash .card .value { font-size: 24px; font-weight: 700; }
+  #visa-dash .card .value.green { color: var(--green); }
+  #visa-dash .card .value.red { color: var(--red); }
+  #visa-dash .card .value.amber { color: var(--amber); }
+  #visa-dash table { width: 100%; border-collapse: collapse; background: var(--card); border-radius: 10px; overflow: hidden; border: 1px solid var(--line); }
+  #visa-dash th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--ink-soft); background: var(--parchment); padding: 10px 12px; border-bottom: 1px solid var(--line); }
+  #visa-dash td { padding: 9px 12px; font-size: 13.5px; border-bottom: 1px solid var(--line); }
+  #visa-dash tr:last-child td { border-bottom: none; }
+  #visa-dash .pill { display: inline-block; padding: 2px 9px; border-radius: 100px; font-size: 11.5px; font-weight: 600; }
+  #visa-dash .pill.green { background: var(--green-soft); color: var(--green); }
+  #visa-dash .pill.red { background: var(--red-soft); color: var(--red); }
+  #visa-dash .pill.amber { background: var(--amber-soft); color: var(--amber); }
+  #visa-dash input[type=text] {
+    width: 100%; max-width: 320px; padding: 9px 12px; border: 1px solid var(--line);
+    border-radius: 8px; font-size: 13.5px; margin-bottom: 14px; background: var(--card);
+  }
+  #visa-dash input[type=text]:focus, #visa-dash textarea:focus { outline: 2px solid var(--green); outline-offset: 1px; }
+  #visa-dash textarea {
+    width: 100%; border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px;
+    font-size: 13.5px; font-family: inherit; min-height: 90px; margin-bottom: 12px;
+  }
+  #visa-dash .btn {
+    background: var(--green); color: #fff; border: none; padding: 10px 20px;
+    border-radius: 8px; font-size: 13.5px; font-weight: 600; cursor: pointer;
+  }
+  #visa-dash .btn:disabled { opacity: .5; cursor: default; }
+  #visa-dash .note { font-size: 12.5px; color: var(--ink-soft); margin-top: 10px; }
+  #visa-dash .empty { padding: 40px 20px; text-align: center; color: var(--ink-soft); font-size: 13.5px; }
+  #visa-dash .config-warn {
+    background: var(--amber-soft); color: var(--amber); border: 1px solid var(--amber);
+    border-radius: 8px; padding: 12px 14px; font-size: 13px; margin-bottom: 18px;
+  }
+  #visa-dash .config-warn code { background: rgba(0,0,0,.06); padding: 1px 5px; border-radius: 4px; }
+  #visa-dash .stutter-warn {
+    background: var(--amber-soft); color: var(--amber); border: 1px solid var(--amber);
+    border-radius: 8px; padding: 9px 14px; font-size: 12.5px; margin-bottom: 16px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  #visa-dash .latest-date { font-size: 14px; margin-bottom: 2px; }
+  #visa-dash .tracking-since { font-size: 12px; color: var(--ink-soft); margin-bottom: 16px; }
+  #visa-dash .loading { padding: 60px 20px; text-align: center; color: var(--ink-soft); font-size: 13.5px; }
+  #visa-dash .spinner {
+    width: 22px; height: 22px; border: 2.5px solid var(--line); border-top-color: var(--green);
+    border-radius: 50%; margin: 0 auto 12px; animation: visa-spin 0.8s linear infinite;
+  }
+  @keyframes visa-spin { to { transform: rotate(360deg); } }
+</style>
+<script>
+(function () {
+  // ---- CONFIG: paste your deployed Apps Script Web App /exec URL here ----
+  // On Netlify, you can instead set window.VISA_WEB_APP_URL via Site settings >
+  // Build & deploy > Post processing > Snippet injection (head), so the URL
+  // isn't baked into the committed file. Falls back to the constant below.
+  const HARDCODED_WEB_APP_URL = ''; // e.g. 'https://script.google.com/macros/s/AKfycb.../exec'
+  const WEB_APP_URL = (window.VISA_WEB_APP_URL || HARDCODED_WEB_APP_URL || '').trim();
+  const TRACKING_STARTED = '2026-07-13';
+  // --------------------------------------------------------------------
+
+  const root = document.getElementById('visa-dash');
+  let cache = null;       // in-memory only — fetched once, reused across tab switches
+  let activeTab = 'home';
+  let searchTerm = '';
+
+  function classify(decision) {
+    const s = (decision || '').toLowerCase();
+    if (/(approv|grant|accept|issu)/.test(s)) return 'accepted';
+    if (/(refus|reject|deny|denied)/.test(s)) return 'rejected';
+    return 'other';
+  }
+  function fmtPct(n) { return isFinite(n) ? (n * 100).toFixed(1) + '%' : '—'; }
+  function daysAgo(dateStr) { return Math.floor((Date.now() - new Date(dateStr + 'T00:00:00')) / 86400000); }
+  function weekdayLong(dateStr) {
+    const d = new Date(dateStr + 'T00:00:00');
+    return d.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  }
+  function avgExcludingZero(diffs) {
+    const nonZero = diffs.filter(d => d !== 0);
+    if (!nonZero.length) return 0;
+    return nonZero.reduce((a, b) => a + b, 0) / nonZero.length;
+  }
+
+  function groupByDate(rows) {
+    const m = new Map();
+    rows.forEach(r => { if (!m.has(r.date)) m.set(r.date, []); m.get(r.date).push(r); });
+    return [...m.entries()].sort((a, b) => b[0].localeCompare(a[0])); // desc
+  }
+
+  async function loadData() {
+    if (cache) return cache; // never re-fetch once we have it this session
+    if (!WEB_APP_URL) { cache = []; return cache; }
+    const res = await fetch(WEB_APP_URL + '?action=raw');
+    const raw = await res.json();
+    // Server now sends compact [date, irl, decision] arrays instead of objects.
+    cache = raw.map(r => Array.isArray(r) ? { date: r[0], irl: r[1], decision: r[2] } : r);
+    return cache;
+  }
+
+  function renderConfigWarning() {
+    return WEB_APP_URL ? '' :
+      '<div class="config-warn">No data source configured yet. Deploy <code>Code.gs</code> as a Web App and paste its <code>/exec</code> URL into <code>WEB_APP_URL</code> at the top of this file\'s script.</div>';
+  }
+
+  function renderHome(rows) {
+    if (!rows.length) return renderConfigWarning() + '<div class="empty">No decisions recorded yet.</div>';
+    const total = rows.length;
+    const byDate = groupByDate(rows);
+    const latest = byDate[0], prev = byDate[1];
+    const latestDate = latest[0];
+    const latestRows = latest[1];
+    const dayDiff = prev ? latestRows.length - prev[1].length : 0;
+    const diffs = byDate.slice(0, -1).map(([d, r], i) => r.length - byDate[i + 1][1].length);
+    const avgDiff = avgExcludingZero(diffs);
+    const accepted = rows.filter(r => classify(r.decision) === 'accepted').length;
+    const rejected = rows.filter(r => classify(r.decision) === 'rejected').length;
+
+    return renderConfigWarning() + `
+      <div class="stutter-warn"><i>&#9432;</i> Switching tabs may briefly stutter while data loads.</div>
+      <div class="latest-date">Latest available data: <strong>${weekdayLong(latestDate)}</strong></div>
+      <div class="tracking-since">Tracking started ${weekdayLong(TRACKING_STARTED)}</div>
+      <div class="cards">
+        <div class="card"><div class="label">Total outcomes (YTD)</div><div class="value">${total}</div></div>
+        <div class="card"><div class="label">Day-on-day change</div><div class="value ${dayDiff >= 0 ? 'green' : 'red'}">${dayDiff >= 0 ? '+' : ''}${dayDiff}</div></div>
+        <div class="card"><div class="label">Day-on-day avg (excl. 0)</div><div class="value">${avgDiff >= 0 ? '+' : ''}${avgDiff.toFixed(1)}</div></div>
+        <div class="card"><div class="label">Acceptance rate</div><div class="value green">${fmtPct(accepted / total)}</div></div>
+        <div class="card"><div class="label">Rejection rate</div><div class="value red">${fmtPct(rejected / total)}</div></div>
+      </div>
+      <div class="note" style="margin-bottom:8px;margin-top:0;">All results for ${latestDate} (${latestRows.length} rows)</div>
+      <table><thead><tr><th>Date</th><th>Application No.</th><th>Decision</th></tr></thead>
+      <tbody>${latestRows.map(rowHtml).join('')}</tbody></table>`;
+  }
+
+  function rowHtml(r) {
+    const c = classify(r.decision);
+    const pillClass = c === 'accepted' ? 'green' : c === 'rejected' ? 'red' : 'amber';
+    return `<tr><td class="mono">${r.date}</td><td class="mono">${r.irl}</td><td><span class="pill ${pillClass}">${r.decision || '—'}</span></td></tr>`;
+  }
+
+  function renderDailySummary(rows) {
+    if (!rows.length) return renderConfigWarning() + '<div class="empty">No decisions recorded yet.</div>';
+    const byDate = groupByDate(rows);
+    const trs = byDate.map(([date, dayRows], idx) => {
+      const prevCount = byDate[idx + 1] ? byDate[idx + 1][1].length : null;
+      const diff = prevCount === null ? null : dayRows.length - prevCount;
+      const acc = dayRows.filter(r => classify(r.decision) === 'accepted').length / dayRows.length;
+      const rej = dayRows.filter(r => classify(r.decision) === 'rejected').length / dayRows.length;
+      return `<tr>
+        <td class="mono">${date}</td>
+        <td>${dayRows.length}</td>
+        <td>${diff === null ? '—' : `<span class="pill ${diff >= 0 ? 'green' : 'red'}">${diff >= 0 ? '+' : ''}${diff}</span>`}</td>
+        <td>${fmtPct(acc)}</td>
+        <td>${fmtPct(rej)}</td>
+      </tr>`;
+    }).join('');
+    return renderConfigWarning() + `
+      <table><thead><tr><th>Date</th><th>Applications Processed</th><th>Day-on-Day</th><th>Acceptance Rate</th><th>Rejection Rate</th></tr></thead>
+      <tbody>${trs}</tbody></table>`;
+  }
+
+  function renderPast(rows) {
+    if (!rows.length) return renderConfigWarning() + '<div class="empty">No decisions recorded yet.</div>';
+    const total = rows.length;
+    const accepted = rows.filter(r => classify(r.decision) === 'accepted').length;
+    const rejected = rows.filter(r => classify(r.decision) === 'rejected').length;
+    const byDate = groupByDate(rows);
+    const diffs = byDate.slice(0, -1).map(([d, r], i) => r.length - byDate[i + 1][1].length);
+    const avgDayDiff = diffs.length ? diffs.reduce((a, b) => a + b, 0) / diffs.length : 0;
+    const thisWeek = rows.filter(r => daysAgo(r.date) < 7).length;
+    const lastWeek = rows.filter(r => daysAgo(r.date) >= 7 && daysAgo(r.date) < 14).length;
+    const wow = lastWeek ? (thisWeek - lastWeek) / lastWeek : null;
+
+    const filtered = searchTerm
+      ? rows.filter(r => r.irl.toLowerCase().includes(searchTerm.toLowerCase()))
+      : rows;
+    const sorted = filtered.slice().sort((a, b) => b.date.localeCompare(a.date));
+
+    return renderConfigWarning() + `
+      <div class="cards">
+        <div class="card"><div class="label">Acceptance rate</div><div class="value green">${fmtPct(accepted / total)}</div></div>
+        <div class="card"><div class="label">Rejection rate</div><div class="value red">${fmtPct(rejected / total)}</div></div>
+        <div class="card"><div class="label">Avg day-on-day</div><div class="value">${avgDayDiff >= 0 ? '+' : ''}${avgDayDiff.toFixed(1)}</div></div>
+        <div class="card"><div class="label">Week-on-week</div><div class="value ${wow === null ? '' : wow >= 0 ? 'green' : 'red'}">${wow === null ? '—' : (wow >= 0 ? '+' : '') + fmtPct(wow)}</div></div>
+      </div>
+      <input type="text" id="irl-search" placeholder="Search by IRL application number…" value="${searchTerm}" />
+      <table><thead><tr><th>Date</th><th>Application No.</th><th>Decision</th></tr></thead>
+      <tbody>${sorted.length ? sorted.map(rowHtml).join('') : '<tr><td colspan="3" class="empty">No matches.</td></tr>'}</tbody></table>`;
+  }
+
+  function renderSuggestions() {
+    return `
+      <div class="card" style="max-width:480px;">
+        <div class="label" style="margin-bottom:12px;">Submit a suggestion</div>
+        <input type="text" id="sugg-name" placeholder="Your name" />
+        <textarea id="sugg-text" placeholder="Your suggestion…"></textarea>
+        <button class="btn" id="sugg-submit">Submit</button>
+        <div class="note" id="sugg-status"></div>
+      </div>`;
+  }
+
+  async function submitSuggestion() {
+    const name = document.getElementById('sugg-name').value.trim();
+    const suggestion = document.getElementById('sugg-text').value.trim();
+    const status = document.getElementById('sugg-status');
+    const btn = document.getElementById('sugg-submit');
+    if (!name || !suggestion) { status.textContent = 'Please fill in both fields.'; return; }
+    if (!WEB_APP_URL) { status.textContent = 'Data source not configured yet.'; return; }
+    btn.disabled = true; status.textContent = 'Submitting…';
+    try {
+      await fetch(WEB_APP_URL, { method: 'POST', body: new URLSearchParams({ name, suggestion }) });
+      status.textContent = 'Thanks — suggestion recorded.';
+      document.getElementById('sugg-name').value = '';
+      document.getElementById('sugg-text').value = '';
+    } catch (err) {
+      status.textContent = 'Could not submit — try again.';
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  async function render() {
+    if (!cache) {
+      root.innerHTML = `
+        <div class="eyebrow">Ireland · New Delhi Visa Section</div>
+        <h1>Visa Decision Tracker</h1>
+        <div class="loading"><div class="spinner"></div>Loading data…</div>`;
+    }
+    const rows = await loadData();
+    const tabs = [
+      ['home', 'Home'],
+      ['daily', 'Daily Summary'],
+      ['past', 'Past Results'],
+      ['suggest', 'Suggestions'],
+    ];
+    let body = '';
+    if (activeTab === 'home') body = renderHome(rows);
+    else if (activeTab === 'daily') body = renderDailySummary(rows);
+    else if (activeTab === 'past') body = renderPast(rows);
+    else body = renderSuggestions();
+
+    root.innerHTML = `
+      <div class="eyebrow">Ireland · New Delhi Visa Section</div>
+      <h1>Visa Decision Tracker</h1>
+      <div class="sub">${cache && cache.length ? cache.length + ' decisions on record' : 'Awaiting data'}</div>
+      <div class="tabs">${tabs.map(([k, label]) => `<div class="tab ${activeTab === k ? 'active' : ''}" data-tab="${k}">${label}</div>`).join('')}</div>
+      <div id="tab-body">${body}</div>
+    `;
+
+    tabs.forEach(([k]) => {
+      root.querySelector(`.tab[data-tab="${k}"]`).addEventListener('click', () => { activeTab = k; render(); });
+    });
+    const searchEl = document.getElementById('irl-search');
+    if (searchEl) searchEl.addEventListener('input', e => { searchTerm = e.target.value; render(); });
+    const suggBtn = document.getElementById('sugg-submit');
+    if (suggBtn) suggBtn.addEventListener('click', submitSuggestion);
+  }
+
+  render();
+})();
+</script>
+</body>
+</html>
