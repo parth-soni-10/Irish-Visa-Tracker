@@ -16,7 +16,7 @@ import requests
 import pandas as pd
 
 PAGE_URL = "https://www.ireland.ie/en/india/newdelhi/services/visas/processing-times-and-decisions/"
-WEB_APP_URL = os.environ.get("WEB_APP_URL", "")
+WEB_APP_URL = os.environ.get("WEB_APP_URL", "").strip()
 BROWSER_HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
                   "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
@@ -104,7 +104,9 @@ def detect_columns(df: pd.DataFrame):
 
 
 def fetch_existing_irl_numbers():
+    print(f"WEB_APP_URL length: {len(WEB_APP_URL)} | starts: {WEB_APP_URL[:45]!r} | ends: {WEB_APP_URL[-15:]!r}")
     resp = requests.get(WEB_APP_URL, params={"action": "raw"}, timeout=30)
+    print(f"Existing-rows fetch status: {resp.status_code} | first 300 chars of body: {resp.text[:300]!r}")
     resp.raise_for_status()
     rows = resp.json()
     return {r["irl"] for r in rows}
