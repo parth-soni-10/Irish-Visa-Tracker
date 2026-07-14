@@ -152,6 +152,8 @@
   #visa-dash .readme .readme-title { font-size: 13.5px; font-weight: 600; }
   #visa-dash .readme p { font-size: 12.5px; color: var(--ink-soft); line-height: 1.6; margin: 10px 0 0; }
   #visa-dash .readme ul { font-size: 12.5px; color: var(--ink-soft); line-height: 1.7; margin: 8px 0 0; padding-left: 18px; }
+  /* Past results cards: only two cards, controlled width */
+  #visa-dash .cards.past-cards { grid-template-columns: repeat(auto-fit, minmax(200px, 280px)); }
   @media (max-width: 560px) {
     #visa-dash { padding: 16px; }
     #visa-dash h1 { font-size: 21px; }
@@ -166,6 +168,7 @@
     #visa-dash input[type=text] { max-width: 100%; }
     #visa-dash .filter-row { flex-direction: column; align-items: stretch; gap: 8px; }
     #visa-dash .datefilter { width: 100%; }
+    #visa-dash .cards.past-cards { grid-template-columns: repeat(2, 1fr); }
   }
 </style>
 <script>
@@ -306,8 +309,6 @@
   function renderPast(rows) {
     if (!rows.length) return renderConfigWarning() + '<div class="empty">No decisions recorded yet.</div>';
     const total = rows.length;
-    const accepted = rows.filter(r => classify(r.decision) === 'accepted').length;
-    const rejected = rows.filter(r => classify(r.decision) === 'rejected').length;
     const byDate = groupByDate(rows);
     const diffs = computeDiffs(byDate);
     const avgDayDiff = diffs.length ? diffs.reduce((a, b) => a + b, 0) / diffs.length : 0;
@@ -320,9 +321,7 @@
       .slice().sort((a, b) => b.date.localeCompare(a.date));
 
     return renderConfigWarning() +
-      '<div class="cards">' +
-        '<div class="card"><div class="label">Acceptance rate</div><div class="value green">' + fmtPct(accepted / total) + '</div></div>' +
-        '<div class="card"><div class="label">Rejection rate</div><div class="value red">' + fmtPct(rejected / total) + '</div></div>' +
+      '<div class="cards past-cards">' +
         '<div class="card"><div class="label">Avg day-on-day (excl. ' + EXCLUDE_FROM_AVERAGES + ')</div><div class="value">' + (avgDayDiff >= 0 ? '+' : '') + avgDayDiff.toFixed(1) + '</div></div>' +
         '<div class="card"><div class="label">Week-on-week</div><div class="value ' + (wow === null ? '' : (wow >= 0 ? 'green' : 'red')) + '">' + (wow === null ? '\u2014' : ((wow >= 0 ? '+' : '') + fmtPct(wow))) + '</div></div>' +
       '</div>' +
