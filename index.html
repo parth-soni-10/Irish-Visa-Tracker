@@ -915,6 +915,8 @@
             #visa-dash .perf-warning {
                 font-size: 12px;
                 padding: 4px 12px;
+                white-space: normal;
+                max-width: 100%;
             }
             #visa-dash .titlerow .right {
                 gap: 8px;
@@ -1433,11 +1435,11 @@
                 var direction = tabOrder.indexOf(activeTab) > tabOrder.indexOf(prevTab) ? 'left' : 'right';
                 prevTab = activeTab;
 
-                // Build performance warning pill if many rows
+                // Build performance warning pill with the exact requested text
                 var perfPill = '';
                 if (rows && rows.length > 500) {
-                    perfPill = '<span class="perf-warning" title="Large dataset may cause slight stutters when loading or searching">' +
-                        '⚡ Large dataset (' + rows.length + ' rows) — performance may vary' +
+                    perfPill = '<span class="perf-warning" title="Large dataset may cause slight stutters when changing tabs or searching">' +
+                        '⚡ performance may vary, might experience some stutters while changing tabs' +
                         '</span>';
                 }
 
