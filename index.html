@@ -34,30 +34,50 @@
   }
   #visa-dash h1 { font-size: 26px; margin: 0 0 2px; letter-spacing: -.01em; }
   #visa-dash .sub { color: var(--ink-soft); font-size: 13px; margin-bottom: 18px; }
-  #visa-dash .tabs { display: flex; gap: 6px; border-bottom: 2px solid var(--line); margin-bottom: 20px; flex-wrap: wrap; }
-  #visa-dash .tab {
-    padding: 9px 16px; font-size: 13.5px; font-weight: 600; color: var(--ink-soft);
-    cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px;
+  #visa-dash .navpills { display: flex; gap: 6px; margin-bottom: 20px; flex-wrap: wrap; }
+  #visa-dash .navpill {
+    padding: 7px 15px; font-size: 13px; font-weight: 600; border-radius: 100px;
+    cursor: pointer; border: 1px solid var(--line); color: var(--ink-soft);
+    background: var(--card); transition: background 0.18s, color 0.18s, border-color 0.18s;
   }
-  #visa-dash .tab.active { color: var(--green); border-bottom-color: var(--green); }
+  #visa-dash .navpill:hover { border-color: var(--green); }
+  #visa-dash .navpill.active { background: var(--ink); color: #fff; border-color: var(--ink); }
   #visa-dash .cards { display: grid; grid-template-columns: repeat(auto-fit,minmax(150px,1fr)); gap: 12px; margin-bottom: 22px; }
   #visa-dash .card {
-    background: var(--card); border: 1px solid var(--line); border-radius: 10px;
-    padding: 14px 16px;
+    background: var(--card); border: 1px solid var(--line); border-radius: 12px;
+    padding: 14px 16px; opacity: 0; transform: translateY(6px);
+    animation: visa-card-in 0.35s ease forwards;
   }
+  #visa-dash .card:nth-child(1) { animation-delay: 0.02s; }
+  #visa-dash .card:nth-child(2) { animation-delay: 0.07s; }
+  #visa-dash .card:nth-child(3) { animation-delay: 0.12s; }
+  #visa-dash .card:nth-child(4) { animation-delay: 0.17s; }
+  #visa-dash .card:nth-child(5) { animation-delay: 0.22s; }
+  @keyframes visa-card-in { to { opacity: 1; transform: translateY(0); } }
+  #visa-dash .card.hero { grid-column: span 2; }
   #visa-dash .card .label { font-size: 11px; color: var(--ink-soft); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 6px; }
-  #visa-dash .card .value { font-size: 24px; font-weight: 700; }
+  #visa-dash .card .value { font-size: 24px; font-weight: 700; transition: transform 0.15s; }
+  #visa-dash .card.hero .value { font-size: 32px; }
+  #visa-dash .card:hover .value { transform: scale(1.03); }
   #visa-dash .card .value.green { color: var(--green); }
   #visa-dash .card .value.red { color: var(--red); }
   #visa-dash .card .value.amber { color: var(--amber); }
-  #visa-dash table { width: 100%; border-collapse: collapse; background: var(--card); border-radius: 10px; overflow: hidden; border: 1px solid var(--line); }
-  #visa-dash th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--ink-soft); background: var(--parchment); padding: 10px 12px; border-bottom: 1px solid var(--line); }
-  #visa-dash td { padding: 9px 12px; font-size: 13.5px; border-bottom: 1px solid var(--line); }
+  #visa-dash .trend { font-size: 11.5px; margin-top: 4px; display: flex; align-items: center; gap: 3px; }
+  #visa-dash .table-wrap { overflow-x: auto; border-radius: 12px; border: 1px solid var(--line); }
+  #visa-dash table { width: 100%; border-collapse: collapse; background: var(--card); min-width: 380px; }
+  #visa-dash th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--ink-soft); background: var(--parchment); padding: 10px 12px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  #visa-dash td { padding: 9px 12px; font-size: 13.5px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  #visa-dash tbody tr { transition: background 0.12s; }
+  #visa-dash tbody tr:hover { background: var(--parchment); }
   #visa-dash tr:last-child td { border-bottom: none; }
   #visa-dash .pill { display: inline-block; padding: 2px 9px; border-radius: 100px; font-size: 11.5px; font-weight: 600; }
   #visa-dash .pill.green { background: var(--green-soft); color: var(--green); }
   #visa-dash .pill.red { background: var(--red-soft); color: var(--red); }
   #visa-dash .pill.amber { background: var(--amber-soft); color: var(--amber); }
+  #visa-dash .searchbar { display: flex; align-items: center; gap: 8px; border: 1px solid var(--line); border-radius: 100px; padding: 0 14px; height: 40px; background: var(--card); margin-bottom: 16px; max-width: 420px; transition: border-color 0.15s; }
+  #visa-dash .searchbar:focus-within { border-color: var(--green); }
+  #visa-dash .searchbar svg { flex-shrink: 0; opacity: 0.5; }
+  #visa-dash .searchbar input { border: none; outline: none; font-size: 13.5px; flex: 1; background: transparent; color: var(--ink); }
   #visa-dash input[type=text] {
     width: 100%; max-width: 320px; padding: 9px 12px; border: 1px solid var(--line);
     border-radius: 8px; font-size: 13.5px; margin-bottom: 14px; background: var(--card);
@@ -70,7 +90,9 @@
   #visa-dash .btn {
     background: var(--green); color: #fff; border: none; padding: 10px 20px;
     border-radius: 8px; font-size: 13.5px; font-weight: 600; cursor: pointer;
+    transition: transform 0.1s, opacity 0.15s;
   }
+  #visa-dash .btn:active { transform: scale(0.97); }
   #visa-dash .btn:disabled { opacity: .5; cursor: default; }
   #visa-dash .note { font-size: 12.5px; color: var(--ink-soft); margin-top: 10px; }
   #visa-dash .empty { padding: 40px 20px; text-align: center; color: var(--ink-soft); font-size: 13.5px; }
@@ -92,22 +114,50 @@
     border-radius: 50%; margin: 0 auto 12px; animation: visa-spin 0.8s linear infinite;
   }
   @keyframes visa-spin { to { transform: rotate(360deg); } }
+  #visa-dash .topbar { height: 3px; background: var(--line); border-radius: 2px; overflow: hidden; margin-bottom: 18px; position: relative; }
+  #visa-dash .topbar-fill { position: absolute; top: 0; left: 0; height: 100%; width: 35%; background: var(--green); border-radius: 2px; animation: visa-indeterminate 1.1s ease-in-out infinite; }
+  @keyframes visa-indeterminate { 0% { transform: translateX(-100%); } 100% { transform: translateX(340%); } }
+  #visa-dash .skel { background: linear-gradient(90deg, var(--line) 25%, #fdfcf8 37%, var(--line) 63%); background-size: 400px 100%; animation: visa-shimmer 1.3s ease infinite; border-radius: 8px; }
+  @keyframes visa-shimmer { 0% { background-position: -200px 0; } 100% { background-position: 200px 0; } }
+  #visa-dash .skel-pill { height: 30px; width: 84px; border-radius: 100px; }
+  #visa-dash .skel-card { height: 68px; border-radius: 12px; opacity: 0; animation: visa-card-in 0.35s ease forwards, visa-shimmer 1.3s ease infinite; }
+  #visa-dash .skel-row { height: 16px; margin: 13px 12px; border-radius: 4px; }
+  #visa-dash .skel-wrap { border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: var(--card); }
+  #visa-dash #tab-body { animation: visa-fade-in 0.25s ease; }
+  @keyframes visa-fade-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+  #visa-dash details.readme { border: 1px solid var(--line); border-radius: 12px; padding: 12px 16px; margin-bottom: 20px; background: var(--card); }
+  #visa-dash details.readme summary { cursor: pointer; font-size: 13.5px; font-weight: 600; list-style: none; display: flex; align-items: center; gap: 6px; }
+  #visa-dash details.readme summary::-webkit-details-marker { display: none; }
+  #visa-dash details.readme summary::before { content: '\25B8'; transition: transform 0.15s; font-size: 11px; }
+  #visa-dash details.readme[open] summary::before { transform: rotate(90deg); }
+  #visa-dash details.readme p { font-size: 12.5px; color: var(--ink-soft); line-height: 1.6; margin: 10px 0 0; }
+  #visa-dash details.readme ul { font-size: 12.5px; color: var(--ink-soft); line-height: 1.7; margin: 8px 0 0; padding-left: 18px; }
+  @media (max-width: 560px) {
+    #visa-dash { padding: 16px; }
+    #visa-dash h1 { font-size: 21px; }
+    #visa-dash .cards { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+    #visa-dash .card { padding: 10px 12px; }
+    #visa-dash .card.hero { grid-column: span 2; }
+    #visa-dash .card .value { font-size: 19px; }
+    #visa-dash .card.hero .value { font-size: 24px; }
+    #visa-dash .navpills { gap: 4px; }
+    #visa-dash .navpill { padding: 6px 11px; font-size: 12px; }
+    #visa-dash .searchbar { max-width: 100%; }
+    #visa-dash input[type=text] { max-width: 100%; }
+  }
 </style>
 <script>
 (function () {
-  // ---- CONFIG: paste your deployed Apps Script Web App /exec URL here ----
-  // On Netlify, you can instead set window.VISA_WEB_APP_URL via Site settings >
-  // Build & deploy > Post processing > Snippet injection (head), so the URL
-  // isn't baked into the committed file. Falls back to the constant below.
-  const HARDCODED_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbw5UumJLgqUdOcjG-uB174eYcKnbs_suqy1iWXQHg0M6IeMhtVy3-J7M528hDwJEnhI7w/exec'; // e.g. 'https://script.google.com/macros/s/AKfycb.../exec'
+  const HARDCODED_WEB_APP_URL = '';
   const WEB_APP_URL = (window.VISA_WEB_APP_URL || HARDCODED_WEB_APP_URL || '').trim();
   const TRACKING_STARTED = '2026-07-13';
-  // --------------------------------------------------------------------
+  const EXCLUDE_FROM_AVERAGES = '2026-07-12';
 
   const root = document.getElementById('visa-dash');
-  let cache = null;       // in-memory only — fetched once, reused across tab switches
+  let cache = null;
   let activeTab = 'home';
   let searchTerm = '';
+  let homeSearchTerm = '';
 
   function classify(decision) {
     const s = (decision || '').toLowerCase();
@@ -115,7 +165,7 @@
     if (/(refus|reject|deny|denied)/.test(s)) return 'rejected';
     return 'other';
   }
-  function fmtPct(n) { return isFinite(n) ? (n * 100).toFixed(1) + '%' : '—'; }
+  function fmtPct(n) { return isFinite(n) ? (n * 100).toFixed(1) + '%' : '\u2014'; }
   function daysAgo(dateStr) { return Math.floor((Date.now() - new Date(dateStr + 'T00:00:00')) / 86400000); }
   function weekdayLong(dateStr) {
     const d = new Date(dateStr + 'T00:00:00');
@@ -126,19 +176,28 @@
     if (!nonZero.length) return 0;
     return nonZero.reduce((a, b) => a + b, 0) / nonZero.length;
   }
+  function computeDiffs(byDate) {
+    const diffs = [];
+    for (let i = 0; i < byDate.length - 1; i++) {
+      const [d, rows] = byDate[i];
+      const [dPrev, rowsPrev] = byDate[i + 1];
+      if (d === EXCLUDE_FROM_AVERAGES || dPrev === EXCLUDE_FROM_AVERAGES) continue;
+      diffs.push(rows.length - rowsPrev.length);
+    }
+    return diffs;
+  }
 
   function groupByDate(rows) {
     const m = new Map();
     rows.forEach(r => { if (!m.has(r.date)) m.set(r.date, []); m.get(r.date).push(r); });
-    return [...m.entries()].sort((a, b) => b[0].localeCompare(a[0])); // desc
+    return [...m.entries()].sort((a, b) => b[0].localeCompare(a[0]));
   }
 
   async function loadData() {
-    if (cache) return cache; // never re-fetch once we have it this session
+    if (cache) return cache;
     if (!WEB_APP_URL) { cache = []; return cache; }
     const res = await fetch(WEB_APP_URL + '?action=raw');
     const raw = await res.json();
-    // Server now sends compact [date, irl, decision] arrays instead of objects.
     cache = raw.map(r => Array.isArray(r) ? { date: r[0], irl: r[1], decision: r[2] } : r);
     return cache;
   }
@@ -146,6 +205,23 @@
   function renderConfigWarning() {
     return WEB_APP_URL ? '' :
       '<div class="config-warn">No data source configured yet. Deploy <code>Code.gs</code> as a Web App and paste its <code>/exec</code> URL into <code>WEB_APP_URL</code> at the top of this file\'s script.</div>';
+  }
+
+  function searchIcon() {
+    return '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>';
+  }
+
+  function readmeSection() {
+    return '<details class="readme"><summary>How this tracker works</summary>' +
+      '<p>Every day, an automated job checks the Irish embassy\'s New Delhi visa decisions page for the latest published spreadsheet and pulls any application numbers that haven\'t been recorded yet.</p>' +
+      '<ul>' +
+      '<li><strong>Home</strong> \u2014 today\'s snapshot, headline stats, and every result from the most recent file.</li>' +
+      '<li><strong>Daily summary</strong> \u2014 one row per day: volume, day-on-day change, acceptance and rejection rates.</li>' +
+      '<li><strong>Past results</strong> \u2014 full history, searchable by application number.</li>' +
+      '<li><strong>Suggestions</strong> \u2014 leave feedback, it goes straight into the tracking sheet.</li>' +
+      '</ul>' +
+      '<p>Data is sourced directly from the official embassy site. Day-on-day averages exclude ' + EXCLUDE_FROM_AVERAGES + ' (an anomalous data day). Tracking started ' + weekdayLong(TRACKING_STARTED) + '.</p>' +
+      '</details>';
   }
 
   function renderHome(rows) {
@@ -156,31 +232,38 @@
     const latestDate = latest[0];
     const latestRows = latest[1];
     const dayDiff = prev ? latestRows.length - prev[1].length : 0;
-    const diffs = byDate.slice(0, -1).map(([d, r], i) => r.length - byDate[i + 1][1].length);
+    const diffs = computeDiffs(byDate);
     const avgDiff = avgExcludingZero(diffs);
     const accepted = rows.filter(r => classify(r.decision) === 'accepted').length;
     const rejected = rows.filter(r => classify(r.decision) === 'rejected').length;
 
-    return renderConfigWarning() + `
-      <div class="stutter-warn"><i>&#9432;</i> Switching tabs may briefly stutter while data loads.</div>
-      <div class="latest-date">Latest available data: <strong>${weekdayLong(latestDate)}</strong></div>
-      <div class="tracking-since">Tracking started ${weekdayLong(TRACKING_STARTED)}</div>
-      <div class="cards">
-        <div class="card"><div class="label">Total outcomes (YTD)</div><div class="value">${total}</div></div>
-        <div class="card"><div class="label">Day-on-day change</div><div class="value ${dayDiff >= 0 ? 'green' : 'red'}">${dayDiff >= 0 ? '+' : ''}${dayDiff}</div></div>
-        <div class="card"><div class="label">Day-on-day avg (excl. 0)</div><div class="value">${avgDiff >= 0 ? '+' : ''}${avgDiff.toFixed(1)}</div></div>
-        <div class="card"><div class="label">Acceptance rate</div><div class="value green">${fmtPct(accepted / total)}</div></div>
-        <div class="card"><div class="label">Rejection rate</div><div class="value red">${fmtPct(rejected / total)}</div></div>
-      </div>
-      <div class="note" style="margin-bottom:8px;margin-top:0;">All results for ${latestDate} (${latestRows.length} rows)</div>
-      <table><thead><tr><th>Date</th><th>Application No.</th><th>Decision</th></tr></thead>
-      <tbody>${latestRows.map(rowHtml).join('')}</tbody></table>`;
+    const isSearching = homeSearchTerm.trim().length > 0;
+    const searchResults = isSearching
+      ? rows.filter(r => r.irl.toLowerCase().includes(homeSearchTerm.toLowerCase())).slice().sort((a, b) => b.date.localeCompare(a.date))
+      : latestRows;
+
+    return renderConfigWarning() +
+      '<div class="stutter-warn"><i>\u24D8</i> Switching tabs may briefly stutter while data loads.</div>' +
+      readmeSection() +
+      '<div class="latest-date">Latest available data: <strong>' + weekdayLong(latestDate) + '</strong></div>' +
+      '<div class="tracking-since">Tracking started ' + weekdayLong(TRACKING_STARTED) + '</div>' +
+      '<div class="searchbar">' + searchIcon() + '<input type="text" id="home-search" placeholder="Search by application number\u2026" value="' + homeSearchTerm + '"></div>' +
+      '<div class="cards">' +
+        '<div class="card hero"><div class="label">Total outcomes (YTD)</div><div class="value">' + total + '</div></div>' +
+        '<div class="card"><div class="label">Day-on-day change</div><div class="value ' + (dayDiff >= 0 ? 'green' : 'red') + '">' + (dayDiff >= 0 ? '+' : '') + dayDiff + '</div></div>' +
+        '<div class="card"><div class="label">Day-on-day avg (excl. 0)</div><div class="value">' + (avgDiff >= 0 ? '+' : '') + avgDiff.toFixed(1) + '</div></div>' +
+        '<div class="card"><div class="label">Acceptance rate</div><div class="value green">' + fmtPct(accepted / total) + '</div></div>' +
+        '<div class="card"><div class="label">Rejection rate</div><div class="value red">' + fmtPct(rejected / total) + '</div></div>' +
+      '</div>' +
+      '<div class="note" style="margin-bottom:8px;margin-top:0;">' + (isSearching ? (searchResults.length + ' match(es) for "' + homeSearchTerm + '"') : ('All results for ' + latestDate + ' (' + latestRows.length + ' rows)')) + '</div>' +
+      '<div class="table-wrap"><table><thead><tr><th>Date</th><th>Application No.</th><th>Decision</th></tr></thead>' +
+      '<tbody>' + (searchResults.length ? searchResults.map(rowHtml).join('') : '<tr><td colspan="3" class="empty">No matches.</td></tr>') + '</tbody></table></div>';
   }
 
   function rowHtml(r) {
     const c = classify(r.decision);
     const pillClass = c === 'accepted' ? 'green' : c === 'rejected' ? 'red' : 'amber';
-    return `<tr><td class="mono">${r.date}</td><td class="mono">${r.irl}</td><td><span class="pill ${pillClass}">${r.decision || '—'}</span></td></tr>`;
+    return '<tr><td class="mono">' + r.date + '</td><td class="mono">' + r.irl + '</td><td><span class="pill ' + pillClass + '">' + (r.decision || '\u2014') + '</span></td></tr>';
   }
 
   function renderDailySummary(rows) {
@@ -191,17 +274,13 @@
       const diff = prevCount === null ? null : dayRows.length - prevCount;
       const acc = dayRows.filter(r => classify(r.decision) === 'accepted').length / dayRows.length;
       const rej = dayRows.filter(r => classify(r.decision) === 'rejected').length / dayRows.length;
-      return `<tr>
-        <td class="mono">${date}</td>
-        <td>${dayRows.length}</td>
-        <td>${diff === null ? '—' : `<span class="pill ${diff >= 0 ? 'green' : 'red'}">${diff >= 0 ? '+' : ''}${diff}</span>`}</td>
-        <td>${fmtPct(acc)}</td>
-        <td>${fmtPct(rej)}</td>
-      </tr>`;
+      return '<tr><td class="mono">' + date + '</td><td>' + dayRows.length + '</td><td>' +
+        (diff === null ? '\u2014' : ('<span class="pill ' + (diff >= 0 ? 'green' : 'red') + '">' + (diff >= 0 ? '+' : '') + diff + '</span>')) +
+        '</td><td>' + fmtPct(acc) + '</td><td>' + fmtPct(rej) + '</td></tr>';
     }).join('');
-    return renderConfigWarning() + `
-      <table><thead><tr><th>Date</th><th>Applications Processed</th><th>Day-on-Day</th><th>Acceptance Rate</th><th>Rejection Rate</th></tr></thead>
-      <tbody>${trs}</tbody></table>`;
+    return renderConfigWarning() +
+      '<div class="table-wrap"><table><thead><tr><th>Date</th><th>Applications Processed</th><th>Day-on-Day</th><th>Acceptance Rate</th><th>Rejection Rate</th></tr></thead>' +
+      '<tbody>' + trs + '</tbody></table></div>';
   }
 
   function renderPast(rows) {
@@ -210,7 +289,7 @@
     const accepted = rows.filter(r => classify(r.decision) === 'accepted').length;
     const rejected = rows.filter(r => classify(r.decision) === 'rejected').length;
     const byDate = groupByDate(rows);
-    const diffs = byDate.slice(0, -1).map(([d, r], i) => r.length - byDate[i + 1][1].length);
+    const diffs = computeDiffs(byDate);
     const avgDayDiff = diffs.length ? diffs.reduce((a, b) => a + b, 0) / diffs.length : 0;
     const thisWeek = rows.filter(r => daysAgo(r.date) < 7).length;
     const lastWeek = rows.filter(r => daysAgo(r.date) >= 7 && daysAgo(r.date) < 14).length;
@@ -221,27 +300,26 @@
       : rows;
     const sorted = filtered.slice().sort((a, b) => b.date.localeCompare(a.date));
 
-    return renderConfigWarning() + `
-      <div class="cards">
-        <div class="card"><div class="label">Acceptance rate</div><div class="value green">${fmtPct(accepted / total)}</div></div>
-        <div class="card"><div class="label">Rejection rate</div><div class="value red">${fmtPct(rejected / total)}</div></div>
-        <div class="card"><div class="label">Avg day-on-day</div><div class="value">${avgDayDiff >= 0 ? '+' : ''}${avgDayDiff.toFixed(1)}</div></div>
-        <div class="card"><div class="label">Week-on-week</div><div class="value ${wow === null ? '' : wow >= 0 ? 'green' : 'red'}">${wow === null ? '—' : (wow >= 0 ? '+' : '') + fmtPct(wow)}</div></div>
-      </div>
-      <input type="text" id="irl-search" placeholder="Search by IRL application number…" value="${searchTerm}" />
-      <table><thead><tr><th>Date</th><th>Application No.</th><th>Decision</th></tr></thead>
-      <tbody>${sorted.length ? sorted.map(rowHtml).join('') : '<tr><td colspan="3" class="empty">No matches.</td></tr>'}</tbody></table>`;
+    return renderConfigWarning() +
+      '<div class="cards">' +
+        '<div class="card"><div class="label">Acceptance rate</div><div class="value green">' + fmtPct(accepted / total) + '</div></div>' +
+        '<div class="card"><div class="label">Rejection rate</div><div class="value red">' + fmtPct(rejected / total) + '</div></div>' +
+        '<div class="card"><div class="label">Avg day-on-day (excl. ' + EXCLUDE_FROM_AVERAGES + ')</div><div class="value">' + (avgDayDiff >= 0 ? '+' : '') + avgDayDiff.toFixed(1) + '</div></div>' +
+        '<div class="card"><div class="label">Week-on-week</div><div class="value ' + (wow === null ? '' : (wow >= 0 ? 'green' : 'red')) + '">' + (wow === null ? '\u2014' : ((wow >= 0 ? '+' : '') + fmtPct(wow))) + '</div></div>' +
+      '</div>' +
+      '<div class="searchbar">' + searchIcon() + '<input type="text" id="irl-search" placeholder="Search by IRL application number\u2026" value="' + searchTerm + '"></div>' +
+      '<div class="table-wrap"><table><thead><tr><th>Date</th><th>Application No.</th><th>Decision</th></tr></thead>' +
+      '<tbody>' + (sorted.length ? sorted.map(rowHtml).join('') : '<tr><td colspan="3" class="empty">No matches.</td></tr>') + '</tbody></table></div>';
   }
 
   function renderSuggestions() {
-    return `
-      <div class="card" style="max-width:480px;">
-        <div class="label" style="margin-bottom:12px;">Submit a suggestion</div>
-        <input type="text" id="sugg-name" placeholder="Your name" />
-        <textarea id="sugg-text" placeholder="Your suggestion…"></textarea>
-        <button class="btn" id="sugg-submit">Submit</button>
-        <div class="note" id="sugg-status"></div>
-      </div>`;
+    return '<div class="card" style="max-width:480px;">' +
+      '<div class="label" style="margin-bottom:12px;">Submit a suggestion</div>' +
+      '<input type="text" id="sugg-name" placeholder="Your name" />' +
+      '<textarea id="sugg-text" placeholder="Your suggestion\u2026"></textarea>' +
+      '<button class="btn" id="sugg-submit">Submit</button>' +
+      '<div class="note" id="sugg-status"></div>' +
+      '</div>';
   }
 
   async function submitSuggestion() {
@@ -251,14 +329,14 @@
     const btn = document.getElementById('sugg-submit');
     if (!name || !suggestion) { status.textContent = 'Please fill in both fields.'; return; }
     if (!WEB_APP_URL) { status.textContent = 'Data source not configured yet.'; return; }
-    btn.disabled = true; status.textContent = 'Submitting…';
+    btn.disabled = true; status.textContent = 'Submitting\u2026';
     try {
       await fetch(WEB_APP_URL, { method: 'POST', body: new URLSearchParams({ name, suggestion }) });
-      status.textContent = 'Thanks — suggestion recorded.';
+      status.textContent = 'Thanks \u2014 suggestion recorded.';
       document.getElementById('sugg-name').value = '';
       document.getElementById('sugg-text').value = '';
     } catch (err) {
-      status.textContent = 'Could not submit — try again.';
+      status.textContent = 'Could not submit \u2014 try again.';
     } finally {
       btn.disabled = false;
     }
@@ -266,10 +344,25 @@
 
   async function render() {
     if (!cache) {
-      root.innerHTML = `
-        <div class="eyebrow">Ireland · New Delhi Visa Section</div>
-        <h1>Visa Decision Tracker</h1>
-        <div class="loading"><div class="spinner"></div>Loading data…</div>`;
+      root.innerHTML = '<div class="eyebrow">Ireland \u00b7 New Delhi Visa Section</div>' +
+        '<h1>Visa Decision Tracker</h1>' +
+        '<div class="topbar"><div class="topbar-fill"></div></div>' +
+        '<div class="navpills">' +
+          '<div class="skel skel-pill"></div><div class="skel skel-pill"></div><div class="skel skel-pill"></div><div class="skel skel-pill"></div>' +
+        '</div>' +
+        '<div class="cards">' +
+          '<div class="skel skel-card" style="grid-column:span 2;animation-delay:0.02s"></div>' +
+          '<div class="skel skel-card" style="animation-delay:0.07s"></div>' +
+          '<div class="skel skel-card" style="animation-delay:0.12s"></div>' +
+          '<div class="skel skel-card" style="animation-delay:0.17s"></div>' +
+        '</div>' +
+        '<div class="skel-wrap">' +
+          '<div class="skel skel-row" style="width:70%"></div>' +
+          '<div class="skel skel-row" style="width:55%"></div>' +
+          '<div class="skel skel-row" style="width:65%"></div>' +
+          '<div class="skel skel-row" style="width:45%"></div>' +
+          '<div class="skel skel-row" style="width:60%"></div>' +
+        '</div>';
     }
     const rows = await loadData();
     const tabs = [
@@ -284,19 +377,28 @@
     else if (activeTab === 'past') body = renderPast(rows);
     else body = renderSuggestions();
 
-    root.innerHTML = `
-      <div class="eyebrow">Ireland · New Delhi Visa Section</div>
-      <h1>Visa Decision Tracker</h1>
-      <div class="sub">${cache && cache.length ? cache.length + ' decisions on record' : 'Awaiting data'}</div>
-      <div class="tabs">${tabs.map(([k, label]) => `<div class="tab ${activeTab === k ? 'active' : ''}" data-tab="${k}">${label}</div>`).join('')}</div>
-      <div id="tab-body">${body}</div>
-    `;
+    root.innerHTML =
+      '<div class="eyebrow">Ireland \u00b7 New Delhi Visa Section</div>' +
+      '<h1>Visa Decision Tracker</h1>' +
+      '<div class="sub">' + (cache && cache.length ? cache.length + ' decisions on record' : 'Awaiting data') + '</div>' +
+      '<div class="navpills">' + tabs.map(([k, label]) => '<div class="navpill ' + (activeTab === k ? 'active' : '') + '" data-tab="' + k + '">' + label + '</div>').join('') + '</div>' +
+      '<div id="tab-body">' + body + '</div>';
 
     tabs.forEach(([k]) => {
-      root.querySelector(`.tab[data-tab="${k}"]`).addEventListener('click', () => { activeTab = k; render(); });
+      root.querySelector('.navpill[data-tab="' + k + '"]').addEventListener('click', () => { activeTab = k; render(); });
     });
     const searchEl = document.getElementById('irl-search');
-    if (searchEl) searchEl.addEventListener('input', e => { searchTerm = e.target.value; render(); });
+    if (searchEl) {
+      searchEl.addEventListener('input', e => { searchTerm = e.target.value; render(); });
+      searchEl.focus();
+      searchEl.setSelectionRange(searchEl.value.length, searchEl.value.length);
+    }
+    const homeSearchEl = document.getElementById('home-search');
+    if (homeSearchEl) {
+      homeSearchEl.addEventListener('input', e => { homeSearchTerm = e.target.value; render(); });
+      homeSearchEl.focus();
+      homeSearchEl.setSelectionRange(homeSearchEl.value.length, homeSearchEl.value.length);
+    }
     const suggBtn = document.getElementById('sugg-submit');
     if (suggBtn) suggBtn.addEventListener('click', submitSuggestion);
   }
