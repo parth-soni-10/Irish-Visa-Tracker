@@ -334,6 +334,35 @@
             }
         }
 
+        /* ── performance warning pill (top right) ── */
+        #visa-dash .perf-warning {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: var(--amber-soft);
+            color: var(--amber);
+            border: 1px solid var(--amber);
+            border-radius: 100px;
+            padding: 6px 16px;
+            font-size: 14px;
+            font-weight: 600;
+            white-space: nowrap;
+            backdrop-filter: blur(8px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+            transition: opacity 0.2s;
+            line-height: 1.4;
+        }
+        #visa-dash.dark .perf-warning {
+            background: #3A3020;
+            border-color: var(--amber);
+            color: var(--amber);
+        }
+        #visa-dash .perf-warning svg {
+            width: 18px;
+            height: 18px;
+            flex-shrink: 0;
+        }
+
         /* ── searchbar ── */
         #visa-dash .searchbar {
             display: flex;
@@ -458,6 +487,16 @@
             display: flex;
             align-items: flex-start;
             justify-content: space-between;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        #visa-dash .titlerow .left {
+            display: flex;
+            flex-direction: column;
+        }
+        #visa-dash .titlerow .right {
+            display: flex;
+            align-items: center;
             gap: 12px;
             flex-wrap: wrap;
         }
@@ -872,6 +911,13 @@
             #visa-dash .suggest-card {
                 max-width: 100%;
                 padding: 16px;
+            }
+            #visa-dash .perf-warning {
+                font-size: 12px;
+                padding: 4px 12px;
+            }
+            #visa-dash .titlerow .right {
+                gap: 8px;
             }
         }
     </style>
@@ -1387,11 +1433,23 @@
                 var direction = tabOrder.indexOf(activeTab) > tabOrder.indexOf(prevTab) ? 'left' : 'right';
                 prevTab = activeTab;
 
+                // Build performance warning pill if many rows
+                var perfPill = '';
+                if (rows && rows.length > 500) {
+                    perfPill = '<span class="perf-warning" title="Large dataset may cause slight stutters when loading or searching">' +
+                        '⚡ Large dataset (' + rows.length + ' rows) — performance may vary' +
+                        '</span>';
+                }
+
                 root.innerHTML =
                     '<div class="blobs"><div class="blob"></div><div class="blob"></div></div>' +
                     '<div class="eyebrow">Ireland · New Delhi Visa Section</div>' +
-                    '<div class="titlerow"><h1>Visa Decision Tracker</h1>' +
+                    '<div class="titlerow">' +
+                    '<div class="left"><h1>Visa Decision Tracker</h1></div>' +
+                    '<div class="right">' +
+                    perfPill +
                     '<div class="dark-toggle" id="dark-toggle">' + (isDark ? '☀️ Light' : '🌙 Dark') + '</div>' +
+                    '</div>' +
                     '</div>' +
                     '<div class="sub">' + (cache && cache.length ? cache.length + ' decisions on record' :
                         'Awaiting data') + '</div>' +
