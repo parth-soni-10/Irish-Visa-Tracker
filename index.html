@@ -110,6 +110,20 @@
     border-radius: 8px; padding: 9px 14px; font-size: 12.5px; margin-bottom: 16px;
     display: flex; align-items: center; gap: 8px;
   }
+  #visa-dash .header-note {
+    color: var(--ink-soft); font-size: 11.5px; margin-bottom: 16px;
+    display: flex; align-items: center; gap: 5px;
+  }
+  #visa-dash .datefilter {
+    display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--line);
+    border-radius: 100px; padding: 0 14px; height: 40px; background: var(--card);
+    margin-bottom: 16px; margin-left: 8px; transition: border-color 0.15s;
+  }
+  #visa-dash .datefilter:focus-within { border-color: var(--green); }
+  #visa-dash .datefilter input[type=date] { border: none; outline: none; background: transparent; font-size: 13px; color: var(--ink); font-family: inherit; }
+  #visa-dash .datefilter .clear-btn { cursor: pointer; font-size: 16px; line-height: 1; color: var(--ink-soft); }
+  #visa-dash .datefilter .clear-btn:hover { color: var(--red); }
+  #visa-dash .filter-row { display: flex; align-items: center; flex-wrap: wrap; }
   #visa-dash .latest-date { font-size: 14px; margin-bottom: 2px; }
   #visa-dash .tracking-since { font-size: 12px; color: var(--ink-soft); margin-bottom: 16px; }
   #visa-dash .loading { padding: 60px 20px; text-align: center; color: var(--ink-soft); font-size: 13.5px; }
@@ -145,6 +159,8 @@
     #visa-dash .navpill { padding: 6px 11px; font-size: 12px; }
     #visa-dash .searchbar { max-width: 100%; }
     #visa-dash input[type=text] { max-width: 100%; }
+    #visa-dash .filter-row { flex-direction: column; align-items: stretch; gap: 4px; }
+    #visa-dash .datefilter { margin-left: 0; width: 100%; }
   }
 </style>
 <script>
@@ -158,6 +174,7 @@
   let cache = null;
   let activeTab = 'home';
   let homeSearchTerm = '';
+  let pastDateFilter = '';
 
   function classify(decision) {
     const s = (decision || '').toLowerCase();
@@ -242,7 +259,6 @@
       : latestRows;
 
     return renderConfigWarning() +
-      '<div class="stutter-warn"><i>\u24D8</i> Switching tabs may briefly stutter while data loads.</div>' +
       readmeSection() +
       '<div class="latest-date">Latest available data: <strong>' + weekdayLong(latestDate) + '</strong></div>' +
       '<div class="tracking-since">Tracking started ' + weekdayLong(TRACKING_STARTED) + '</div>' +
@@ -294,7 +310,9 @@
     const lastWeek = rows.filter(r => daysAgo(r.date) >= 7 && daysAgo(r.date) < 14).length;
     const wow = lastWeek ? (thisWeek - lastWeek) / lastWeek : null;
 
-    const sorted = rows.slice().sort((a, b) => b.date.localeCompare(a.date));
+    const sorted = rows
+      .filter(r => !pastDateFilter || r.date === pastDateFilter)
+      .slice().sort((a, b) => b.date.localeCompare(a.date));
 
     return renderConfigWarning() +
       '<div class="cards">' +
@@ -303,7 +321,12 @@
         '<div class="card"><div class="label">Avg day-on-day (excl. ' + EXCLUDE_FROM_AVERAGES + ')</div><div class="value">' + (avgDayDiff >= 0 ? '+' : '') + avgDayDiff.toFixed(1) + '</div></div>' +
         '<div class="card"><div class="label">Week-on-week</div><div class="value ' + (wow === null ? '' : (wow >= 0 ? 'green' : 'red')) + '">' + (wow === null ? '\u2014' : ((wow >= 0 ? '+' : '') + fmtPct(wow))) + '</div></div>' +
       '</div>' +
-      '<div class="note" style="margin-top:0;margin-bottom:8px;">Use the search bar on the Home tab to look up a specific application number.</div>' +
+      '<div class="filter-row">' +
+        '<div class="note" style="margin-top:0;">Use the search bar on the Home tab to look up a specific application number.</div>' +
+        '<div class="datefilter"><input type="date" id="past-date-filter" value="' + pastDateFilter + '">' +
+          (pastDateFilter ? '<span class="clear-btn" id="past-date-clear" title="Clear date filter">\u00d7</span>' : '') +
+        '</div>' +
+      '</div>' +
       '<div class="table-wrap"><table><thead><tr><th>Date</th><th>Application No.</th><th>Decision</th></tr></thead>' +
       '<tbody>' + (sorted.length ? sorted.map(rowHtml).join('') : '<tr><td colspan="3" class="empty">No matches.</td></tr>') + '</tbody></table></div>';
   }
@@ -377,6 +400,7 @@
       '<div class="eyebrow">Ireland \u00b7 New Delhi Visa Section</div>' +
       '<h1>Visa Decision Tracker</h1>' +
       '<div class="sub">' + (cache && cache.length ? cache.length + ' decisions on record' : 'Awaiting data') + '</div>' +
+      '<div class="header-note"><i>\u24D8</i> Switching tabs may briefly stutter while data loads.</div>' +
       '<div class="navpills">' + tabs.map(([k, label]) => '<div class="navpill ' + (activeTab === k ? 'active' : '') + '" data-tab="' + k + '">' + label + '</div>').join('') + '</div>' +
       '<div id="tab-body">' + body + '</div>';
 
@@ -389,6 +413,10 @@
       homeSearchEl.focus();
       homeSearchEl.setSelectionRange(homeSearchEl.value.length, homeSearchEl.value.length);
     }
+    const dateFilterEl = document.getElementById('past-date-filter');
+    if (dateFilterEl) dateFilterEl.addEventListener('change', e => { pastDateFilter = e.target.value; render(); });
+    const dateClearEl = document.getElementById('past-date-clear');
+    if (dateClearEl) dateClearEl.addEventListener('click', () => { pastDateFilter = ''; render(); });
     const suggBtn = document.getElementById('sugg-submit');
     if (suggBtn) suggBtn.addEventListener('click', submitSuggestion);
   }
