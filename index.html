@@ -538,6 +538,41 @@
             max-height: 420px;
             overflow-y: auto;
         }
+
+        /* --- proper CSS for Suggestions table --- */
+        #visa-dash .suggest-grid .table-col table {
+            min-width: 400px;
+            table-layout: fixed;
+        }
+        #visa-dash .suggest-grid .table-col table th,
+        #visa-dash .suggest-grid .table-col table td {
+            white-space: normal !important;
+            word-break: break-word;
+            vertical-align: top;
+        }
+        /* keep timestamp & name on one line */
+        #visa-dash .suggest-grid .table-col table td:first-child,
+        #visa-dash .suggest-grid .table-col table th:first-child {
+            white-space: nowrap !important;
+            width: 160px;
+        }
+        #visa-dash .suggest-grid .table-col table td:nth-child(2),
+        #visa-dash .suggest-grid .table-col table th:nth-child(2) {
+            white-space: nowrap !important;
+            width: 100px;
+        }
+        #visa-dash .suggest-grid .table-col table td:nth-child(3),
+        #visa-dash .suggest-grid .table-col table td:nth-child(4) {
+            min-width: 140px;
+        }
+        #visa-dash .suggest-grid .table-col table td:nth-child(3) {
+            width: 40%;
+        }
+        #visa-dash .suggest-grid .table-col table td:nth-child(4) {
+            width: 30%;
+        }
+        /* ---------------------------------------- */
+
         @media (max-width: 760px) {
             #visa-dash .suggest-grid .form-col,
             #visa-dash .suggest-grid .table-col {
@@ -545,6 +580,14 @@
             }
             #visa-dash .suggest-grid .table-col .table-wrap {
                 max-height: 300px;
+            }
+            #visa-dash .suggest-grid .table-col table td:first-child,
+            #visa-dash .suggest-grid .table-col table th:first-child {
+                width: 120px;
+            }
+            #visa-dash .suggest-grid .table-col table td:nth-child(2),
+            #visa-dash .suggest-grid .table-col table th:nth-child(2) {
+                width: 80px;
             }
         }
         @media (max-width: 560px) {
