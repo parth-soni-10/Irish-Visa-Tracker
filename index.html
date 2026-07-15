@@ -519,6 +519,34 @@
             margin: 8px 0 0;
             padding-left: 18px;
         }
+        /* suggestions two‑column layout */
+        #visa-dash .suggest-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 24px;
+            align-items: flex-start;
+        }
+        #visa-dash .suggest-grid .form-col {
+            flex: 1 1 280px;
+            min-width: 0;
+        }
+        #visa-dash .suggest-grid .table-col {
+            flex: 2 1 400px;
+            min-width: 0;
+        }
+        #visa-dash .suggest-grid .table-col .table-wrap {
+            max-height: 420px;
+            overflow-y: auto;
+        }
+        @media (max-width: 760px) {
+            #visa-dash .suggest-grid .form-col,
+            #visa-dash .suggest-grid .table-col {
+                flex: 1 1 100%;
+            }
+            #visa-dash .suggest-grid .table-col .table-wrap {
+                max-height: 300px;
+            }
+        }
         @media (max-width: 560px) {
             #visa-dash {
                 padding: 16px;
@@ -574,6 +602,7 @@
 
             const root = document.getElementById('visa-dash');
             let cache = null;
+            let suggestionsCache = null;
             let activeTab = 'home';
             let homeSearchTerm = '';
             let pastDateFilter = '';
@@ -608,6 +637,33 @@
                 const raw = await res.json();
                 cache = raw.map(r => Array.isArray(r) ? { date: r[0], irl: r[1], decision: r[2] } : r);
                 return cache;
+            }
+
+            async function loadSuggestions() {
+                if (suggestionsCache) return suggestionsCache;
+                if (!WEB_APP_URL) { suggestionsCache = []; return suggestionsCache; }
+                try {
+                    const res = await fetch(WEB_APP_URL + '?action=suggestions');
+                    const raw = await res.json();
+                    if (Array.isArray(raw) && raw.length > 0) {
+                        if (Array.isArray(raw[0])) {
+                            const headers = raw[0];
+                            suggestionsCache = raw.slice(1).map(row => {
+                                const obj = {};
+                                headers.forEach((h, i) => { obj[h] = row[i] !== undefined ? row[i] : ''; });
+                                return obj;
+                            });
+                        } else {
+                            suggestionsCache = raw;
+                        }
+                    } else {
+                        suggestionsCache = [];
+                    }
+                    return suggestionsCache;
+                } catch (e) {
+                    suggestionsCache = [];
+                    return suggestionsCache;
+                }
             }
 
             function renderConfigWarning() {
@@ -765,13 +821,34 @@
                         '<tr><td colspan="3" class="empty">No matches.</td></tr>') + '</tbody></table></div>';
             }
 
-            function renderSuggestions() {
-                return '<div class="card" style="max-width:480px;">' +
+            function renderSuggestions(suggestions) {
+                const formHtml = '<div class="card" style="max-width:100%;">' +
                     '<div class="label" style="margin-bottom:12px;">Submit a suggestion</div>' +
                     '<input type="text" id="sugg-name" placeholder="Your name" />' +
                     '<textarea id="sugg-text" placeholder="Your suggestion\u2026"></textarea>' +
                     '<button class="btn" id="sugg-submit">Submit</button>' +
                     '<div class="note" id="sugg-status"></div>' +
+                    '</div>';
+
+                let tableHtml = '';
+                if (suggestions && suggestions.length) {
+                    const headers = Object.keys(suggestions[0]);
+                    const rows = suggestions.map(s => {
+                        return '<tr>' + headers.map(h => '<td>' + (s[h] !== undefined ? s[h] : '') + '</td>').join('') +
+                            '</tr>';
+                    }).join('');
+                    tableHtml = '<div class="table-wrap"><table><thead><tr>' +
+                        headers.map(h => '<th>' + h + '</th>').join('') +
+                        '</tr></thead><tbody>' + rows + '</tbody></table></div>';
+                } else {
+                    tableHtml = '<div class="empty" style="padding:20px;">No suggestions yet.</div>';
+                }
+
+                return renderConfigWarning() +
+                    '<div class="suggest-grid">' +
+                    '<div class="form-col">' + formHtml + '</div>' +
+                    '<div class="table-col"><div class="label" style="margin-bottom:8px;">All suggestions</div>' + tableHtml +
+                    '</div>' +
                     '</div>';
             }
 
@@ -783,18 +860,27 @@
                 if (!name || !suggestion) { status.textContent = 'Please fill in both fields.'; return; }
                 if (!WEB_APP_URL) { status.textContent = 'Data source not configured yet.'; return; }
                 btn.disabled = true;
-                status.textContent = 'Submitting\u2026';
+                status.textContent = 'Submitting…';
                 try {
                     const now = new Date();
-                    const timestamp = now.toISOString(); // UTC
-                    const timezone = 'Asia/Kolkata'; // fixed IST
+                    const timestamp = now.toISOString();
+                    const timezone = 'Asia/Kolkata';
                     await fetch(WEB_APP_URL, {
                         method: 'POST',
                         body: new URLSearchParams({ name, suggestion, timestamp, timezone })
                     });
-                    status.textContent = `Thanks — suggestion recorded at ${timestamp} (${timezone}).`;
+                    // Updated success message
+                    status.textContent = 'Thanks — suggestion recorded. I\'ll read your suggestion and get back to you.';
                     document.getElementById('sugg-name').value = '';
                     document.getElementById('sugg-text').value = '';
+                    suggestionsCache = null;
+                    const newSuggestions = await loadSuggestions();
+                    const tabBody = document.getElementById('tab-body');
+                    if (tabBody && activeTab === 'suggest') {
+                        tabBody.innerHTML = renderSuggestions(newSuggestions);
+                        const newBtn = document.getElementById('sugg-submit');
+                        if (newBtn) newBtn.addEventListener('click', submitSuggestion);
+                    }
                 } catch (err) {
                     status.textContent = 'Could not submit — try again.';
                 } finally {
@@ -836,7 +922,10 @@
                 if (activeTab === 'home') body = renderHome(rows);
                 else if (activeTab === 'daily') body = renderDailySummary(rows);
                 else if (activeTab === 'past') body = renderPast(rows);
-                else body = renderSuggestions();
+                else {
+                    const suggestions = await loadSuggestions();
+                    body = renderSuggestions(suggestions);
+                }
 
                 root.innerHTML =
                     '<div class="eyebrow">Ireland \u00b7 New Delhi Visa Section</div>' +
