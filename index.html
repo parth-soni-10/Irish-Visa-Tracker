@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Irish Visa Decision Tracker</title>
+</head>
+<body>
+    <div id="visa-dash"></div>
     <style>
-        /* ── reset & base ── */
         #visa-dash * {
             box-sizing: border-box;
         }
@@ -13,7 +15,7 @@
             --ink: #12213A;
             --ink-soft: #4A5670;
             --parchment: #F6F3EC;
-            --card: rgba(255, 255, 255, 0.75);
+            --card: #FFFFFF;
             --green: #2F6E51;
             --green-soft: #E6EFE9;
             --amber: #B5762A;
@@ -21,88 +23,12 @@
             --red: #A13D3D;
             --red-soft: #F5E4E2;
             --line: #E1DBCC;
-            --blob-1: #E8F0E6;
-            --blob-2: #F2EBE1;
-
             font-family: -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
             background: var(--parchment);
             color: var(--ink);
             min-height: 100%;
-            padding: 28px 28px 40px;
-            position: relative;
-            overflow: hidden;
-            transition: background 0.3s, color 0.3s;
+            padding: 28px;
         }
-        /* ── dark mode ── */
-        #visa-dash.dark {
-            --ink: #F0E8DA;
-            --ink-soft: #C5B9A6;
-            --parchment: #1A2634;
-            --card: rgba(28, 38, 52, 0.85);
-            --green: #7BCAA0;
-            --green-soft: #2A4036;
-            --amber: #E5BC7A;
-            --amber-soft: #423A28;
-            --red: #E08A8A;
-            --red-soft: #422A2A;
-            --line: #3D4D5E;
-            --blob-1: #26323F;
-            --blob-2: #352A3A;
-        }
-
-        #visa-dash .blobs {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 0;
-            pointer-events: none;
-            overflow: hidden;
-        }
-        #visa-dash .blob {
-            position: absolute;
-            border-radius: 50%;
-            filter: blur(60px);
-            opacity: 0.5;
-            animation: blob-float 18s infinite ease-in-out;
-        }
-        #visa-dash .blob:nth-child(1) {
-            width: 400px;
-            height: 400px;
-            background: var(--blob-1);
-            top: -100px;
-            left: -50px;
-            animation-delay: 0s;
-        }
-        #visa-dash .blob:nth-child(2) {
-            width: 350px;
-            height: 350px;
-            background: var(--blob-2);
-            bottom: -80px;
-            right: -60px;
-            animation-delay: -6s;
-        }
-        @keyframes blob-float {
-            0%,
-            100% {
-                transform: translate(0, 0) scale(1);
-            }
-            25% {
-                transform: translate(30px, -20px) scale(1.08);
-            }
-            50% {
-                transform: translate(-15px, 30px) scale(0.95);
-            }
-            75% {
-                transform: translate(25px, 15px) scale(1.05);
-            }
-        }
-        #visa-dash>* {
-            position: relative;
-            z-index: 1;
-        }
-
         #visa-dash .mono {
             font-family: "SF Mono", Consolas, Menlo, monospace;
         }
@@ -114,24 +40,16 @@
             font-weight: 700;
             margin-bottom: 4px;
         }
-
-        /* ── title: static, no glow ── */
         #visa-dash h1 {
             font-size: 26px;
             margin: 0 0 2px;
             letter-spacing: -.01em;
-            color: var(--green);
-            display: inline-block;
-            font-weight: 700;
         }
-
         #visa-dash .sub {
             color: var(--ink-soft);
             font-size: 13px;
             margin-bottom: 18px;
         }
-
-        /* ── nav pills ── */
         #visa-dash .navpills {
             display: flex;
             gap: 6px;
@@ -147,100 +65,72 @@
             border: 1px solid var(--line);
             color: var(--ink-soft);
             background: var(--card);
-            backdrop-filter: blur(12px);
-            transition: background 0.18s, color 0.18s, border-color 0.18s, transform 0.15s;
-            user-select: none;
+            transition: background 0.18s, color 0.18s, border-color 0.18s;
         }
         #visa-dash .navpill:hover {
             border-color: var(--green);
-            transform: translateY(-1px);
         }
         #visa-dash .navpill.active {
             background: var(--ink);
             color: #fff;
             border-color: var(--ink);
         }
-        #visa-dash.dark .navpill.active {
-            background: var(--green);
-            color: var(--parchment);
-            border-color: var(--green);
-        }
-
-        /* ── cards — no glow, no hover box-shadow ── */
         #visa-dash .cards {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
             gap: 12px;
-            margin-bottom: 14px;
-            perspective: 1000px;
-        }
-        #visa-dash .cards.past-cards {
-            grid-template-columns: repeat(auto-fit, minmax(180px, 240px));
+            margin-bottom: 22px;
         }
         #visa-dash .card {
             background: var(--card);
-            backdrop-filter: blur(14px);
             border: 1px solid var(--line);
             border-radius: 12px;
             padding: 14px 16px;
             opacity: 0;
             transform: translateY(6px);
-            animation: card-in 0.4s ease forwards;
-            transition: transform 0.2s, border-color 0.2s;
-            position: relative;
-            overflow: hidden;
-            will-change: transform;
+            animation: visa-card-in 0.35s ease forwards;
         }
-        /* remove the glowing pseudo-element entirely */
-        #visa-dash .card::before {
-            display: none;
+        #visa-dash .card:nth-child(1) {
+            animation-delay: 0.02s;
         }
-        /* no box-shadow glow on hover, just a subtle lift */
-        #visa-dash .card:hover {
-            transform: translateY(-2px);
-            border-color: var(--green);
+        #visa-dash .card:nth-child(2) {
+            animation-delay: 0.07s;
         }
-
+        #visa-dash .card:nth-child(3) {
+            animation-delay: 0.12s;
+        }
+        #visa-dash .card:nth-child(4) {
+            animation-delay: 0.17s;
+        }
+        #visa-dash .card:nth-child(5) {
+            animation-delay: 0.22s;
+        }
+        @keyframes visa-card-in {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        #visa-dash .card.hero {
+            grid-column: span 2;
+        }
         #visa-dash .card .label {
             font-size: 11px;
             color: var(--ink-soft);
             text-transform: uppercase;
             letter-spacing: .06em;
             margin-bottom: 6px;
-            position: relative;
-        }
-        #visa-dash .card .label .tooltip {
-            visibility: hidden;
-            opacity: 0;
-            position: absolute;
-            bottom: 120%;
-            left: 0;
-            background: var(--ink);
-            color: #fff;
-            padding: 4px 8px;
-            border-radius: 6px;
-            font-size: 11px;
-            white-space: nowrap;
-            transition: opacity 0.2s;
-            pointer-events: none;
-            z-index: 10;
-            text-transform: none;
-            letter-spacing: normal;
-            font-weight: 400;
-        }
-        #visa-dash .card .label:hover .tooltip {
-            visibility: visible;
-            opacity: 1;
         }
         #visa-dash .card .value {
             font-size: 24px;
             font-weight: 700;
-            display: flex;
-            align-items: center;
-            gap: 8px;
+            transition: transform 0.15s;
         }
         #visa-dash .card.hero .value {
             font-size: 32px;
+        }
+        #visa-dash .card:hover .value {
+            transform: scale(1.03);
         }
         #visa-dash .card .value.green {
             color: var(--green);
@@ -251,25 +141,22 @@
         #visa-dash .card .value.amber {
             color: var(--amber);
         }
-
-        /* ── sparkline ── */
-        #visa-dash .sparkline {
-            margin-top: 8px;
-            width: 100%;
-            height: 24px;
+        #visa-dash .trend {
+            font-size: 11.5px;
+            margin-top: 4px;
+            display: flex;
+            align-items: center;
+            gap: 3px;
         }
-
-        /* ── table ── */
         #visa-dash .table-wrap {
             overflow-x: auto;
             border-radius: 12px;
             border: 1px solid var(--line);
-            background: var(--card);
-            backdrop-filter: blur(14px);
         }
         #visa-dash table {
             width: 100%;
             border-collapse: collapse;
+            background: var(--card);
             min-width: 380px;
         }
         #visa-dash th {
@@ -298,8 +185,6 @@
         #visa-dash tr:last-child td {
             border-bottom: none;
         }
-
-        /* ── pills ── */
         #visa-dash .pill {
             display: inline-block;
             padding: 2px 9px;
@@ -319,51 +204,6 @@
             background: var(--amber-soft);
             color: var(--amber);
         }
-        #visa-dash .pill.glow {
-            animation: pill-pulse 1.8s ease-in-out 1;
-        }
-        @keyframes pill-pulse {
-            0% {
-                box-shadow: 0 0 0 0 var(--green-soft);
-            }
-            50% {
-                box-shadow: 0 0 6px 2px var(--green-soft);
-            }
-            100% {
-                box-shadow: 0 0 0 0 var(--green-soft);
-            }
-        }
-
-        /* ── performance warning pill (top right) ── */
-        #visa-dash .perf-warning {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            background: var(--amber-soft);
-            color: var(--amber);
-            border: 1px solid var(--amber);
-            border-radius: 100px;
-            padding: 6px 16px;
-            font-size: 14px;
-            font-weight: 600;
-            white-space: nowrap;
-            backdrop-filter: blur(8px);
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-            transition: opacity 0.2s;
-            line-height: 1.4;
-        }
-        #visa-dash.dark .perf-warning {
-            background: #3A3020;
-            border-color: var(--amber);
-            color: var(--amber);
-        }
-        #visa-dash .perf-warning svg {
-            width: 18px;
-            height: 18px;
-            flex-shrink: 0;
-        }
-
-        /* ── searchbar ── */
         #visa-dash .searchbar {
             display: flex;
             align-items: center;
@@ -373,8 +213,7 @@
             padding: 0 14px;
             height: 40px;
             background: var(--card);
-            backdrop-filter: blur(12px);
-            margin-bottom: 14px;
+            margin-bottom: 16px;
             max-width: 420px;
             transition: border-color 0.15s;
         }
@@ -385,7 +224,7 @@
             flex-shrink: 0;
             opacity: 0.5;
         }
-        #visa-dash .searchbar input[type="text"] {
+        #visa-dash .searchbar input[type=text] {
             border: none;
             outline: none;
             font-size: 13.5px;
@@ -398,12 +237,11 @@
             margin: 0;
             border-radius: 0;
         }
-        #visa-dash .searchbar input[type="text"]:focus {
+        #visa-dash .searchbar input[type=text]:focus {
             outline: none;
             box-shadow: none;
         }
-
-        #visa-dash input[type="text"] {
+        #visa-dash input[type=text] {
             width: 100%;
             max-width: 320px;
             padding: 9px 12px;
@@ -412,9 +250,8 @@
             font-size: 13.5px;
             margin-bottom: 14px;
             background: var(--card);
-            color: var(--ink);
         }
-        #visa-dash input[type="text"]:focus,
+        #visa-dash input[type=text]:focus,
         #visa-dash textarea:focus {
             outline: 2px solid var(--green);
             outline-offset: 1px;
@@ -428,12 +265,7 @@
             font-family: inherit;
             min-height: 90px;
             margin-bottom: 12px;
-            background: var(--card);
-            color: var(--ink);
-            resize: vertical;
         }
-
-        /* ── buttons ── */
         #visa-dash .btn {
             background: var(--green);
             color: #fff;
@@ -443,10 +275,7 @@
             font-size: 13.5px;
             font-weight: 600;
             cursor: pointer;
-            transition: transform 0.1s, opacity 0.15s, box-shadow 0.2s;
-        }
-        #visa-dash .btn:hover {
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            transition: transform 0.1s, opacity 0.15s;
         }
         #visa-dash .btn:active {
             transform: scale(0.97);
@@ -455,11 +284,10 @@
             opacity: .5;
             cursor: default;
         }
-
         #visa-dash .note {
             font-size: 12.5px;
             color: var(--ink-soft);
-            margin-top: 6px;
+            margin-top: 10px;
         }
         #visa-dash .empty {
             padding: 40px 20px;
@@ -481,8 +309,18 @@
             padding: 1px 5px;
             border-radius: 4px;
         }
-
-        /* ── top row ── */
+        #visa-dash .stutter-warn {
+            background: var(--amber-soft);
+            color: var(--amber);
+            border: 1px solid var(--amber);
+            border-radius: 8px;
+            padding: 9px 14px;
+            font-size: 12.5px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
         #visa-dash .titlerow {
             display: flex;
             align-items: flex-start;
@@ -490,46 +328,25 @@
             gap: 12px;
             flex-wrap: wrap;
         }
-        #visa-dash .titlerow .left {
-            display: flex;
-            flex-direction: column;
-        }
-        #visa-dash .titlerow .right {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            flex-wrap: wrap;
-        }
-        #visa-dash .dark-toggle {
-            background: var(--card);
-            backdrop-filter: blur(12px);
-            border: 1px solid var(--line);
-            border-radius: 100px;
-            padding: 5px 14px;
-            font-size: 13px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            transition: all 0.2s;
-            color: var(--ink);
-            flex-shrink: 0;
-        }
-        #visa-dash .dark-toggle:hover {
-            border-color: var(--green);
-        }
-
-        /* ── date filter ── */
-        #visa-dash .filter-row {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 12px;
-            flex-wrap: wrap;
-            margin-bottom: 14px;
-        }
-        #visa-dash .filter-row .note {
+        #visa-dash .titlerow h1 {
             margin: 0;
+        }
+        #visa-dash .stutter-badge {
+            background: #FCEBB8;
+            color: #8A2E2E;
+            font-size: 11px;
+            font-weight: 600;
+            padding: 5px 12px;
+            border-radius: 100px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            white-space: nowrap;
+            margin-top: 3px;
+        }
+        #visa-dash .stutter-badge i {
+            font-style: normal;
+            font-size: 12px;
         }
         #visa-dash .datefilter {
             display: inline-flex;
@@ -540,18 +357,13 @@
             padding: 0 14px;
             height: 40px;
             background: var(--card);
-            backdrop-filter: blur(12px);
             transition: border-color 0.15s;
             flex-shrink: 0;
-        }
-        #visa-dash .datefilter.active-filter {
-            border-color: var(--green);
-            background: var(--green-soft);
         }
         #visa-dash .datefilter:focus-within {
             border-color: var(--green);
         }
-        #visa-dash .datefilter input[type="date"] {
+        #visa-dash .datefilter input[type=date] {
             border: none;
             outline: none;
             background: transparent;
@@ -559,23 +371,26 @@
             color: var(--ink);
             font-family: inherit;
         }
-        #visa-dash .datefilter .clear-chip {
-            background: var(--line);
-            border-radius: 100px;
-            padding: 2px 8px;
-            font-size: 12px;
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
+        #visa-dash .datefilter .clear-btn {
             cursor: pointer;
-            transition: background 0.15s;
-            color: var(--ink);
+            font-size: 16px;
+            line-height: 1;
+            color: var(--ink-soft);
         }
-        #visa-dash .datefilter .clear-chip:hover {
-            background: var(--red-soft);
+        #visa-dash .datefilter .clear-btn:hover {
             color: var(--red);
         }
-
+        #visa-dash .filter-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 16px;
+        }
+        #visa-dash .filter-row .note {
+            margin: 0;
+        }
         #visa-dash .latest-date {
             font-size: 14px;
             margin-bottom: 2px;
@@ -583,47 +398,61 @@
         #visa-dash .tracking-since {
             font-size: 12px;
             color: var(--ink-soft);
-            margin-bottom: 14px;
+            margin-bottom: 16px;
         }
-
-        /* ── spinner & skeleton ── */
-        #visa-dash .spinner-ring {
-            width: 40px;
-            height: 40px;
-            border: 3px solid var(--line);
+        #visa-dash .loading {
+            padding: 60px 20px;
+            text-align: center;
+            color: var(--ink-soft);
+            font-size: 13.5px;
+        }
+        #visa-dash .spinner {
+            width: 22px;
+            height: 22px;
+            border: 2.5px solid var(--line);
             border-top-color: var(--green);
             border-radius: 50%;
-            animation: spin 0.7s linear infinite;
-            margin: 0 auto 20px;
+            margin: 0 auto 12px;
+            animation: visa-spin 0.8s linear infinite;
         }
-        @keyframes spin {
+        @keyframes visa-spin {
             to {
                 transform: rotate(360deg);
             }
         }
-
-        #visa-dash .skel {
+        #visa-dash .topbar {
+            height: 3px;
             background: var(--line);
-            border-radius: 8px;
-            opacity: 0.6;
-            animation: skel-pulse 1.4s ease-in-out infinite;
+            border-radius: 2px;
+            overflow: hidden;
+            margin-bottom: 18px;
+            position: relative;
         }
-        @keyframes skel-pulse {
-            0%,
+        #visa-dash .topbar-fill {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            width: 35%;
+            background: var(--green);
+            border-radius: 2px;
+            animation: visa-indeterminate 1.1s ease-in-out infinite;
+        }
+        @keyframes visa-indeterminate {
+            0% {
+                transform: translateX(-100%);
+            }
             100% {
-                opacity: 0.4;
-            }
-            50% {
-                opacity: 0.8;
+                transform: translateX(340%);
             }
         }
-        #visa-dash .skel-shimmer {
-            background: linear-gradient(90deg, var(--line) 25%, transparent 37%, var(--line) 63%);
+        #visa-dash .skel {
+            background: linear-gradient(90deg, var(--line) 25%, #fdfcf8 37%, var(--line) 63%);
             background-size: 400px 100%;
-            animation: shimmer 1.3s ease infinite;
+            animation: visa-shimmer 1.3s ease infinite;
             border-radius: 8px;
         }
-        @keyframes shimmer {
+        @keyframes visa-shimmer {
             0% {
                 background-position: -200px 0;
             }
@@ -640,7 +469,7 @@
             height: 68px;
             border-radius: 12px;
             opacity: 0;
-            animation: card-in 0.4s ease forwards, skel-pulse 1.4s ease-in-out infinite;
+            animation: visa-card-in 0.35s ease forwards, visa-shimmer 1.3s ease infinite;
         }
         #visa-dash .skel-row {
             height: 16px;
@@ -653,217 +482,46 @@
             overflow: hidden;
             background: var(--card);
         }
-
-        /* ── tab transitions ── */
         #visa-dash #tab-body {
-            transition: transform 0.3s ease, opacity 0.3s ease;
+            animation: visa-fade-in 0.25s ease;
         }
-        #visa-dash #tab-body.slide-left-in {
-            animation: slideLeftIn 0.3s ease forwards;
-        }
-        #visa-dash #tab-body.slide-left-out {
-            animation: slideLeftOut 0.3s ease forwards;
-        }
-        #visa-dash #tab-body.slide-right-in {
-            animation: slideRightIn 0.3s ease forwards;
-        }
-        #visa-dash #tab-body.slide-right-out {
-            animation: slideRightOut 0.3s ease forwards;
-        }
-        @keyframes slideLeftIn {
+        @keyframes visa-fade-in {
             from {
                 opacity: 0;
-                transform: translateX(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateX(0);
-            }
-        }
-        @keyframes slideLeftOut {
-            from {
-                opacity: 1;
-                transform: translateX(0);
-            }
-            to {
-                opacity: 0;
-                transform: translateX(-30px);
-            }
-        }
-        @keyframes slideRightIn {
-            from {
-                opacity: 0;
-                transform: translateX(-30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateX(0);
-            }
-        }
-        @keyframes slideRightOut {
-            from {
-                opacity: 1;
-                transform: translateX(0);
-            }
-            to {
-                opacity: 0;
-                transform: translateX(30px);
-            }
-        }
-        @keyframes card-in {
-            from {
-                opacity: 0;
-                transform: translateY(6px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        #visa-dash .highlight {
-            background: var(--amber-soft);
-            padding: 0 2px;
-            border-radius: 3px;
-            color: var(--ink);
-        }
-        #visa-dash .success-check {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            color: var(--green);
-            animation: pop 0.3s ease;
-        }
-        @keyframes pop {
-            0% {
-                transform: scale(0);
-            }
-            70% {
-                transform: scale(1.1);
-            }
-            100% {
-                transform: scale(1);
-            }
-        }
-
-        /* ── trend arrow ── */
-        #visa-dash .trend-arrow {
-            display: inline-flex;
-            transition: transform 0.3s;
-        }
-        #visa-dash .trend-arrow.up {
-            animation: arrow-up 0.4s ease;
-        }
-        #visa-dash .trend-arrow.down {
-            animation: arrow-down 0.4s ease;
-        }
-        @keyframes arrow-up {
-            0% {
                 transform: translateY(4px);
-                opacity: 0;
             }
-            100% {
-                transform: translateY(0);
+            to {
                 opacity: 1;
-            }
-        }
-        @keyframes arrow-down {
-            0% {
-                transform: translateY(-4px);
-                opacity: 0;
-            }
-            100% {
                 transform: translateY(0);
-                opacity: 1;
             }
         }
-
-        /* ── pagination ── */
-        #visa-dash .pagination {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 10px;
-            margin-top: 10px;
-            font-size: 13px;
-        }
-        #visa-dash .pagination button {
-            background: var(--card);
-            border: 1px solid var(--line);
-            border-radius: 6px;
-            padding: 4px 10px;
-            cursor: pointer;
-            color: var(--ink);
-            transition: background 0.2s;
-        }
-        #visa-dash .pagination button:disabled {
-            opacity: 0.4;
-            cursor: default;
-        }
-        #visa-dash .pagination button:hover:not(:disabled) {
-            background: var(--green-soft);
-        }
-
-        /* ── suggestions ── */
-        #visa-dash .suggest-card {
-            max-width: 480px;
-            background: var(--card);
-            backdrop-filter: blur(14px);
+        #visa-dash .readme {
             border: 1px solid var(--line);
             border-radius: 12px;
-            padding: 20px 22px;
-            transition: border-color 0.2s;
+            padding: 12px 16px;
+            margin-bottom: 20px;
+            background: var(--card);
         }
-        #visa-dash .suggest-card .label {
-            font-size: 11px;
-            letter-spacing: .06em;
-            text-transform: uppercase;
-            color: var(--ink-soft);
-            margin-bottom: 12px;
+        #visa-dash .readme .readme-title {
+            font-size: 13.5px;
             font-weight: 600;
         }
-        #visa-dash .suggest-card .sugg-status {
-            margin-top: 10px;
-            font-size: 13px;
-            min-height: 24px;
+        #visa-dash .readme p {
+            font-size: 12.5px;
             color: var(--ink-soft);
+            line-height: 1.6;
+            margin: 10px 0 0;
         }
-        #visa-dash .suggest-card .sugg-status.error {
-            color: var(--red);
+        #visa-dash .readme ul {
+            font-size: 12.5px;
+            color: var(--ink-soft);
+            line-height: 1.7;
+            margin: 8px 0 0;
+            padding-left: 18px;
         }
-        #visa-dash .suggest-card .sugg-status.success {
-            color: var(--green);
-        }
-        #visa-dash .suggest-card input,
-        #visa-dash .suggest-card textarea {
-            width: 100%;
-            border: 1px solid var(--line);
-            border-radius: 8px;
-            padding: 10px 12px;
-            font-size: 13.5px;
-            font-family: inherit;
-            background: var(--parchment);
-            color: var(--ink);
-            transition: border-color 0.15s;
-            margin-bottom: 10px;
-        }
-        #visa-dash .suggest-card input:focus,
-        #visa-dash .suggest-card textarea:focus {
-            outline: 2px solid var(--green);
-            outline-offset: 1px;
-        }
-        #visa-dash .suggest-card textarea {
-            min-height: 90px;
-            resize: vertical;
-        }
-        #visa-dash .suggest-card .btn {
-            margin-top: 2px;
-        }
-
-        /* ── responsive ── */
         @media (max-width: 560px) {
             #visa-dash {
-                padding: 16px 16px 30px;
+                padding: 16px;
             }
             #visa-dash h1 {
                 font-size: 21px;
@@ -871,9 +529,6 @@
             #visa-dash .cards {
                 grid-template-columns: repeat(2, 1fr);
                 gap: 8px;
-            }
-            #visa-dash .cards.past-cards {
-                grid-template-columns: repeat(2, 1fr);
             }
             #visa-dash .card {
                 padding: 10px 12px;
@@ -897,7 +552,7 @@
             #visa-dash .searchbar {
                 max-width: 100%;
             }
-            #visa-dash input[type="text"] {
+            #visa-dash input[type=text] {
                 max-width: 100%;
             }
             #visa-dash .filter-row {
@@ -908,29 +563,10 @@
             #visa-dash .datefilter {
                 width: 100%;
             }
-            #visa-dash .suggest-card {
-                max-width: 100%;
-                padding: 16px;
-            }
-            #visa-dash .perf-warning {
-                font-size: 12px;
-                padding: 4px 12px;
-                white-space: normal;
-                max-width: 100%;
-            }
-            #visa-dash .titlerow .right {
-                gap: 8px;
-            }
         }
     </style>
-</head>
-<body>
-
-    <div id="visa-dash"></div>
-
     <script>
         (function() {
-            // ── config ──
             const HARDCODED_WEB_APP_URL = '';
             const WEB_APP_URL = (window.VISA_WEB_APP_URL || HARDCODED_WEB_APP_URL || '').trim();
             const TRACKING_STARTED = '2026-07-13';
@@ -939,617 +575,293 @@
             const root = document.getElementById('visa-dash');
             let cache = null;
             let activeTab = 'home';
-            let prevTab = 'home';
             let homeSearchTerm = '';
             let pastDateFilter = '';
-            let isDark = false;
-            const tabOrder = ['home', 'daily', 'past', 'suggest'];
-            const PAGE_SIZE = 50;
-            let homeSearchPage = 1;
-            let pastPage = 1;
 
-            // ── service worker (optional) ──
-            if ('serviceWorker' in navigator) {
-                const swCode = `
-              const CACHE_NAME = 'visa-tracker-v1';
-              const urlsToCache = [self.location.href];
-              self.addEventListener('install', event => {
-                event.waitUntil(
-                  caches.open(CACHE_NAME).then(cache => cache.addAll(urlsToCache))
-                );
-              });
-              self.addEventListener('fetch', event => {
-                if (event.request.url.includes('${WEB_APP_URL}')) {
-                  event.respondWith(
-                    fetch(event.request).then(response => {
-                      const clonedResponse = response.clone();
-                      caches.open(CACHE_NAME).then(cache => cache.put(event.request, clonedResponse));
-                      return response;
-                    }).catch(() => caches.match(event.request))
-                  );
-                } else {
-                  event.respondWith(
-                    caches.match(event.request).then(response => response || fetch(event.request))
-                  );
-                }
-              });
-            `;
-                const blob = new Blob([swCode], { type: 'application/javascript' });
-                const swUrl = URL.createObjectURL(blob);
-                navigator.serviceWorker.register(swUrl).catch(function() {});
-            }
-
-            // ── helpers ──
             function classify(decision) {
-                var s = (decision || '').toLowerCase();
+                const s = (decision || '').toLowerCase();
                 if (/(approv|grant|accept|issu)/.test(s)) return 'accepted';
                 if (/(refus|reject|deny|denied)/.test(s)) return 'rejected';
                 return 'other';
             }
 
-            function fmtPct(n) {
-                return isFinite(n) ? (n * 100).toFixed(1) + '%' : '\u2014';
-            }
+            function fmtPct(n) { return isFinite(n) ? (n * 100).toFixed(1) + '%' : '\u2014'; }
 
-            function daysAgo(dateStr) {
-                return Math.floor((Date.now() - new Date(dateStr + 'T00:00:00')) / 86400000);
-            }
+            function daysAgo(dateStr) { return Math.floor((Date.now() - new Date(dateStr + 'T00:00:00')) / 86400000); }
 
             function weekdayLong(dateStr) {
-                var d = new Date(dateStr + 'T00:00:00');
+                const d = new Date(dateStr + 'T00:00:00');
                 return d.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
             }
 
-            function avgExcludingZero(diffs) {
-                var nonZero = diffs.filter(function(d) { return d !== 0; });
-                if (!nonZero.length) return 0;
-                return nonZero.reduce(function(a, b) { return a + b; }, 0) / nonZero.length;
-            }
-
-            function computeDiffs(byDate) {
-                var diffs = [];
-                for (var i = 0; i < byDate.length - 1; i++) {
-                    var d = byDate[i][0];
-                    var dPrev = byDate[i + 1][0];
-                    if (d === EXCLUDE_FROM_AVERAGES || dPrev === EXCLUDE_FROM_AVERAGES) continue;
-                    diffs.push(byDate[i][1].length - byDate[i + 1][1].length);
-                }
-                return diffs;
-            }
-
             function groupByDate(rows) {
-                var m = new Map();
-                rows.forEach(function(r) {
-                    if (!m.has(r.date)) m.set(r.date, []);
-                    m.get(r.date).push(r);
-                });
-                return Array.from(m.entries()).sort(function(a, b) { return b[0].localeCompare(a[0]); });
+                const m = new Map();
+                rows.forEach(r => { if (!m.has(r.date)) m.set(r.date, []);
+                    m.get(r.date).push(r); });
+                return [...m.entries()].sort((a, b) => b[0].localeCompare(a[0]));
             }
 
-            // ── load data ──
             async function loadData() {
                 if (cache) return cache;
                 if (!WEB_APP_URL) { cache = []; return cache; }
-                var res = await fetch(WEB_APP_URL + '?action=raw');
-                var raw = await res.json();
-                cache = raw.map(function(r) {
-                    return Array.isArray(r) ? { date: r[0], irl: r[1], decision: r[2] } : r;
-                });
+                const res = await fetch(WEB_APP_URL + '?action=raw');
+                const raw = await res.json();
+                cache = raw.map(r => Array.isArray(r) ? { date: r[0], irl: r[1], decision: r[2] } : r);
                 return cache;
             }
 
-            // ── animate value ──
-            function animateValue(el, start, end, duration) {
-                var range = end - start;
-                var increment = range / (duration / 16);
-                var current = start;
-                var timer = setInterval(function() {
-                    current += increment;
-                    if ((increment > 0 && current >= end) || (increment < 0 && current <= end)) {
-                        el.textContent = end;
-                        clearInterval(timer);
-                    } else {
-                        el.textContent = Math.round(current);
-                    }
-                }, 16);
-            }
-
-            // ── pagination ──
-            function paginate(array, page, pageSize) {
-                var totalPages = Math.ceil(array.length / pageSize) || 1;
-                var start = (page - 1) * pageSize;
-                var sliced = array.slice(start, start + pageSize);
-                return { sliced: sliced, totalPages: totalPages, currentPage: page };
-            }
-
-            function renderPagination(currentPage, totalPages, onPageChange) {
-                if (totalPages <= 1) return '';
-                return '<div class="pagination">' +
-                    '<button ' + (currentPage === 1 ? 'disabled' : '') + ' data-page="' + (currentPage - 1) + '">‹ Prev</button>' +
-                    '<span>Page ' + currentPage + ' of ' + totalPages + '</span>' +
-                    '<button ' + (currentPage === totalPages ? 'disabled' : '') + ' data-page="' + (currentPage + 1) +
-                    '">Next ›</button>' +
-                    '</div>';
-            }
-
-            // ── render config warning ──
             function renderConfigWarning() {
                 return WEB_APP_URL ? '' :
                     '<div class="config-warn">No data source configured yet. Deploy <code>Code.gs</code> as a Web App and paste its <code>/exec</code> URL into <code>WEB_APP_URL</code> at the top of this file\'s script.</div>';
             }
 
-            // ── search icon ──
             function searchIcon() {
                 return '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>';
             }
 
-            // ── highlight ──
-            function highlightText(text, query) {
-                if (!query.trim()) return text;
-                var escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-                var regex = new RegExp('(' + escaped + ')', 'gi');
-                return text.replace(regex, '<span class="highlight">$1</span>');
+            function readmeSection() {
+                return '<div class="readme"><div class="readme-title">How this tracker works</div>' +
+                    '<p>Every day, an automated job checks the Irish embassy\'s New Delhi visa decisions page for the latest published spreadsheet and pulls any application numbers that haven\'t been recorded yet.</p>' +
+                    '<ul>' +
+                    '<li><strong>Home</strong> \u2014 today\'s snapshot, headline stats, and every result from the most recent file.</li>' +
+                    '<li><strong>Daily summary</strong> \u2014 one row per day: volume, day-on-day change, acceptance and rejection rates.</li>' +
+                    '<li><strong>Past results</strong> \u2014 full history, searchable by application number.</li>' +
+                    '<li><strong>Suggestions</strong> \u2014 leave feedback, it goes straight into the tracking sheet.</li>' +
+                    '</ul>' +
+                    '</div>';
             }
 
-            // ── row html ──
-            function rowHtml(r, highlightQuery) {
-                highlightQuery = highlightQuery || '';
-                var c = classify(r.decision);
-                var pillClass = c === 'accepted' ? 'green' : c === 'rejected' ? 'red' : 'amber';
-                var pillGlow = (c === 'accepted' || c === 'rejected') ? ' glow' : '';
-                var irlHighlighted = highlightQuery ? highlightText(r.irl, highlightQuery) : r.irl;
-                return '<tr class="row-stagger"><td class="mono">' + r.date + '</td><td class="mono">' + irlHighlighted +
-                    '</td><td><span class="pill ' + pillClass + pillGlow + '">' + (r.decision || '\u2014') +
-                    '</span></td></tr>';
-            }
-
-            // ── sparkline SVG ──
-            function sparklineSVG(dataPoints) {
-                if (!dataPoints.length) return '';
-                var max = Math.max.apply(null, dataPoints.concat([1]));
-                var min = Math.min.apply(null, dataPoints.concat([0]));
-                var range = max - min || 1;
-                var w = 80,
-                    h = 24;
-                var points = dataPoints.map(function(val, i) {
-                    var x = (i / (dataPoints.length - 1 || 1)) * w;
-                    var y = h - ((val - min) / range) * (h - 4) - 2;
-                    return x + ',' + y;
-                }).join(' ');
-                return '<svg class="sparkline" viewBox="0 0 ' + w + ' ' + h + '" preserveAspectRatio="none">' +
-                    '<polyline fill="none" stroke="var(--green)" stroke-width="2" points="' + points + '" />' +
-                    '</svg>';
-            }
-
-            // ── trend arrow ──
-            function trendArrow(diff) {
-                if (diff === 0) return '';
-                var path = diff > 0 ? 'M12 5l7 7h-4v8H9v-8H5z' : 'M12 19l-7-7h4V4h6v8h4z';
-                return '<span class="trend-arrow ' + (diff > 0 ? 'up' : 'down') + '">' +
-                    '<svg width="16" height="16" viewBox="0 0 24 24" fill="var(--green)"><path d="' + path +
-                    '"/></svg></span>';
-            }
-
-            // ── attach card tilt (no glow) ──
-            function attachCardTilt() {
-                var cards = document.querySelectorAll('#visa-dash .card');
-                cards.forEach(function(card) {
-                    card.addEventListener('mousemove', function(e) {
-                        var rect = card.getBoundingClientRect();
-                        var x = e.clientX - rect.left;
-                        var y = e.clientY - rect.top;
-                        var centerX = rect.width / 2;
-                        var centerY = rect.height / 2;
-                        var rotateX = (y - centerY) / centerY * -8;
-                        var rotateY = (x - centerX) / centerX * 8;
-                        card.style.transform = 'perspective(600px) rotateX(' + rotateX + 'deg) rotateY(' + rotateY +
-                            'deg) translateY(-2px)';
-                    });
-                    card.addEventListener('mouseleave', function() {
-                        card.style.transform = 'translateY(0px)';
-                    });
-                });
-            }
-
-            // ── skeleton ──
-            function skeletonForTab(tab) {
-                if (tab === 'home') {
-                    return '<div class="cards">' +
-                        '<div class="skel skel-card" style="grid-column:span 2;"></div>' +
-                        '<div class="skel skel-card"></div><div class="skel skel-card"></div><div class="skel skel-card"></div>' +
-                        '</div><div class="skel-wrap">' +
-                        '<div class="skel skel-row" style="width:70%"></div><div class="skel skel-row" style="width:55%"></div>' +
-                        '<div class="skel skel-row" style="width:65%"></div><div class="skel skel-row" style="width:45%"></div>' +
-                        '</div>';
-                } else if (tab === 'daily' || tab === 'past') {
-                    return '<div class="skel-wrap">' +
-                        '<div class="skel skel-row" style="width:80%"></div><div class="skel skel-row" style="width:60%"></div>' +
-                        '<div class="skel skel-row" style="width:75%"></div><div class="skel skel-row" style="width:50%"></div>' +
-                        '</div>';
-                } else {
-                    return '<div class="skel skel-card" style="max-width:480px; height:150px;"></div>';
-                }
-            }
-
-            // ── RENDER: Home ──
             function renderHome(rows) {
-                if (!rows.length) return renderConfigWarning() + '<div class="empty">No decisions recorded yet.</div>';
-
-                var total = rows.length;
-                var byDate = groupByDate(rows);
-                var latest = byDate[0],
+                if (!rows.length) return renderConfigWarning() +
+                    '<div class="empty">No decisions recorded yet.</div>';
+                const total = rows.length;
+                const byDate = groupByDate(rows);
+                const latest = byDate[0],
                     prev = byDate[1];
-                var latestDate = latest[0];
-                var latestRows = latest[1];
-                var dayDiff = prev ? latestRows.length - prev[1].length : 0;
-                var diffs = computeDiffs(byDate);
-                var avgDiff = avgExcludingZero(diffs);
-                var accepted = rows.filter(function(r) { return classify(r.decision) === 'accepted'; }).length;
-                var rejected = rows.filter(function(r) { return classify(r.decision) === 'rejected'; }).length;
-                var accRate = accepted / total;
-                var rejRate = rejected / total;
+                const latestDate = latest[0];
+                const latestRows = latest[1];
+                const dayDiff = prev ? latestRows.length - prev[1].length : 0;
 
-                var dailyVolumesMap = new Map();
-                rows.forEach(function(r) { dailyVolumesMap.set(r.date, (dailyVolumesMap.get(r.date) || 0) + 1); });
-                var volArray = Array.from(dailyVolumesMap.entries())
-                    .filter(function(entry) { return entry[0] !== EXCLUDE_FROM_AVERAGES; })
-                    .sort(function(a, b) { return b[0].localeCompare(a[0]); })
-                    .slice(0, 7)
-                    .reverse();
-                var sparkData = volArray.map(function(entry) { return entry[1]; });
+                const dailyCountsForAvg = byDate
+                    .filter(([d]) => d !== EXCLUDE_FROM_AVERAGES)
+                    .map(([, dayRows]) => dayRows.length);
+                const avgDailyApps = dailyCountsForAvg.length ?
+                    dailyCountsForAvg.reduce((a, b) => a + b, 0) / dailyCountsForAvg.length :
+                    0;
 
-                var isSearching = homeSearchTerm.trim().length > 0;
-                var searchResults = isSearching ?
-                    rows.filter(function(r) { return r.irl.toLowerCase().includes(homeSearchTerm.toLowerCase()); }).slice()
-                    .sort(function(a, b) { return b.date.localeCompare(a.date); }) :
+                const accepted = rows.filter(r => classify(r.decision) === 'accepted').length;
+                const rejected = rows.filter(r => classify(r.decision) === 'rejected').length;
+
+                const isSearching = homeSearchTerm.trim().length > 0;
+                const searchResults = isSearching ?
+                    rows.filter(r => r.irl.toLowerCase().includes(homeSearchTerm.toLowerCase())).slice().sort((a,
+                        b) => b.date.localeCompare(a.date)) :
                     latestRows;
 
-                var pag = paginate(searchResults, homeSearchPage, PAGE_SIZE);
-                var paginatedResults = pag.sliced;
-                var totalPages = pag.totalPages;
-                var currentPage = pag.currentPage;
-
-                var html = renderConfigWarning() +
-                    '<div class="latest-date">Latest available data: <strong>' + weekdayLong(latestDate) + '</strong></div>' +
+                return renderConfigWarning() +
+                    readmeSection() +
+                    '<div class="latest-date">Latest available data: <strong>' + weekdayLong(latestDate) +
+                    '</strong></div>' +
                     '<div class="tracking-since">Tracking started ' + weekdayLong(TRACKING_STARTED) + '</div>' +
                     '<div class="searchbar">' + searchIcon() +
-                    '<input type="text" id="home-search" placeholder="Search by application number…" value="' +
+                    '<input type="text" id="home-search" placeholder="Search by application number\u2026" value="' +
                     homeSearchTerm + '"></div>' +
                     '<div class="cards">' +
-                    '<div class="card hero"><div class="label">Total outcomes (YTD)<span class="tooltip">From ' +
-                    TRACKING_STARTED + ' to ' + latestDate + '</span></div><div class="value" id="stat-total">' + total +
+                    '<div class="card hero"><div class="label">Total outcomes (YTD)</div><div class="value">' + total +
                     '</div></div>' +
-                    '<div class="card"><div class="label">Day-on-day change<span class="tooltip">Change from previous day</span></div><div class="value ' +
-                    (dayDiff >= 0 ? 'green' : 'red') + '" id="stat-dod">' + (dayDiff >= 0 ? '+' : '') + dayDiff +
-                    trendArrow(dayDiff) + '</div>' + sparklineSVG(sparkData) + '</div>' +
-                    '<div class="card"><div class="label">Day-on-day avg (excl. 0)<span class="tooltip">Average daily change excluding ' +
-                    EXCLUDE_FROM_AVERAGES + '</span></div><div class="value" id="stat-avg">' + (avgDiff >= 0 ? '+' : '') +
-                    avgDiff.toFixed(1) + '</div></div>' +
-                    '<div class="card"><div class="label">Acceptance rate<span class="tooltip">Accepted / total decisions</span></div><div class="value green" id="stat-acc">' +
-                    fmtPct(accRate) + '</div></div>' +
-                    '<div class="card"><div class="label">Rejection rate<span class="tooltip">Rejected / total decisions</span></div><div class="value red" id="stat-rej">' +
-                    fmtPct(rejRate) + '</div></div>' +
+                    '<div class="card"><div class="label">Day-on-day change</div><div class="value ' + (dayDiff >= 0 ?
+                        'green' : 'red') + '">' + (dayDiff >= 0 ? '+' : '') + dayDiff + '</div></div>' +
+                    '<div class="card"><div class="label">Avg applications/day</div><div class="value">' + avgDailyApps
+                    .toFixed(1) + '</div></div>' +
+                    '<div class="card"><div class="label">Acceptance rate</div><div class="value green">' + fmtPct(
+                        accepted / total) + '</div></div>' +
+                    '<div class="card"><div class="label">Rejection rate</div><div class="value red">' + fmtPct(rejected /
+                        total) + '</div></div>' +
                     '</div>' +
-                    '<div class="note" style="margin-bottom:6px;">' + (isSearching ? (searchResults.length +
-                        ' match(es) for "' + homeSearchTerm + '"') : ('All results for ' + latestDate + ' (' +
-                        latestRows.length + ' rows)')) + '</div>' +
+                    '<div class="note" style="margin-bottom:8px;margin-top:0;">' + (isSearching ? (searchResults.length +
+                        ' match(es) for "' + homeSearchTerm + '"') : ('All results for ' + latestDate + ' (' + latestRows
+                        .length + ' rows)')) + '</div>' +
                     '<div class="table-wrap"><table><thead><tr><th>Date</th><th>Application No.</th><th>Decision</th></tr></thead>' +
-                    '<tbody>' + (paginatedResults.length ? paginatedResults.map(function(r) { return rowHtml(r,
-                        isSearching ? homeSearchTerm : ''); }).join('') :
-                        '<tr><td colspan="3" class="empty">No matches.</td></tr>') + '</tbody></table></div>' +
-                    renderPagination(currentPage, totalPages, function(p) { homeSearchPage = p;
-                        render(); });
-
-                setTimeout(function() {
-                    var totalEl = document.getElementById('stat-total');
-                    if (totalEl) animateValue(totalEl, 0, total, 500);
-                    document.querySelectorAll('.row-stagger').forEach(function(row, i) {
-                        row.style.animation = 'card-in 0.3s ease ' + (i * 0.03) + 's both';
-                    });
-                    attachCardTilt();
-                }, 20);
-
-                return html;
+                    '<tbody>' + (searchResults.length ? searchResults.map(rowHtml).join('') :
+                        '<tr><td colspan="3" class="empty">No matches.</td></tr>') + '</tbody></table></div>';
             }
 
-            // ── RENDER: Daily Summary ──
-            function renderDailySummary(rows) {
-                if (!rows.length) return renderConfigWarning() + '<div class="empty">No decisions recorded yet.</div>';
+            function rowHtml(r) {
+                const c = classify(r.decision);
+                const pillClass = c === 'accepted' ? 'green' : c === 'rejected' ? 'red' : 'amber';
+                return '<tr><td class="mono">' + r.date + '</td><td class="mono">' + r.irl +
+                    '</td><td><span class="pill ' + pillClass + '">' + (r.decision || '\u2014') + '</span></td></tr>';
+            }
 
-                var byDate = groupByDate(rows);
-                var trs = byDate.map(function(entry, idx) {
-                    var date = entry[0];
-                    var dayRows = entry[1];
-                    var prevCount = byDate[idx + 1] ? byDate[idx + 1][1].length : null;
-                    var diff = prevCount === null ? null : dayRows.length - prevCount;
-                    var acc = dayRows.filter(function(r) { return classify(r.decision) === 'accepted'; }).length / dayRows
-                        .length;
-                    var rej = dayRows.filter(function(r) { return classify(r.decision) === 'rejected'; }).length / dayRows
-                        .length;
-                    return '<tr class="row-stagger"><td class="mono">' + date + '</td><td>' + dayRows.length +
-                        '</td><td>' +
-                        (diff === null ? '\u2014' : ('<span class="pill ' + (diff >= 0 ? 'green' : 'red') + '">' + (diff >=
-                            0 ? '+' : '') + diff + '</span>')) +
+            function renderDailySummary(rows) {
+                if (!rows.length) return renderConfigWarning() +
+                    '<div class="empty">No decisions recorded yet.</div>';
+                const byDate = groupByDate(rows);
+                const trs = byDate.map(([date, dayRows], idx) => {
+                    const prevCount = byDate[idx + 1] ? byDate[idx + 1][1].length : null;
+                    const diff = prevCount === null ? null : dayRows.length - prevCount;
+                    const acc = dayRows.filter(r => classify(r.decision) === 'accepted').length / dayRows.length;
+                    const rej = dayRows.filter(r => classify(r.decision) === 'rejected').length / dayRows.length;
+                    return '<tr><td class="mono">' + date + '</td><td>' + dayRows.length + '</td><td>' +
+                        (diff === null ? '\u2014' : ('<span class="pill ' + (diff >= 0 ? 'green' : 'red') + '">' + (
+                            diff >= 0 ? '+' : '') + diff + '</span>')) +
                         '</td><td>' + fmtPct(acc) + '</td><td>' + fmtPct(rej) + '</td></tr>';
                 }).join('');
-
-                setTimeout(function() {
-                    document.querySelectorAll('.row-stagger').forEach(function(row, i) {
-                        row.style.animation = 'card-in 0.3s ease ' + (i * 0.03) + 's both';
-                    });
-                }, 20);
-
                 return renderConfigWarning() +
                     '<div class="table-wrap"><table><thead><tr><th>Date</th><th>Applications Processed</th><th>Day-on-Day</th><th>Acceptance Rate</th><th>Rejection Rate</th></tr></thead>' +
                     '<tbody>' + trs + '</tbody></table></div>';
             }
 
-            // ── RENDER: Past Results ──
             function renderPast(rows) {
-                if (!rows.length) return renderConfigWarning() + '<div class="empty">No decisions recorded yet.</div>';
+                if (!rows.length) return renderConfigWarning() +
+                '<div class="empty">No decisions recorded yet.</div>';
+                const total = rows.length;
+                const accepted = rows.filter(r => classify(r.decision) === 'accepted').length;
+                const rejected = rows.filter(r => classify(r.decision) === 'rejected').length;
+                const byDate = groupByDate(rows);
 
-                var byDate = groupByDate(rows);
-                var diffs = computeDiffs(byDate);
-                var avgDayDiff = diffs.length ? diffs.reduce(function(a, b) { return a + b; }, 0) / diffs.length : 0;
-                var thisWeek = rows.filter(function(r) { return daysAgo(r.date) < 7; }).length;
-                var lastWeek = rows.filter(function(r) { return daysAgo(r.date) >= 7 && daysAgo(r.date) < 14; }).length;
-                var wow = lastWeek ? (thisWeek - lastWeek) / lastWeek : null;
+                const dailyCountsForAvg = byDate
+                    .filter(([d]) => d !== EXCLUDE_FROM_AVERAGES)
+                    .map(([, dayRows]) => dayRows.length);
+                const avgDailyApps = dailyCountsForAvg.length ?
+                    dailyCountsForAvg.reduce((a, b) => a + b, 0) / dailyCountsForAvg.length :
+                    0;
 
-                var filtered = rows.filter(function(r) { return !pastDateFilter || r.date === pastDateFilter; });
-                var sorted = filtered.slice().sort(function(a, b) { return b.date.localeCompare(a.date); });
-                var pag = paginate(sorted, pastPage, PAGE_SIZE);
-                var paginatedRows = pag.sliced;
-                var totalPages = pag.totalPages;
-                var currentPage = pag.currentPage;
+                const thisWeek = rows.filter(r => daysAgo(r.date) < 7).length;
+                const lastWeek = rows.filter(r => daysAgo(r.date) >= 7 && daysAgo(r.date) < 14).length;
+                const wow = lastWeek ? (thisWeek - lastWeek) / lastWeek : null;
 
-                var dateFilterChip = pastDateFilter ? '<span class="clear-chip" id="past-date-clear">' + pastDateFilter +
-                    ' ×</span>' : '';
-
-                setTimeout(function() {
-                    document.querySelectorAll('.row-stagger').forEach(function(row, i) {
-                        row.style.animation = 'card-in 0.3s ease ' + (i * 0.03) + 's both';
-                    });
-                    attachCardTilt();
-                }, 20);
+                const sorted = rows
+                    .filter(r => !pastDateFilter || r.date === pastDateFilter)
+                    .slice().sort((a, b) => b.date.localeCompare(a.date));
 
                 return renderConfigWarning() +
-                    '<div class="cards past-cards">' +
-                    '<div class="card"><div class="label">Avg day-on-day (excl. ' + EXCLUDE_FROM_AVERAGES +
-                    ')<span class="tooltip">Average daily change excluding ' + EXCLUDE_FROM_AVERAGES +
-                    '</span></div><div class="value">' + (avgDayDiff >= 0 ? '+' : '') + avgDayDiff.toFixed(1) +
-                    '</div></div>' +
-                    '<div class="card"><div class="label">Week-on-week<span class="tooltip">Change vs. previous 7 days</span></div><div class="value ' +
-                    (wow === null ? '' : (wow >= 0 ? 'green' : 'red')) + '">' + (wow === null ? '\u2014' : ((wow >= 0 ?
-                        '+' : '') + fmtPct(wow))) + '</div></div>' +
+                    '<div class="cards">' +
+                    '<div class="card"><div class="label">Acceptance rate</div><div class="value green">' + fmtPct(
+                        accepted / total) + '</div></div>' +
+                    '<div class="card"><div class="label">Rejection rate</div><div class="value red">' + fmtPct(rejected /
+                        total) + '</div></div>' +
+                    '<div class="card"><div class="label">Avg applications/day</div><div class="value">' + avgDailyApps
+                    .toFixed(1) + '</div></div>' +
+                    '<div class="card"><div class="label">Week-on-week</div><div class="value ' + (wow === null ? '' : (
+                        wow >= 0 ? 'green' : 'red')) + '">' + (wow === null ? '\u2014' : ((wow >= 0 ? '+' : '') + fmtPct(
+                        wow))) + '</div></div>' +
                     '</div>' +
                     '<div class="filter-row">' +
                     '<div class="note" style="margin-top:0;">Use the search bar on the Home tab to look up a specific application number.</div>' +
-                    '<div class="datefilter' + (pastDateFilter ? ' active-filter' : '') + '">' +
-                    '<input type="date" id="past-date-filter" value="' + pastDateFilter + '">' + dateFilterChip +
+                    '<div class="datefilter"><input type="date" id="past-date-filter" value="' + pastDateFilter + '">' +
+                    (pastDateFilter ? '<span class="clear-btn" id="past-date-clear" title="Clear date filter">\u00d7</span>' :
+                        '') +
                     '</div>' +
                     '</div>' +
                     '<div class="table-wrap"><table><thead><tr><th>Date</th><th>Application No.</th><th>Decision</th></tr></thead>' +
-                    '<tbody>' + (paginatedRows.length ? paginatedRows.map(function(r) { return rowHtml(r); }).join('') :
-                        '<tr><td colspan="3" class="empty">No matches.</td></tr>') + '</tbody></table></div>' +
-                    renderPagination(currentPage, totalPages, function(p) { pastPage = p;
-                        render(); });
+                    '<tbody>' + (sorted.length ? sorted.map(rowHtml).join('') :
+                        '<tr><td colspan="3" class="empty">No matches.</td></tr>') + '</tbody></table></div>';
             }
 
-            // ── RENDER: Suggestions ──
             function renderSuggestions() {
-                return renderConfigWarning() +
-                    '<div class="suggest-card">' +
-                    '<div class="label">Submit a suggestion</div>' +
+                return '<div class="card" style="max-width:480px;">' +
+                    '<div class="label" style="margin-bottom:12px;">Submit a suggestion</div>' +
                     '<input type="text" id="sugg-name" placeholder="Your name" />' +
-                    '<textarea id="sugg-text" placeholder="Your suggestion…"></textarea>' +
+                    '<textarea id="sugg-text" placeholder="Your suggestion\u2026"></textarea>' +
                     '<button class="btn" id="sugg-submit">Submit</button>' +
-                    '<div class="sugg-status" id="sugg-status"></div>' +
+                    '<div class="note" id="sugg-status"></div>' +
                     '</div>';
             }
 
-            // ── submit suggestion ──
             async function submitSuggestion() {
-                var nameEl = document.getElementById('sugg-name');
-                var textEl = document.getElementById('sugg-text');
-                var statusEl = document.getElementById('sugg-status');
-                var btn = document.getElementById('sugg-submit');
-
-                if (!nameEl || !textEl || !statusEl || !btn) return;
-
-                var name = nameEl.value.trim();
-                var suggestion = textEl.value.trim();
-
-                if (!name || !suggestion) {
-                    statusEl.textContent = 'Please fill in both fields.';
-                    statusEl.className = 'sugg-status error';
-                    return;
-                }
-                if (!WEB_APP_URL) {
-                    statusEl.textContent = 'Data source not configured yet – cannot submit.';
-                    statusEl.className = 'sugg-status error';
-                    return;
-                }
-
+                const name = document.getElementById('sugg-name').value.trim();
+                const suggestion = document.getElementById('sugg-text').value.trim();
+                const status = document.getElementById('sugg-status');
+                const btn = document.getElementById('sugg-submit');
+                if (!name || !suggestion) { status.textContent = 'Please fill in both fields.'; return; }
+                if (!WEB_APP_URL) { status.textContent = 'Data source not configured yet.'; return; }
                 btn.disabled = true;
-                statusEl.textContent = 'Submitting…';
-                statusEl.className = 'sugg-status';
-
+                status.textContent = 'Submitting\u2026';
                 try {
-                    var resp = await fetch(WEB_APP_URL, {
-                        method: 'POST',
-                        body: new URLSearchParams({ name: name, suggestion: suggestion })
-                    });
-                    if (!resp.ok) throw new Error('Server error');
-                    statusEl.innerHTML =
-                        '<span class="success-check"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg> Suggestion recorded.</span>';
-                    statusEl.className = 'sugg-status success';
-                    nameEl.value = '';
-                    textEl.value = '';
+                    await fetch(WEB_APP_URL, { method: 'POST', body: new URLSearchParams({ name, suggestion }) });
+                    status.textContent = 'Thanks \u2014 suggestion recorded.';
+                    document.getElementById('sugg-name').value = '';
+                    document.getElementById('sugg-text').value = '';
                 } catch (err) {
-                    statusEl.textContent = 'Could not submit — please try again later.';
-                    statusEl.className = 'sugg-status error';
+                    status.textContent = 'Could not submit \u2014 try again.';
                 } finally {
                     btn.disabled = false;
                 }
             }
 
-            // ── MAIN RENDER ──
             async function render() {
-                // show spinner if no cache
                 if (!cache) {
-                    root.innerHTML =
-                        '<div class="blobs"><div class="blob"></div><div class="blob"></div></div>' +
-                        '<div class="eyebrow">Ireland · New Delhi Visa Section</div>' +
-                        '<div class="titlerow"><h1>Visa Decision Tracker</h1></div>' +
-                        '<div class="spinner-ring"></div>' +
+                    root.innerHTML = '<div class="eyebrow">Ireland \u00b7 New Delhi Visa Section</div>' +
+                        '<div class="titlerow"><h1>Visa Decision Tracker</h1>' +
+                        '<div class="stutter-badge"><i>\u24D8</i> Switching tabs may briefly stutter while data loads.</div></div>' +
+                        '<div class="topbar"><div class="topbar-fill"></div></div>' +
                         '<div class="navpills">' +
                         '<div class="skel skel-pill"></div><div class="skel skel-pill"></div><div class="skel skel-pill"></div><div class="skel skel-pill"></div>' +
                         '</div>' +
                         '<div class="cards">' +
-                        '<div class="skel skel-card" style="grid-column:span 2;"></div>' +
-                        '<div class="skel skel-card"></div><div class="skel skel-card"></div><div class="skel skel-card"></div>' +
+                        '<div class="skel skel-card" style="grid-column:span 2;animation-delay:0.02s"></div>' +
+                        '<div class="skel skel-card" style="animation-delay:0.07s"></div>' +
+                        '<div class="skel skel-card" style="animation-delay:0.12s"></div>' +
+                        '<div class="skel skel-card" style="animation-delay:0.17s"></div>' +
                         '</div>' +
                         '<div class="skel-wrap">' +
                         '<div class="skel skel-row" style="width:70%"></div>' +
                         '<div class="skel skel-row" style="width:55%"></div>' +
                         '<div class="skel skel-row" style="width:65%"></div>' +
                         '<div class="skel skel-row" style="width:45%"></div>' +
+                        '<div class="skel skel-row" style="width:60%"></div>' +
                         '</div>';
                 }
-
-                var rows = await loadData();
-
-                var tabs = [
+                const rows = await loadData();
+                const tabs = [
                     ['home', 'Home'],
                     ['daily', 'Daily Summary'],
                     ['past', 'Past Results'],
-                    ['suggest', 'Suggestions']
+                    ['suggest', 'Suggestions'],
                 ];
-
-                var body = '';
+                let body = '';
                 if (activeTab === 'home') body = renderHome(rows);
                 else if (activeTab === 'daily') body = renderDailySummary(rows);
                 else if (activeTab === 'past') body = renderPast(rows);
                 else body = renderSuggestions();
 
-                var direction = tabOrder.indexOf(activeTab) > tabOrder.indexOf(prevTab) ? 'left' : 'right';
-                prevTab = activeTab;
-
-                // Build performance warning pill with the exact requested text
-                var perfPill = '';
-                if (rows && rows.length > 500) {
-                    perfPill = '<span class="perf-warning" title="Large dataset may cause slight stutters when changing tabs or searching">' +
-                        '⚡ performance may vary, might experience some stutters while changing tabs' +
-                        '</span>';
-                }
-
                 root.innerHTML =
-                    '<div class="blobs"><div class="blob"></div><div class="blob"></div></div>' +
-                    '<div class="eyebrow">Ireland · New Delhi Visa Section</div>' +
-                    '<div class="titlerow">' +
-                    '<div class="left"><h1>Visa Decision Tracker</h1></div>' +
-                    '<div class="right">' +
-                    perfPill +
-                    '<div class="dark-toggle" id="dark-toggle">' + (isDark ? '☀️ Light' : '🌙 Dark') + '</div>' +
-                    '</div>' +
+                    '<div class="eyebrow">Ireland \u00b7 New Delhi Visa Section</div>' +
+                    '<div class="titlerow"><h1>Visa Decision Tracker</h1>' +
+                    '<div class="stutter-badge"><i>\u24D8</i> Switching tabs may briefly stutter while data loads.</div>' +
                     '</div>' +
                     '<div class="sub">' + (cache && cache.length ? cache.length + ' decisions on record' :
                         'Awaiting data') + '</div>' +
-                    '<div class="navpills">' + tabs.map(function(t) {
-                        return '<div class="navpill ' + (activeTab === t[0] ? 'active' : '') + '" data-tab="' + t[
-                            0] + '">' + t[1] + '</div>';
-                    }).join('') + '</div>' +
-                    '<div id="tab-body" class="slide-' + direction + '-in">' + body + '</div>';
+                    '<div class="navpills">' + tabs.map(([k, label]) => '<div class="navpill ' + (activeTab === k ?
+                        'active' : '') + '" data-tab="' + k + '">' + label + '</div>').join('') + '</div>' +
+                    '<div id="tab-body">' + body + '</div>';
 
-                if (isDark) root.classList.add('dark');
-
-                // ── nav clicks ──
-                tabs.forEach(function(t) {
-                    var pill = root.querySelector('.navpill[data-tab="' + t[0] + '"]');
-                    if (pill) {
-                        pill.addEventListener('click', function() {
-                            if (activeTab === t[0]) return;
-                            prevTab = activeTab;
-                            activeTab = t[0];
-
-                            if (t[0] === 'home') homeSearchPage = 1;
-                            if (t[0] === 'past') pastPage = 1;
-
-                            var tabBody = document.getElementById('tab-body');
-                            if (tabBody) {
-                                tabBody.innerHTML = '<div class="skel-shimmer" style="padding:20px;">' +
-                                    skeletonForTab(t[0]) + '</div>';
-                                tabBody.className = 'slide-' + (tabOrder.indexOf(t[0]) > tabOrder.indexOf(
-                                    prevTab) ? 'left' : 'right') + '-in';
-                            }
-                            setTimeout(function() { render(); }, 300);
-                        });
-                    }
-                });
-
-                // ── home search ──
-                var homeSearchEl = document.getElementById('home-search');
-                if (homeSearchEl) {
-                    homeSearchEl.addEventListener('input', function(e) {
-                        homeSearchTerm = e.target.value;
-                        homeSearchPage = 1;
+                tabs.forEach(([k]) => {
+                    root.querySelector('.navpill[data-tab="' + k + '"]').addEventListener('click', () => {
+                        activeTab = k;
                         render();
                     });
+                });
+                const homeSearchEl = document.getElementById('home-search');
+                if (homeSearchEl) {
+                    homeSearchEl.addEventListener('input', e => { homeSearchTerm = e.target.value;
+                        render(); });
                     homeSearchEl.focus();
                     homeSearchEl.setSelectionRange(homeSearchEl.value.length, homeSearchEl.value.length);
                 }
-
-                // ── past date filter ──
-                var dateFilterEl = document.getElementById('past-date-filter');
-                if (dateFilterEl) {
-                    dateFilterEl.addEventListener('change', function(e) {
-                        pastDateFilter = e.target.value;
-                        pastPage = 1;
-                        render();
-                    });
-                }
-                var dateClearEl = document.getElementById('past-date-clear');
-                if (dateClearEl) {
-                    dateClearEl.addEventListener('click', function() {
-                        pastDateFilter = '';
-                        pastPage = 1;
-                        render();
-                    });
-                }
-
-                // ── suggestion submit ──
-                var suggBtn = document.getElementById('sugg-submit');
-                if (suggBtn) {
-                    suggBtn.addEventListener('click', submitSuggestion);
-                }
-
-                // ── pagination clicks ──
-                root.querySelectorAll('.pagination button').forEach(function(btn) {
-                    btn.addEventListener('click', function(e) {
-                        var page = parseInt(e.target.dataset.page, 10);
-                        if (isNaN(page)) return;
-                        if (activeTab === 'home') { homeSearchPage = page; } else if (activeTab === 'past') {
-                            pastPage = page; }
-                        render();
-                    });
-                });
-
-                // ── dark toggle ──
-                var darkToggle = document.getElementById('dark-toggle');
-                if (darkToggle) {
-                    darkToggle.addEventListener('click', function() {
-                        isDark = !isDark;
-                        root.classList.toggle('dark', isDark);
-                        darkToggle.innerHTML = isDark ? '☀️ Light' : '🌙 Dark';
-                    });
-                }
+                const dateFilterEl = document.getElementById('past-date-filter');
+                if (dateFilterEl) dateFilterEl.addEventListener('change', e => { pastDateFilter = e.target.value;
+                    render(); });
+                const dateClearEl = document.getElementById('past-date-clear');
+                if (dateClearEl) dateClearEl.addEventListener('click', () => { pastDateFilter = '';
+                    render(); });
+                const suggBtn = document.getElementById('sugg-submit');
+                if (suggBtn) suggBtn.addEventListener('click', submitSuggestion);
             }
 
-            // ── start ──
             render();
-
         })();
     </script>
-
 </body>
 </html>
