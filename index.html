@@ -682,7 +682,7 @@
                     '<li><strong>Home</strong> \u2014 today\'s snapshot, headline stats, and every result from the most recent file.</li>' +
                     '<li><strong>Daily summary</strong> \u2014 one row per day: volume, day-on-day change, acceptance and rejection rates.</li>' +
                     '<li><strong>Past results</strong> \u2014 full history, searchable by application number.</li>' +
-                    '<li><strong>Suggestions</strong> \u2014 leave feedback, it goes straight into the tracking sheet.</li>' +
+                    '<li><strong>Suggestions</strong> \u2014 leave feedback. I check the suggestions and get back with a reply asap.</li>' +
                     '</ul>' +
                     '</div>';
             }
@@ -869,7 +869,6 @@
                         method: 'POST',
                         body: new URLSearchParams({ name, suggestion, timestamp, timezone })
                     });
-                    // Updated success message
                     status.textContent = 'Thanks — suggestion recorded. I\'ll read your suggestion and get back to you.';
                     document.getElementById('sugg-name').value = '';
                     document.getElementById('sugg-text').value = '';
