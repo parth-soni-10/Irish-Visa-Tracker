@@ -1,9 +1,13 @@
 """
 Irish Visa Decision Tracker — scraper for GitHub Actions
 -----------------------------------------------------------
-Same logic as local_scraper.py, but reads WEB_APP_URL from an
-environment variable (set as a GitHub Actions secret) instead of
-being hardcoded, since this file lives in a repo.
+Reads WEB_APP_URL from an environment variable (GitHub Actions secret).
+
+Flags (env vars, all optional):
+  IS_FINAL_RUN                 "true" on the last scheduled run of the day only.
+  ENABLE_NO_UPLOAD_PLACEHOLDER "true" (default) or "false" — turns the
+                                "visa office didn't upload any file" fallback
+                                row on/off without touching code.
 """
 
 import re
@@ -17,6 +21,9 @@ import pandas as pd
 
 PAGE_URL = "https://www.ireland.ie/en/india/newdelhi/services/visas/processing-times-and-decisions/"
 WEB_APP_URL = os.environ.get("WEB_APP_URL", "").strip()
+IS_FINAL_RUN = os.environ.get("IS_FINAL_RUN", "false").strip().lower() == "true"
+ENABLE_NO_UPLOAD_PLACEHOLDER = os.environ.get("ENABLE_NO_UPLOAD_PLACEHOLDER", "true").strip().lower() == "true"
+
 BROWSER_HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
                   "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
@@ -62,7 +69,6 @@ def download_and_parse_ods(ods_url: str):
     if resp.status_code != 200:
         raise RuntimeError(f"Blocked fetching .ods — status {resp.status_code}")
 
-    # Read raw, no assumed header row — some govt files have a title row above the real headers.
     raw = pd.read_excel(io.BytesIO(resp.content), engine="odf", header=None)
     header_row_idx = find_header_row(raw)
     print(f"Detected header row at index {header_row_idx}: {list(raw.iloc[header_row_idx])}")
@@ -74,15 +80,11 @@ def download_and_parse_ods(ods_url: str):
 
 
 def find_header_row(raw: pd.DataFrame, scan_rows: int = 25) -> int:
-    """Scan the first N rows for one containing both an IRL/application marker and a
-    decision marker, in DIFFERENT cells (avoids matching a single title like
-    'Application Decisions:' which contains both words in one cell)."""
     for i in range(min(scan_rows, len(raw))):
         row_vals = [str(v).lower() for v in raw.iloc[i].tolist()]
         app_cols = [j for j, v in enumerate(row_vals) if ("irl" in v or "application" in v)]
         dec_cols = [j for j, v in enumerate(row_vals) if ("decision" in v or "outcome" in v)]
         if app_cols and dec_cols and set(app_cols) != set(dec_cols):
-            # also require they're not the exact same single cell
             if not (len(app_cols) == 1 and len(dec_cols) == 1 and app_cols[0] == dec_cols[0]):
                 return i
     raise RuntimeError(
@@ -103,14 +105,17 @@ def detect_columns(df: pd.DataFrame):
     return app_col, decision_col
 
 
+def looks_like_header(irl: str, decision: str) -> bool:
+    i, d = irl.lower(), decision.lower()
+    return i in ("application number", "irl", "irl number") or d in ("decision", "outcome")
+
+
 def ist_today_str() -> str:
-    """Today's date in IST (matches the timezone the visa office publishes in)."""
     ist = timezone(timedelta(hours=5, minutes=30))
     return datetime.now(ist).strftime("%Y-%m-%d")
 
 
 def ist_yesterday_str() -> str:
-    """Yesterday's date in IST."""
     ist = timezone(timedelta(hours=5, minutes=30))
     return (datetime.now(ist) - timedelta(days=1)).strftime("%Y-%m-%d")
 
@@ -135,7 +140,44 @@ def fetch_existing_rows():
 def push_new_rows(rows):
     resp = requests.post(WEB_APP_URL, json={"action": "append_rows", "rows": rows}, timeout=90)
     resp.raise_for_status()
-    print("Server response:", resp.json())
+    result = resp.json()
+    print("Server response:", result)
+    return result
+
+
+def maybe_insert_no_upload_placeholder(today_ist, yesterday_ist):
+    """Only called on the final run, only if today still has no data. Re-checks
+    live Sheet state right before writing, so two runs racing (e.g. a manual
+    trigger overlapping the scheduled final run) can't both insert a placeholder."""
+    if not ENABLE_NO_UPLOAD_PLACEHOLDER:
+        print("ENABLE_NO_UPLOAD_PLACEHOLDER is false — skipping placeholder logic.")
+        return
+    if not IS_FINAL_RUN:
+        return
+
+    print("Final run — re-checking live Sheet state before deciding on a placeholder...")
+    try:
+        fresh_rows = fetch_existing_rows()
+    except Exception as e:
+        print(f"Could not re-check Sheet state ({e}) — skipping placeholder to be safe, "
+              f"rather than risk a wrong/duplicate entry.")
+        return
+
+    fresh_dates = {r[0] for r in fresh_rows}
+    if today_ist in fresh_dates:
+        print(f"Data for {today_ist} exists now (another run must have added it) — no placeholder needed.")
+        return
+    if yesterday_ist in fresh_dates:
+        print(f"{yesterday_ist} already has a row (real or placeholder) — not adding another.")
+        return
+
+    print(f"Confirmed: no data for {today_ist}, and {yesterday_ist} has nothing on record either. "
+          f"Inserting placeholder dated {yesterday_ist}.")
+    push_new_rows([{
+        "date": yesterday_ist,
+        "irl": f"NO_FILE_UPLOADED_{yesterday_ist}",
+        "decision": "Visa office didn't upload any file.",
+    }])
 
 
 def main():
@@ -145,6 +187,7 @@ def main():
 
     today_ist = ist_today_str()
     yesterday_ist = ist_yesterday_str()
+
     existing_rows = fetch_existing_rows()
     existing_dates = {r[0] for r in existing_rows}
     existing_irl = {r[1] for r in existing_rows}
@@ -153,45 +196,51 @@ def main():
         print(f"Data already present for {today_ist} — skipping this run entirely, no site fetch needed.")
         return
 
-    ods_url = find_ods_link()
-    filename, df = download_and_parse_ods(ods_url)
-    fetch_date = parse_date_from_filename(filename)
-
-    app_col, decision_col = detect_columns(df)
-    if not app_col or not decision_col:
-        print("Could not detect columns. Headers seen:", list(df.columns))
-        sys.exit(1)
-
-    print(f"{len(existing_irl)} existing IRL numbers already on record.")
-
+    scrape_failed = False
     new_rows = []
-    for _, r in df.iterrows():
-        irl = str(r[app_col]).strip()
-        decision = str(r[decision_col]).strip()
-        if not irl or irl in existing_irl or irl.lower() == "nan":
-            continue
-        new_rows.append({"date": fetch_date, "irl": irl, "decision": decision})
-        existing_irl.add(irl)
+    try:
+        ods_url = find_ods_link()
+        filename, df = download_and_parse_ods(ods_url)
+        fetch_date = parse_date_from_filename(filename)
 
-    print(f"{len(new_rows)} new rows to push (out of {len(df)} rows in file).")
-    if new_rows:
-        push_new_rows(new_rows)
-    else:
-        print("Nothing new — Sheet already up to date.")
+        app_col, decision_col = detect_columns(df)
+        if not app_col or not decision_col:
+            raise RuntimeError(f"Could not detect columns. Headers seen: {list(df.columns)}")
 
-    # Final run placeholder – insert a row for yesterday if no data for today and no new rows.
-    is_final_run = os.environ.get("IS_FINAL_RUN", "false").lower() == "true"
-    if is_final_run and today_ist not in existing_dates and not new_rows:
-        # Check if yesterday already has any row (to avoid duplicate placeholders)
-        if yesterday_ist not in existing_dates:
-            print(f"Final run – no data for {today_ist}, inserting placeholder for {yesterday_ist}.")
-            push_new_rows([{
-                "date": yesterday_ist,
-                "irl": f"NO_FILE_UPLOADED_{yesterday_ist}",
-                "decision": "Visa office didn't upload any file.",
-            }])
+        print(f"{len(existing_irl)} existing IRL numbers already on record.")
+
+        for _, r in df.iterrows():
+            irl = str(r[app_col]).strip()
+            decision = str(r[decision_col]).strip()
+            if not irl or irl in existing_irl or irl.lower() == "nan":
+                continue
+            if looks_like_header(irl, decision):
+                continue
+            new_rows.append({"date": fetch_date, "irl": irl, "decision": decision})
+            existing_irl.add(irl)
+
+        print(f"{len(new_rows)} new rows to push (out of {len(df)} rows in file).")
+        if new_rows:
+            push_new_rows(new_rows)
         else:
-            print(f"Final run – no data for {today_ist}, but yesterday ({yesterday_ist}) already has data, skipping placeholder.")
+            print("Nothing new — Sheet already up to date.")
+
+    except Exception as e:
+        # Deliberately caught (not left to crash the process) so that even if
+        # the site is blocked/down/changed, the final-run placeholder logic
+        # below still gets a chance to run.
+        scrape_failed = True
+        print(f"Scrape step failed: {e}")
+
+    # Placeholder logic always gets evaluated on the final run, whether or not
+    # the scrape above succeeded — that's the whole point of catching above.
+    if today_ist not in existing_dates and not new_rows:
+        maybe_insert_no_upload_placeholder(today_ist, yesterday_ist)
+
+    if scrape_failed:
+        # Keep the run visible as a failure in GitHub's UI so real outages get
+        # noticed, even though the placeholder (if applicable) was still added.
+        sys.exit(1)
 
 
 if __name__ == "__main__":
