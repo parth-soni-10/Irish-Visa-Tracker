@@ -3,11 +3,21 @@ Irish Visa Decision Tracker — scraper for GitHub Actions
 -----------------------------------------------------------
 Reads WEB_APP_URL from an environment variable (GitHub Actions secret).
 
+Every single run decides a flag:
+  - Defaults to "no file found" (true).
+  - If the scrape successfully fetches and parses the .ods file, flips to false
+    — regardless of whether that file contained any NEW rows or not.
+  - If still true at the end of the run, upserts (insert-or-overwrite, never
+    duplicates) a placeholder row dated YESTERDAY: "The visa office hasn't
+    updated any file until now." This runs on every scheduled run, not just
+    a "final" one, so a bad run gets self-corrected by the next one a few
+    hours later automatically.
+  - If a file WAS found this run, any stale placeholder for yesterday gets
+    actively cleared, since it's no longer accurate.
+
 Flags (env vars, all optional):
-  IS_FINAL_RUN                 "true" on the last scheduled run of the day only.
   ENABLE_NO_UPLOAD_PLACEHOLDER "true" (default) or "false" — turns the
-                                "visa office didn't upload any file" fallback
-                                row on/off without touching code.
+                                placeholder mechanism on/off without touching code.
 """
 
 import re
@@ -21,8 +31,8 @@ import pandas as pd
 
 PAGE_URL = "https://www.ireland.ie/en/india/newdelhi/services/visas/processing-times-and-decisions/"
 WEB_APP_URL = os.environ.get("WEB_APP_URL", "").strip()
-IS_FINAL_RUN = os.environ.get("IS_FINAL_RUN", "false").strip().lower() == "true"
 ENABLE_NO_UPLOAD_PLACEHOLDER = os.environ.get("ENABLE_NO_UPLOAD_PLACEHOLDER", "true").strip().lower() == "true"
+NO_FILE_MESSAGE = "The visa office hasn't updated any file until now"
 
 BROWSER_HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
@@ -145,39 +155,29 @@ def push_new_rows(rows):
     return result
 
 
-def maybe_insert_no_upload_placeholder(today_ist, yesterday_ist):
-    """Only called on the final run, only if today still has no data. Re-checks
-    live Sheet state right before writing, so two runs racing (e.g. a manual
-    trigger overlapping the scheduled final run) can't both insert a placeholder."""
-    if not ENABLE_NO_UPLOAD_PLACEHOLDER:
-        print("ENABLE_NO_UPLOAD_PLACEHOLDER is false — skipping placeholder logic.")
-        return
-    if not IS_FINAL_RUN:
-        return
+def set_no_file_placeholder(date_str):
+    """Insert-or-overwrite (never duplicates) the 'no file yet' row for date_str."""
+    resp = requests.post(WEB_APP_URL, json={
+        "action": "set_no_file_placeholder",
+        "date": date_str,
+        "message": NO_FILE_MESSAGE,
+    }, timeout=90)
+    resp.raise_for_status()
+    result = resp.json()
+    print("Placeholder upsert response:", result)
+    return result
 
-    print("Final run — re-checking live Sheet state before deciding on a placeholder...")
-    try:
-        fresh_rows = fetch_existing_rows()
-    except Exception as e:
-        print(f"Could not re-check Sheet state ({e}) — skipping placeholder to be safe, "
-              f"rather than risk a wrong/duplicate entry.")
-        return
 
-    fresh_dates = {r[0] for r in fresh_rows}
-    if today_ist in fresh_dates:
-        print(f"Data for {today_ist} exists now (another run must have added it) — no placeholder needed.")
-        return
-    if yesterday_ist in fresh_dates:
-        print(f"{yesterday_ist} already has a row (real or placeholder) — not adding another.")
-        return
-
-    print(f"Confirmed: no data for {today_ist}, and {yesterday_ist} has nothing on record either. "
-          f"Inserting placeholder dated {yesterday_ist}.")
-    push_new_rows([{
-        "date": yesterday_ist,
-        "irl": f"NO_FILE_UPLOADED_{yesterday_ist}",
-        "decision": "Visa office didn't upload any file.",
-    }])
+def clear_no_file_placeholder(date_str):
+    """Remove a stale placeholder for date_str, if one exists. No-op if not."""
+    resp = requests.post(WEB_APP_URL, json={
+        "action": "clear_no_file_placeholder",
+        "date": date_str,
+    }, timeout=90)
+    resp.raise_for_status()
+    result = resp.json()
+    print("Placeholder clear response:", result)
+    return result
 
 
 def main():
@@ -196,6 +196,7 @@ def main():
         print(f"Data already present for {today_ist} — skipping this run entirely, no site fetch needed.")
         return
 
+    no_file_found = True   # default every run, per the failsafe design
     scrape_failed = False
     new_rows = []
     try:
@@ -207,6 +208,7 @@ def main():
         if not app_col or not decision_col:
             raise RuntimeError(f"Could not detect columns. Headers seen: {list(df.columns)}")
 
+        no_file_found = False  # we successfully got and parsed a file this run
         print(f"{len(existing_irl)} existing IRL numbers already on record.")
 
         for _, r in df.iterrows():
@@ -223,23 +225,26 @@ def main():
         if new_rows:
             push_new_rows(new_rows)
         else:
-            print("Nothing new — Sheet already up to date.")
+            print("File fetched fine, nothing new in it — Sheet already up to date.")
 
     except Exception as e:
-        # Deliberately caught (not left to crash the process) so that even if
-        # the site is blocked/down/changed, the final-run placeholder logic
-        # below still gets a chance to run.
         scrape_failed = True
+        no_file_found = True
         print(f"Scrape step failed: {e}")
 
-    # Placeholder logic always gets evaluated on the final run, whether or not
-    # the scrape above succeeded — that's the whole point of catching above.
-    if today_ist not in existing_dates and not new_rows:
-        maybe_insert_no_upload_placeholder(today_ist, yesterday_ist)
+    if no_file_found:
+        if ENABLE_NO_UPLOAD_PLACEHOLDER:
+            print(f"No file found this run — upserting placeholder for {yesterday_ist}.")
+            set_no_file_placeholder(yesterday_ist)
+        else:
+            print("ENABLE_NO_UPLOAD_PLACEHOLDER is false — skipping placeholder.")
+    else:
+        print(f"File was found this run — clearing any stale placeholder for {yesterday_ist}.")
+        clear_no_file_placeholder(yesterday_ist)
 
     if scrape_failed:
         # Keep the run visible as a failure in GitHub's UI so real outages get
-        # noticed, even though the placeholder (if applicable) was still added.
+        # noticed, even though the placeholder was still upserted above.
         sys.exit(1)
 
 
