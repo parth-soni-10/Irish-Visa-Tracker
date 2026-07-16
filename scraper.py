@@ -10,7 +10,7 @@ import re
 import io
 import os
 import sys
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 
 import requests
 import pandas as pd
@@ -105,9 +105,14 @@ def detect_columns(df: pd.DataFrame):
 
 def ist_today_str() -> str:
     """Today's date in IST (matches the timezone the visa office publishes in)."""
-    from datetime import timezone, timedelta
     ist = timezone(timedelta(hours=5, minutes=30))
     return datetime.now(ist).strftime("%Y-%m-%d")
+
+
+def ist_yesterday_str() -> str:
+    """Yesterday's date in IST."""
+    ist = timezone(timedelta(hours=5, minutes=30))
+    return (datetime.now(ist) - timedelta(days=1)).strftime("%Y-%m-%d")
 
 
 def fetch_existing_rows():
@@ -139,6 +144,7 @@ def main():
         sys.exit(1)
 
     today_ist = ist_today_str()
+    yesterday_ist = ist_yesterday_str()
     existing_rows = fetch_existing_rows()
     existing_dates = {r[0] for r in existing_rows}
     existing_irl = {r[1] for r in existing_rows}
@@ -173,14 +179,19 @@ def main():
     else:
         print("Nothing new — Sheet already up to date.")
 
+    # Final run placeholder – insert a row for yesterday if no data for today and no new rows.
     is_final_run = os.environ.get("IS_FINAL_RUN", "false").lower() == "true"
     if is_final_run and today_ist not in existing_dates and not new_rows:
-        print(f"Final run of the day and still nothing for {today_ist} — adding No Data / Public Holiday row.")
-        push_new_rows([{
-            "date": today_ist,
-            "irl": f"NO_DATA_{today_ist}",
-            "decision": "No Data / Public Holiday",
-        }])
+        # Check if yesterday already has any row (to avoid duplicate placeholders)
+        if yesterday_ist not in existing_dates:
+            print(f"Final run – no data for {today_ist}, inserting placeholder for {yesterday_ist}.")
+            push_new_rows([{
+                "date": yesterday_ist,
+                "irl": f"NO_FILE_UPLOADED_{yesterday_ist}",
+                "decision": "Visa office didn't upload any file.",
+            }])
+        else:
+            print(f"Final run – no data for {today_ist}, but yesterday ({yesterday_ist}) already has data, skipping placeholder.")
 
 
 if __name__ == "__main__":
