@@ -9,6 +9,7 @@
 <body>
     <div id="visa-dash"></div>
     <style>
+
         #visa-dash * { box-sizing: border-box; }
         #visa-dash {
             --ink: #0f172a;
@@ -559,6 +560,102 @@
             font-style: normal;
             font-size: 12px;
         }
+
+        #visa-dash .eyebrow-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 4px;
+        }
+        #visa-dash .theme-toggle {
+            background: var(--surface-raised);
+            border: 1px solid var(--border);
+            color: var(--ink-muted);
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            flex-shrink: 0;
+        }
+        #visa-dash .theme-toggle:hover {
+            background: var(--surface-hover);
+            color: var(--ink);
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        #visa-dash .sparkline-wrap {
+            margin-bottom: 18px;
+            animation: visa-fade-in 0.4s ease;
+        }
+        #visa-dash .sparkline-label {
+            font-size: 10px;
+            color: var(--ink-muted);
+            text-transform: uppercase;
+            letter-spacing: .07em;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+        #visa-dash .sparkline {
+            display: flex;
+            align-items: flex-end;
+            gap: 4px;
+            height: 44px;
+            padding: 0 2px;
+        }
+        #visa-dash .spark-bar {
+            flex: 1;
+            background: var(--green);
+            border-radius: 3px 3px 0 0;
+            opacity: 0.5;
+            transition: opacity 0.15s, transform 0.15s;
+            min-width: 4px;
+            cursor: pointer;
+            position: relative;
+        }
+        #visa-dash .spark-bar:hover {
+            opacity: 1;
+            transform: scaleY(1.05);
+            z-index: 1;
+        }
+        #visa-dash[data-theme="dark"] {
+            --ink: #f1f5f9;
+            --ink-soft: #cbd5e1;
+            --ink-muted: #94a3b8;
+            --surface: #0f172a;
+            --surface-raised: #1e293b;
+            --surface-hover: #334155;
+            --border: #334155;
+            --green: #34d399;
+            --green-light: #22d3ee;
+            --green-soft: rgba(52, 211, 153, 0.15);
+            --green-text: #34d399;
+            --amber: #fbbf24;
+            --amber-soft: rgba(251, 191, 36, 0.15);
+            --amber-text: #fbbf24;
+            --red: #f87171;
+            --red-soft: rgba(248, 113, 113, 0.15);
+            --red-text: #f87171;
+        }
+        #visa-dash[data-theme="dark"] .card.hero {
+            background: linear-gradient(135deg, #059669, #0ea5e9);
+            box-shadow: 0 8px 30px rgba(5, 150, 105, 0.4);
+        }
+        #visa-dash[data-theme="dark"] .skel {
+            background: linear-gradient(90deg, var(--border) 25%, var(--surface-raised) 37%, var(--border) 63%);
+        }
+        #visa-dash[data-theme="dark"] .searchbar:focus-within,
+        #visa-dash[data-theme="dark"] .datefilter:focus-within {
+            box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.15);
+        }
+        #visa-dash[data-theme="dark"] input[type=text]:focus,
+        #visa-dash[data-theme="dark"] textarea:focus {
+            box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.15);
+        }
         @media (max-width: 760px) {
             #visa-dash { padding: 16px; }
             #visa-dash h1 { font-size: 22px; }
@@ -586,8 +683,10 @@
             #visa-dash .card.hero { grid-column: span 2; }
             #visa-dash .card.hero .value { font-size: 26px; }
         }
+    
     </style>
     <script>
+
 
         (function() {
             const HARDCODED_WEB_APP_URL = '';
@@ -601,6 +700,7 @@
             let activeTab = 'home';
             let homeSearchTerm = '';
             let pastDateFilter = '';
+            let theme = localStorage.getItem('visa-theme') || 'light';
 
             function classify(decision) {
                 const s = (decision || '').toLowerCase();
@@ -735,6 +835,7 @@
                     '<div class="card"><div class="label">Rejection rate</div><div class="value red">' + fmtPct(rejected /
                         total) + '</div></div>' +
                     '</div>' +
+                    renderSparkline(rows) +
                     '<div class="note" style="margin-bottom:8px;margin-top:0;">' + (isSearching ? (searchResults.length +
                         ' match(es) for "' + homeSearchTerm + '"') : ('All results for ' + latestDate + ' (' + latestRows
                         .length + ' rows)')) + '</div>' +
@@ -882,7 +983,25 @@
                 }
             }
 
-            async function render() {
+            
+            function toggleTheme() {
+                theme = theme === 'light' ? 'dark' : 'light';
+                localStorage.setItem('visa-theme', theme);
+                root.setAttribute('data-theme', theme);
+                render();
+            }
+            function renderSparkline(rows) {
+                if (!rows.length) return '';
+                const byDate = groupByDate(rows);
+                const last7 = byDate.slice(0, 7).reverse();
+                const max = Math.max(...last7.map(([, r]) => r.length), 1);
+                const bars = last7.map(([date, dayRows]) => {
+                    const h = Math.round((dayRows.length / max) * 100);
+                    return '<div class="spark-bar" style="height:' + h + '%" title="' + date + ': ' + dayRows.length + ' decisions"></div>';
+                }).join('');
+                return '<div class="sparkline-wrap"><div class="sparkline-label">Last 7 days</div><div class="sparkline">' + bars + '</div></div>';
+            }
+async function render() {
                 if (!cache) {
                     root.innerHTML = '<div class="eyebrow">Ireland \u00b7 New Delhi Visa Section</div>' +
                         '<div class="titlerow"><h1>Visa Decision Tracker</h1>' +
@@ -953,10 +1072,14 @@
                     render(); });
                 const suggBtn = document.getElementById('sugg-submit');
                 if (suggBtn) suggBtn.addEventListener('click', submitSuggestion);
+                const themeToggle = document.getElementById('theme-toggle');
+                if (themeToggle) themeToggle.addEventListener('click', toggleTheme);
             }
 
+            root.setAttribute('data-theme', theme);
             render();
         })();
+    
     
     </script>
 </body>
