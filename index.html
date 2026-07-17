@@ -531,9 +531,34 @@
             font-weight: 700;
         }
         #visa-dash .suggest-grid .table-col table th { background: var(--surface) !important; }
-        #visa-dash .stutter-badge { display: none; }
-        #visa-dash .titlerow { display: block; }
-        #visa-dash .titlerow h1 { margin: 0 0 2px; }
+        #visa-dash .titlerow {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        #visa-dash .titlerow h1 {
+            margin: 0 0 2px;
+        }
+        #visa-dash .stutter-badge {
+            background: var(--amber-soft);
+            color: var(--amber-text);
+            font-size: 11px;
+            font-weight: 600;
+            padding: 6px 14px;
+            border-radius: 100px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            white-space: nowrap;
+            margin-top: 3px;
+            border: 1px solid #fcd34d;
+        }
+        #visa-dash .stutter-badge i {
+            font-style: normal;
+            font-size: 12px;
+        }
         @media (max-width: 760px) {
             #visa-dash { padding: 16px; }
             #visa-dash h1 { font-size: 22px; }
