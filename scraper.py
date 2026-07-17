@@ -3,21 +3,24 @@ Irish Visa Decision Tracker — scraper for GitHub Actions
 -----------------------------------------------------------
 Reads WEB_APP_URL from an environment variable (GitHub Actions secret).
 
-Every single run decides a flag:
-  - Defaults to "no file found" (true).
-  - If the scrape successfully fetches and parses the .ods file, flips to false
-    — regardless of whether that file contained any NEW rows or not.
-  - If still true at the end of the run, upserts (insert-or-overwrite, never
-    duplicates) a placeholder row dated YESTERDAY: "The visa office hasn't
-    updated any file until now." This runs on every scheduled run, not just
-    a "final" one, so a bad run gets self-corrected by the next one a few
-    hours later automatically.
-  - If a file WAS found this run, any stale placeholder for yesterday gets
-    actively cleared, since it's no longer accurate.
+Every run, in priority order:
+  1. If today already has a row on record (real or placeholder) -> skip entirely.
+  2. If today is Saturday/Sunday -> upsert "Saturday/Sunday, Visa Office is
+     closed", dated TODAY. Stop (no scrape attempted).
+  3. Else check the embassy's closure-dates page for today's date -> if listed,
+     upsert "Embassy is closed today for <holiday name>", dated TODAY. Stop.
+  4. Else (a normal business day) -> attempt the real scrape. If it succeeds,
+     clear any stale placeholders and push new rows as usual. If it fails or
+     finds nothing, upsert "Visa office hasn't uploaded any sheet until now,
+     check back later, or come back tomorrow", dated YESTERDAY (decisions
+     data always lags a day, so "caught up through yesterday" is accurate).
+
+All placeholders use the same insert-or-overwrite mechanism (never duplicate,
+always reflect the latest run's message).
 
 Flags (env vars, all optional):
-  ENABLE_NO_UPLOAD_PLACEHOLDER "true" (default) or "false" — turns the
-                                placeholder mechanism on/off without touching code.
+  ENABLE_NO_UPLOAD_PLACEHOLDER "true" (default) or "false" — turns ALL of the
+                                above placeholder mechanisms on/off at once.
 """
 
 import re
@@ -28,11 +31,15 @@ from datetime import datetime, timedelta, timezone
 
 import requests
 import pandas as pd
+from dateutil import parser as dateparser
 
 PAGE_URL = "https://www.ireland.ie/en/india/newdelhi/services/visas/processing-times-and-decisions/"
+CLOSURE_DATES_URL = "https://www.ireland.ie/en/india/newdelhi/about/embassy-information/"
 WEB_APP_URL = os.environ.get("WEB_APP_URL", "").strip()
 ENABLE_NO_UPLOAD_PLACEHOLDER = os.environ.get("ENABLE_NO_UPLOAD_PLACEHOLDER", "true").strip().lower() == "true"
-NO_FILE_MESSAGE = "The visa office hasn't updated any file until now"
+
+NO_UPLOAD_MESSAGE = "Visa office hasn't uploaded any sheet until now, check back later, or come back tomorrow"
+WEEKEND_MESSAGE = "Saturday/Sunday, Visa Office is closed"
 
 BROWSER_HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
@@ -42,6 +49,23 @@ BROWSER_HEADERS = {
     "Referer": "https://www.ireland.ie/",
 }
 
+
+# ---------------- time helpers (now_ist is the single source of "current time",
+# kept as its own function so tests can monkeypatch it) ----------------
+
+def now_ist() -> datetime:
+    return datetime.now(timezone(timedelta(hours=5, minutes=30)))
+
+
+def ist_today_str() -> str:
+    return now_ist().strftime("%Y-%m-%d")
+
+
+def ist_yesterday_str() -> str:
+    return (now_ist() - timedelta(days=1)).strftime("%Y-%m-%d")
+
+
+# ---------------- .ods scraping (unchanged from before) ----------------
 
 def find_ods_link():
     resp = requests.get(PAGE_URL, headers=BROWSER_HEADERS, timeout=30)
@@ -68,7 +92,7 @@ def parse_date_from_filename(filename: str) -> str:
     digits = re.sub(r"[^0-9]", "", filename)
     stamp = digits[:8]
     if len(stamp) != 8:
-        return datetime.today().strftime("%Y-%m-%d")
+        return now_ist().strftime("%Y-%m-%d")
     return f"{stamp[0:4]}-{stamp[4:6]}-{stamp[6:8]}"
 
 
@@ -120,15 +144,72 @@ def looks_like_header(irl: str, decision: str) -> bool:
     return i in ("application number", "irl", "irl number") or d in ("decision", "outcome")
 
 
-def ist_today_str() -> str:
-    ist = timezone(timedelta(hours=5, minutes=30))
-    return datetime.now(ist).strftime("%Y-%m-%d")
+# ---------------- closure-dates holiday check ----------------
+
+def strip_tags(html: str) -> str:
+    return re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", html)).strip()
 
 
-def ist_yesterday_str() -> str:
-    ist = timezone(timedelta(hours=5, minutes=30))
-    return (datetime.now(ist) - timedelta(days=1)).strftime("%Y-%m-%d")
+def extract_closure_section(html: str, year: int) -> str:
+    """Isolate the HTML for this year's closure-dates section if we can find its
+    anchor id; otherwise fall back to scanning the whole page (safe, just noisier)."""
+    match = re.search(
+        rf'id=["\']closure-dates-{year}["\'](.*?)(?=id=["\']closure-dates-\d{{4}}["\']|$)',
+        html, re.IGNORECASE | re.DOTALL,
+    )
+    if match:
+        return match.group(1)
+    print(f"Could not find a 'closure-dates-{year}' anchor on the page — "
+          f"scanning the entire page as a fallback (may be slower/noisier).")
+    return html
 
+
+def extract_candidate_lines(section_html: str):
+    """List/table rows are the most likely markup for a closure-dates listing;
+    fall back to sentence-splitting plain text if neither is found."""
+    items = re.findall(r"<li[^>]*>(.*?)</li>", section_html, re.IGNORECASE | re.DOTALL)
+    if not items:
+        items = re.findall(r"<tr[^>]*>(.*?)</tr>", section_html, re.IGNORECASE | re.DOTALL)
+    if not items:
+        text = strip_tags(section_html)
+        items = re.split(r"(?<=[.;\n])\s+", text)
+    return [strip_tags(i).strip() for i in items if strip_tags(i).strip()]
+
+
+def check_holiday(today_dt: datetime):
+    """Returns a holiday name string if today is a listed embassy closure date,
+    else None. Never raises — any parsing failure just means 'not a holiday',
+    the safest default (falls through to the normal scrape attempt)."""
+    try:
+        resp = requests.get(CLOSURE_DATES_URL, headers=BROWSER_HEADERS, timeout=30)
+        print(f"Closure-dates page fetch status: {resp.status_code} | length: {len(resp.text)}")
+        if resp.status_code != 200:
+            print("Could not fetch closure-dates page — treating as 'not a holiday'.")
+            return None
+
+        section = extract_closure_section(resp.text, today_dt.year)
+        lines = extract_candidate_lines(section)
+        print(f"Closure-dates: scanning {len(lines)} candidate lines for {today_dt.strftime('%d %B %Y')}.")
+
+        for line in lines:
+            try:
+                parsed, tokens = dateparser.parse(line, fuzzy_with_tokens=True, dayfirst=True)
+            except (ValueError, OverflowError, TypeError):
+                continue
+            if parsed.month == today_dt.month and parsed.day == today_dt.day:
+                name = " ".join(t.strip(" -\u2013\u2014:,") for t in tokens if t.strip(" -\u2013\u2014:,"))
+                name = name or "Public Holiday"
+                print(f"Holiday match: {line!r} -> {name!r}")
+                return name
+
+        print("No closure-date match found for today.")
+        return None
+    except Exception as e:
+        print(f"check_holiday() failed unexpectedly ({e}) — treating as 'not a holiday'.")
+        return None
+
+
+# ---------------- Sheet I/O ----------------
 
 def fetch_existing_rows():
     """Full existing Raw sheet contents: list of [date, irl, decision]. Retries on cold-start timeouts."""
@@ -155,12 +236,12 @@ def push_new_rows(rows):
     return result
 
 
-def set_no_file_placeholder(date_str):
-    """Insert-or-overwrite (never duplicates) the 'no file yet' row for date_str."""
+def set_no_file_placeholder(date_str, message):
+    """Insert-or-overwrite (never duplicates) the placeholder row for date_str."""
     resp = requests.post(WEB_APP_URL, json={
         "action": "set_no_file_placeholder",
         "date": date_str,
-        "message": NO_FILE_MESSAGE,
+        "message": message,
     }, timeout=90)
     resp.raise_for_status()
     result = resp.json()
@@ -180,12 +261,15 @@ def clear_no_file_placeholder(date_str):
     return result
 
 
+# ---------------- main ----------------
+
 def main():
     if not WEB_APP_URL:
         print("ERROR: WEB_APP_URL env var not set.")
         sys.exit(1)
 
-    today_ist = ist_today_str()
+    today_dt = now_ist()
+    today_ist = today_dt.strftime("%Y-%m-%d")
     yesterday_ist = ist_yesterday_str()
 
     existing_rows = fetch_existing_rows()
@@ -193,10 +277,31 @@ def main():
     existing_irl = {r[1] for r in existing_rows}
 
     if today_ist in existing_dates:
-        print(f"Data already present for {today_ist} — skipping this run entirely, no site fetch needed.")
+        print(f"Data already present for {today_ist} (real or placeholder) — skipping this run entirely.")
         return
 
-    no_file_found = True   # default every run, per the failsafe design
+    # --- Priority 1: weekend ---
+    weekday = today_dt.weekday()  # Monday=0 ... Sunday=6
+    if weekday in (5, 6):
+        print(f"Today ({today_ist}) is a weekend — no scrape attempted.")
+        if ENABLE_NO_UPLOAD_PLACEHOLDER:
+            set_no_file_placeholder(today_ist, WEEKEND_MESSAGE)
+        else:
+            print("ENABLE_NO_UPLOAD_PLACEHOLDER is false — skipping placeholder.")
+        return
+
+    # --- Priority 2: public holiday per embassy closure-dates page ---
+    holiday_name = check_holiday(today_dt)
+    if holiday_name:
+        print(f"Today ({today_ist}) is a listed closure date: {holiday_name!r} — no scrape attempted.")
+        if ENABLE_NO_UPLOAD_PLACEHOLDER:
+            set_no_file_placeholder(today_ist, f"Embassy is closed today for {holiday_name}")
+        else:
+            print("ENABLE_NO_UPLOAD_PLACEHOLDER is false — skipping placeholder.")
+        return
+
+    # --- Priority 3: normal business day, attempt the real scrape ---
+    no_file_found = True
     scrape_failed = False
     new_rows = []
     try:
@@ -208,7 +313,7 @@ def main():
         if not app_col or not decision_col:
             raise RuntimeError(f"Could not detect columns. Headers seen: {list(df.columns)}")
 
-        no_file_found = False  # we successfully got and parsed a file this run
+        no_file_found = False
         print(f"{len(existing_irl)} existing IRL numbers already on record.")
 
         for _, r in df.iterrows():
@@ -235,7 +340,7 @@ def main():
     if no_file_found:
         if ENABLE_NO_UPLOAD_PLACEHOLDER:
             print(f"No file found this run — upserting placeholder for {yesterday_ist}.")
-            set_no_file_placeholder(yesterday_ist)
+            set_no_file_placeholder(yesterday_ist, NO_UPLOAD_MESSAGE)
         else:
             print("ENABLE_NO_UPLOAD_PLACEHOLDER is false — skipping placeholder.")
     else:
@@ -243,8 +348,6 @@ def main():
         clear_no_file_placeholder(yesterday_ist)
 
     if scrape_failed:
-        # Keep the run visible as a failure in GitHub's UI so real outages get
-        # noticed, even though the placeholder was still upserted above.
         sys.exit(1)
 
 
