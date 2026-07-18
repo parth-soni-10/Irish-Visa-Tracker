@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Irish Visa Decision Tracker</title>
 <base target="_blank">
+<base target="_blank">
 </head>
 <body>
     <div id="visa-dash"></div>
@@ -623,15 +624,15 @@
             z-index: 1;
         }
         #visa-dash[data-theme="dark"] {
-            --ink: #f1f5f9;
-            --ink-soft: #cbd5e1;
-            --ink-muted: #94a3b8;
-            --surface: #0f172a;
-            --surface-raised: #1e293b;
-            --surface-hover: #334155;
-            --border: #334155;
+            --ink: #f3e8ff;
+            --ink-soft: #ddd6fe;
+            --ink-muted: #a78bfa;
+            --surface: #0f0a1a;
+            --surface-raised: #1a102e;
+            --surface-hover: #2d1b4e;
+            --border: #2d1b4e;
             --green: #34d399;
-            --green-light: #22d3ee;
+            --green-light: #6ee7b7;
             --green-soft: rgba(52, 211, 153, 0.15);
             --green-text: #34d399;
             --amber: #fbbf24;
@@ -642,19 +643,19 @@
             --red-text: #f87171;
         }
         #visa-dash[data-theme="dark"] .card.hero {
-            background: linear-gradient(135deg, #059669, #0ea5e9);
-            box-shadow: 0 8px 30px rgba(5, 150, 105, 0.4);
+            background: linear-gradient(135deg, #7c3aed, #a78bfa);
+            box-shadow: 0 8px 30px rgba(124, 58, 237, 0.4);
         }
         #visa-dash[data-theme="dark"] .skel {
             background: linear-gradient(90deg, var(--border) 25%, var(--surface-raised) 37%, var(--border) 63%);
         }
         #visa-dash[data-theme="dark"] .searchbar:focus-within,
         #visa-dash[data-theme="dark"] .datefilter:focus-within {
-            box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.15);
+            box-shadow: 0 0 0 3px rgba(167, 139, 250, 0.15);
         }
         #visa-dash[data-theme="dark"] input[type=text]:focus,
         #visa-dash[data-theme="dark"] textarea:focus {
-            box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.15);
+            box-shadow: 0 0 0 3px rgba(167, 139, 250, 0.15);
         }
         @media (max-width: 760px) {
             #visa-dash { padding: 16px; }
@@ -1005,7 +1006,9 @@ async function render() {
                 if (!cache) {
                     root.innerHTML = '<div class="eyebrow">Ireland \u00b7 New Delhi Visa Section</div>' +
                         '<div class="titlerow"><h1>Visa Decision Tracker</h1>' +
-                        '<div class="stutter-badge"><i>\u24D8</i> Switching tabs may briefly stutter while data loads.</div></div>' +
+                        '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">' +
+                        '<button class="theme-toggle" id="theme-toggle" title="Toggle dark mode">☀️</button>' +
+                        '<div class="stutter-badge"><i>\u24D8</i> Switching tabs may briefly stutter while data loads.</div></div></div>' +
                         '<div class="topbar"><div class="topbar-fill"></div></div>' +
                         '<div class="navpills">' +
                         '<div class="skel skel-pill"></div><div class="skel skel-pill"></div><div class="skel skel-pill"></div><div class="skel skel-pill"></div>' +
@@ -1043,7 +1046,9 @@ async function render() {
                 root.innerHTML =
                     '<div class="eyebrow">Ireland \u00b7 New Delhi Visa Section</div>' +
                     '<div class="titlerow"><h1>Visa Decision Tracker</h1>' +
-                    '<div class="stutter-badge"><i>\u24D8</i> Switching tabs may briefly stutter while data loads.</div>' +
+                    '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">' +
+                    '<button class="theme-toggle" id="theme-toggle" title="Toggle dark mode">☀️</button>' +
+                    '<div class="stutter-badge"><i>\u24D8</i> Switching tabs may briefly stutter while data loads.</div></div>' +
                     '</div>' +
                     '<div class="sub">' + (cache && cache.length ? cache.length + ' decisions on record' :
                         'Awaiting data') + '</div>' +
@@ -1084,3 +1089,5 @@ async function render() {
     </script>
 </body>
 </html>
+
+add a toggle for dark mode
