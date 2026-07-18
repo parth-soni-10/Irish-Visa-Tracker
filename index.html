@@ -589,35 +589,7 @@
             transform: translateY(-1px);
             box-shadow: 0 2px 8px rgba(0,0,0,0.08);
         }
-        #visa-dash .sparkline-wrap {
-            margin-bottom: 18px;
-            animation: visa-fade-in 0.4s ease;
-        }
-        #visa-dash .sparkline-label {
-            font-size: 10px;
-            color: var(--ink-muted);
-            text-transform: uppercase;
-            letter-spacing: .07em;
-            font-weight: 700;
-            margin-bottom: 8px;
-        }
-        #visa-dash .sparkline {
-            display: flex;
-            align-items: flex-end;
-            gap: 4px;
-            height: 44px;
-            padding: 0 2px;
-        }
-        #visa-dash .spark-bar {
-            flex: 1;
-            background: var(--green);
-            border-radius: 3px 3px 0 0;
-            opacity: 0.5;
-            transition: opacity 0.15s, transform 0.15s;
-            min-width: 4px;
-            cursor: pointer;
-            position: relative;
-        }
+        
         #visa-dash .spark-bar:hover {
             opacity: 1;
             transform: scaleY(1.05);
@@ -836,7 +808,6 @@
                     '<div class="card"><div class="label">Rejection rate</div><div class="value red">' + fmtPct(rejected /
                         total) + '</div></div>' +
                     '</div>' +
-                    renderSparkline(rows) +
                     '<div class="note" style="margin-bottom:8px;margin-top:0;">' + (isSearching ? (searchResults.length +
                         ' match(es) for "' + homeSearchTerm + '"') : ('All results for ' + latestDate + ' (' + latestRows
                         .length + ' rows)')) + '</div>' +
@@ -991,17 +962,7 @@
                 root.setAttribute('data-theme', theme);
                 render();
             }
-            function renderSparkline(rows) {
-                if (!rows.length) return '';
-                const byDate = groupByDate(rows);
-                const last7 = byDate.slice(0, 7).reverse();
-                const max = Math.max(...last7.map(([, r]) => r.length), 1);
-                const bars = last7.map(([date, dayRows]) => {
-                    const h = Math.round((dayRows.length / max) * 100);
-                    return '<div class="spark-bar" style="height:' + h + '%" title="' + date + ': ' + dayRows.length + ' decisions"></div>';
-                }).join('');
-                return '<div class="sparkline-wrap"><div class="sparkline-label">Last 7 days</div><div class="sparkline">' + bars + '</div></div>';
-            }
+            
 async function render() {
                 if (!cache) {
                     root.innerHTML = '<div class="eyebrow">Ireland \u00b7 New Delhi Visa Section</div>' +
