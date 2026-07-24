@@ -215,29 +215,23 @@
         #visa-dash tbody tr:hover {
             background: var(--surface-hover);
         }
-        /* Home + Past results tables: 3 columns. Fixed layout so headers and body
-           cells stay vertically aligned no matter how long decisions get. Capped
-           max-width + auto margins center the table inside the wrap on
-           wide-screen viewports instead of stretching to full container width. */
-        #visa-dash .results-table { table-layout: fixed; min-width: 360px; max-width: 720px; margin-left: auto; margin-right: auto; }
-        #visa-dash .results-table th:nth-child(1),
-        #visa-dash .results-table td:nth-child(1) { width: 18%; white-space: nowrap; }
-        #visa-dash .results-table th:nth-child(2),
-        #visa-dash .results-table td:nth-child(2) { width: 24%; white-space: nowrap; }
-        #visa-dash .results-table th:nth-child(3),
-        #visa-dash .results-table td:nth-child(3) { width: 58%; overflow-wrap: break-word; }
-        /* Daily summary table: 5 columns. Same centering treatment for consistency. */
-        #visa-dash .daily-table { table-layout: fixed; min-width: 480px; max-width: 880px; margin-left: auto; margin-right: auto; }
-        #visa-dash .daily-table th:nth-child(1),
-        #visa-dash .daily-table td:nth-child(1) { width: 18%; white-space: nowrap; }
-        #visa-dash .daily-table th:nth-child(2),
-        #visa-dash .daily-table td:nth-child(2) { width: 16%; }
-        #visa-dash .daily-table th:nth-child(3),
-        #visa-dash .daily-table td:nth-child(3) { width: 22%; }
-        #visa-dash .daily-table th:nth-child(4),
-        #visa-dash .daily-table td:nth-child(4) { width: 22%; }
-        #visa-dash .daily-table th:nth-child(5),
-        #visa-dash .daily-table td:nth-child(5) { width: 22%; }
+        /* Home + Past results tables: 3 columns. Auto layout so the browser
+           sizes each column to fit its content (no header collisions across
+           the row), and the table takes the full container width on wide
+           screen instead of staying centred narrow. min-width keeps narrow
+           viewports scrollable rather than squishing columns. */
+        #visa-dash .results-table { table-layout: fixed; width: 100%; min-width: 360px; }
+        #visa-dash .results-table th, #visa-dash .results-table td { white-space: normal; overflow-wrap: break-word; }
+        #visa-dash .results-table th:nth-child(1), #visa-dash .results-table td:nth-child(1) { min-width: 12ch; }
+        #visa-dash .results-table th:nth-child(2), #visa-dash .results-table td:nth-child(2) { min-width: 16ch; }
+        /* Daily summary table: 5 columns. Same fixed auto-width layout. */
+        #visa-dash .daily-table { table-layout: fixed; width: 100%; min-width: 480px; }
+        #visa-dash .daily-table th, #visa-dash .daily-table td { white-space: normal; overflow-wrap: break-word; }
+        #visa-dash .daily-table th:nth-child(1), #visa-dash .daily-table td:nth-child(1),
+        #visa-dash .daily-table th:nth-child(2), #visa-dash .daily-table td:nth-child(2),
+        #visa-dash .daily-table th:nth-child(3), #visa-dash .daily-table td:nth-child(3),
+        #visa-dash .daily-table th:nth-child(4), #visa-dash .daily-table td:nth-child(4),
+        #visa-dash .daily-table th:nth-child(5), #visa-dash .daily-table td:nth-child(5) { min-width: 10ch; }
         /* Sentinel row appended by IntersectionObserver infinite scroll.
            contain-intrinsic-size hints the browser's content-visibility:auto
            layout that the sentinel occupies 18px even before it has been
@@ -523,32 +517,16 @@
         #visa-dash .suggest-grid .table-col { flex: 2 1 400px; min-width: 0; }
         #visa-dash .suggest-grid .table-col .table-wrap { max-height: 420px; overflow-y: auto; overflow-x: auto; }
         #visa-dash .suggest-grid .table-col table {
+            width: 100%;
             min-width: 600px;
-            table-layout: fixed;
+            table-layout: auto;
         }
         #visa-dash .suggest-grid .table-col table th,
         #visa-dash .suggest-grid .table-col table td {
-            white-space: normal !important;
-            word-break: break-word;
+            white-space: normal;
+            overflow-wrap: anywhere;
             vertical-align: top;
             padding: 10px 12px;
-        }
-        #visa-dash .suggest-grid .table-col table th:nth-child(1),
-        #visa-dash .suggest-grid .table-col table td:nth-child(1) {
-            width: 22%;
-            word-break: break-all;
-        }
-        #visa-dash .suggest-grid .table-col table th:nth-child(2),
-        #visa-dash .suggest-grid .table-col table td:nth-child(2) {
-            width: 18%;
-        }
-        #visa-dash .suggest-grid .table-col table th:nth-child(-n+2),
-        #visa-dash .suggest-grid .table-col table td:nth-child(-n+2) {
-            white-space: nowrap !important;
-        }
-        #visa-dash .suggest-grid .table-col table th:nth-child(n+3),
-        #visa-dash .suggest-grid .table-col table td:nth-child(n+3) {
-            width: 30%;
         }
         #visa-dash .suggest-grid .table-col .label {
             background: var(--surface);
