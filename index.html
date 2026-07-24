@@ -1037,17 +1037,39 @@
                         })()
                     },
                     past: {
-                        eyebrow: 'HISTORY',
+                        eyebrow: 'THIS WEEK',
                         title: 'Accepted & rejected,<br/>side by side.',
-                        sub: fmtPct(accPct) + ' accepted · ' + fmtPct(rejPct) + ' rejected · ' + total.toLocaleString() + ' total.',
+                        sub: (function() {
+                            // Sub-text mirrors the chart's week range so the user
+                            // sees both the totals AND the exact dates covered.
+                            // Week boundary is Sunday -> Saturday (matches the
+                            // Sun-first days[] array elsewhere in this file).
+                            var _t = new Date();
+                            var _ws = new Date(_t.getFullYear(), _t.getMonth(), _t.getDate() - _t.getDay());
+                            var _we = new Date(_ws); _we.setDate(_ws.getDate() + 6);
+                            var _mn = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+                            return fmtPct(accPct) + ' accepted · ' + fmtPct(rejPct) + ' rejected · ' + total.toLocaleString() + ' total · ' +
+                                   'week of ' + _mn[_ws.getMonth()] + ' ' + _ws.getDate() + '\u2013' + _mn[_we.getMonth()] + ' ' + _we.getDate() + '.';
+                        })(),
                         visual: (function() {
-                            // Last 7 days as a stacked accept/reject waterfall.
-                            // Each column: bars grow in staggered (CSS var --d), date
-                            // label below, hover lifts + brightens + native title
-                            // gives exact counts. Column-reverse flex on .wf-col
-                            // puts the date label visually at the bottom and the
-                            // stacked segments visually on top.
-                            var last7 = byDate.slice(-7).reverse();
+                            // Current calendar week (Sun -> Sat) containing today,
+                            // not the rolling last 7 calendar days. weekStart is
+                            // the most-recent Sunday on or before today; iterate
+                            // 7 days forward and look each one up in a byDate
+                            // Map. Missing days (no decisions yet, or future
+                            // days in this week) render as empty bars.
+                            var today = new Date();
+                            var weekStart = new Date(today.getFullYear(), today.getMonth(), today.getDate() - today.getDay());
+                            var byDateMap = new Map(byDate);
+                            var last7 = [];
+                            for (var wi = 0; wi < 7; wi++) {
+                                var d = new Date(weekStart);
+                                d.setDate(weekStart.getDate() + wi);
+                                var ds = d.getFullYear() + '-' +
+                                         String(d.getMonth() + 1).padStart(2, '0') + '-' +
+                                         String(d.getDate()).padStart(2, '0');
+                                last7.push([ds, byDateMap.get(ds) || []]);
+                            }
                             var maxVal = Math.max.apply(null, last7.map(function(d) {
                                 var dr = d[1];
                                 return dr.filter(function(r) { return classify(r.decision) === 'accepted'; }).length +
