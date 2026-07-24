@@ -487,30 +487,23 @@
         #visa-dash .suggest-grid .table-col .table-wrap { max-height: 420px; overflow-y: auto; }
         #visa-dash .suggest-grid .table-col table {
             min-width: 400px;
-            table-layout: fixed;
+            table-layout: auto;
         }
         #visa-dash .suggest-grid .table-col table th,
         #visa-dash .suggest-grid .table-col table td {
             white-space: normal !important;
             word-break: break-word;
             vertical-align: top;
+            padding: 10px 12px;
         }
         #visa-dash .suggest-grid .table-col table td:first-child,
         #visa-dash .suggest-grid .table-col table th:first-child {
             white-space: nowrap !important;
-            width: 160px;
         }
         #visa-dash .suggest-grid .table-col table td:nth-child(2),
         #visa-dash .suggest-grid .table-col table th:nth-child(2) {
             white-space: nowrap !important;
-            width: 100px;
         }
-        #visa-dash .suggest-grid .table-col table td:nth-child(3),
-        #visa-dash .suggest-grid .table-col table td:nth-child(4) {
-            min-width: 140px;
-        }
-        #visa-dash .suggest-grid .table-col table td:nth-child(3) { width: 40%; }
-        #visa-dash .suggest-grid .table-col table td:nth-child(4) { width: 30%; }
         #visa-dash .suggest-grid .table-col .label {
             background: var(--surface);
             padding: 8px 12px;
@@ -789,10 +782,6 @@
             #visa-dash .suggest-grid .form-col,
             #visa-dash .suggest-grid .table-col { flex: 1 1 100%; }
             #visa-dash .suggest-grid .table-col .table-wrap { max-height: 300px; }
-            #visa-dash .suggest-grid .table-col table td:first-child,
-            #visa-dash .suggest-grid .table-col table th:first-child { width: 120px; }
-            #visa-dash .suggest-grid .table-col table td:nth-child(2),
-            #visa-dash .suggest-grid .table-col table th:nth-child(2) { width: 80px; }
         }
         @media (max-width: 480px) {
             #visa-dash .cards { grid-template-columns: 1fr 1fr; }
@@ -887,17 +876,6 @@
                 return dataPromise;
             }
 
-            // Silent background refresh: re-fetch now, only re-render when something changed.
-            let lastRefreshRenderedAt = Number.NEGATIVE_INFINITY;
-            async function backgroundRefresh() {
-                const before = cache;
-                await loadData({ force: true });
-                const now = Date.now();
-                if (cache !== before && now - lastRefreshRenderedAt > 1000) {
-                    lastRefreshRenderedAt = now;
-                    render();
-                }
-            }
 
             async function loadSuggestions() {
                 if (suggestionsCache) return suggestionsCache;
@@ -988,13 +966,17 @@
                         sub: fmtPct(accPct) + ' accepted · ' + fmtPct(rejPct) + ' rejected · ' + total.toLocaleString() + ' total.',
                         visual: (function() {
                             var last7 = byDate.slice(-7).reverse();
-                            var max = Math.max.apply(null, last7.map(function(d) { return d[1].length; }).concat([1]));
+                            var maxVal = Math.max.apply(null, last7.map(function(d) {
+                                var dr = d[1];
+                                return dr.filter(function(r) { return classify(r.decision) === 'accepted'; }).length +
+                                       dr.filter(function(r) { return classify(r.decision) === 'rejected'; }).length;
+                            }).concat([1]));
+                            var scale = Math.min(1, 130 / Math.max(maxVal, 1));
                             return '<div class="wf">' + last7.map(function(d) {
                                 var dayRows = d[1];
                                 var acc = dayRows.filter(function(r) { return classify(r.decision) === 'accepted'; }).length;
                                 var rej = dayRows.filter(function(r) { return classify(r.decision) === 'rejected'; }).length;
-                                var scale = 100 / max;
-                                return '<div class="wf-col"><div class="wf-seg a" style="height:' + Math.max(4, acc * scale) + 'px"></div><div class="wf-seg r" style="height:' + Math.max(4, rej * scale) + 'px"></div></div>';
+                                return '<div class="wf-col"><div class="wf-seg a" style="height:' + Math.max(3, acc * scale) + 'px"></div><div class="wf-seg r" style="height:' + Math.max(3, rej * scale) + 'px"></div></div>';
                             }).join('') + '</div>';
                         })()
                     },
@@ -1093,15 +1075,17 @@
                 for (var i = 0; i < pills.length; i++) {
                     pills[i].classList.toggle('active', pills[i].getAttribute('data-tab') === tabId);
                 }
-                var rows = await loadData();
+                // Use cached data to avoid stutter
+                var rows = cache && cache.length ? cache : await loadData();
+                // Load suggestions BEFORE hero so the typewriter card shows real data
+                if (tabId === 'suggest') await loadSuggestions();
                 animateHeroSwitch(tabId, rows);
                 var body = '';
                 if (tabId === 'home') body = renderHome(rows);
                 else if (tabId === 'daily') body = renderDailySummary(rows);
                 else if (tabId === 'past') body = renderPast(rows);
                 else {
-                    var suggestions = await loadSuggestions();
-                    body = renderSuggestions(suggestions);
+                    body = renderSuggestions(suggestionsCache);
                 }
                 var tabBody = document.getElementById('tab-body');
                 if (tabBody) tabBody.innerHTML = body;
@@ -1314,13 +1298,14 @@
                 var tabBody = document.getElementById('tab-body');
                 if (!tabBody) return;
                 var rows = await loadData();
+                // Load suggestions if on suggest tab so the typewriter card stays fresh
+                if (activeTab === 'suggest') await loadSuggestions();
                 var body = '';
                 if (activeTab === 'home') body = renderHome(rows);
                 else if (activeTab === 'daily') body = renderDailySummary(rows);
                 else if (activeTab === 'past') body = renderPast(rows);
                 else {
-                    var suggestions = await loadSuggestions();
-                    body = renderSuggestions(suggestions);
+                    body = renderSuggestions(suggestionsCache);
                 }
                 tabBody.innerHTML = body;
                 // Retrigger card entrance animations on the new DOM
@@ -1452,13 +1437,6 @@ async function render() {
 
             root.setAttribute('data-theme', theme);
             render();
-
-            // Auto-refresh: every 5 min while the tab is alive, plus immediately on
-            // returning to the tab after it was hidden.
-            setInterval(backgroundRefresh, CACHE_FRESH_MS);
-            document.addEventListener('visibilitychange', () => {
-                if (document.visibilityState === 'visible') backgroundRefresh();
-            });
         })();
     
     
