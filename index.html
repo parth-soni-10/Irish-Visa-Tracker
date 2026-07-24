@@ -1200,7 +1200,6 @@
                             }).concat([1]));
                             var scale = Math.min(1, 104 / Math.max(maxVal, 1));
                             var days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-                            var monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
                             return '<div class="wf">' + last7.map(function(d, i) {
                                 var dayRows = d[1];
                                 var acc = dayRows.filter(function(r) { return classify(r.decision) === 'accepted'; }).length;
