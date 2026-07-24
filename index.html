@@ -216,16 +216,18 @@
             background: var(--surface-hover);
         }
         /* Home + Past results tables: 3 columns. Fixed layout so headers and body
-           cells stay vertically aligned no matter how long decisions get. */
-        #visa-dash .results-table { table-layout: fixed; min-width: 360px; }
+           cells stay vertically aligned no matter how long decisions get. Capped
+           max-width + auto margins center the table inside the wrap on
+           wide-screen viewports instead of stretching to full container width. */
+        #visa-dash .results-table { table-layout: fixed; min-width: 360px; max-width: 720px; margin-left: auto; margin-right: auto; }
         #visa-dash .results-table th:nth-child(1),
         #visa-dash .results-table td:nth-child(1) { width: 18%; white-space: nowrap; }
         #visa-dash .results-table th:nth-child(2),
         #visa-dash .results-table td:nth-child(2) { width: 24%; white-space: nowrap; }
         #visa-dash .results-table th:nth-child(3),
         #visa-dash .results-table td:nth-child(3) { width: 58%; overflow-wrap: break-word; }
-        /* Daily summary table: 5 columns. */
-        #visa-dash .daily-table { table-layout: fixed; min-width: 480px; }
+        /* Daily summary table: 5 columns. Same centering treatment for consistency. */
+        #visa-dash .daily-table { table-layout: fixed; min-width: 480px; max-width: 880px; margin-left: auto; margin-right: auto; }
         #visa-dash .daily-table th:nth-child(1),
         #visa-dash .daily-table td:nth-child(1) { width: 18%; white-space: nowrap; }
         #visa-dash .daily-table th:nth-child(2),
@@ -1044,9 +1046,24 @@
                         title: 'Real notes,<br/>real replies.',
                         sub: 'Leave a suggestion below. I read every one and reply asap.',
                         visual: (function() {
+                            // The suggestion object's keys come straight from the
+                            // backend header row, so they could be anything
+                            // (e.g. SUGGESTION/PROBLEM, Suggestion, Message,
+                            // Name, NAME). A regex-based key finder keeps the
+                            // hero rendering correctly no matter how the sheet
+                            // is titled.
                             var lastSugg = (suggestionsCache && suggestionsCache.length) ? suggestionsCache[suggestionsCache.length - 1] : null;
-                            var text = lastSugg ? (lastSugg.suggestion || lastSugg.Suggestion || lastSugg.text || '') : '';
-                            var name = lastSugg ? (lastSugg.name || lastSugg.Name || '') : '';
+                            if (!lastSugg) {
+                                return '<div class="paper"><div class="paper-title">Recent</div><div class="paper-text">No suggestions yet</div></div>';
+                            }
+                            var keys = Object.keys(lastSugg);
+                            var textKey = keys.find(function(k) {
+                                var lk = k.toLowerCase();
+                                return /sugg|comment|message|feedback|body|note|problem/.test(lk) && !/^name|^user|^from|^by/.test(lk);
+                            });
+                            var nameKey = keys.find(function(k) { return /^(name|user|from|by)$/i.test(k); });
+                            var text = textKey ? (lastSugg[textKey] || '') : '';
+                            var name = nameKey ? (lastSugg[nameKey] || '') : '';
                             var display = text || 'No suggestions yet';
                             return '<div class="paper"><div class="paper-title">' + (name ? 'From: ' + escapeHtml(name) : 'Recent') + '</div><div class="paper-text">' + escapeHtml(display) + '</div></div>';
                         })()
