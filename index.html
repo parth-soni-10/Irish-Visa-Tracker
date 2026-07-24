@@ -484,11 +484,15 @@
         }
         #visa-dash .suggest-grid .form-col { flex: 1 1 280px; min-width: 0; }
         #visa-dash .suggest-grid .table-col { flex: 2 1 400px; min-width: 0; }
-        #visa-dash .suggest-grid .table-col .table-wrap { max-height: 420px; overflow-y: auto; }
+        #visa-dash .suggest-grid .table-col .table-wrap { max-height: 420px; overflow-y: auto; overflow-x: auto; }
         #visa-dash .suggest-grid .table-col table {
-            min-width: 400px;
-            table-layout: auto;
+            min-width: 600px;
+            table-layout: fixed;
         }
+        /* Hide the global tbody tr::before hover highlight on this fixed-layout table.
+           Under table-layout:fixed that pseudo-element becomes an anonymous table
+           cell and locks into the 1st column, shifting every real td over by one. */
+        #visa-dash .suggest-grid .table-col table tbody tr::before { display: none; }
         #visa-dash .suggest-grid .table-col table th,
         #visa-dash .suggest-grid .table-col table td {
             white-space: normal !important;
@@ -496,13 +500,22 @@
             vertical-align: top;
             padding: 10px 12px;
         }
-        #visa-dash .suggest-grid .table-col table td:first-child,
-        #visa-dash .suggest-grid .table-col table th:first-child {
+        #visa-dash .suggest-grid .table-col table th:nth-child(1),
+        #visa-dash .suggest-grid .table-col table td:nth-child(1) {
+            width: 22%;
+            word-break: break-all;
+        }
+        #visa-dash .suggest-grid .table-col table th:nth-child(2),
+        #visa-dash .suggest-grid .table-col table td:nth-child(2) {
+            width: 18%;
+        }
+        #visa-dash .suggest-grid .table-col table th:nth-child(-n+2),
+        #visa-dash .suggest-grid .table-col table td:nth-child(-n+2) {
             white-space: nowrap !important;
         }
-        #visa-dash .suggest-grid .table-col table td:nth-child(2),
-        #visa-dash .suggest-grid .table-col table th:nth-child(2) {
-            white-space: nowrap !important;
+        #visa-dash .suggest-grid .table-col table th:nth-child(n+3),
+        #visa-dash .suggest-grid .table-col table td:nth-child(n+3) {
+            width: 30%;
         }
         #visa-dash .suggest-grid .table-col .label {
             background: var(--surface);
@@ -782,6 +795,7 @@
             #visa-dash .suggest-grid .form-col,
             #visa-dash .suggest-grid .table-col { flex: 1 1 100%; }
             #visa-dash .suggest-grid .table-col .table-wrap { max-height: 300px; }
+            #visa-dash .suggest-grid .table-col table { min-width: 0; }
         }
         @media (max-width: 480px) {
             #visa-dash .cards { grid-template-columns: 1fr 1fr; }
