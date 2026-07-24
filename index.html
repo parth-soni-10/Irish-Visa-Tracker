@@ -891,6 +891,20 @@
                 return r;
             }
 
+            // Mirror of preloadRow for the Suggest tab. Caches each row's
+            // pre-rendered <tr>...</tr> string so paintSuggestRows is pure
+            // string concat (no per-cell escape work).  Also escapes every
+            // value and header (the prior full-render path didn't, which
+            // was an XSS vector if the Google Sheet ever had hostile data).
+            function preloadSuggestionRow(s) {
+                if (s._html) return s;
+                var keys = Object.keys(s);
+                s._html = '<tr>' + keys.map(function(h) {
+                    return '<td>' + escapeHtml(s[h]) + '</td>';
+                }).join('') + '</tr>';
+                return s;
+            }
+
             function escapeHtml(value) {
                 return String(value == null ? '' : value).replace(/[&<>"']/g, ch => ({
                     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
@@ -965,10 +979,10 @@
                             suggestionsCache = raw.slice(1).map(row => {
                                 const obj = {};
                                 headers.forEach((h, i) => { obj[h] = row[i] !== undefined ? row[i] : ''; });
-                                return obj;
+                                return preloadSuggestionRow(obj);
                             });
                         } else {
-                            suggestionsCache = raw;
+                            suggestionsCache = raw.map(preloadSuggestionRow);
                         }
                     } else {
                         suggestionsCache = [];
@@ -1259,7 +1273,7 @@
                 if (tabId === 'home') tabBody.innerHTML = renderHomeLayout(rows);
                 else if (tabId === 'daily') tabBody.innerHTML = renderDailySummary(rows);
                 else if (tabId === 'past') tabBody.innerHTML = renderPastLayout(rows);
-                else tabBody.innerHTML = renderSuggestions(suggestionsCache);
+                else { tabBody.innerHTML = renderSuggestLayout(); paintSuggestRows(suggestionsCache); }
                 wireTabListeners();
                 // Paint deferred row content after the layout is in the DOM.
                 if (tabId === 'home') paintHomeRows();
@@ -1462,35 +1476,59 @@
                 renderRowsProgressive(tbody, visible);
             }
 
-            function renderSuggestions(suggestions) {
-                const formHtml = '<div class="card" style="max-width:100%;">' +
-                    '<div class="label" style="margin-bottom:12px;">Submit a suggestion</div>' +
-                    '<input type="text" id="sugg-name" placeholder="Your name" />' +
-                    '<textarea id="sugg-text" placeholder="Your suggestion\u2026"></textarea>' +
-                    '<button class="btn" id="sugg-submit">Submit</button>' +
-                    '<div class="note" id="sugg-status"></div>' +
-                    '</div>';
-
-                let tableHtml = '';
-                if (suggestions && suggestions.length) {
-                    const headers = Object.keys(suggestions[0]);
-                    const rows = suggestions.map(s => {
-                        return '<tr>' + headers.map(h => '<td>' + (s[h] !== undefined ? s[h] : '') + '</td>').join('') +
-                            '</tr>';
-                    }).join('');
-                    tableHtml = '<div class="table-wrap"><table><thead><tr>' +
-                        headers.map(h => '<th>' + h + '</th>').join('') +
-                        '</tr></thead><tbody>' + rows + '</tbody></table></div>';
-                } else {
-                    tableHtml = '<div class="empty" style="padding:20px;">No suggestions yet.</div>';
-                }
-
+            // ====== SUGGEST TAB ======
+            // Two-phase render, same pattern as Home / Past:
+            //   renderSuggestLayout()  — paints ONCE per tab switch: form +
+            //                            table shell with empty <thead>/<tbody>.
+            //                            The submit button + inputs stay alive
+            //                            across paints, so typed text and the
+            //                            listener are never destroyed on filter
+            //                            or post-submit updates.
+            //   paintSuggestRows(s)    — updates ONLY #suggest-tbody + thead +
+            //                            the empty-state div. No innerHTML
+            //                            wipe on the form.
+            function renderSuggestLayout() {
                 return renderConfigWarning() +
                     '<div class="suggest-grid">' +
-                    '<div class="form-col">' + formHtml + '</div>' +
-                    '<div class="table-col"><div class="label" style="margin-bottom:8px;">All suggestions</div>' + tableHtml +
-                    '</div>' +
+                        '<div class="form-col">' +
+                            '<div class="card" style="max-width:100%;">' +
+                                '<div class="label" style="margin-bottom:12px;">Submit a suggestion</div>' +
+                                '<input type="text" id="sugg-name" placeholder="Your name" />' +
+                                '<textarea id="sugg-text" placeholder="Your suggestion\u2026"></textarea>' +
+                                '<button class="btn" id="sugg-submit">Submit</button>' +
+                                '<div class="note" id="sugg-status"></div>' +
+                            '</div>' +
+                        '</div>' +
+                        '<div class="table-col">' +
+                            '<div class="label" style="margin-bottom:8px;">All suggestions</div>' +
+                            '<div class="table-wrap">' +
+                                '<table class="suggest-table">' +
+                                    '<thead><tr id="suggest-thead-row"></tr></thead>' +
+                                    '<tbody id="suggest-tbody"></tbody>' +
+                                '</table>' +
+                            '</div>' +
+                            '<div class="empty" id="suggest-empty" style="padding:20px;">No suggestions yet.</div>' +
+                        '</div>' +
                     '</div>';
+            }
+
+            function paintSuggestRows(suggestions) {
+                var tbody = document.getElementById('suggest-tbody');
+                var theadRow = document.getElementById('suggest-thead-row');
+                var emptyEl = document.getElementById('suggest-empty');
+                if (!tbody) return;
+                if (!suggestions || !suggestions.length) {
+                    tbody.innerHTML = '';
+                    if (theadRow) theadRow.innerHTML = '';
+                    if (emptyEl) emptyEl.style.display = '';
+                    return;
+                }
+                if (emptyEl) emptyEl.style.display = 'none';
+                var firstKeys = Object.keys(suggestions[0]);
+                if (theadRow) theadRow.innerHTML = firstKeys.map(function(h) {
+                    return '<th>' + escapeHtml(h) + '</th>';
+                }).join('');
+                tbody.innerHTML = suggestions.map(function(s) { return s._html; }).join('');
             }
 
             async function submitSuggestion() {
@@ -1517,9 +1555,14 @@
                     const newSuggestions = await loadSuggestions();
                     const tabBody = document.getElementById('tab-body');
                     if (tabBody && activeTab === 'suggest') {
-                        tabBody.innerHTML = renderSuggestions(newSuggestions);
-                        const newBtn = document.getElementById('sugg-submit');
-                        if (newBtn) newBtn.addEventListener('click', submitSuggestion);
+                        // Don't innerHTML the whole tabBody — the user might
+                        // have started typing a new suggestion, and re-binding
+                        // the listener manually is fragile.  Just paint the
+                        // new rows. The submit button is still the same DOM
+                        // node from renderSuggestLayout, with its existing
+                        // listener intact.
+                        suggestionsCache = newSuggestions;
+                        paintSuggestRows(newSuggestions);
                     }
                 } catch (err) {
                     status.textContent = 'Could not submit — try again.';
@@ -1629,7 +1672,8 @@
                         tabBody.innerHTML = renderPastLayout(rows);
                         paintPastRows();
                     } else {
-                        tabBody.innerHTML = renderSuggestions(suggestionsCache);
+                        tabBody.innerHTML = renderSuggestLayout();
+                        paintSuggestRows(suggestionsCache);
                     }
                 }
                 wireTabListeners();
