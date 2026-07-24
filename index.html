@@ -1024,15 +1024,41 @@
                         visual: '<div class="ring"></div><div class="ring"></div><div class="ring"></div><div class="ring-core">' + latestCount + '</div>'
                     },
                     daily: {
-                        eyebrow: 'DAILY TREND',
+                        eyebrow: 'THIS WEEK',
                         title: byDate.length + ' days<br/>on record.',
-                        sub: 'Avg ' + avg.toFixed(1) + ' applications/day. ' + fmtPct(accPct) + ' acceptance rate.',
+                        sub: (function() {
+                            // Mirror the Past hero: sub-text shows the actual
+                            // date range so the user sees both totals AND the
+                            // dates covered. Week boundary Sun -> Sat.
+                            var _t = new Date();
+                            var _ws = new Date(_t.getFullYear(), _t.getMonth(), _t.getDate() - _t.getDay());
+                            var _we = new Date(_ws); _we.setDate(_ws.getDate() + 6);
+                            var _mn = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+                            return 'Avg ' + avg.toFixed(1) + ' applications/day · ' + fmtPct(accPct) + ' accepted · week of ' +
+                                   _mn[_ws.getMonth()] + ' ' + _ws.getDate() + '\u2013' + _mn[_we.getMonth()] + ' ' + _we.getDate() + '.';
+                        })(),
                         visual: (function() {
-                            const last14 = byDate.slice(-14).reverse();
-                            const max = Math.max.apply(null, last14.map(function(d) { return d[1].length; }).concat([1]));
-                            return '<div class="wave">' + last14.map(function(d, i) {
+                            // Current calendar week (Sun -> Sat) containing
+                            // today, matching the Past hero's window. weekStart
+                            // is the most-recent Sunday on or before today; we
+                            // look each of 7 days up in a byDate Map. Missing
+                            // days render as zero-height bars.
+                            var today = new Date();
+                            var weekStart = new Date(today.getFullYear(), today.getMonth(), today.getDate() - today.getDay());
+                            var byDateMap = new Map(byDate);
+                            var weekDays = [];
+                            for (var wi = 0; wi < 7; wi++) {
+                                var d = new Date(weekStart);
+                                d.setDate(weekStart.getDate() + wi);
+                                var ds = d.getFullYear() + '-' +
+                                         String(d.getMonth() + 1).padStart(2, '0') + '-' +
+                                         String(d.getDate()).padStart(2, '0');
+                                weekDays.push([ds, byDateMap.get(ds) || []]);
+                            }
+                            var maxApps = Math.max.apply(null, weekDays.map(function(d) { return d[1].length; }).concat([1]));
+                            return '<div class="wave">' + weekDays.map(function(d, i) {
                                 var dayRows = d[1];
-                                return '<div class="wave-bar" style="height:' + Math.max(8, (dayRows.length / max) * 120) + 'px; animation-delay:' + (i * 0.07) + 's"></div>';
+                                return '<div class="wave-bar" style="height:' + Math.max(8, (dayRows.length / maxApps) * 120) + 'px; animation-delay:' + (i * 0.07) + 's"></div>';
                             }).join('') + '</div>';
                         })()
                     },
