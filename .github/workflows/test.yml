@@ -1,0 +1,168 @@
+name: Smoke tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch: {}   # allow manual "Run workflow" runs
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      # ---------- scraper.py ----------
+      - name: scraper.py must compile
+        run: python -m py_compile scraper.py
+
+      - name: scraper.py parse_date_from_filename must validate dates
+        run: |
+          python - <<'PY'
+          import sys
+          sys.path.insert(0, '.')
+          import scraper
+          today = scraper.now_ist().strftime('%Y-%m-%d')
+          # Valid date → returned parsed
+          assert scraper.parse_date_from_filename('visa_20260115.ods') == '2026-01-15', 'valid date should parse'
+          # UUID-shaped 8-digit mid-str → falls back to today
+          assert scraper.parse_date_from_filename('abc-12345678-def.ods') == today, 'UUID-shaped digits should fall back'
+          # Insufficient digits / no digits → fall back
+          assert scraper.parse_date_from_filename('visa.ods') == today, 'no digits should fall back'
+          assert scraper.parse_date_from_filename('x1234567.ods') == today, '7 digits should fall back'
+          # Invalid month/day → fall back
+          assert scraper.parse_date_from_filename('y_20260000.ods') == today, 'month 00 should fall back'
+          assert scraper.parse_date_from_filename('y_20261301.ods') == today, 'month 13 should fall back'
+          assert scraper.parse_date_from_filename('y_20260230.ods') == today, 'Feb 30 should fall back'
+          print('parse_date_from_filename: OK')
+          PY
+
+      # ---------- scrape.yml ----------
+      - name: scrape.yml must declare 9 cron entries (08:00\u201312:00 IST)
+        run: |
+          set -e
+          count=$(grep -cE "^\s*-\s+cron:\s*'" .github/workflows/scrape.yml)
+          if [ "$count" -ne 9 ]; then
+            echo "::error::Expected 9 cron entries in scrape.yml, found $count"
+            exit 1
+          fi
+          echo "OK: 9 cron entries"
+
+      - name: scrape.yml must NOT pass the dead IS_FINAL_RUN env var
+        run: |
+          set -e
+          if grep -q 'IS_FINAL_RUN' .github/workflows/scrape.yml; then
+            echo "::error::scrape.yml still references the dead IS_FINAL_RUN env var"
+            exit 1
+          fi
+          echo "OK: IS_FINAL_RUN absent"
+
+      # ---------- netlify.toml ----------
+      - name: netlify.toml must be valid TOML with the four expected security headers
+        run: |
+          python - <<'PY'
+          import tomllib
+          with open('netlify.toml', 'rb') as f:
+              cfg = tomllib.load(f)
+          values = cfg['headers'][0]['values']
+          for h in ('X-Frame-Options', 'X-Content-Type-Options', 'Referrer-Policy', 'Permissions-Policy'):
+              assert h in values, f'netlify.toml must include {h}'
+          print('netlify.toml: OK')
+          PY
+
+      # ---------- index.html & new_index.html ----------
+      - name: index.html scripts must remain balanced and XSS-safe
+        run: |
+          python - <<'PY'
+          import re, sys, os
+
+          def check(path, *, include_mockup=False):
+              if not os.path.exists(path):
+                  print(f'{path}: SKIP (not present)')
+                  return
+              with open(path) as fh:
+                  s = fh.read()
+              js = re.search(r'<script>(.*?)</script>', s, re.DOTALL).group(1)
+              assert js.count('{') == js.count('}'), f'{path}: braces not balanced'
+              assert js.count('(') == js.count(')'), f'{path}: parens not balanced'
+              assert js.count('[') == js.count(']'), f'{path}: brackets not balanced'
+
+              # Security & correctness invariants — must never regress.
+              assert 'function escapeHtml' in js, f'{path}: escapeHtml helper missing'
+              assert 'function classify' in js, f'{path}: classify regex missing'
+              assert 'suggBtn.addEventListener' in js or 'sugg-submit' in js, \
+                  f'{path}: suggestion submit listener wiring missing'
+              assert 'pendingSearchSelection' in js, f'{path}: pendingSearchSelection cursor preservation missing'
+              assert 'dataPromise' in js, f'{path}: dataPromise dedupe missing'
+              assert 'cacheFetchedAt' in js, f'{path}: cache freshness guard missing'
+
+              # Search input value attribute MUST be escaped (XSS / attribute-injection vector).
+              assert 'escapeHtml(homeSearchTerm)' in js, f'{path}: home-search value must be escapeHtml()\'d'
+              # Past-tab date filter input value MUST be escaped.
+              assert 'escapeHtml(pastDateFilter)' in js, f'{path}: past-date-filter value must be escapeHtml()\'d'
+              # Per-call assertions on the known XSS-vector sites. EXCLUDE_FROM_AVERAGES
+              # is shown only in the mockup's small caption; the original dashboard excludes
+              # the date silently. So the requirement is conditional.
+              common_calls = (
+                  'escapeHtml(r.date)',
+                  'escapeHtml(r.irl)',
+                  'escapeHtml(r.decision',
+                  'escapeHtml(homeSearchTerm)',
+                  'escapeHtml(latestDate)',
+                  'escapeHtml(pastDateFilter)',
+              )
+              for expected in common_calls:
+                  assert expected in js, f'{path}: missing escapeHtml call for "{expected}"'
+              if include_mockup:
+                  assert 'escapeHtml(EXCLUDE_FROM_AVERAGES)' in js, \
+                      f'{path}: missing escapeHtml call for "EXCLUDE_FROM_AVERAGES" in mockup'
+
+              # Input handler MUST NOT trim() the target value — that was the cursor regression.
+              # (Other form fields DO .value.trim() legitimately; this only checks the specific
+              # dangerous pattern in the search input listener.)
+              assert not re.search(
+                  r'homeSearchTerm\s*=\s*e\.target\.value\s*\.\s*trim\s*\(',
+                  js,
+              ), f'{path}: BAD PATTERN — homeSearchTerm = e.target.value.trim() (search-cursor regression)'
+              assert 'homeSearchTerm = e.target.value' in js, \
+                  f'{path}: input handler capture missing'
+
+              # Auto-refresh wiring must be present.
+              assert 'setInterval(backgroundRefresh' in js, f'{path}: setInterval auto-refresh missing'
+              assert "addEventListener('visibilitychange'" in js, f'{path}: visibilitychange listener missing'
+
+              if include_mockup:
+                  assert 'median decision' not in s.lower(), \
+                      f'{path}: Median decision card should be absent (user removed)'
+                  assert 'prefers-reduced-motion' in s, f'{path}: prefers-reduced-motion gate missing'
+                  assert 'live-dot' in s, f'{path}: Mockup A live-dot missing'
+                  assert 'big-num' in s, f'{path}: Mockup A big-num missing'
+                  assert 'data-countup=' in js, f'{path}: count-up animation missing'
+                  assert 'function renderSparkline' in js, f'{path}: renderSparkline helper missing'
+
+              print(f'{path}: OK')
+
+          check('index.html')
+          check('new_index.html', include_mockup=True)
+          PY
+
+      # ---------- requirements.txt ----------
+      - name: requirements.txt must pin minimum versions
+        run: |
+          python - <<'PY'
+          with open('requirements.txt') as f:
+              for line in f:
+                  line = line.strip()
+                  if not line or line.startswith('#'):
+                      continue
+                  assert any(op in line for op in ('>=', '~=', '==')), \
+                      f'requirements.txt line "{line}" must pin a version (e.g. requests>=2.31,<3)'
+          print('requirements.txt: OK')
+          PY

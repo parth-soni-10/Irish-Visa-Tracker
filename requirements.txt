@@ -1,4 +1,4 @@
-requests
-pandas
-odfpy
-python-dateutil
+requests>=2.31,<3
+pandas>=2.1,<3
+odfpy>=1.4,<2
+python-dateutil>=2.8,<3

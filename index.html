@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Irish Visa Decision Tracker</title>
 <base target="_blank">
-<base target="_blank">
 </head>
 <body>
     <div id="visa-dash"></div>
@@ -30,9 +29,6 @@
             --red: #dc2626;
             --red-soft: #fee2e2;
             --red-text: #991b1b;
-            --line: #e2e8f0;
-            --card: #ffffff;
-            --parchment: #ffffff;
             font-family: -apple-system, "Segoe UI", "Inter", Helvetica, Arial, sans-serif;
             background: var(--surface);
             color: var(--ink);
@@ -79,19 +75,38 @@
             position: relative;
             overflow: hidden;
         }
+        #visa-dash .navpill::after {
+            content: '';
+            position: absolute;
+            top: 50%; left: 50%;
+            width: 10px; height: 10px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.25);
+            transform: translate(-50%, -50%) scale(0);
+            pointer-events: none;
+            opacity: 0;
+        }
+        #visa-dash .navpill.rippling::after {
+            animation: nav-ripple 0.5s ease-out;
+        }
+        @keyframes nav-ripple {
+            0% { transform: translate(-50%, -50%) scale(0); opacity: 0.4; }
+            100% { transform: translate(-50%, -50%) scale(30); opacity: 0; }
+        }
         #visa-dash .navpill:hover {
             background: var(--surface-hover);
             color: var(--ink-soft);
             transform: translateY(-1px);
         }
         #visa-dash .navpill.active {
-            background: var(--green);
             color: #fff;
-            box-shadow: 0 4px 14px rgba(5, 150, 105, 0.35);
+            box-shadow: 0 6px 22px rgba(0,0,0,.18);
         }
-        #visa-dash .navpill.active:hover {
-            background: #047857;
-        }
+        #visa-dash .navpill[data-tab="home"].active   { background: linear-gradient(135deg, var(--green), var(--green-light)); }
+        #visa-dash .navpill[data-tab="daily"].active  { background: linear-gradient(135deg, #7c3aed, #a78bfa); }
+        #visa-dash .navpill[data-tab="past"].active   { background: linear-gradient(135deg, var(--amber), #f59e0b); }
+        #visa-dash .navpill[data-tab="suggest"].active{ background: linear-gradient(135deg, #ec4899, #f472b6); }
+        #visa-dash .navpill.active:hover { filter: brightness(0.9); }
         #visa-dash .cards {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
@@ -104,55 +119,26 @@
             border-radius: 14px;
             padding: 16px;
             opacity: 0;
-            transform: translateY(8px);
-            animation: visa-card-in 0.4s ease forwards;
+            transform: translateY(12px);
+            animation: visa-card-in 0.45s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
             transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         }
-        #visa-dash .card:nth-child(1) { animation-delay: 0.02s; }
-        #visa-dash .card:nth-child(2) { animation-delay: 0.07s; }
-        #visa-dash .card:nth-child(3) { animation-delay: 0.12s; }
-        #visa-dash .card:nth-child(4) { animation-delay: 0.17s; }
-        #visa-dash .card:nth-child(5) { animation-delay: 0.22s; }
+        #visa-dash .card:nth-child(1) { animation-delay: 0.03s; }
+        #visa-dash .card:nth-child(2) { animation-delay: 0.08s; }
+        #visa-dash .card:nth-child(3) { animation-delay: 0.13s; }
+        #visa-dash .card:nth-child(4) { animation-delay: 0.18s; }
+        #visa-dash .card:nth-child(5) { animation-delay: 0.23s; }
+        #visa-dash .card:nth-child(6) { animation-delay: 0.28s; }
+        #visa-dash .card:nth-child(7) { animation-delay: 0.33s; }
+        #visa-dash .card:nth-child(8) { animation-delay: 0.38s; }
         @keyframes visa-card-in {
+            from { opacity: 0; transform: translateY(12px); }
             to { opacity: 1; transform: translateY(0); }
         }
-        #visa-dash .card.hero {
-            background: linear-gradient(135deg, var(--green), var(--green-light));
-            border: none;
-            color: #fff;
-            grid-column: span 2;
-            position: relative;
-            overflow: hidden;
-            box-shadow: 0 8px 30px rgba(5, 150, 105, 0.25);
+        @media (prefers-reduced-motion: reduce) {
+            #visa-dash .card { animation: none; }
         }
-        #visa-dash .card.hero::after {
-            content: '';
-            position: absolute;
-            top: -40%;
-            right: -20%;
-            width: 200px;
-            height: 200px;
-            background: rgba(255,255,255,0.08);
-            border-radius: 50%;
-            pointer-events: none;
-        }
-        #visa-dash .card.hero .label {
-            color: rgba(255,255,255,0.75);
-            font-size: 11px;
-            text-transform: uppercase;
-            letter-spacing: .08em;
-            margin-bottom: 8px;
-            position: relative;
-            z-index: 1;
-        }
-        #visa-dash .card.hero .value {
-            font-size: 38px;
-            font-weight: 800;
-            position: relative;
-            z-index: 1;
-            letter-spacing: -.02em;
-        }
-        #visa-dash .card .label {
+#visa-dash .card .label {
             font-size: 10px;
             color: var(--ink-muted);
             text-transform: uppercase;
@@ -174,14 +160,6 @@
         #visa-dash .card .value.green { color: var(--green); }
         #visa-dash .card .value.red { color: var(--red); }
         #visa-dash .card .value.amber { color: var(--amber); }
-        #visa-dash .trend {
-            font-size: 11px;
-            margin-top: 6px;
-            display: flex;
-            align-items: center;
-            gap: 3px;
-            color: var(--ink-muted);
-        }
         #visa-dash .table-wrap {
             overflow-x: auto;
             border-radius: 14px;
@@ -215,6 +193,21 @@
         }
         #visa-dash tbody tr {
             transition: background 0.15s;
+            position: relative;
+        }
+        #visa-dash tbody tr::before {
+            content: '';
+            position: absolute;
+            left: 0; top: 0; bottom: 0;
+            width: 3px;
+            background: linear-gradient(180deg, var(--green), var(--green-light));
+            opacity: 0;
+            border-radius: 0 3px 3px 0;
+            transition: opacity 0.25s ease;
+            pointer-events: none;
+        }
+        #visa-dash tbody tr:hover::before {
+            opacity: 1;
         }
         #visa-dash tbody tr:hover {
             background: var(--surface-hover);
@@ -226,6 +219,21 @@
             border-radius: 6px;
             font-size: 11px;
             font-weight: 600;
+            position: relative;
+            overflow: hidden;
+        }
+        #visa-dash .pill::after {
+            content: '';
+            position: absolute;
+            top: 0; left: -100%;
+            width: 60%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent);
+            transform: skewX(-20deg);
+            transition: left 0.5s ease;
+            pointer-events: none;
+        }
+        #visa-dash .pill:hover::after {
+            left: 120%;
         }
         #visa-dash .pill.green { background: var(--green-soft); color: var(--green-text); }
         #visa-dash .pill.red { background: var(--red-soft); color: var(--red-text); }
@@ -404,22 +412,6 @@
             color: var(--ink-muted);
             margin-bottom: 16px;
         }
-        #visa-dash .loading {
-            padding: 60px 20px;
-            text-align: center;
-            color: var(--ink-muted);
-            font-size: 14px;
-        }
-        #visa-dash .spinner {
-            width: 24px;
-            height: 24px;
-            border: 3px solid var(--border);
-            border-top-color: var(--green);
-            border-radius: 50%;
-            margin: 0 auto 14px;
-            animation: visa-spin 0.8s linear infinite;
-        }
-        @keyframes visa-spin { to { transform: rotate(360deg); } }
         #visa-dash .topbar {
             height: 3px;
             background: var(--border);
@@ -562,12 +554,6 @@
             font-size: 12px;
         }
 
-        #visa-dash .eyebrow-row {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 4px;
-        }
         #visa-dash .theme-toggle {
             background: var(--surface-raised);
             border: 1px solid var(--border);
@@ -589,12 +575,169 @@
             transform: translateY(-1px);
             box-shadow: 0 2px 8px rgba(0,0,0,0.08);
         }
-        
-        #visa-dash .spark-bar:hover {
-            opacity: 1;
-            transform: scaleY(1.05);
-            z-index: 1;
+
+        /* ===== scroll-to-top button ===== */
+        #visa-dash .scroll-top-btn {
+            position: fixed;
+            bottom: 28px;
+            right: 28px;
+            z-index: 100;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            border: 1px solid var(--border);
+            background: var(--surface);
+            color: var(--ink-soft);
+            font-size: 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            visibility: hidden;
+            opacity: 0;
+            transform: translateY(8px);
+            pointer-events: none;
         }
+        #visa-dash .scroll-top-btn.visible {
+            visibility: visible;
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: auto;
+        }
+        #visa-dash .scroll-top-btn:hover {
+            background: var(--green);
+            color: #fff;
+            border-color: var(--green);
+            box-shadow: 0 4px 18px rgba(5, 150, 105, 0.35);
+            transform: translateY(-2px);
+        }
+        #visa-dash .scroll-top-btn:active {
+            transform: scale(0.92);
+        }
+        @media (max-width: 760px) {
+            #visa-dash .scroll-top-btn {
+                bottom: 20px;
+                right: 16px;
+                width: 40px;
+                height: 40px;
+                font-size: 18px;
+            }
+        }
+
+        /* ===== hero (Mockup C — the hive) ===== */
+        #visa-dash .hero {
+            position: relative;
+            border-radius: 20px;
+            padding: 24px 28px;
+            color: #fff;
+            overflow: hidden;
+            min-height: 180px;
+            box-shadow: 0 12px 40px rgba(0,0,0,.10);
+            margin-bottom: 20px;
+            transition: opacity 0.4s ease;
+        }
+        /* per-tab gradients */
+        #visa-dash .hero[data-id="home"]    { background: radial-gradient(circle, rgba(255,255,255,0.07) 1px, transparent 1px), linear-gradient(135deg, var(--green), var(--green-light)); background-size: 26px 26px, auto; }
+        #visa-dash .hero[data-id="daily"]   { background: radial-gradient(circle, rgba(255,255,255,0.07) 1px, transparent 1px), linear-gradient(135deg, #7c3aed, #a78bfa); background-size: 26px 26px, auto; }
+        #visa-dash .hero[data-id="past"]    { background: radial-gradient(circle, rgba(255,255,255,0.07) 1px, transparent 1px), linear-gradient(135deg, var(--amber), #fbbf24); background-size: 26px 26px, auto; }
+        #visa-dash .hero[data-id="suggest"] { background: radial-gradient(circle, rgba(255,255,255,0.07) 1px, transparent 1px), linear-gradient(135deg, #ec4899, #f472b6); background-size: 26px 26px, auto; }
+        /* floating blobs */
+        #visa-dash .hero::before, #visa-dash .hero::after {
+            content: ''; position: absolute; border-radius: 50%; pointer-events: none; z-index: 3;
+        }
+        #visa-dash .hero::before {
+            width: 260px; height: 260px; top: -40%; right: -10%;
+            background: rgba(255,255,255,.10);
+        }
+        #visa-dash .hero::after {
+            width: 180px; height: 180px; bottom: -50%; left: 5%;
+            background: rgba(255,255,255,.06);
+        }
+        @media (prefers-reduced-motion: no-preference) {
+            #visa-dash .hero::before { animation: drift 8s ease-in-out infinite; }
+            #visa-dash .hero::after  { animation: drift 11s ease-in-out -3s infinite reverse; }
+            #visa-dash .hero { animation: dot-drift 30s linear infinite; }
+        }
+        @keyframes drift { 50% { transform: translate(20px,-15px) scale(1.08); } }
+        @keyframes dot-drift { from { background-position: 0 0, 0 0; } to { background-position: 26px 26px, 0 0; } }
+
+        #visa-dash .hero-body {
+            position: relative; z-index: 4;
+            display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: center;
+        }
+        #visa-dash .hero-eyebrow {
+            font-size: 11px; letter-spacing: .14em; text-transform: uppercase;
+            color: rgba(255,255,255,.78); font-weight: 700; margin-bottom: 6px;
+        }
+        #visa-dash .hero-title { font-size: 28px; font-weight: 800; letter-spacing: -.02em; line-height: 1.1; }
+        #visa-dash .hero-sub { margin-top: 8px; font-size: 14px; color: rgba(255,255,255,.88); }
+
+        /* ===== per-tab visuals ===== */
+        #visa-dash .visual {
+            position: relative; height: 130px;
+            display: flex; align-items: center; justify-content: center;
+        }
+        /* Home — concentric pulse rings */
+        #visa-dash .ring {
+            position: absolute; border-radius: 50%;
+            border: 2px solid rgba(255,255,255,.6);
+        }
+        @media (prefers-reduced-motion: no-preference) {
+            #visa-dash .ring { animation: ring-out 4s ease-out infinite; }
+        }
+        #visa-dash .ring:nth-child(1) { width: 50px;  height: 50px;  animation-delay: 0s; }
+        #visa-dash .ring:nth-child(2) { width: 90px;  height: 90px;  animation-delay: .8s; }
+        #visa-dash .ring:nth-child(3) { width: 130px; height: 130px; animation-delay: 1.6s; }
+        @keyframes ring-out { to { transform: scale(1.3); opacity: 0; } }
+        #visa-dash .ring-core {
+            width: 36px; height: 36px; border-radius: 50%;
+            background: #fff; color: var(--green);
+            font-size: 18px; font-weight: 800;
+            display: flex; align-items: center; justify-content: center;
+            z-index: 2;
+            box-shadow: 0 4px 16px rgba(0,0,0,.25);
+        }
+        /* Daily — animated sine-wave bar chart */
+        #visa-dash .wave { display: flex; align-items: flex-end; gap: 4px; height: 100%; width: 100%; }
+        #visa-dash .wave-bar {
+            flex: 1; background: rgba(255,255,255,.85); border-radius: 2px 2px 0 0;
+            transform-origin: bottom;
+        }
+        @media (prefers-reduced-motion: no-preference) {
+            #visa-dash .wave-bar { animation: wave-up 1.4s cubic-bezier(.2,.8,.2,1) infinite alternate; }
+        }
+        @keyframes wave-up { from { transform: scaleY(.3); } to { transform: scaleY(1); } }
+        /* Past — stacked waterfall */
+        #visa-dash .wf { display: flex; align-items: flex-end; gap: 4px; height: 100%; width: 100%; }
+        #visa-dash .wf-col { flex: 1; display: flex; flex-direction: column-reverse; gap: 2px; }
+        #visa-dash .wf-seg { width: 100%; border-radius: 2px; }
+        #visa-dash .wf-seg.a { background: rgba(255,255,255,.92); }
+        #visa-dash .wf-seg.r { background: rgba(255,255,255,.55); }
+        /* Suggest — typewriter card */
+        #visa-dash .paper {
+            background: #fff; color: var(--ink);
+            border-radius: 10px; padding: 12px 14px;
+            box-shadow: 0 8px 24px rgba(0,0,0,.18);
+            width: 90%; max-width: 320px; text-align: left;
+        }
+        #visa-dash .paper-title {
+            font-size: 11px; color: var(--ink-muted); font-weight: 700;
+            letter-spacing: .06em; text-transform: uppercase; margin-bottom: 6px;
+        }
+        #visa-dash .paper-text {
+            font-size: 13px; line-height: 1.5;
+            font-family: "SF Mono", Consolas, monospace;
+            white-space: nowrap; overflow: hidden;
+            border-right: 2px solid #ec4899;
+            width: 100%;
+        }
+        @media (prefers-reduced-motion: no-preference) {
+            #visa-dash .paper-text { animation: blink-cursor .7s step-end infinite; }
+        }
+        @keyframes blink-cursor { 50% { border-color: transparent; } }
+
         #visa-dash[data-theme="dark"] {
             --ink: #f3e8ff;
             --ink-soft: #ddd6fe;
@@ -614,9 +757,9 @@
             --red-soft: rgba(248, 113, 113, 0.15);
             --red-text: #f87171;
         }
-        #visa-dash[data-theme="dark"] .card.hero {
-            background: linear-gradient(135deg, #7c3aed, #a78bfa);
-            box-shadow: 0 8px 30px rgba(124, 58, 237, 0.4);
+        #visa-dash[data-theme="dark"] .hero {
+            box-shadow: 0 12px 40px rgba(124, 58, 237, 0.3), inset 0 1px 0 rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.08);
         }
         #visa-dash[data-theme="dark"] .skel {
             background: linear-gradient(90deg, var(--border) 25%, var(--surface-raised) 37%, var(--border) 63%);
@@ -634,8 +777,8 @@
             #visa-dash h1 { font-size: 22px; }
             #visa-dash .cards { grid-template-columns: repeat(2, 1fr); gap: 10px; }
             #visa-dash .card { padding: 12px; }
-            #visa-dash .card.hero { grid-column: span 2; padding: 18px 16px; }
-            #visa-dash .card.hero .value { font-size: 28px; }
+            #visa-dash .hero { padding: 20px 18px; }
+            #visa-dash .hero-title { font-size: 24px; }
             #visa-dash .card .value { font-size: 18px; }
             #visa-dash .navpills { gap: 6px; }
             #visa-dash .navpill { padding: 7px 13px; font-size: 12px; }
@@ -653,8 +796,8 @@
         }
         @media (max-width: 480px) {
             #visa-dash .cards { grid-template-columns: 1fr 1fr; }
-            #visa-dash .card.hero { grid-column: span 2; }
-            #visa-dash .card.hero .value { font-size: 26px; }
+            #visa-dash .hero { padding: 18px 16px; }
+            #visa-dash .hero-title { font-size: 20px; }
         }
     
     </style>
@@ -666,13 +809,17 @@
             const WEB_APP_URL = (window.VISA_WEB_APP_URL || HARDCODED_WEB_APP_URL || '').trim();
             const TRACKING_STARTED = '2026-07-13';
             const EXCLUDE_FROM_AVERAGES = '2026-07-12';
+            const CACHE_FRESH_MS = 5 * 60 * 1000;
 
             const root = document.getElementById('visa-dash');
             let cache = null;
+            let cacheFetchedAt = null;
+            let dataPromise = null;
             let suggestionsCache = null;
             let activeTab = 'home';
             let homeSearchTerm = '';
             let pastDateFilter = '';
+            let pendingSearchSelection = null;
             let theme = localStorage.getItem('visa-theme') || 'light';
 
             function classify(decision) {
@@ -680,6 +827,12 @@
                 if (/(approv|grant|accept|issu)/.test(s)) return 'accepted';
                 if (/(refus|reject|deny|denied)/.test(s)) return 'rejected';
                 return 'other';
+            }
+
+            function escapeHtml(value) {
+                return String(value == null ? '' : value).replace(/[&<>"']/g, ch => ({
+                    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+                }[ch]));
             }
 
             function fmtPct(n) { return isFinite(n) ? (n * 100).toFixed(1) + '%' : '\u2014'; }
@@ -698,13 +851,52 @@
                 return [...m.entries()].sort((a, b) => b[0].localeCompare(a[0]));
             }
 
-            async function loadData() {
-                if (cache) return cache;
-                if (!WEB_APP_URL) { cache = []; return cache; }
-                const res = await fetch(WEB_APP_URL + '?action=raw');
-                const raw = await res.json();
-                cache = raw.map(r => Array.isArray(r) ? { date: r[0], irl: r[1], decision: r[2] } : r);
-                return cache;
+            function avgDailyApps(byDate) {
+                var filtered = byDate.filter(function(e) { return e[0] !== EXCLUDE_FROM_AVERAGES; });
+                if (!filtered.length) return 0;
+                var sum = 0;
+                for (var i = 0; i < filtered.length; i++) sum += filtered[i][1].length;
+                return sum / filtered.length;
+            }
+
+            async function loadData(options) {
+                const force = options && options.force;
+                // Return cached data only if it's still fresh AND we're not forcing a refresh.
+                if (!force && cache !== null && cacheFetchedAt && (Date.now() - cacheFetchedAt < CACHE_FRESH_MS)) return cache;
+                if (dataPromise) return dataPromise;
+                if (!WEB_APP_URL) {
+                    if (cache === null) cache = [];
+                    cacheFetchedAt = Date.now();
+                    return cache;
+                }
+                dataPromise = (async () => {
+                    try {
+                        const res = await fetch(WEB_APP_URL + '?action=raw');
+                        if (!res.ok) throw new Error('HTTP ' + res.status);
+                        const raw = await res.json();
+                        cache = raw.map(r => Array.isArray(r) ? { date: r[0], irl: r[1], decision: r[2] } : r);
+                        cacheFetchedAt = Date.now();
+                    } catch (e) {
+                        console.warn('loadData failed:', e);
+                        if (cache === null) cache = [];
+                    } finally {
+                        dataPromise = null;
+                    }
+                    return cache;
+                })();
+                return dataPromise;
+            }
+
+            // Silent background refresh: re-fetch now, only re-render when something changed.
+            let lastRefreshRenderedAt = Number.NEGATIVE_INFINITY;
+            async function backgroundRefresh() {
+                const before = cache;
+                await loadData({ force: true });
+                const now = Date.now();
+                if (cache !== before && now - lastRefreshRenderedAt > 1000) {
+                    lastRefreshRenderedAt = now;
+                    render();
+                }
             }
 
             async function loadSuggestions() {
@@ -752,7 +944,168 @@
                     '<li><strong>Past results</strong> \u2014 full history, searchable by application number.</li>' +
                     '<li><strong>Suggestions</strong> \u2014 leave feedback. I check the suggestions and get back with a reply asap.</li>' +
                     '</ul>' +
+                    '<p style="margin-top:12px;"><strong>After approval:</strong> Once your visa is approved, it is dispatched through <strong>BlueDart</strong> (in most cases) and follows standard courier delivery timelines from Delhi to your address.</p>' +
                     '</div>';
+            }
+
+            // ===== hero builder (Mockup C) — per-tab hero with real data =====
+            function buildHeroHTML(tabId, rows) {
+                const byDate = groupByDate(rows);
+                const total = rows.length;
+                const accepted = rows.filter(r => classify(r.decision) === 'accepted').length;
+                const rejected = rows.filter(r => classify(r.decision) === 'rejected').length;
+                const accPct = total ? accepted / total : 0;
+                const rejPct = total ? rejected / total : 0;
+                const avg = avgDailyApps(byDate);
+                const latest = byDate.length ? byDate[0] : null;
+                const latestCount = latest ? latest[1].length : 0;
+                const prev = byDate.length > 1 ? byDate[1] : null;
+                const dayDiff = prev ? latestCount - prev[1].length : 0;
+
+                const states = {
+                    home: {
+                        eyebrow: "TODAY'S SNAPSHOT",
+                        title: latestCount + ' new outcomes<br/>today.',
+                        sub: (dayDiff >= 0 ? '+' : '') + dayDiff + ' vs. yesterday · ' + fmtPct(accPct) + ' accepted.',
+                        visual: '<div class="ring"></div><div class="ring"></div><div class="ring"></div><div class="ring-core">' + latestCount + '</div>'
+                    },
+                    daily: {
+                        eyebrow: 'DAILY TREND',
+                        title: byDate.length + ' days<br/>on record.',
+                        sub: 'Avg ' + avg.toFixed(1) + ' applications/day. ' + fmtPct(accPct) + ' acceptance rate.',
+                        visual: (function() {
+                            const last14 = byDate.slice(-14).reverse();
+                            const max = Math.max.apply(null, last14.map(function(d) { return d[1].length; }).concat([1]));
+                            return '<div class="wave">' + last14.map(function(d, i) {
+                                var dayRows = d[1];
+                                return '<div class="wave-bar" style="height:' + Math.max(8, (dayRows.length / max) * 120) + 'px; animation-delay:' + (i * 0.07) + 's"></div>';
+                            }).join('') + '</div>';
+                        })()
+                    },
+                    past: {
+                        eyebrow: 'HISTORY',
+                        title: 'Accepted & rejected,<br/>side by side.',
+                        sub: fmtPct(accPct) + ' accepted · ' + fmtPct(rejPct) + ' rejected · ' + total.toLocaleString() + ' total.',
+                        visual: (function() {
+                            var last7 = byDate.slice(-7).reverse();
+                            var max = Math.max.apply(null, last7.map(function(d) { return d[1].length; }).concat([1]));
+                            return '<div class="wf">' + last7.map(function(d) {
+                                var dayRows = d[1];
+                                var acc = dayRows.filter(function(r) { return classify(r.decision) === 'accepted'; }).length;
+                                var rej = dayRows.filter(function(r) { return classify(r.decision) === 'rejected'; }).length;
+                                var scale = 100 / max;
+                                return '<div class="wf-col"><div class="wf-seg a" style="height:' + Math.max(4, acc * scale) + 'px"></div><div class="wf-seg r" style="height:' + Math.max(4, rej * scale) + 'px"></div></div>';
+                            }).join('') + '</div>';
+                        })()
+                    },
+                    suggest: {
+                        eyebrow: 'FROM USERS',
+                        title: 'Real notes,<br/>real replies.',
+                        sub: 'Leave a suggestion below. I read every one and reply asap.',
+                        visual: (function() {
+                            var lastSugg = (suggestionsCache && suggestionsCache.length) ? suggestionsCache[suggestionsCache.length - 1] : null;
+                            var text = lastSugg ? (lastSugg.suggestion || lastSugg.Suggestion || lastSugg.text || '') : '';
+                            var name = lastSugg ? (lastSugg.name || lastSugg.Name || '') : '';
+                            var display = text || 'No suggestions yet';
+                            return '<div class="paper"><div class="paper-title">' + (name ? 'From: ' + escapeHtml(name) : 'Recent') + '</div><div class="paper-text">' + escapeHtml(display) + '</div></div>';
+                        })()
+                    }
+                };
+                return states[tabId] || states.home;
+            }
+
+            function morphHero() {
+                var hero = document.getElementById('hero');
+                if (!hero || window._heroHasRendered) return;
+                window._heroHasRendered = true;
+                var prefersReduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+                if (prefersReduced) {
+                    hero.style.opacity = '1';
+                    return;
+                }
+                requestAnimationFrame(function() {
+                    requestAnimationFrame(function() {
+                        hero.style.opacity = '1';
+                    });
+                });
+            }
+
+            function animateHeroSwitch(tabId, rows) {
+                var hero = document.getElementById('hero');
+                if (!hero) return;
+                if (hero._switchTimer) clearTimeout(hero._switchTimer);
+                var state = buildHeroHTML(tabId, rows);
+                hero.style.transition = 'opacity 0.18s ease';
+                hero.style.opacity = '0.4';
+                hero._switchTimer = setTimeout(function() {
+                    hero._switchTimer = null;
+                    hero.setAttribute('data-id', tabId);
+                    hero.querySelector('.hero-eyebrow').textContent = state.eyebrow;
+                    hero.querySelector('.hero-title').innerHTML = state.title;
+                    hero.querySelector('.hero-sub').textContent = state.sub;
+                    hero.querySelector('.visual').innerHTML = state.visual;
+                    hero.style.opacity = '1';
+                }, 180);
+            }
+
+            function wireTabListeners() {
+                var homeSearchEl = document.getElementById('home-search');
+                if (homeSearchEl) {
+                    homeSearchEl.addEventListener('input', function(e) {
+                        homeSearchTerm = e.target.value;
+                        pendingSearchSelection = { start: e.target.selectionStart, end: e.target.selectionEnd };
+                        refreshTabBody();
+                    });
+                    if (activeTab === 'home') {
+                        homeSearchEl.focus();
+                        if (pendingSearchSelection) {
+                            homeSearchEl.setSelectionRange(pendingSearchSelection.start, pendingSearchSelection.end);
+                            pendingSearchSelection = null;
+                        } else {
+                            homeSearchEl.setSelectionRange(homeSearchEl.value.length, homeSearchEl.value.length);
+                        }
+                    }
+                }
+                var dateFilterEl = document.getElementById('past-date-filter');
+                if (dateFilterEl) dateFilterEl.addEventListener('change', function(e) { pastDateFilter = e.target.value; refreshTabBody(); });
+                var dateClearEl = document.getElementById('past-date-clear');
+                if (dateClearEl) dateClearEl.addEventListener('click', function() { pastDateFilter = ''; refreshTabBody(); });
+                var suggBtn = document.getElementById('sugg-submit');
+                if (suggBtn) suggBtn.addEventListener('click', submitSuggestion);
+                var scrollBtn = document.getElementById('scroll-top-btn');
+                if (scrollBtn) {
+                    var onScroll = function() {
+                        if (window.scrollY > 300) scrollBtn.classList.add('visible');
+                        else scrollBtn.classList.remove('visible');
+                    };
+                    if (window._scrollTopHandler) window.removeEventListener('scroll', window._scrollTopHandler);
+                    window._scrollTopHandler = onScroll;
+                    window.addEventListener('scroll', onScroll, { passive: true });
+                    onScroll();
+                    scrollBtn.addEventListener('click', function() { window.scrollTo({ top: 0, behavior: 'smooth' }); });
+                }
+            }
+
+            async function switchTab(tabId) {
+                if (!document.getElementById('hero')) return;
+                activeTab = tabId;
+                var pills = document.querySelectorAll('#visa-dash .navpill');
+                for (var i = 0; i < pills.length; i++) {
+                    pills[i].classList.toggle('active', pills[i].getAttribute('data-tab') === tabId);
+                }
+                var rows = await loadData();
+                animateHeroSwitch(tabId, rows);
+                var body = '';
+                if (tabId === 'home') body = renderHome(rows);
+                else if (tabId === 'daily') body = renderDailySummary(rows);
+                else if (tabId === 'past') body = renderPast(rows);
+                else {
+                    var suggestions = await loadSuggestions();
+                    body = renderSuggestions(suggestions);
+                }
+                var tabBody = document.getElementById('tab-body');
+                if (tabBody) tabBody.innerHTML = body;
+                wireTabListeners();
             }
 
             function renderHome(rows) {
@@ -766,12 +1119,7 @@
                 const latestRows = latest[1];
                 const dayDiff = prev ? latestRows.length - prev[1].length : 0;
 
-                const dailyCountsForAvg = byDate
-                    .filter(([d]) => d !== EXCLUDE_FROM_AVERAGES)
-                    .map(([, dayRows]) => dayRows.length);
-                const avgDailyApps = dailyCountsForAvg.length ?
-                    dailyCountsForAvg.reduce((a, b) => a + b, 0) / dailyCountsForAvg.length :
-                    0;
+                const avg = avgDailyApps(byDate);
 
                 const accepted = rows.filter(r => classify(r.decision) === 'accepted').length;
                 const rejected = rows.filter(r => classify(r.decision) === 'rejected').length;
@@ -797,11 +1145,10 @@
                     '<input type="text" id="home-search" placeholder="Search by application number\u2026" value="' +
                     homeSearchTerm + '"></div>' +
                     '<div class="cards">' +
-                    '<div class="card hero"><div class="label">Total outcomes (YTD)</div><div class="value">' + total +
-                    '</div></div>' +
+                    
                     '<div class="card"><div class="label">Day-on-day change</div><div class="value ' + (dayDiff >= 0 ?
                         'green' : 'red') + '">' + (dayDiff >= 0 ? '+' : '') + dayDiff + '</div></div>' +
-                    '<div class="card"><div class="label">Avg applications/day</div><div class="value">' + avgDailyApps
+                    '<div class="card"><div class="label">Avg applications/day</div><div class="value">' + avg
                     .toFixed(1) + '</div></div>' +
                     '<div class="card"><div class="label">Acceptance rate</div><div class="value green">' + fmtPct(
                         accepted / total) + '</div></div>' +
@@ -850,12 +1197,7 @@
                 const rejected = rows.filter(r => classify(r.decision) === 'rejected').length;
                 const byDate = groupByDate(rows);
 
-                const dailyCountsForAvg = byDate
-                    .filter(([d]) => d !== EXCLUDE_FROM_AVERAGES)
-                    .map(([, dayRows]) => dayRows.length);
-                const avgDailyApps = dailyCountsForAvg.length ?
-                    dailyCountsForAvg.reduce((a, b) => a + b, 0) / dailyCountsForAvg.length :
-                    0;
+                const avg = avgDailyApps(byDate);
 
                 const thisWeek = rows.filter(r => daysAgo(r.date) < 7).length;
                 const lastWeek = rows.filter(r => daysAgo(r.date) >= 7 && daysAgo(r.date) < 14).length;
@@ -871,7 +1213,7 @@
                         accepted / total) + '</div></div>' +
                     '<div class="card"><div class="label">Rejection rate</div><div class="value red">' + fmtPct(rejected /
                         total) + '</div></div>' +
-                    '<div class="card"><div class="label">Avg applications/day</div><div class="value">' + avgDailyApps
+                    '<div class="card"><div class="label">Avg applications/day</div><div class="value">' + avg
                     .toFixed(1) + '</div></div>' +
                     '<div class="card"><div class="label">Week-on-week</div><div class="value ' + (wow === null ? '' : (
                         wow >= 0 ? 'green' : 'red')) + '">' + (wow === null ? '\u2014' : ((wow >= 0 ? '+' : '') + fmtPct(
@@ -886,7 +1228,8 @@
                     '</div>' +
                     '<div class="table-wrap"><table><thead><tr><th>Date</th><th>Application No.</th><th>Decision</th></tr></thead>' +
                     '<tbody>' + (sorted.length ? sorted.map(rowHtml).join('') :
-                        '<tr><td colspan="3" class="empty">No matches.</td></tr>') + '</tbody></table></div>';
+                        '<tr><td colspan="3" class="empty">No matches.</td></tr>') + '</tbody></table></div>' +
+                    '<button class="scroll-top-btn" id="scroll-top-btn" title="Scroll to top">\u2191</button>';
             }
 
             function renderSuggestions(suggestions) {
@@ -960,7 +1303,41 @@
                 theme = theme === 'light' ? 'dark' : 'light';
                 localStorage.setItem('visa-theme', theme);
                 root.setAttribute('data-theme', theme);
-                render();
+                // Theme switch is instant via CSS variables — no DOM rebuild needed
+                var themeToggle = document.getElementById('theme-toggle');
+                if (themeToggle) themeToggle.textContent = theme === 'dark' ? '\uD83C\uDF19' : '\u2600\uFE0F';
+            }
+
+            // Partial re-render: only updates tab-body without destroying hero/navpills/header.
+            // Used for search, date filter, and other in-tab interactions to avoid stutter.
+            async function refreshTabBody() {
+                var tabBody = document.getElementById('tab-body');
+                if (!tabBody) return;
+                var rows = await loadData();
+                var body = '';
+                if (activeTab === 'home') body = renderHome(rows);
+                else if (activeTab === 'daily') body = renderDailySummary(rows);
+                else if (activeTab === 'past') body = renderPast(rows);
+                else {
+                    var suggestions = await loadSuggestions();
+                    body = renderSuggestions(suggestions);
+                }
+                tabBody.innerHTML = body;
+                // Retrigger card entrance animations on the new DOM
+                var cards = tabBody.querySelectorAll('.card');
+                for (var i = 0; i < cards.length; i++) {
+                    cards[i].style.animation = 'none';
+                    cards[i].offsetHeight; // force reflow
+                    cards[i].style.animation = '';
+                }
+                // Strip animation-fill after the longest stagger so hover transforms work
+                setTimeout(function() {
+                    var allCards = tabBody.querySelectorAll('.card');
+                    for (var j = 0; j < allCards.length; j++) {
+                        allCards[j].style.animation = 'none';
+                    }
+                }, 900);
+                wireTabListeners();
             }
             
 async function render() {
@@ -1004,6 +1381,8 @@ async function render() {
                     body = renderSuggestions(suggestions);
                 }
 
+                const heroState = buildHeroHTML(activeTab, rows);
+
                 root.innerHTML =
                     '<div class="eyebrow">Ireland \u00b7 New Delhi Visa Section</div>' +
                     '<div class="titlerow"><h1>Visa Decision Tracker</h1>' +
@@ -1015,35 +1394,71 @@ async function render() {
                         'Awaiting data') + '</div>' +
                     '<div class="navpills">' + tabs.map(([k, label]) => '<div class="navpill ' + (activeTab === k ?
                         'active' : '') + '" data-tab="' + k + '">' + label + '</div>').join('') + '</div>' +
+                    '<div class="hero" id="hero" data-id="' + activeTab + '" style="opacity:0">' +
+                        '<div class="hero-body">' +
+                            '<div>' +
+                                '<div class="hero-eyebrow">' + heroState.eyebrow + '</div>' +
+                                '<div class="hero-title">' + heroState.title + '</div>' +
+                                '<div class="hero-sub">' + heroState.sub + '</div>' +
+                            '</div>' +
+                            '<div class="visual">' + heroState.visual + '</div>' +
+                        '</div>' +
+                    '</div>' +
                     '<div id="tab-body">' + body + '</div>';
 
                 tabs.forEach(([k]) => {
-                    root.querySelector('.navpill[data-tab="' + k + '"]').addEventListener('click', () => {
-                        activeTab = k;
-                        render();
+                    var pill = root.querySelector('.navpill[data-tab="' + k + '"]');
+                    pill.addEventListener('click', function() {
+                        // Trigger ripple animation
+                        pill.classList.add('rippling');
+                        setTimeout(function() { pill.classList.remove('rippling'); }, 520);
+                        switchTab(k);
                     });
                 });
                 const homeSearchEl = document.getElementById('home-search');
                 if (homeSearchEl) {
-                    homeSearchEl.addEventListener('input', e => { homeSearchTerm = e.target.value;
-                        render(); });
+                    homeSearchEl.addEventListener('input', e => {
+                        homeSearchTerm = e.target.value;
+                        pendingSearchSelection = { start: e.target.selectionStart, end: e.target.selectionEnd };
+                        refreshTabBody();
+                    });
                     homeSearchEl.focus();
                     homeSearchEl.setSelectionRange(homeSearchEl.value.length, homeSearchEl.value.length);
                 }
                 const dateFilterEl = document.getElementById('past-date-filter');
                 if (dateFilterEl) dateFilterEl.addEventListener('change', e => { pastDateFilter = e.target.value;
-                    render(); });
+                    refreshTabBody(); });
                 const dateClearEl = document.getElementById('past-date-clear');
                 if (dateClearEl) dateClearEl.addEventListener('click', () => { pastDateFilter = '';
-                    render(); });
+                    refreshTabBody(); });
                 const suggBtn = document.getElementById('sugg-submit');
                 if (suggBtn) suggBtn.addEventListener('click', submitSuggestion);
                 const themeToggle = document.getElementById('theme-toggle');
                 if (themeToggle) themeToggle.addEventListener('click', toggleTheme);
+                morphHero();
+                const scrollBtn = document.getElementById('scroll-top-btn');
+                if (scrollBtn) {
+                    const onScroll = function() {
+                        if (window.scrollY > 300) scrollBtn.classList.add('visible');
+                        else scrollBtn.classList.remove('visible');
+                    };
+                    if (window._scrollTopHandler) window.removeEventListener('scroll', window._scrollTopHandler);
+                    window._scrollTopHandler = onScroll;
+                    window.addEventListener('scroll', onScroll, { passive: true });
+                    onScroll();
+                    scrollBtn.addEventListener('click', function() { window.scrollTo({ top: 0, behavior: 'smooth' }); });
+                }
             }
 
             root.setAttribute('data-theme', theme);
             render();
+
+            // Auto-refresh: every 5 min while the tab is alive, plus immediately on
+            // returning to the tab after it was hidden.
+            setInterval(backgroundRefresh, CACHE_FRESH_MS);
+            document.addEventListener('visibilitychange', () => {
+                if (document.visibilityState === 'visible') backgroundRefresh();
+            });
         })();
     
     

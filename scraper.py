@@ -4,19 +4,20 @@ Irish Visa Decision Tracker — scraper for GitHub Actions
 Reads WEB_APP_URL from an environment variable (GitHub Actions secret).
 
 Every run, in priority order:
-  1. If today already has a row on record (real or placeholder) -> skip entirely.
+  1. If today already has REAL data on record (not just a placeholder) -> skip.
   2. If today is Saturday/Sunday -> upsert "Saturday/Sunday, Visa Office is
      closed", dated TODAY. Stop (no scrape attempted).
   3. Else check the embassy's closure-dates page for today's date -> if listed,
      upsert "Embassy is closed today for <holiday name>", dated TODAY. Stop.
   4. Else (a normal business day) -> attempt the real scrape. If it succeeds,
-     clear any stale placeholders and push new rows as usual. If it fails or
-     finds nothing, upsert "Visa office hasn't uploaded any sheet until now,
-     check back later, or come back tomorrow", dated YESTERDAY (decisions
-     data always lags a day, so "caught up through yesterday" is accurate).
+     clear any stale placeholders for the file's date and push new rows as
+     usual. If it fails or finds nothing, upsert "Visa office hasn't uploaded
+     any sheet until now, check back later, or come back tomorrow", dated
+     TODAY so the placeholder is visible until real data overwrites it.
 
 All placeholders use the same insert-or-overwrite mechanism (never duplicate,
-always reflect the latest run's message).
+always reflect the latest run's message). Once real data lands, its date's
+placeholder is cleared automatically.
 
 Flags (env vars, all optional):
   ENABLE_NO_UPLOAD_PLACEHOLDER "true" (default) or "false" — turns ALL of the
@@ -41,6 +42,11 @@ ENABLE_NO_UPLOAD_PLACEHOLDER = os.environ.get("ENABLE_NO_UPLOAD_PLACEHOLDER", "t
 NO_UPLOAD_MESSAGE = "Visa office hasn't uploaded any sheet until now, check back later, or come back tomorrow"
 WEEKEND_MESSAGE = "Saturday/Sunday, Visa Office is closed"
 
+_PLACEHOLDER_DECISIONS = {
+    WEEKEND_MESSAGE,
+    NO_UPLOAD_MESSAGE,
+}  # known placeholder messages; holiday placeholders start with "Embassy is closed"
+
 BROWSER_HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
                   "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
@@ -56,13 +62,6 @@ BROWSER_HEADERS = {
 def now_ist() -> datetime:
     return datetime.now(timezone(timedelta(hours=5, minutes=30)))
 
-
-def ist_today_str() -> str:
-    return now_ist().strftime("%Y-%m-%d")
-
-
-def ist_yesterday_str() -> str:
-    return (now_ist() - timedelta(days=1)).strftime("%Y-%m-%d")
 
 
 # ---------------- .ods scraping (unchanged from before) ----------------
@@ -89,11 +88,19 @@ def find_ods_link():
 
 
 def parse_date_from_filename(filename: str) -> str:
+    """Extract an ISO date from the first 8 digits of the filename, falling back
+    to today's date if no 8-digit stamp is present. Validates the result so a
+    malformed filename (e.g. random digits from a UUID) can't push garbage into
+    the Sheet."""
     digits = re.sub(r"[^0-9]", "", filename)
     stamp = digits[:8]
-    if len(stamp) != 8:
-        return now_ist().strftime("%Y-%m-%d")
-    return f"{stamp[0:4]}-{stamp[4:6]}-{stamp[6:8]}"
+    if len(stamp) == 8:
+        try:
+            datetime.strptime(stamp, "%Y%m%d")
+        except ValueError:
+            return now_ist().strftime("%Y-%m-%d")
+        return f"{stamp[0:4]}-{stamp[4:6]}-{stamp[6:8]}"
+    return now_ist().strftime("%Y-%m-%d")
 
 
 def download_and_parse_ods(ods_url: str):
@@ -118,9 +125,9 @@ def find_header_row(raw: pd.DataFrame, scan_rows: int = 25) -> int:
         row_vals = [str(v).lower() for v in raw.iloc[i].tolist()]
         app_cols = [j for j, v in enumerate(row_vals) if ("irl" in v or "application" in v)]
         dec_cols = [j for j, v in enumerate(row_vals) if ("decision" in v or "outcome" in v)]
+        # Header row needs application-id and decision markers in DISTINCT cells.
         if app_cols and dec_cols and set(app_cols) != set(dec_cols):
-            if not (len(app_cols) == 1 and len(dec_cols) == 1 and app_cols[0] == dec_cols[0]):
-                return i
+            return i
     raise RuntimeError(
         f"Could not find a header row containing both an IRL/application marker "
         f"and a decision marker in separate cells within the first {scan_rows} rows. First rows:\n"
@@ -261,6 +268,22 @@ def clear_no_file_placeholder(date_str):
     return result
 
 
+def _is_placeholder_row(row):
+    """Return True if a [date, irl, decision] row looks like a placeholder
+    rather than real visa-decision data."""
+    decision = (row[2] or "").strip()
+    irl = (row[1] or "").strip()
+    # Known placeholder messages
+    if decision in _PLACEHOLDER_DECISIONS:
+        return True
+    if decision.startswith("Embassy is closed"):
+        return True
+    # Real IRL numbers contain "IRL" or digits; placeholders have neither
+    if irl and ("IRL" in irl.upper() or any(ch.isdigit() for ch in irl)):
+        return False
+    return True
+
+
 # ---------------- main ----------------
 
 def main():
@@ -270,14 +293,14 @@ def main():
 
     today_dt = now_ist()
     today_ist = today_dt.strftime("%Y-%m-%d")
-    yesterday_ist = ist_yesterday_str()
 
     existing_rows = fetch_existing_rows()
-    existing_dates = {r[0] for r in existing_rows}
-    existing_irl = {r[1] for r in existing_rows}
+    existing_irl = {r[1] for r in existing_rows if not _is_placeholder_row(r)}
 
-    if today_ist in existing_dates:
-        print(f"Data already present for {today_ist} (real or placeholder) — skipping this run entirely.")
+    # Only skip if today already has REAL data (not just a placeholder)
+    today_real = [r for r in existing_rows if r[0] == today_ist and not _is_placeholder_row(r)]
+    if today_real:
+        print(f"Real data already present for {today_ist} ({len(today_real)} rows) — skipping this run.")
         return
 
     # --- Priority 1: weekend ---
@@ -339,13 +362,13 @@ def main():
 
     if no_file_found:
         if ENABLE_NO_UPLOAD_PLACEHOLDER:
-            print(f"No file found this run — upserting placeholder for {yesterday_ist}.")
-            set_no_file_placeholder(yesterday_ist, NO_UPLOAD_MESSAGE)
+            print(f"No file found this run — upserting placeholder for {today_ist}.")
+            set_no_file_placeholder(today_ist, NO_UPLOAD_MESSAGE)
         else:
             print("ENABLE_NO_UPLOAD_PLACEHOLDER is false — skipping placeholder.")
     else:
-        print(f"File was found this run — clearing any stale placeholder for {yesterday_ist}.")
-        clear_no_file_placeholder(yesterday_ist)
+        print(f"File was found this run — clearing any stale placeholder for {fetch_date}.")
+        clear_no_file_placeholder(fetch_date)
 
     if scrape_failed:
         sys.exit(1)

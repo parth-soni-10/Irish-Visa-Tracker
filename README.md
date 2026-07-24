@@ -13,7 +13,7 @@ rejection rates, and a way to look up an individual application.
 
 ```
 GitHub Actions (scraper.py)  →  Google Apps Script (Code.gs, Web App)  →  Google Sheet
-        ↑ runs 4x/day                     ↑ read/write API                    ↑ source of truth
+        ↑ runs ~9x/day (every 30 min, 08:00–12:00 IST)                     ↑ read/write API                    ↑ source of truth
                                            ↓
                                   index.html (dashboard, hosted on Netlify)
 ```
@@ -25,7 +25,7 @@ it over plain HTTP.
 
 ## How it works
 
-**The scraper** runs four times a day. Every run works through a priority
+**The scraper** runs nine times a day (every 30 min from 08:00 IST to 12:00 IST). Every run works through a priority
 chain before deciding what to do:
 
 1. If today's date is already recorded, it does nothing — no wasted requests.
@@ -72,7 +72,7 @@ memory for the session — switching tabs doesn't re-fetch.
 |---|---|
 | `scraper.py` | Scrapes the embassy site, runs the weekend/holiday/no-upload decision chain, pushes to the Sheet |
 | `requirements.txt` | Python deps for the GitHub Actions runner |
-| `.github/workflows/scrape.yml` | Schedule (4x daily, IST) + manual trigger |
+| `.github/workflows/scrape.yml` | Schedule (every 30 min, 08:00–12:00 IST) + manual trigger |
 | `Code.gs` | Apps Script backend — the only thing that reads/writes the Sheet |
 | `index.html` | The dashboard |
 | `netlify.toml` | Static hosting config |
