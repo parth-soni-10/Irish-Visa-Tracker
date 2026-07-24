@@ -748,12 +748,49 @@
             #visa-dash .wave-bar { animation: wave-up 1.4s cubic-bezier(.2,.8,.2,1) infinite alternate; }
         }
         @keyframes wave-up { from { transform: scaleY(.3); } to { transform: scaleY(1); } }
-        /* Past — stacked waterfall */
-        #visa-dash .wf { display: flex; align-items: flex-end; gap: 4px; height: 100%; width: 100%; }
-        #visa-dash .wf-col { flex: 1; display: flex; flex-direction: column-reverse; gap: 2px; }
-        #visa-dash .wf-seg { width: 100%; border-radius: 2px; }
+        /* Past — stacked waterfall, animated + functional */
+        #visa-dash .wf {
+            display: grid; grid-template-columns: repeat(7, 1fr);
+            gap: 6px; height: 100%; width: 100%;
+            padding: 8px 6px 4px;
+        }
+        #visa-dash .wf-col {
+            display: flex; flex-direction: column-reverse; gap: 4px;
+            min-width: 0; position: relative;
+            transition: transform 0.2s ease;
+        }
+        #visa-dash .wf-col:hover { transform: translateY(-4px); }
+        #visa-dash .wf-col:hover .wf-seg { filter: brightness(1.18) saturate(1.15); }
+        #visa-dash .wf-bars {
+            display: flex; flex-direction: column-reverse; gap: 2px;
+            flex: 1; min-height: 0;
+        }
+        #visa-dash .wf-seg {
+            width: 100%; border-radius: 2px 2px 0 0;
+            transform-origin: bottom;
+            transition: filter 0.2s ease;
+        }
         #visa-dash .wf-seg.a { background: rgba(255,255,255,.92); }
         #visa-dash .wf-seg.r { background: rgba(255,255,255,.55); }
+        @media (prefers-reduced-motion: no-preference) {
+            #visa-dash .wf-seg {
+                animation: wf-grow 0.55s cubic-bezier(.2,.8,.2,1) backwards;
+                animation-delay: var(--d, 0s);
+            }
+        }
+        @keyframes wf-grow { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+        #visa-dash .wf-date {
+            font-size: 10px; color: rgba(255,255,255,.75); font-weight: 600;
+            letter-spacing: .03em; text-align: center; white-space: nowrap;
+        }
+        /* On narrow viewports the .visual column is too tight (~14-16px per bar)
+           for "Sat 12" labels to fit. Date labels are nice-to-have context, the
+           bars are the core signal — drop the labels and reclaim the vertical
+           space for taller bars. Hover title still gives full counts. */
+        @media (max-width: 760px) {
+            #visa-dash .wf { padding-bottom: 0; }
+            #visa-dash .wf-date { display: none; }
+        }
         /* Suggest — typewriter card */
         #visa-dash .paper {
             background: #fff; color: var(--ink);
@@ -1026,18 +1063,37 @@
                         title: 'Accepted & rejected,<br/>side by side.',
                         sub: fmtPct(accPct) + ' accepted · ' + fmtPct(rejPct) + ' rejected · ' + total.toLocaleString() + ' total.',
                         visual: (function() {
+                            // Last 7 days as a stacked accept/reject waterfall.
+                            // Each column: bars grow in staggered (CSS var --d), date
+                            // label below, hover lifts + brightens + native title
+                            // gives exact counts. Column-reverse flex on .wf-col
+                            // puts the date label visually at the bottom and the
+                            // stacked segments visually on top.
                             var last7 = byDate.slice(-7).reverse();
                             var maxVal = Math.max.apply(null, last7.map(function(d) {
                                 var dr = d[1];
                                 return dr.filter(function(r) { return classify(r.decision) === 'accepted'; }).length +
                                        dr.filter(function(r) { return classify(r.decision) === 'rejected'; }).length;
                             }).concat([1]));
-                            var scale = Math.min(1, 130 / Math.max(maxVal, 1));
-                            return '<div class="wf">' + last7.map(function(d) {
+                            var scale = Math.min(1, 104 / Math.max(maxVal, 1));
+                            var days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+                            var monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+                            return '<div class="wf">' + last7.map(function(d, i) {
                                 var dayRows = d[1];
                                 var acc = dayRows.filter(function(r) { return classify(r.decision) === 'accepted'; }).length;
                                 var rej = dayRows.filter(function(r) { return classify(r.decision) === 'rejected'; }).length;
-                                return '<div class="wf-col"><div class="wf-seg a" style="height:' + Math.max(3, acc * scale) + 'px"></div><div class="wf-seg r" style="height:' + Math.max(3, rej * scale) + 'px"></div></div>';
+                                var total = acc + rej;
+                                var accPct = total ? Math.round(acc / total * 100) : 0;
+                                var parts = d[0].split('-');
+                                var dateObj = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+                                var dateLabel = days[dateObj.getDay()] + ' ' + (dateObj.getDate() < 10 ? '0' + dateObj.getDate() : dateObj.getDate());
+                                return '<div class="wf-col" style="--d:' + (i * 0.07).toFixed(2) + 's" title="' + d[0] + ' · ' + acc + ' accepted · ' + rej + ' rejected · ' + accPct + '%">' +
+                                    '<div class="wf-date">' + escapeHtml(dateLabel) + '</div>' +
+                                    '<div class="wf-bars">' +
+                                        '<div class="wf-seg a" style="height:' + Math.max(3, acc * scale) + 'px"></div>' +
+                                        '<div class="wf-seg r" style="height:' + Math.max(3, rej * scale) + 'px"></div>' +
+                                    '</div>' +
+                                '</div>';
                             }).join('') + '</div>';
                         })()
                     },
