@@ -844,13 +844,70 @@
             #visa-dash .suggest-grid .table-col { flex: 1 1 100%; }
             #visa-dash .suggest-grid .table-col .table-wrap { max-height: 300px; }
             #visa-dash .suggest-grid .table-col table { min-width: 0; }
-        }
-        @media (max-width: 480px) {
+        }        @media (max-width: 480px) {
             #visa-dash .cards { grid-template-columns: 1fr 1fr; }
             #visa-dash .hero { padding: 18px 16px; }
             #visa-dash .hero-title { font-size: 20px; }
         }
-    
+
+        /* ===== Touch-only suppression =====
+           On hover-incapable devices (phones, pure-tablet) the existing :hover
+           rules still fire and stick after a tap, leaving the page in a
+           half-pressed state. Suppress the heaviest decorations; keep focus
+           rings + ripple keyframes since they're harmless. */
+        @media (hover: none), (pointer: coarse) {
+            /* Suppress sticky-tap hover decorations so a tap doesn't leave a
+               half-pressed look after the finger lifts. */
+            #visa-dash tbody tr:hover { background: transparent; }
+            #visa-dash tbody tr:hover td:first-child::before { opacity: 0; }
+            #visa-dash .navpill:hover { background: var(--surface-raised); color: var(--ink-muted); transform: none; }
+            #visa-dash .btn:hover { background: var(--green); transform: none; box-shadow: 0 2px 8px rgba(5, 150, 105, 0.25); }
+            #visa-dash .card:hover { transform: none; box-shadow: none; border-color: var(--border); }
+            /* Battery cost: stop the always-on decorative animations on touch.
+               The per-event grow-in (wf-seg) and pulse rings are short + nice -
+               only the infinite-loops get gated. Static height + layout still
+               show, animation steps don't. */
+            #visa-dash .wave-bar { animation: none; }
+            #visa-dash .paper-text { animation: none; }
+            #visa-dash .hero::before, #visa-dash .hero::after { animation: none; }
+            #visa-dash .hero { animation: none; }
+        }
+
+        /* ===== Mobile tune-ups (max-width: 760px) ===== */
+        @media (max-width: 760px) {
+            /* 16px input font prevents iOS Safari auto-zoom on focus. */
+            #visa-dash input[type=text], #visa-dash input[type=date] { font-size: 16px; min-height: 44px; }
+            #visa-dash textarea { font-size: 16px; min-height: 120px; }
+            /* Apple HIG: tap targets >= 44px. */
+            #visa-dash .navpill { padding: 11px 22px; min-height: 44px; }
+            #visa-dash .btn { min-height: 44px; padding: 12px 26px; }
+            #visa-dash .searchbar, #visa-dash .datefilter { height: 48px; }
+            #visa-dash .scroll-top-btn { width: 48px; height: 48px; font-size: 20px; }
+            /* Sticky table headers so column titles stay visible on long scrolls. */
+            #visa-dash thead th { position: sticky; top: 0; z-index: 5; }
+            /* Suggestion table: bigger viewport on mobile (60vh vs 420px). */
+            #visa-dash .suggest-grid .table-col .table-wrap { max-height: 60vh; }
+            /* Hero layout: stack the body on mobile so the visual doesn't squeeze the headline. */
+            #visa-dash .hero-body { grid-template-columns: 1fr; }
+            #visa-dash .visual { height: 100px; }
+        }
+
+        /* ===== iOS notch / Android cutout safe-area support =====
+           Older browsers ignore @supports and fall back to the plain
+           padding inside #visa-dash's existing rules without the inset.
+           Modern browsers pick up the env() notch offset. */
+        @supports (padding: max(0px)) {
+            #visa-dash {
+                padding-left: max(24px, env(safe-area-inset-left));
+                padding-right: max(24px, env(safe-area-inset-right));
+                padding-top: max(24px, env(safe-area-inset-top));
+                padding-bottom: max(24px, env(safe-area-inset-bottom));
+            }
+            #visa-dash .scroll-top-btn {
+                right: max(16px, env(safe-area-inset-right, 16px));
+                bottom: max(20px, env(safe-area-inset-bottom, 20px));
+            }
+        }
     </style>
     <script>
 
@@ -861,6 +918,32 @@
             const TRACKING_STARTED = '2026-07-13';
             const EXCLUDE_FROM_AVERAGES = '2026-07-12';
             const CACHE_FRESH_MS = 5 * 60 * 1000;
+
+            // Boot-time device-capability detector. Runs once at the top of
+            // the IIFE (the page is already parsing this script which lives
+            // at the end of <body>, so document.body exists). Sets:
+            //   body[data-env]      = "desktop" | "touch" | "hybrid"
+            //   body[data-canHover] = "1" or "0"
+            // so the CSS layer can target them. Listens for capability
+            // change (e.g. external mouse/keyboard plugged into iPad) so
+            // the data attributes update without a reload.
+            (function() {
+                function detect() {
+                    var hov = window.matchMedia && window.matchMedia('(hover: hover)').matches;
+                    var coarse = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+                    var env = (hov && !coarse) ? 'desktop' : coarse ? 'touch' : 'hybrid';
+                    var b = document.body;
+                    if (b) {
+                        b.dataset.env = env;
+                        b.dataset.canHover = hov ? '1' : '0';
+                    }
+                }
+                detect();
+                var mqH = window.matchMedia && window.matchMedia('(hover: hover)');
+                var mqP = window.matchMedia && window.matchMedia('(pointer: coarse)');
+                if (mqH && mqH.addEventListener) mqH.addEventListener('change', detect);
+                if (mqP && mqP.addEventListener) mqP.addEventListener('change', detect);
+            })();
 
             const root = document.getElementById('visa-dash');
             let cache = null;
