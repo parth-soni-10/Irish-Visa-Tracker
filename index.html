@@ -193,9 +193,14 @@
         }
         #visa-dash tbody tr {
             transition: background 0.15s;
-            position: relative;
+            content-visibility: auto;
+            contain-intrinsic-size: 0 56px;
         }
-        #visa-dash tbody tr::before {
+        /* Hover highlight sits on the first td (not the tr) so it works under
+           table-layout:fixed where a tr::before pseudo would generate an
+           anonymous table-cell and shift every real td column over by one. */
+        #visa-dash tbody tr td:first-child { position: relative; }
+        #visa-dash tbody tr td:first-child::before {
             content: '';
             position: absolute;
             left: 0; top: 0; bottom: 0;
@@ -206,11 +211,39 @@
             transition: opacity 0.25s ease;
             pointer-events: none;
         }
-        #visa-dash tbody tr:hover::before {
-            opacity: 1;
-        }
+        #visa-dash tbody tr:hover td:first-child::before { opacity: 1; }
         #visa-dash tbody tr:hover {
             background: var(--surface-hover);
+        }
+        /* Home + Past results tables: 3 columns. Fixed layout so headers and body
+           cells stay vertically aligned no matter how long decisions get. */
+        #visa-dash .results-table { table-layout: fixed; min-width: 360px; }
+        #visa-dash .results-table th:nth-child(1),
+        #visa-dash .results-table td:nth-child(1) { width: 18%; white-space: nowrap; }
+        #visa-dash .results-table th:nth-child(2),
+        #visa-dash .results-table td:nth-child(2) { width: 24%; white-space: nowrap; }
+        #visa-dash .results-table th:nth-child(3),
+        #visa-dash .results-table td:nth-child(3) { width: 58%; overflow-wrap: break-word; }
+        /* Daily summary table: 5 columns. */
+        #visa-dash .daily-table { table-layout: fixed; min-width: 480px; }
+        #visa-dash .daily-table th:nth-child(1),
+        #visa-dash .daily-table td:nth-child(1) { width: 18%; white-space: nowrap; }
+        #visa-dash .daily-table th:nth-child(2),
+        #visa-dash .daily-table td:nth-child(2) { width: 16%; }
+        #visa-dash .daily-table th:nth-child(3),
+        #visa-dash .daily-table td:nth-child(3) { width: 22%; }
+        #visa-dash .daily-table th:nth-child(4),
+        #visa-dash .daily-table td:nth-child(4) { width: 22%; }
+        #visa-dash .daily-table th:nth-child(5),
+        #visa-dash .daily-table td:nth-child(5) { width: 22%; }
+        /* Sentinel row appended by IntersectionObserver infinite scroll.
+           contain-intrinsic-size hints the browser's content-visibility:auto
+           layout that the sentinel occupies 18px even before it has been
+           laid out, so IO can measure it during fast scrolling. */
+        #visa-dash .row-sentinel { contain-intrinsic-size: 0 18px; }
+        #visa-dash .row-sentinel td { height: 18px; border-bottom: none; }
+        @media (prefers-reduced-motion: reduce) {
+            #visa-dash tbody tr { content-visibility: visible; }
         }
         #visa-dash tr:last-child td { border-bottom: none; }
         #visa-dash .pill {
@@ -391,7 +424,9 @@
             line-height: 1;
             color: var(--ink-muted);
             transition: color 0.15s;
+            visibility: hidden;
         }
+        #visa-dash .datefilter.has-filter .clear-btn { visibility: visible; }
         #visa-dash .datefilter .clear-btn:hover { color: var(--red); }
         #visa-dash .filter-row {
             display: flex;
@@ -489,10 +524,6 @@
             min-width: 600px;
             table-layout: fixed;
         }
-        /* Hide the global tbody tr::before hover highlight on this fixed-layout table.
-           Under table-layout:fixed that pseudo-element becomes an anonymous table
-           cell and locks into the 1st column, shifting every real td over by one. */
-        #visa-dash .suggest-grid .table-col table tbody tr::before { display: none; }
         #visa-dash .suggest-grid .table-col table th,
         #visa-dash .suggest-grid .table-col table td {
             white-space: normal !important;
@@ -822,7 +853,6 @@
             let activeTab = 'home';
             let homeSearchTerm = '';
             let pastDateFilter = '';
-            let pendingSearchSelection = null;
             let theme = localStorage.getItem('visa-theme') || 'light';
 
             function classify(decision) {
@@ -830,6 +860,18 @@
                 if (/(approv|grant|accept|issu)/.test(s)) return 'accepted';
                 if (/(refus|reject|deny|denied)/.test(s)) return 'rejected';
                 return 'other';
+            }
+
+            // Precompute status + cell HTML once per row at fetch time so render
+            // paths become pure filter + string concatenation (no regex per keystroke).
+            function preloadRow(r) {
+                if (r._html) return r;
+                const c = classify(r.decision);
+                r._status = c;
+                r._pillClass = c === 'accepted' ? 'green' : c === 'rejected' ? 'red' : 'amber';
+                r._html = '<tr><td class="mono">' + r.date + '</td><td class="mono">' + r.irl +
+                    '</td><td><span class="pill ' + r._pillClass + '">' + (r.decision || '\u2014') + '</span></td></tr>';
+                return r;
             }
 
             function escapeHtml(value) {
@@ -877,7 +919,10 @@
                         const res = await fetch(WEB_APP_URL + '?action=raw');
                         if (!res.ok) throw new Error('HTTP ' + res.status);
                         const raw = await res.json();
-                        cache = raw.map(r => Array.isArray(r) ? { date: r[0], irl: r[1], decision: r[2] } : r);
+                        // Pre-compute classify + row HTML once per row, then sort by
+                        // date desc so render paths are pure filter + string concat.
+                        cache = raw.map(r => preloadRow(Array.isArray(r) ? { date: r[0], irl: r[1], decision: r[2] } : r));
+                        cache.sort((a, b) => b.date.localeCompare(a.date));
                         cacheFetchedAt = Date.now();
                     } catch (e) {
                         console.warn('loadData failed:', e);
@@ -1044,28 +1089,44 @@
                 }, 180);
             }
 
+            var _searchDebounce = null;
+
             function wireTabListeners() {
                 var homeSearchEl = document.getElementById('home-search');
                 if (homeSearchEl) {
                     homeSearchEl.addEventListener('input', function(e) {
                         homeSearchTerm = e.target.value;
-                        pendingSearchSelection = { start: e.target.selectionStart, end: e.target.selectionEnd };
-                        refreshTabBody();
+                        // Debounce so rapid typing coalesces into a single repaint.
+                        if (_searchDebounce) clearTimeout(_searchDebounce);
+                        _searchDebounce = setTimeout(function() {
+                            _searchDebounce = null;
+                            if (activeTab === 'home') paintHomeRows();
+                        }, 150);
                     });
                     if (activeTab === 'home') {
                         homeSearchEl.focus();
-                        if (pendingSearchSelection) {
-                            homeSearchEl.setSelectionRange(pendingSearchSelection.start, pendingSearchSelection.end);
-                            pendingSearchSelection = null;
-                        } else {
-                            homeSearchEl.setSelectionRange(homeSearchEl.value.length, homeSearchEl.value.length);
-                        }
+                        homeSearchEl.setSelectionRange(homeSearchEl.value.length, homeSearchEl.value.length);
                     }
                 }
                 var dateFilterEl = document.getElementById('past-date-filter');
-                if (dateFilterEl) dateFilterEl.addEventListener('change', function(e) { pastDateFilter = e.target.value; refreshTabBody(); });
+                if (dateFilterEl) dateFilterEl.addEventListener('change', function(e) {
+                    pastDateFilter = e.target.value;
+                    // Toggle .has-filter on the datefilter wrapper so the X clear
+                    // button appears/disappears WITHOUT re-rendering the whole
+                    // past layout (the button is always in the DOM, just hidden).
+                    if (dateFilterEl.parentElement) {
+                        dateFilterEl.parentElement.classList.toggle('has-filter', !!pastDateFilter);
+                    }
+                    if (activeTab === 'past') paintPastRows();
+                });
                 var dateClearEl = document.getElementById('past-date-clear');
-                if (dateClearEl) dateClearEl.addEventListener('click', function() { pastDateFilter = ''; refreshTabBody(); });
+                if (dateClearEl) dateClearEl.addEventListener('click', function() {
+                    pastDateFilter = '';
+                    if (dateClearEl.parentElement) {
+                        dateClearEl.parentElement.classList.remove('has-filter');
+                    }
+                    if (activeTab === 'past') paintPastRows();
+                });
                 var suggBtn = document.getElementById('sugg-submit');
                 if (suggBtn) suggBtn.addEventListener('click', submitSuggestion);
                 var scrollBtn = document.getElementById('scroll-top-btn');
@@ -1094,39 +1155,39 @@
                 // Load suggestions BEFORE hero so the typewriter card shows real data
                 if (tabId === 'suggest') await loadSuggestions();
                 animateHeroSwitch(tabId, rows);
-                var body = '';
-                if (tabId === 'home') body = renderHome(rows);
-                else if (tabId === 'daily') body = renderDailySummary(rows);
-                else if (tabId === 'past') body = renderPast(rows);
-                else {
-                    body = renderSuggestions(suggestionsCache);
-                }
                 var tabBody = document.getElementById('tab-body');
-                if (tabBody) tabBody.innerHTML = body;
+                if (!tabBody) return;
+                if (tabId === 'home') tabBody.innerHTML = renderHomeLayout(rows);
+                else if (tabId === 'daily') tabBody.innerHTML = renderDailySummary(rows);
+                else if (tabId === 'past') tabBody.innerHTML = renderPastLayout(rows);
+                else tabBody.innerHTML = renderSuggestions(suggestionsCache);
                 wireTabListeners();
+                // Paint deferred row content after the layout is in the DOM.
+                if (tabId === 'home') paintHomeRows();
+                else if (tabId === 'past') paintPastRows();
             }
 
-            function renderHome(rows) {
+            // ====== HOME TAB ======
+            // Two-phase render: layout (cards + searchbar + empty table shell)
+            // paints ONCE per tab switch. paintHomeRows() then only updates the
+            // tbody innerHTML and the results-count node on every search keystroke
+            // or filter change — the input element stays alive so no cursor
+            // restoration is needed.
+            function renderHomeLayout(rows) {
                 if (!rows.length) return renderConfigWarning() +
                     '<div class="empty">No decisions recorded yet.</div>';
-                const total = rows.length;
                 const byDate = groupByDate(rows);
-                const latest = byDate[0],
-                    prev = byDate[1];
+                const latest = byDate[0];
+                if (!latest) return renderConfigWarning() +
+                    '<div class="empty">No decisions recorded yet.</div>';
+                const prev = byDate[1];
                 const latestDate = latest[0];
-                const latestRows = latest[1];
-                const dayDiff = prev ? latestRows.length - prev[1].length : 0;
-
+                const latestCount = latest[1].length;
+                const dayDiff = prev ? latestCount - prev[1].length : 0;
                 const avg = avgDailyApps(byDate);
-
-                const accepted = rows.filter(r => classify(r.decision) === 'accepted').length;
-                const rejected = rows.filter(r => classify(r.decision) === 'rejected').length;
-
-                const isSearching = homeSearchTerm.trim().length > 0;
-                const searchResults = isSearching ?
-                    rows.filter(r => r.irl.toLowerCase().includes(homeSearchTerm.toLowerCase())).slice().sort((a,
-                        b) => b.date.localeCompare(a.date)) :
-                    latestRows;
+                const total = rows.length;
+                const accepted = rows.filter(r => r._status === 'accepted').length;
+                const rejected = rows.filter(r => r._status === 'rejected').length;
 
                 return renderConfigWarning() +
                     readmeSection() +
@@ -1143,29 +1204,89 @@
                     '<input type="text" id="home-search" placeholder="Search by application number\u2026" value="' +
                     homeSearchTerm + '"></div>' +
                     '<div class="cards">' +
-                    
                     '<div class="card"><div class="label">Day-on-day change</div><div class="value ' + (dayDiff >= 0 ?
                         'green' : 'red') + '">' + (dayDiff >= 0 ? '+' : '') + dayDiff + '</div></div>' +
-                    '<div class="card"><div class="label">Avg applications/day</div><div class="value">' + avg
-                    .toFixed(1) + '</div></div>' +
-                    '<div class="card"><div class="label">Acceptance rate</div><div class="value green">' + fmtPct(
-                        accepted / total) + '</div></div>' +
-                    '<div class="card"><div class="label">Rejection rate</div><div class="value red">' + fmtPct(rejected /
-                        total) + '</div></div>' +
+                    '<div class="card"><div class="label">Avg applications/day</div><div class="value">' + avg.toFixed(1) + '</div></div>' +
+                    '<div class="card"><div class="label">Acceptance rate</div><div class="value green">' + fmtPct(accepted / total) + '</div></div>' +
+                    '<div class="card"><div class="label">Rejection rate</div><div class="value red">' + fmtPct(rejected / total) + '</div></div>' +
                     '</div>' +
-                    '<div class="note" style="margin-bottom:8px;margin-top:0;">' + (isSearching ? (searchResults.length +
-                        ' match(es) for "' + homeSearchTerm + '"') : ('All results for ' + latestDate + ' (' + latestRows
-                        .length + ' rows)')) + '</div>' +
-                    '<div class="table-wrap"><table><thead><tr><th>Date</th><th>Application No.</th><th>Decision</th></tr></thead>' +
-                    '<tbody>' + (searchResults.length ? searchResults.map(rowHtml).join('') :
-                        '<tr><td colspan="3" class="empty">No matches.</td></tr>') + '</tbody></table></div>';
+                    '<div class="note" id="home-results-count" style="margin-bottom:8px;margin-top:0;"></div>' +
+                    '<div class="table-wrap"><table class="results-table"><thead><tr><th>Date</th><th>Application No.</th><th>Decision</th></tr></thead>' +
+                    '<tbody id="home-rows"></tbody></table></div>';
             }
 
-            function rowHtml(r) {
-                const c = classify(r.decision);
-                const pillClass = c === 'accepted' ? 'green' : c === 'rejected' ? 'red' : 'amber';
-                return '<tr><td class="mono">' + r.date + '</td><td class="mono">' + r.irl +
-                    '</td><td><span class="pill ' + pillClass + '">' + (r.decision || '\u2014') + '</span></td></tr>';
+            function paintHomeRows() {
+                var tbody = document.getElementById('home-rows');
+                if (!tbody) return;
+                // Disconnect any prior infinite-scroll observer from a previous filter state.
+                if (tbody._sentinelObs) { tbody._sentinelObs.disconnect(); tbody._sentinelObs = null; }
+                while (tbody.firstChild) tbody.removeChild(tbody.firstChild);
+                var rows = cache || [];
+                var isSearching = homeSearchTerm.trim().length > 0;
+                var visible;
+                if (isSearching) {
+                    var term = homeSearchTerm.toLowerCase();
+                    visible = rows.filter(function(r) { return r.irl.toLowerCase().indexOf(term) !== -1; });
+                } else {
+                    var byDate = groupByDate(rows);
+                    visible = byDate.length ? byDate[0][1] : [];
+                }
+                var countNote = document.getElementById('home-results-count');
+                if (countNote) {
+                    if (isSearching) {
+                        countNote.textContent = visible.length + ' match(es) for "' + homeSearchTerm + '"';
+                    } else {
+                        var byDate2 = groupByDate(rows);
+                        var lat = byDate2.length ? byDate2[0] : null;
+                        countNote.textContent = lat
+                            ? ('All results for ' + lat[0] + ' (' + lat[1].length + ' rows)')
+                            : '';
+                    }
+                }
+                renderRowsProgressive(tbody, visible);
+            }
+
+            function rowHtml(r) { return r._html; }
+
+            // Append a list of rows to a tbody progressively: render first CHUNK
+            // synchronously, then use IntersectionObserver to append more chunks as
+            // the user scrolls toward the sentinel row. Bounds the initial layout
+            // cost so a 5,000-row filter is no heavier than a 100-row one.
+            function renderRowsProgressive(tbody, rows) {
+                var CHUNK = 100;
+                if (!rows.length) {
+                    tbody.innerHTML = '<tr><td colspan="3" class="empty">No matches.</td></tr>';
+                    return;
+                }
+                if (rows.length <= CHUNK) {
+                    tbody.innerHTML = rows.map(function(r) { return r._html; }).join('');
+                    return;
+                }
+                tbody.innerHTML = rows.slice(0, CHUNK).map(function(r) { return r._html; }).join('');
+                var sentinel = document.createElement('tr');
+                sentinel.className = 'row-sentinel';
+                sentinel.innerHTML = '<td colspan="3" style="height:18px;"></td>';
+                tbody.appendChild(sentinel);
+                var rendered = CHUNK;
+                var obs = new IntersectionObserver(function(entries) {
+                    if (!entries[0].isIntersecting) return;
+                    if (rendered >= rows.length) {
+                        sentinel.remove();
+                        obs.disconnect();
+                        tbody._sentinelObs = null;
+                        return;
+                    }
+                    var next = rows.slice(rendered, rendered + CHUNK);
+                    sentinel.insertAdjacentHTML('beforebegin', next.map(function(r) { return r._html; }).join(''));
+                    rendered += next.length;
+                    if (rendered >= rows.length) {
+                        sentinel.remove();
+                        obs.disconnect();
+                        tbody._sentinelObs = null;
+                    }
+                }, { rootMargin: '400px' });
+                obs.observe(sentinel);
+                tbody._sentinelObs = obs;
             }
 
             function renderDailySummary(rows) {
@@ -1183,51 +1304,63 @@
                         '</td><td>' + fmtPct(acc) + '</td><td>' + fmtPct(rej) + '</td></tr>';
                 }).join('');
                 return renderConfigWarning() +
-                    '<div class="table-wrap"><table><thead><tr><th>Date</th><th>Applications Processed</th><th>Day-on-Day</th><th>Acceptance Rate</th><th>Rejection Rate</th></tr></thead>' +
+                    '<div class="table-wrap"><table class="daily-table"><thead><tr><th>Date</th><th>Applications Processed</th><th>Day-on-Day</th><th>Acceptance Rate</th><th>Rejection Rate</th></tr></thead>' +
                     '<tbody>' + trs + '</tbody></table></div>';
             }
 
-            function renderPast(rows) {
+            // ====== PAST TAB ======
+            // Same layout/rows split as Home: renderPastLayout() paints the cards,
+            // filter row, empty tbody shell, and scroll-to-top button ONCE per tab
+            // switch. paintPastRows() then only updates the tbody + count note
+            // when the date filter changes — the datepicker stays alive so no
+            // cursor restoration is needed.
+            function renderPastLayout(rows) {
                 if (!rows.length) return renderConfigWarning() +
-                '<div class="empty">No decisions recorded yet.</div>';
+                    '<div class="empty">No decisions recorded yet.</div>';
                 const total = rows.length;
-                const accepted = rows.filter(r => classify(r.decision) === 'accepted').length;
-                const rejected = rows.filter(r => classify(r.decision) === 'rejected').length;
+                const accepted = rows.filter(r => r._status === 'accepted').length;
+                const rejected = rows.filter(r => r._status === 'rejected').length;
                 const byDate = groupByDate(rows);
-
                 const avg = avgDailyApps(byDate);
-
                 const thisWeek = rows.filter(r => daysAgo(r.date) < 7).length;
                 const lastWeek = rows.filter(r => daysAgo(r.date) >= 7 && daysAgo(r.date) < 14).length;
                 const wow = lastWeek ? (thisWeek - lastWeek) / lastWeek : null;
 
-                const sorted = rows
-                    .filter(r => !pastDateFilter || r.date === pastDateFilter)
-                    .slice().sort((a, b) => b.date.localeCompare(a.date));
-
                 return renderConfigWarning() +
                     '<div class="cards">' +
-                    '<div class="card"><div class="label">Acceptance rate</div><div class="value green">' + fmtPct(
-                        accepted / total) + '</div></div>' +
-                    '<div class="card"><div class="label">Rejection rate</div><div class="value red">' + fmtPct(rejected /
-                        total) + '</div></div>' +
-                    '<div class="card"><div class="label">Avg applications/day</div><div class="value">' + avg
-                    .toFixed(1) + '</div></div>' +
-                    '<div class="card"><div class="label">Week-on-week</div><div class="value ' + (wow === null ? '' : (
-                        wow >= 0 ? 'green' : 'red')) + '">' + (wow === null ? '\u2014' : ((wow >= 0 ? '+' : '') + fmtPct(
-                        wow))) + '</div></div>' +
+                    '<div class="card"><div class="label">Acceptance rate</div><div class="value green">' + fmtPct(accepted / total) + '</div></div>' +
+                    '<div class="card"><div class="label">Rejection rate</div><div class="value red">' + fmtPct(rejected / total) + '</div></div>' +
+                    '<div class="card"><div class="label">Avg applications/day</div><div class="value">' + avg.toFixed(1) + '</div></div>' +
+                    '<div class="card"><div class="label">Week-on-week</div><div class="value ' + (wow === null ? '' : (wow >= 0 ? 'green' : 'red')) + '">' + (wow === null ? '\u2014' : ((wow >= 0 ? '+' : '') + fmtPct(wow))) + '</div></div>' +
                     '</div>' +
                     '<div class="filter-row">' +
                     '<div class="note" style="margin-top:0;">Use the search bar on the Home tab to look up a specific application number.</div>' +
-                    '<div class="datefilter"><input type="date" id="past-date-filter" value="' + pastDateFilter + '">' +
-                    (pastDateFilter ? '<span class="clear-btn" id="past-date-clear" title="Clear date filter">\u00d7</span>' :
-                        '') +
+                    '<div class="datefilter' + (pastDateFilter ? ' has-filter' : '') + '"><input type="date" id="past-date-filter" value="' + pastDateFilter + '">' +
+                    '<span class="clear-btn" id="past-date-clear" title="Clear date filter">\u00d7</span>' +
                     '</div>' +
                     '</div>' +
-                    '<div class="table-wrap"><table><thead><tr><th>Date</th><th>Application No.</th><th>Decision</th></tr></thead>' +
-                    '<tbody>' + (sorted.length ? sorted.map(rowHtml).join('') :
-                        '<tr><td colspan="3" class="empty">No matches.</td></tr>') + '</tbody></table></div>' +
+                    '<div class="note" id="past-results-count" style="margin-bottom:8px;margin-top:0;"></div>' +
+                    '<div class="table-wrap"><table class="results-table"><thead><tr><th>Date</th><th>Application No.</th><th>Decision</th></tr></thead>' +
+                    '<tbody id="past-rows"></tbody></table></div>' +
                     '<button class="scroll-top-btn" id="scroll-top-btn" title="Scroll to top">\u2191</button>';
+            }
+
+            function paintPastRows() {
+                var tbody = document.getElementById('past-rows');
+                if (!tbody) return;
+                if (tbody._sentinelObs) { tbody._sentinelObs.disconnect(); tbody._sentinelObs = null; }
+                while (tbody.firstChild) tbody.removeChild(tbody.firstChild);
+                var rows = cache || [];
+                var visible = pastDateFilter
+                    ? rows.filter(function(r) { return r.date === pastDateFilter; })
+                    : rows;
+                var countNote = document.getElementById('past-results-count');
+                if (countNote) {
+                    countNote.textContent = pastDateFilter
+                        ? (visible.length + ' rows for ' + pastDateFilter)
+                        : (visible.length + ' rows total');
+                }
+                renderRowsProgressive(tbody, visible);
             }
 
             function renderSuggestions(suggestions) {
@@ -1304,42 +1437,10 @@
                 // Theme switch is instant via CSS variables — no DOM rebuild needed
                 var themeToggle = document.getElementById('theme-toggle');
                 if (themeToggle) themeToggle.textContent = theme === 'dark' ? '\uD83C\uDF19' : '\u2600\uFE0F';
-            }
-
-            // Partial re-render: only updates tab-body without destroying hero/navpills/header.
-            // Used for search, date filter, and other in-tab interactions to avoid stutter.
-            async function refreshTabBody() {
-                var tabBody = document.getElementById('tab-body');
-                if (!tabBody) return;
-                var rows = await loadData();
-                // Load suggestions if on suggest tab so the typewriter card stays fresh
-                if (activeTab === 'suggest') await loadSuggestions();
-                var body = '';
-                if (activeTab === 'home') body = renderHome(rows);
-                else if (activeTab === 'daily') body = renderDailySummary(rows);
-                else if (activeTab === 'past') body = renderPast(rows);
-                else {
-                    body = renderSuggestions(suggestionsCache);
-                }
-                tabBody.innerHTML = body;
-                // Retrigger card entrance animations on the new DOM
-                var cards = tabBody.querySelectorAll('.card');
-                for (var i = 0; i < cards.length; i++) {
-                    cards[i].style.animation = 'none';
-                    cards[i].offsetHeight; // force reflow
-                    cards[i].style.animation = '';
-                }
-                // Strip animation-fill after the longest stagger so hover transforms work
-                setTimeout(function() {
-                    var allCards = tabBody.querySelectorAll('.card');
-                    for (var j = 0; j < allCards.length; j++) {
-                        allCards[j].style.animation = 'none';
-                    }
-                }, 900);
-                wireTabListeners();
-            }
-            
-async function render() {
+            }            // Initial mount: build the chrome (eyebrow, title, navpills, hero) and
+            // delegate all tab-content rendering to switchTab() so the layout/rows
+            // split is the single source of truth.
+            async function render() {
                 if (!cache) {
                     root.innerHTML = '<div class="eyebrow">Ireland \u00b7 New Delhi Visa Section</div>' +
                         '<div class="titlerow"><h1>Visa Decision Tracker</h1>' +
@@ -1364,23 +1465,17 @@ async function render() {
                         '<div class="skel skel-row" style="width:60%"></div>' +
                         '</div>';
                 }
-                const rows = await loadData();
+                await loadData();
+                if (activeTab === 'suggest') await loadSuggestions();
+
                 const tabs = [
                     ['home', 'Home'],
                     ['daily', 'Daily Summary'],
                     ['past', 'Past Results'],
                     ['suggest', 'Suggestions'],
                 ];
-                let body = '';
-                if (activeTab === 'home') body = renderHome(rows);
-                else if (activeTab === 'daily') body = renderDailySummary(rows);
-                else if (activeTab === 'past') body = renderPast(rows);
-                else {
-                    const suggestions = await loadSuggestions();
-                    body = renderSuggestions(suggestions);
-                }
 
-                const heroState = buildHeroHTML(activeTab, rows);
+                const heroState = buildHeroHTML(activeTab, cache || []);
 
                 root.innerHTML =
                     '<div class="eyebrow">Ireland \u00b7 New Delhi Visa Section</div>' +
@@ -1403,7 +1498,7 @@ async function render() {
                             '<div class="visual">' + heroState.visual + '</div>' +
                         '</div>' +
                     '</div>' +
-                    '<div id="tab-body">' + body + '</div>';
+                    '<div id="tab-body"></div>';
 
                 tabs.forEach(([k]) => {
                     var pill = root.querySelector('.navpill[data-tab="' + k + '"]');
@@ -1414,39 +1509,31 @@ async function render() {
                         switchTab(k);
                     });
                 });
-                const homeSearchEl = document.getElementById('home-search');
-                if (homeSearchEl) {
-                    homeSearchEl.addEventListener('input', e => {
-                        homeSearchTerm = e.target.value;
-                        pendingSearchSelection = { start: e.target.selectionStart, end: e.target.selectionEnd };
-                        refreshTabBody();
-                    });
-                    homeSearchEl.focus();
-                    homeSearchEl.setSelectionRange(homeSearchEl.value.length, homeSearchEl.value.length);
-                }
-                const dateFilterEl = document.getElementById('past-date-filter');
-                if (dateFilterEl) dateFilterEl.addEventListener('change', e => { pastDateFilter = e.target.value;
-                    refreshTabBody(); });
-                const dateClearEl = document.getElementById('past-date-clear');
-                if (dateClearEl) dateClearEl.addEventListener('click', () => { pastDateFilter = '';
-                    refreshTabBody(); });
-                const suggBtn = document.getElementById('sugg-submit');
-                if (suggBtn) suggBtn.addEventListener('click', submitSuggestion);
                 const themeToggle = document.getElementById('theme-toggle');
                 if (themeToggle) themeToggle.addEventListener('click', toggleTheme);
                 morphHero();
-                const scrollBtn = document.getElementById('scroll-top-btn');
-                if (scrollBtn) {
-                    const onScroll = function() {
-                        if (window.scrollY > 300) scrollBtn.classList.add('visible');
-                        else scrollBtn.classList.remove('visible');
-                    };
-                    if (window._scrollTopHandler) window.removeEventListener('scroll', window._scrollTopHandler);
-                    window._scrollTopHandler = onScroll;
-                    window.addEventListener('scroll', onScroll, { passive: true });
-                    onScroll();
-                    scrollBtn.addEventListener('click', function() { window.scrollTo({ top: 0, behavior: 'smooth' }); });
+                // Initial body paint: populate the active tab's content DIRECTLY
+                // without the hero cross-fade dip. morphHero already faded the
+                // hero in (opacity 0 → 1), so calling animateHeroSwitch here
+                // would briefly dim it back to 0.4 before settling on 1 — a
+                // visible flash on first page load. Subsequent tab clicks go
+                // through switchTab() which uses the cross-fade as expected.
+                var rows = cache || [];
+                var tabBody = document.getElementById('tab-body');
+                if (tabBody) {
+                    if (activeTab === 'home') {
+                        tabBody.innerHTML = renderHomeLayout(rows);
+                        paintHomeRows();
+                    } else if (activeTab === 'daily') {
+                        tabBody.innerHTML = renderDailySummary(rows);
+                    } else if (activeTab === 'past') {
+                        tabBody.innerHTML = renderPastLayout(rows);
+                        paintPastRows();
+                    } else {
+                        tabBody.innerHTML = renderSuggestions(suggestionsCache);
+                    }
                 }
+                wireTabListeners();
             }
 
             root.setAttribute('data-theme', theme);
