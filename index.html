@@ -519,6 +519,11 @@
         #visa-dash .suggest-grid .table-col table {
             width: 100%;
             table-layout: auto;
+            white-space: nowrap;
+        }
+        #visa-dash .suggest-grid .table-col table th,
+        #visa-dash .suggest-grid .table-col table td {
+            white-space: nowrap;
         }
         #visa-dash .suggest-grid .table-col table th,
         #visa-dash .suggest-grid .table-col table td {
@@ -1605,7 +1610,7 @@
                     return;
                 }
                 if (emptyEl) emptyEl.style.display = 'none';
-                var firstKeys = Object.keys(suggestions[0]);
+                var firstKeys = Object.keys(suggestions[0]).filter(function(k) { return k !== '_html' && k !== '_keys'; });
                 if (theadRow) theadRow.innerHTML = firstKeys.map(function(h) {
                     return '<th>' + escapeHtml(h) + '</th>';
                 }).join('');
