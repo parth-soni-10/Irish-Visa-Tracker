@@ -258,14 +258,20 @@ def set_no_file_placeholder(date_str, message):
 
 def clear_no_file_placeholder(date_str):
     """Remove a stale placeholder for date_str, if one exists. No-op if not."""
-    resp = requests.post(WEB_APP_URL, json={
-        "action": "clear_no_file_placeholder",
-        "date": date_str,
-    }, timeout=90)
-    resp.raise_for_status()
-    result = resp.json()
-    print("Placeholder clear response:", result)
-    return result
+    try:
+        resp = requests.post(WEB_APP_URL, json={
+            "action": "clear_no_file_placeholder",
+            "date": date_str,
+        }, timeout=90)
+        if resp.status_code != 200:
+            print(f"Placeholder clear returned {resp.status_code} — treating as no-op.")
+            return None
+        result = resp.json()
+        print("Placeholder clear response:", result)
+        return result
+    except requests.exceptions.RequestException as e:
+        print(f"Placeholder clear failed ({e}) — continuing (non-fatal).")
+        return None
 
 
 def _is_placeholder_row(row):
