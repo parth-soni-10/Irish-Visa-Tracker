@@ -28,7 +28,9 @@ import re
 import io
 import os
 import sys
+import time
 from datetime import datetime, timedelta, timezone
+from urllib.parse import urlsplit
 
 import requests
 import pandas as pd
@@ -38,6 +40,9 @@ PAGE_URL = "https://www.ireland.ie/en/india/newdelhi/services/visas/processing-t
 CLOSURE_DATES_URL = "https://www.ireland.ie/en/india/newdelhi/about/embassy-information/"
 WEB_APP_URL = os.environ.get("WEB_APP_URL", "").strip()
 ENABLE_NO_UPLOAD_PLACEHOLDER = os.environ.get("ENABLE_NO_UPLOAD_PLACEHOLDER", "true").strip().lower() == "true"
+WEB_APP_GET_ATTEMPTS = 5
+WEB_APP_RETRY_DELAYS = (2, 4, 8, 16)
+WEB_APP_RETRYABLE_STATUS_CODES = {404, 408, 425, 429, 500, 502, 503, 504}
 
 NO_UPLOAD_MESSAGE = "Visa office hasn't uploaded any sheet until now, check back later, or come back tomorrow"
 WEEKEND_MESSAGE = "Saturday/Sunday, Visa Office is closed"
@@ -218,21 +223,151 @@ def check_holiday(today_dt: datetime):
 
 # ---------------- Sheet I/O ----------------
 
+class WebAppUnavailable(RuntimeError):
+    """The Apps Script endpoint could not be read safely this run."""
+
+
+
+def _retry_delay(attempt: int, response=None) -> float:
+    """Use Google's Retry-After hint when present, otherwise exponential backoff."""
+    if response is not None:
+        retry_after = getattr(response, "headers", {}).get("Retry-After")
+        if retry_after:
+            try:
+                return min(float(retry_after), 30.0)
+            except (TypeError, ValueError):
+                pass
+    return WEB_APP_RETRY_DELAYS[min(attempt - 1, len(WEB_APP_RETRY_DELAYS) - 1)]
+
+
+def _validate_existing_rows(rows):
+    """Reject a successful but unusable response before any write is attempted."""
+    if not isinstance(rows, list):
+        raise ValueError(f"Expected a JSON list of rows, got {type(rows).__name__}")
+    for index, row in enumerate(rows):
+        if not isinstance(row, (list, tuple)) or len(row) < 3:
+            raise ValueError(
+                f"Invalid row at index {index}: expected [date, irl, decision], got {row!r}"
+            )
+        if any(value is not None and not isinstance(value, str) for value in row[:3]):
+            raise ValueError(
+                f"Invalid row at index {index}: date, IRL and decision must be strings"
+            )
+    return rows
+
+
 def fetch_existing_rows():
-    """Full existing Raw sheet contents: list of [date, irl, decision]. Retries on cold-start timeouts."""
+    """Fetch Raw rows, tolerating Apps Script redirects, cold starts and transient 404s.
+
+    Content Service responses are redirected to a one-time
+    ``script.googleusercontent.com`` URL. Every retry starts from the stable
+    ``/exec`` URL so it receives a fresh redirect instead of retrying an expired
+    one-time URL. If the deployment is genuinely unavailable, fail closed: the
+    caller must not scrape or write without first reading the Sheet, because
+    doing so could create duplicate rows.
+    """
+    if not WEB_APP_URL:
+        raise WebAppUnavailable("WEB_APP_URL is empty.")
+
     print(f"WEB_APP_URL length: {len(WEB_APP_URL)} | starts: {WEB_APP_URL[:45]!r} | ends: {WEB_APP_URL[-15:]!r}")
-    last_err = None
-    for attempt in range(1, 4):
+    last_error = None
+    for attempt in range(1, WEB_APP_GET_ATTEMPTS + 1):
         try:
-            print(f"Attempt {attempt}: fetching existing rows...")
-            resp = requests.get(WEB_APP_URL, params={"action": "raw"}, timeout=90)
-            print(f"Existing-rows fetch status: {resp.status_code} | first 300 chars of body: {resp.text[:300]!r}")
+            print(f"Attempt {attempt}/{WEB_APP_GET_ATTEMPTS}: fetching existing rows...")
+            # requests follows the Apps Script Content Service redirect by default;
+            # make that contract explicit and prevent a cached redirect response.
+            resp = requests.get(
+                WEB_APP_URL,
+                params={"action": "raw"},
+                headers={"Accept": "application/json", "Cache-Control": "no-cache"},
+                timeout=90,
+                allow_redirects=True,
+            )
+            final_url = getattr(resp, "url", "")
+            final_host = urlsplit(final_url).netloc if final_url else "unknown"
+            print(
+                f"Existing-rows fetch status: {resp.status_code} | "
+                f"final URL host: {final_host!r} | "
+                f"first 300 chars of body: {resp.text[:300]!r}"
+            )
+
+            if resp.status_code in WEB_APP_RETRYABLE_STATUS_CODES:
+                last_error = requests.exceptions.HTTPError(
+                    f"Apps Script returned HTTP {resp.status_code}", response=resp
+                )
+                if attempt < WEB_APP_GET_ATTEMPTS:
+                    delay = _retry_delay(attempt, resp)
+                    print(f"Transient Apps Script response; retrying in {delay:g}s...")
+                    time.sleep(delay)
+                    continue
+                break
+
             resp.raise_for_status()
-            return resp.json()  # list of [date, irl, decision]
-        except (requests.exceptions.ReadTimeout, requests.exceptions.ConnectionError) as e:
+            try:
+                rows = resp.json()
+            except ValueError as e:
+                last_error = e
+                if attempt < WEB_APP_GET_ATTEMPTS:
+                    delay = _retry_delay(attempt)
+                    print(f"Apps Script returned non-JSON data; retrying in {delay:g}s...")
+                    time.sleep(delay)
+                    continue
+                break
+            try:
+                return _validate_existing_rows(rows)  # list of [date, irl, decision]
+            except ValueError as e:
+                last_error = e
+                if attempt < WEB_APP_GET_ATTEMPTS:
+                    delay = _retry_delay(attempt)
+                    print(f"Apps Script returned an invalid row payload; retrying in {delay:g}s...")
+                    time.sleep(delay)
+                    continue
+                break
+        except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
+            last_error = e
             print(f"Attempt {attempt} failed: {e}")
-            last_err = e
-    raise last_err
+            if attempt < WEB_APP_GET_ATTEMPTS:
+                delay = _retry_delay(attempt)
+                print(f"Retrying in {delay:g}s...")
+                time.sleep(delay)
+        except requests.exceptions.HTTPError as e:
+            last_error = e
+            # Non-retryable HTTP errors (for example 401/403) should be reported
+            # immediately; retrying cannot repair a permissions/deployment error.
+            break
+        except ValueError as e:
+            last_error = e
+            if attempt < WEB_APP_GET_ATTEMPTS:
+                delay = _retry_delay(attempt)
+                print(f"Apps Script returned an invalid payload; retrying in {delay:g}s...")
+                time.sleep(delay)
+                continue
+            break
+        except requests.exceptions.RequestException as e:
+            # SSLError, ChunkedEncodingError and other transient transport
+            # failures that can self-heal in CI on retry.
+            last_error = e
+            print(f"Attempt {attempt} failed with transport error: {e}")
+            if attempt < WEB_APP_GET_ATTEMPTS:
+                delay = _retry_delay(attempt)
+                print(f"Retrying in {delay:g}s...")
+                time.sleep(delay)
+
+    detail = str(last_error) if last_error else "unknown error"
+    deployment_hint = ""
+    if isinstance(last_error, requests.exceptions.HTTPError) and getattr(getattr(last_error, "response", None), "status_code", None) == 404:
+        deployment_hint = (
+            " A persistent 404 usually means the deployment was removed or the "
+            "secret contains an old URL; redeploy the Apps Script as a Web App and "
+            "update the WEB_APP_URL secret."
+        )
+    raise WebAppUnavailable(
+        "Google Apps Script data endpoint unavailable after "
+        f"{WEB_APP_GET_ATTEMPTS} attempts: {detail}.{deployment_hint} Verify that "
+        "WEB_APP_URL is the current deployed /exec URL and that the Web App is "
+        "accessible to anyone who has the link. This run was skipped without "
+        "writing data."
+    ) from last_error
 
 
 def push_new_rows(rows):
@@ -300,7 +435,19 @@ def main():
     today_dt = now_ist()
     today_ist = today_dt.strftime("%Y-%m-%d")
 
-    existing_rows = fetch_existing_rows()
+    try:
+        existing_rows = fetch_existing_rows()
+    except WebAppUnavailable as e:
+        # Never continue with an empty/fabricated baseline: that could duplicate
+        # every historical row. A skipped run is safer than a failed write.
+        message = f"WARNING: {e}"
+        print(message)
+        if os.environ.get("GITHUB_ACTIONS") == "true":
+            print(f"::error::{message}")
+        # Fail visibly so GitHub Actions alerts on a stale/invalid deployment or
+        # secret, but do not continue into scraping or any write operation.
+        sys.exit(1)
+
     existing_irl = {r[1] for r in existing_rows if not _is_placeholder_row(r)}
 
     # Only skip if today already has REAL data (not just a placeholder)

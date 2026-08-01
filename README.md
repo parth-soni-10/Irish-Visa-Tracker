@@ -23,6 +23,16 @@ storage. Apps Script is the only thing that touches the Sheet directly,
 exposed as a small Web App so both the scraper and the dashboard can talk to
 it over plain HTTP.
 
+The scraper treats the Apps Script `/exec` URL as the stable source URL. Google
+Content Service redirects JSON responses to a short-lived
+`script.googleusercontent.com` URL, so every read retry starts from `/exec`
+again instead of reusing an expired redirect. Transient 404s, throttling,
+timeouts, and gateway errors are retried with backoff. If the endpoint still
+cannot be read, the run fails **before scraping or writing** so it can never
+append duplicate history against an unknown Sheet baseline. A persistent 404
+means the deployment was removed or `WEB_APP_URL` is stale: redeploy the Apps
+Script as a Web App and update the GitHub secret with its current `/exec` URL.
+
 ## How it works
 
 **The scraper** runs nine times a day (every 30 min from 08:00 IST to 12:00 IST). Every run works through a priority
