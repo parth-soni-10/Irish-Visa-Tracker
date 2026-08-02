@@ -3,15 +3,17 @@ name: Scrape Visa Decisions
 on:
   workflow_dispatch: {}   # manual "Run workflow" button — still available for on-demand runs
   schedule:
-    - cron: '30 2 * * *'  # 08:00 IST
-    - cron: '0 3 * * *'   # 08:30 IST
-    - cron: '30 3 * * *'  # 09:00 IST
-    - cron: '0 4 * * *'   # 09:30 IST
-    - cron: '30 4 * * *'  # 10:00 IST
-    - cron: '0 5 * * *'   # 10:30 IST
-    - cron: '30 5 * * *'  # 11:00 IST
-    - cron: '0 6 * * *'   # 11:30 IST
-    - cron: '30 6 * * *'  # 12:00 IST — final run of the day
+    - cron: '30 2 * * 1-5'  # Mon–Fri 08:00 IST
+    - cron: '0 3 * * 1-5'   # Mon–Fri 08:30 IST
+    - cron: '30 3 * * 1-5'  # Mon–Fri 09:00 IST
+    - cron: '0 4 * * 1-5'   # Mon–Fri 09:30 IST
+    - cron: '30 4 * * 1-5'  # Mon–Fri 10:00 IST
+    - cron: '0 5 * * 1-5'   # Mon–Fri 10:30 IST
+    - cron: '30 5 * * 1-5'  # Mon–Fri 11:00 IST
+    - cron: '0 6 * * 1-5'   # Mon–Fri 11:30 IST
+    - cron: '30 6 * * 1-5'  # Mon–Fri 12:00 IST — final weekday run
+    - cron: '30 2 * * 6,0'  # Sat–Sun 08:00 IST — weekend placeholder (run 1)
+    - cron: '30 6 * * 6,0'  # Sat–Sun 12:00 IST — weekend placeholder (run 2)
 
 jobs:
   scrape:
