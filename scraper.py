@@ -40,8 +40,12 @@ PAGE_URL = "https://www.ireland.ie/en/india/newdelhi/services/visas/processing-t
 CLOSURE_DATES_URL = "https://www.ireland.ie/en/india/newdelhi/about/embassy-information/"
 WEB_APP_URL = os.environ.get("WEB_APP_URL", "").strip()
 ENABLE_NO_UPLOAD_PLACEHOLDER = os.environ.get("ENABLE_NO_UPLOAD_PLACEHOLDER", "true").strip().lower() == "true"
-WEB_APP_GET_ATTEMPTS = 5
-WEB_APP_RETRY_DELAYS = (2, 4, 8, 16)
+# Cold-start tolerance: a container that has been idle for hours can take
+# 60+ seconds (sometimes minutes) to spin up, and every probe before it is
+# ready comes back 404. Budget ~5 minutes across 8 attempts so the first
+# run of the day survives the warm-up instead of failing.
+WEB_APP_GET_ATTEMPTS = 8
+WEB_APP_RETRY_DELAYS = (10, 15, 30, 45, 60, 60, 60)
 WEB_APP_RETRYABLE_STATUS_CODES = {404, 408, 425, 429, 500, 502, 503, 504}
 
 NO_UPLOAD_MESSAGE = "Visa office hasn't uploaded any sheet until now, check back later, or come back tomorrow"
@@ -224,7 +228,17 @@ def check_holiday(today_dt: datetime):
 # ---------------- Sheet I/O ----------------
 
 class WebAppUnavailable(RuntimeError):
-    """The Apps Script endpoint could not be read safely this run."""
+    """The Apps Script endpoint could not be read safely this run.
+
+    ``transient`` is True when the failure looks self-healing (a cold start,
+    a gateway hiccup, or exhausted retryable status codes) — the run should
+    be skipped and the next scheduled run will retry. False means a config,
+    permission or deployment problem that needs human attention.
+    """
+
+    def __init__(self, message, transient=False):
+        super().__init__(message)
+        self.transient = transient
 
 
 
@@ -278,7 +292,9 @@ def fetch_existing_rows():
             # make that contract explicit and prevent a cached redirect response.
             resp = requests.get(
                 WEB_APP_URL,
-                params={"action": "raw"},
+                # Cache-buster: forces a fresh request to /exec instead of any
+                # stale proxied response for the identical URL.
+                params={"action": "raw", "_": str(int(time.time() * 1000))},
                 headers={"Accept": "application/json", "Cache-Control": "no-cache"},
                 timeout=90,
                 allow_redirects=True,
@@ -354,59 +370,69 @@ def fetch_existing_rows():
                 time.sleep(delay)
 
     detail = str(last_error) if last_error else "unknown error"
-    deployment_hint = ""
-    if isinstance(last_error, requests.exceptions.HTTPError) and getattr(getattr(last_error, "response", None), "status_code", None) == 404:
-        deployment_hint = (
-            " A persistent 404 usually means the deployment was removed or the "
-            "secret contains an old URL; redeploy the Apps Script as a Web App and "
-            "update the WEB_APP_URL secret."
-        )
+    status_code = getattr(getattr(last_error, "response", None), "status_code", None)
+    # Cold starts and gateway hiccups surface as retryable statuses; anything
+    # else (401/403, empty URL, etc.) is a real problem.
+    transient = status_code is None or status_code in WEB_APP_RETRYABLE_STATUS_CODES
+    deployment_hint = (
+        " If this happens on many consecutive runs rather than just the first "
+        "of the day, the deployment was probably removed or the secret holds an "
+        "old URL; redeploy the Apps Script as a Web App and update the "
+        "WEB_APP_URL secret."
+    ) if status_code == 404 else ""
     raise WebAppUnavailable(
         "Google Apps Script data endpoint unavailable after "
         f"{WEB_APP_GET_ATTEMPTS} attempts: {detail}.{deployment_hint} Verify that "
         "WEB_APP_URL is the current deployed /exec URL and that the Web App is "
         "accessible to anyone who has the link. This run was skipped without "
-        "writing data."
+        "writing data.",
+        transient=transient,
     ) from last_error
 
 
+def _post_json(payload, label):
+    """POST to the Apps Script web app, tolerating transient failures.
+
+    Returns the parsed JSON response on success; on any failure prints a
+    warning and returns None. Callers treat None as "this step was skipped —
+    the next scheduled run will retry it", so a transient blip can never
+    crash the run or look like data that was actually written.
+    """
+    try:
+        resp = requests.post(WEB_APP_URL, json=payload, timeout=90)
+        if resp.status_code != 200:
+            print(f"{label} returned {resp.status_code} — treating as non-fatal, skipping this step.")
+            return None
+        result = resp.json()
+        print(f"{label} response:", result)
+        return result
+    except requests.exceptions.RequestException as e:
+        print(f"{label} failed ({e}) — continuing (non-fatal).")
+        return None
+    except ValueError as e:
+        print(f"{label} returned non-JSON data ({e}) — continuing (non-fatal).")
+        return None
+
+
 def push_new_rows(rows):
-    resp = requests.post(WEB_APP_URL, json={"action": "append_rows", "rows": rows}, timeout=90)
-    resp.raise_for_status()
-    result = resp.json()
-    print("Server response:", result)
-    return result
+    return _post_json({"action": "append_rows", "rows": rows}, "Append rows")
 
 
 def set_no_file_placeholder(date_str, message):
     """Insert-or-overwrite (never duplicates) the placeholder row for date_str."""
-    resp = requests.post(WEB_APP_URL, json={
+    return _post_json({
         "action": "set_no_file_placeholder",
         "date": date_str,
         "message": message,
-    }, timeout=90)
-    resp.raise_for_status()
-    result = resp.json()
-    print("Placeholder upsert response:", result)
-    return result
+    }, "Placeholder upsert")
 
 
 def clear_no_file_placeholder(date_str):
     """Remove a stale placeholder for date_str, if one exists. No-op if not."""
-    try:
-        resp = requests.post(WEB_APP_URL, json={
-            "action": "clear_no_file_placeholder",
-            "date": date_str,
-        }, timeout=90)
-        if resp.status_code != 200:
-            print(f"Placeholder clear returned {resp.status_code} — treating as no-op.")
-            return None
-        result = resp.json()
-        print("Placeholder clear response:", result)
-        return result
-    except requests.exceptions.RequestException as e:
-        print(f"Placeholder clear failed ({e}) — continuing (non-fatal).")
-        return None
+    return _post_json({
+        "action": "clear_no_file_placeholder",
+        "date": date_str,
+    }, "Placeholder clear")
 
 
 def _is_placeholder_row(row):
@@ -442,10 +468,19 @@ def main():
         # every historical row. A skipped run is safer than a failed write.
         message = f"WARNING: {e}"
         print(message)
+        transient = getattr(e, "transient", False)
         if os.environ.get("GITHUB_ACTIONS") == "true":
-            print(f"::error::{message}")
-        # Fail visibly so GitHub Actions alerts on a stale/invalid deployment or
-        # secret, but do not continue into scraping or any write operation.
+            # Annotate the run so it is visible in the Actions UI, but do not
+            # fail the job for a transient cold start — the next scheduled run
+            # retries ~30 min later and almost certainly succeeds.
+            level = "warning" if transient else "error"
+            print(f"::{level}::{message}")
+        if transient:
+            print("This looks transient (cold start / gateway hiccup) — skipping "
+                  "this run. The next scheduled run will retry automatically.")
+            return
+        # Non-transient (stale deployment, permission change): fail visibly so
+        # GitHub Actions alerts on a stale/invalid deployment or secret.
         sys.exit(1)
 
     existing_irl = {r[1] for r in existing_rows if not _is_placeholder_row(r)}
