@@ -4,257 +4,76 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Irish Visa Decision Tracker</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sora:wght@600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-    <base target="_blank">
+<base target="_blank">
 </head>
 <body>
     <div id="visa-dash"></div>
     <style>
-        /* ============================================================
-           VISA DECISION TRACKER — "Sunrise" redesign
-           Design DNA:
-           · Manus     — warm cream canvas, coral-orange brand accent,
-                         halo/orb glows, gradient depth on heroes
-           · Watermelon– soft coral/sage semantic palette (approved green,
-                         rejected coral) on cream
-           · Motion    – elevated white cards, pill segmented tabs,
-                         springy micro-interactions, soft warm shadows
-           · Haikei    – organic blob + aurora/mesh backgrounds, noise grain
-           All class names, IDs and data-attributes used by the app's JS
-           are preserved exactly — this is a pure visual-layer swap.
-           ============================================================ */
-
-        body { margin: 0; background: #f6f3ee; }
-        body:has(#visa-dash[data-theme="dark"]) { background: #131110; }
 
         #visa-dash * { box-sizing: border-box; }
         #visa-dash {
-            --canvas: #f6f3ee;
-            --ink: #211d19;
-            --ink-soft: #6b6153;
-            --ink-muted: #a69d8c;
+            --ink: #0f172a;
+            --ink-soft: #475569;
+            --ink-muted: #94a3b8;
             --surface: #ffffff;
-            --surface-raised: #fbf9f3;
-            --surface-hover: #f2ede2;
-            --border: #e8e1d2;
-            --brand: #ff4d2e;
-            --brand-2: #ff8a3d;
-            --green: #0fa36b;
-            --green-light: #3ad99a;
-            --green-soft: #e3f4eb;
-            --green-text: #0b7a50;
-            --amber: #e8a50c;
-            --amber-soft: #fbf0d7;
-            --amber-text: #a16207;
-            --red: #e8503a;
-            --red-soft: #fce8e3;
-            --red-text: #c0392b;
-            --violet: #7c5cf0;
-            --rose: #f43f5e;
-            --shadow-sm: 0 1px 2px rgba(33, 29, 25, .05);
-            --shadow-md: 0 10px 30px -12px rgba(33, 29, 25, .16);
-            --shadow-lg: 0 24px 60px -20px rgba(33, 29, 25, .26);
-            --ring: rgba(255, 77, 46, .14);
-            font-family: "Inter", -apple-system, "Segoe UI", system-ui, Helvetica, Arial, sans-serif;
-            background: var(--canvas);
+            --surface-raised: #f8fafc;
+            --surface-hover: #f1f5f9;
+            --border: #e2e8f0;
+            --green: #059669;
+            --green-light: #10b981;
+            --green-soft: #dcfce7;
+            --green-text: #166534;
+            --amber: #d97706;
+            --amber-soft: #fef3c7;
+            --amber-text: #92400e;
+            --red: #dc2626;
+            --red-soft: #fee2e2;
+            --red-text: #991b1b;
+            font-family: -apple-system, "Segoe UI", "Inter", Helvetica, Arial, sans-serif;
+            background: var(--surface);
             color: var(--ink);
             min-height: 100vh;
-            max-width: 1180px;
-            margin: 0 auto;
-            padding: 28px 24px 72px;
-            position: relative;
-            /* Creates a stacking context so the fixed ::before/::after
-               aurora + grain layers (z-index:-1) paint ABOVE this element's
-               own background but below its content. Without it, the opaque
-               canvas background would cover them and the page looks flat. */
-            isolation: isolate;
+            padding: 24px;
             -webkit-font-smoothing: antialiased;
         }
-
-        /* ---- page aurora + grain (fixed, behind content) ---- */
-        #visa-dash::before,
-        #visa-dash::after {
-            content: '';
-            position: fixed;
-            inset: 0;
-            z-index: -1;
-            pointer-events: none;
-        }
-        #visa-dash::before {
-            background:
-                radial-gradient(46% 40% at 84% 6%, rgba(255, 77, 46, .09), transparent 62%),
-                radial-gradient(42% 44% at 6% 90%, rgba(15, 163, 107, .09), transparent 62%),
-                radial-gradient(50% 44% at 50% 60%, rgba(124, 92, 240, .05), transparent 64%),
-                var(--canvas);
-        }
-        #visa-dash::after {
-            background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/><feColorMatrix type='saturate' values='0'/></filter><rect width='140' height='140' filter='url(%23n)' opacity='0.03'/></svg>");
-            background-size: 140px 140px;
-        }
-        #visa-dash[data-theme="dark"]::before {
-            background:
-                radial-gradient(46% 40% at 84% 6%, rgba(255, 106, 77, .10), transparent 62%),
-                radial-gradient(42% 44% at 6% 90%, rgba(58, 217, 154, .08), transparent 62%),
-                radial-gradient(50% 44% at 50% 60%, rgba(124, 92, 240, .07), transparent 64%),
-                var(--canvas);
-        }
-
-        #visa-dash .mono { font-family: "JetBrains Mono", "SF Mono", Consolas, Menlo, monospace; }
-
-        /* ---- header ---- */
+        #visa-dash .mono { font-family: "SF Mono", "JetBrains Mono", Consolas, Menlo, monospace; }
         #visa-dash .eyebrow {
             font-size: 11px;
-            letter-spacing: .22em;
+            letter-spacing: .18em;
             text-transform: uppercase;
-            color: var(--brand);
+            color: var(--green);
             font-weight: 700;
-            margin-bottom: 6px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        #visa-dash .eyebrow::before {
-            content: '';
-            width: 18px;
-            height: 2px;
-            border-radius: 2px;
-            background: linear-gradient(90deg, var(--brand), var(--brand-2));
+            margin-bottom: 4px;
         }
         #visa-dash h1 {
-            font-family: "Sora", "Inter", system-ui, sans-serif;
-            font-size: 30px;
+            font-size: 28px;
             margin: 0 0 2px;
             font-weight: 800;
-            letter-spacing: -.03em;
-            color: var(--ink);
-            background: linear-gradient(100deg, var(--brand) 10%, #f59e0b 55%, var(--brand-2) 92%);
-            -webkit-background-clip: text;
-            background-clip: text;
-        }
-        /* Gradient text is clipped only where background-clip:text is
-           supported; elsewhere the H1 keeps a readable solid ink color. */
-        @supports (-webkit-background-clip: text) or (background-clip: text) {
-            #visa-dash h1 {
-                background: linear-gradient(100deg, var(--brand) 10%, #f59e0b 55%, var(--brand-2) 92%);
-                -webkit-background-clip: text;
-                background-clip: text;
-                color: transparent;
-            }
-            #visa-dash[data-theme="dark"] h1 {
-                background: linear-gradient(100deg, #ff9e66, #f2c14e, #ff6a4d);
-                -webkit-background-clip: text;
-                background-clip: text;
-            }
+            letter-spacing: -.02em;
         }
         #visa-dash .sub {
             color: var(--ink-muted);
             font-size: 13px;
-            margin-bottom: 22px;
+            margin-bottom: 20px;
         }
-
-        /* ---- title row + badges ---- */
-        #visa-dash .titlerow {
-            display: flex;
-            align-items: flex-start;
-            justify-content: space-between;
-            gap: 12px;
-            flex-wrap: wrap;
-        }
-        #visa-dash .titlerow h1 { margin: 0 0 2px; }
-        #visa-dash .stutter-badge {
-            background: var(--amber-soft);
-            color: var(--amber-text);
-            font-size: 11px;
-            font-weight: 600;
-            padding: 6px 14px;
-            border-radius: 100px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            white-space: nowrap;
-            margin-top: 3px;
-            border: 1px solid rgba(232, 165, 12, .3);
-        }
-        #visa-dash .stutter-badge i { font-style: normal; font-size: 12px; }
-
-        #visa-dash .theme-toggle {
-            background: color-mix(in srgb, var(--surface) 70%, transparent);
-            -webkit-backdrop-filter: blur(12px);
-            backdrop-filter: blur(12px);
-            border: 1px solid var(--border);
-            color: var(--ink-soft);
-            width: 38px;
-            height: 38px;
-            border-radius: 12px;
-            cursor: pointer;
-            font-size: 16px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all .25s cubic-bezier(.34, 1.56, .64, 1);
-            flex-shrink: 0;
-            box-shadow: var(--shadow-sm);
-        }
-        #visa-dash .theme-toggle:hover {
-            background: var(--surface-hover);
-            color: var(--ink);
-            transform: translateY(-2px) scale(1.05);
-            box-shadow: var(--shadow-md);
-        }
-        #visa-dash .theme-toggle:active { transform: scale(.92); }
-
-        /* ---- loading bar ---- */
-        #visa-dash .topbar {
-            height: 4px;
-            background: var(--border);
-            border-radius: 100px;
-            overflow: hidden;
-            margin-bottom: 22px;
-            position: relative;
-        }
-        #visa-dash .topbar-fill {
-            position: absolute;
-            top: 0; left: 0;
-            height: 100%;
-            width: 35%;
-            border-radius: 100px;
-            background: linear-gradient(90deg, var(--brand), var(--brand-2), var(--green-light));
-            animation: visa-indeterminate 1.1s ease-in-out infinite;
-        }
-        @keyframes visa-indeterminate {
-            0% { transform: translateX(-100%); }
-            100% { transform: translateX(340%); }
-        }
-
-        /* ---- nav pills (motion-primitives segmented control) ---- */
         #visa-dash .navpills {
-            display: inline-flex;
-            gap: 4px;
+            display: flex;
+            gap: 8px;
             margin-bottom: 24px;
             flex-wrap: wrap;
-            background: color-mix(in srgb, var(--surface) 55%, transparent);
-            border: 1px solid var(--border);
-            padding: 6px;
-            border-radius: 100px;
-            box-shadow: var(--shadow-sm);
-            -webkit-backdrop-filter: blur(12px);
-            backdrop-filter: blur(12px);
         }
         #visa-dash .navpill {
-            padding: 9px 20px;
+            padding: 8px 18px;
             font-size: 13px;
             font-weight: 600;
             border-radius: 100px;
             cursor: pointer;
             border: none;
-            color: var(--ink-soft);
-            background: transparent;
-            transition: all .28s cubic-bezier(.34, 1.56, .64, 1);
+            color: var(--ink-muted);
+            background: var(--surface-raised);
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
             position: relative;
             overflow: hidden;
-            letter-spacing: -.01em;
         }
         #visa-dash .navpill::after {
             content: '';
@@ -262,60 +81,47 @@
             top: 50%; left: 50%;
             width: 10px; height: 10px;
             border-radius: 50%;
-            background: rgba(255, 255, 255, .35);
+            background: rgba(255,255,255,0.25);
             transform: translate(-50%, -50%) scale(0);
             pointer-events: none;
             opacity: 0;
         }
         #visa-dash .navpill.rippling::after {
-            animation: nav-ripple .5s ease-out;
+            animation: nav-ripple 0.5s ease-out;
         }
         @keyframes nav-ripple {
-            0% { transform: translate(-50%, -50%) scale(0); opacity: .45; }
+            0% { transform: translate(-50%, -50%) scale(0); opacity: 0.4; }
             100% { transform: translate(-50%, -50%) scale(30); opacity: 0; }
         }
-        #visa-dash .navpill:hover { background: var(--surface-hover); color: var(--ink); }
+        #visa-dash .navpill:hover {
+            background: var(--surface-hover);
+            color: var(--ink-soft);
+            transform: translateY(-1px);
+        }
         #visa-dash .navpill.active {
             color: #fff;
-            box-shadow: 0 6px 18px -6px rgba(33, 29, 25, .35);
-            text-shadow: 0 1px 2px rgba(0, 0, 0, .15);
+            box-shadow: 0 6px 22px rgba(0,0,0,.18);
         }
-        #visa-dash .navpill[data-tab="home"].active    { background: linear-gradient(135deg, #0fa36b, #3ad99a); }
-        #visa-dash .navpill[data-tab="daily"].active   { background: linear-gradient(135deg, #7c5cf0, #a78bfa); }
-        #visa-dash .navpill[data-tab="past"].active    { background: linear-gradient(135deg, #e8a50c, #fbbf24); }
-        #visa-dash .navpill[data-tab="suggest"].active { background: linear-gradient(135deg, #f43f5e, #fb7185); }
-        #visa-dash .navpill.active:hover { filter: brightness(1.05); }
-
-        /* ---- stat cards ---- */
+        #visa-dash .navpill[data-tab="home"].active   { background: linear-gradient(135deg, var(--green), var(--green-light)); }
+        #visa-dash .navpill[data-tab="daily"].active  { background: linear-gradient(135deg, #7c3aed, #a78bfa); }
+        #visa-dash .navpill[data-tab="past"].active   { background: linear-gradient(135deg, var(--amber), #f59e0b); }
+        #visa-dash .navpill[data-tab="suggest"].active{ background: linear-gradient(135deg, #ec4899, #f472b6); }
+        #visa-dash .navpill.active:hover { filter: brightness(0.9); }
         #visa-dash .cards {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 14px;
-            margin-bottom: 24px;
+            gap: 12px;
+            margin-bottom: 22px;
         }
         #visa-dash .card {
-            position: relative;
-            overflow: hidden;
-            background: var(--surface);
+            background: var(--surface-raised);
             border: 1px solid var(--border);
-            border-radius: 18px;
-            padding: 18px 18px 16px;
-            box-shadow: var(--shadow-sm);
+            border-radius: 14px;
+            padding: 16px;
             opacity: 0;
-            transform: translateY(14px);
-            animation: visa-card-in .5s cubic-bezier(.22, 1, .36, 1) forwards;
-            transition: transform .25s cubic-bezier(.34, 1.56, .64, 1),
-                        box-shadow .25s ease,
-                        border-color .25s ease;
-        }
-        #visa-dash .card::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; right: 0;
-            height: 2px;
-            background: linear-gradient(90deg, var(--brand), var(--brand-2), transparent);
-            opacity: .5;
-            transition: opacity .25s ease;
+            transform: translateY(12px);
+            animation: visa-card-in 0.45s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         }
         #visa-dash .card:nth-child(1) { animation-delay: 0.03s; }
         #visa-dash .card:nth-child(2) { animation-delay: 0.08s; }
@@ -326,74 +132,67 @@
         #visa-dash .card:nth-child(7) { animation-delay: 0.33s; }
         #visa-dash .card:nth-child(8) { animation-delay: 0.38s; }
         @keyframes visa-card-in {
-            from { opacity: 0; transform: translateY(14px); }
+            from { opacity: 0; transform: translateY(12px); }
             to { opacity: 1; transform: translateY(0); }
         }
-        #visa-dash .card:hover {
-            transform: translateY(-4px);
-            box-shadow: var(--shadow-md);
-            border-color: rgba(255, 77, 46, .25);
-        }
-        #visa-dash .card:hover::before { opacity: 1; }
         @media (prefers-reduced-motion: reduce) {
-            #visa-dash .card { animation: none; opacity: 1; transform: none; }
+            #visa-dash .card { animation: none; }
         }
-
-        #visa-dash .card .label {
+#visa-dash .card .label {
             font-size: 10px;
             color: var(--ink-muted);
             text-transform: uppercase;
-            letter-spacing: .08em;
-            margin-bottom: 10px;
-            font-weight: 700;
+            letter-spacing: .07em;
+            margin-bottom: 8px;
+            font-weight: 600;
         }
         #visa-dash .card .value {
             font-size: 22px;
             font-weight: 700;
-            font-family: "Sora", "Inter", system-ui, sans-serif;
-            letter-spacing: -.02em;
-            transition: transform .2s cubic-bezier(.34, 1.56, .64, 1);
+            transition: transform 0.15s;
         }
-        #visa-dash .card:hover .value { transform: scale(1.03); }
+        #visa-dash .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+            border-color: #cbd5e1;
+        }
+        #visa-dash .card:hover .value { transform: scale(1.02); }
         #visa-dash .card .value.green { color: var(--green); }
         #visa-dash .card .value.red { color: var(--red); }
         #visa-dash .card .value.amber { color: var(--amber); }
-
-        /* ---- tables ---- */
         #visa-dash .table-wrap {
             overflow-x: auto;
-            border-radius: 18px;
+            border-radius: 14px;
             border: 1px solid var(--border);
-            background: var(--surface);
-            box-shadow: var(--shadow-sm);
+            background: var(--surface-raised);
         }
         #visa-dash table {
             width: 100%;
             border-collapse: collapse;
-            background: transparent;
+            background: var(--surface);
             min-width: 380px;
         }
         #visa-dash th {
             text-align: left;
-            font-size: 10.5px;
+            font-size: 10px;
             text-transform: uppercase;
-            letter-spacing: .08em;
+            letter-spacing: .07em;
             color: var(--ink-muted);
             background: var(--surface-raised);
-            padding: 14px 16px;
+            padding: 12px 14px;
             border-bottom: 1px solid var(--border);
             white-space: nowrap;
             font-weight: 700;
         }
         #visa-dash td {
-            padding: 12px 16px;
+            padding: 11px 14px;
             font-size: 13.5px;
             border-bottom: 1px solid var(--border);
             white-space: nowrap;
             color: var(--ink-soft);
         }
         #visa-dash tbody tr {
-            transition: background .15s ease;
+            transition: background 0.15s;
             content-visibility: auto;
             contain-intrinsic-size: 0 56px;
         }
@@ -409,16 +208,18 @@
             background: linear-gradient(180deg, var(--green), var(--green-light));
             opacity: 0;
             border-radius: 0 3px 3px 0;
-            transition: opacity .25s ease;
+            transition: opacity 0.25s ease;
             pointer-events: none;
         }
         #visa-dash tbody tr:hover td:first-child::before { opacity: 1; }
-        #visa-dash tbody tr:hover { background: var(--surface-hover); }
-
-        /* Home + Past results tables: 3 columns. Fixed layout — browser sizes
-           each column to fit its content (no header collisions across the
-           row); the table takes full container width on wide screens.
-           min-width keeps narrow viewports scrollable rather than squishing. */
+        #visa-dash tbody tr:hover {
+            background: var(--surface-hover);
+        }
+        /* Home + Past results tables: 3 columns. Auto layout so the browser
+           sizes each column to fit its content (no header collisions across
+           the row), and the table takes the full container width on wide
+           screen instead of staying centred narrow. min-width keeps narrow
+           viewports scrollable rather than squishing columns. */
         #visa-dash .results-table { table-layout: fixed; width: 100%; min-width: 360px; }
         #visa-dash .results-table th, #visa-dash .results-table td { white-space: normal; overflow-wrap: break-word; }
         #visa-dash .results-table th:nth-child(1), #visa-dash .results-table td:nth-child(1) { min-width: 12ch; }
@@ -431,61 +232,63 @@
         #visa-dash .daily-table th:nth-child(3), #visa-dash .daily-table td:nth-child(3),
         #visa-dash .daily-table th:nth-child(4), #visa-dash .daily-table td:nth-child(4),
         #visa-dash .daily-table th:nth-child(5), #visa-dash .daily-table td:nth-child(5) { min-width: 10ch; }
-        /* Sentinel row appended by IntersectionObserver infinite scroll. */
+        /* Sentinel row appended by IntersectionObserver infinite scroll.
+           contain-intrinsic-size hints the browser's content-visibility:auto
+           layout that the sentinel occupies 18px even before it has been
+           laid out, so IO can measure it during fast scrolling. */
         #visa-dash .row-sentinel { contain-intrinsic-size: 0 18px; }
         #visa-dash .row-sentinel td { height: 18px; border-bottom: none; }
         @media (prefers-reduced-motion: reduce) {
             #visa-dash tbody tr { content-visibility: visible; }
         }
         #visa-dash tr:last-child td { border-bottom: none; }
-
-        /* ---- decision pills ---- */
         #visa-dash .pill {
             display: inline-block;
-            padding: 4px 12px;
-            border-radius: 100px;
+            padding: 3px 10px;
+            border-radius: 6px;
             font-size: 11px;
             font-weight: 600;
             position: relative;
             overflow: hidden;
-            border: 1px solid transparent;
-            letter-spacing: .01em;
         }
         #visa-dash .pill::after {
             content: '';
             position: absolute;
             top: 0; left: -100%;
             width: 60%; height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .4), transparent);
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent);
             transform: skewX(-20deg);
-            transition: left .5s ease;
+            transition: left 0.5s ease;
             pointer-events: none;
         }
-        #visa-dash .pill:hover::after { left: 120%; }
-        #visa-dash .pill.green { background: var(--green-soft); color: var(--green-text); border-color: rgba(15, 163, 107, .22); }
-        #visa-dash .pill.red { background: var(--red-soft); color: var(--red-text); border-color: rgba(232, 80, 58, .22); }
-        #visa-dash .pill.amber { background: var(--amber-soft); color: var(--amber-text); border-color: rgba(232, 165, 12, .25); }
-
-        /* ---- inputs ---- */
+        #visa-dash .pill:hover::after {
+            left: 120%;
+        }
+        #visa-dash .pill.green { background: var(--green-soft); color: var(--green-text); }
+        #visa-dash .pill.red { background: var(--red-soft); color: var(--red-text); }
+        #visa-dash .pill.amber { background: var(--amber-soft); color: var(--amber-text); }
         #visa-dash .searchbar {
             display: flex;
             align-items: center;
             gap: 10px;
             border: 1px solid var(--border);
             border-radius: 100px;
-            padding: 0 18px;
-            height: 46px;
+            padding: 0 16px;
+            height: 44px;
             background: var(--surface);
             margin-bottom: 16px;
-            max-width: 440px;
-            transition: all .2s ease;
-            box-shadow: var(--shadow-sm);
+            max-width: 420px;
+            transition: all 0.2s;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.03);
         }
         #visa-dash .searchbar:focus-within {
-            border-color: var(--brand);
-            box-shadow: 0 0 0 4px var(--ring);
+            border-color: var(--green);
+            box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.1);
         }
-        #visa-dash .searchbar svg { flex-shrink: 0; opacity: .45; }
+        #visa-dash .searchbar svg {
+            flex-shrink: 0;
+            opacity: 0.4;
+        }
         #visa-dash .searchbar input[type=text] {
             border: none;
             outline: none;
@@ -499,72 +302,72 @@
             margin: 0;
             border-radius: 0;
         }
-        #visa-dash .searchbar input[type=text]:focus { outline: none; box-shadow: none; }
+        #visa-dash .searchbar input[type=text]:focus {
+            outline: none;
+            box-shadow: none;
+        }
         #visa-dash input[type=text] {
             width: 100%;
             max-width: 320px;
-            padding: 12px 16px;
+            padding: 10px 14px;
             border: 1px solid var(--border);
-            border-radius: 12px;
+            border-radius: 10px;
             font-size: 14px;
             margin-bottom: 14px;
             background: var(--surface);
-            color: var(--ink);
-            transition: all .2s ease;
+            transition: all 0.2s;
         }
         #visa-dash input[type=text]:focus,
         #visa-dash textarea:focus {
             outline: none;
-            border-color: var(--brand);
-            box-shadow: 0 0 0 4px var(--ring);
+            border-color: var(--green);
+            box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.1);
         }
         #visa-dash textarea {
             width: 100%;
             border: 1px solid var(--border);
-            border-radius: 14px;
-            padding: 12px 16px;
+            border-radius: 10px;
+            padding: 12px 14px;
             font-size: 14px;
             font-family: inherit;
-            color: var(--ink);
             min-height: 100px;
             margin-bottom: 12px;
             background: var(--surface);
             resize: vertical;
-            transition: all .2s ease;
+            transition: all 0.2s;
         }
-
-        /* ---- button ---- */
         #visa-dash .btn {
-            background: linear-gradient(135deg, var(--brand), var(--brand-2));
+            background: var(--green);
             color: #fff;
             border: none;
-            padding: 12px 26px;
-            border-radius: 12px;
+            padding: 11px 24px;
+            border-radius: 10px;
             font-size: 14px;
             font-weight: 600;
-            font-family: inherit;
             cursor: pointer;
-            transition: all .25s cubic-bezier(.34, 1.56, .64, 1);
-            box-shadow: 0 8px 20px -8px rgba(255, 77, 46, .55);
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 2px 8px rgba(5, 150, 105, 0.25);
         }
         #visa-dash .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 14px 28px -10px rgba(255, 77, 46, .6);
-            filter: brightness(1.04);
+            background: #047857;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 14px rgba(5, 150, 105, 0.35);
         }
-        #visa-dash .btn:active { transform: scale(.96); }
+        #visa-dash .btn:active { transform: scale(0.97); }
         #visa-dash .btn:disabled {
             opacity: .5;
             cursor: default;
             transform: none;
             box-shadow: none;
-            filter: none;
         }
-
-        /* ---- notes / empty / warnings ---- */
-        #visa-dash .note { font-size: 13px; color: var(--ink-muted); margin-top: 10px; line-height: 1.6; }
+        #visa-dash .note {
+            font-size: 13px;
+            color: var(--ink-muted);
+            margin-top: 10px;
+            line-height: 1.5;
+        }
         #visa-dash .empty {
-            padding: 56px 20px;
+            padding: 48px 20px;
             text-align: center;
             color: var(--ink-muted);
             font-size: 14px;
@@ -572,19 +375,18 @@
         #visa-dash .config-warn {
             background: var(--amber-soft);
             color: var(--amber-text);
-            border: 1px solid rgba(232, 165, 12, .35);
-            border-radius: 16px;
-            padding: 14px 18px;
+            border: 1px solid #fcd34d;
+            border-radius: 12px;
+            padding: 14px 16px;
             font-size: 13px;
-            margin-bottom: 22px;
+            margin-bottom: 20px;
             font-weight: 500;
-            box-shadow: var(--shadow-sm);
         }
         #visa-dash .config-warn code {
-            background: rgba(0, 0, 0, .05);
+            background: rgba(0,0,0,.05);
             padding: 2px 6px;
-            border-radius: 6px;
-            font-family: "JetBrains Mono", Consolas, monospace;
+            border-radius: 4px;
+            font-family: "SF Mono", Consolas, monospace;
             font-size: 12px;
         }
         #visa-dash .datefilter {
@@ -593,16 +395,16 @@
             gap: 8px;
             border: 1px solid var(--border);
             border-radius: 100px;
-            padding: 0 16px;
+            padding: 0 14px;
             height: 44px;
             background: var(--surface);
-            transition: all .2s ease;
+            transition: all 0.2s;
             flex-shrink: 0;
-            box-shadow: var(--shadow-sm);
+            box-shadow: 0 1px 2px rgba(0,0,0,0.03);
         }
         #visa-dash .datefilter:focus-within {
-            border-color: var(--brand);
-            box-shadow: 0 0 0 4px var(--ring);
+            border-color: var(--green);
+            box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.1);
         }
         #visa-dash .datefilter input[type=date] {
             border: none;
@@ -617,7 +419,7 @@
             font-size: 18px;
             line-height: 1;
             color: var(--ink-muted);
-            transition: color .15s;
+            transition: color 0.15s;
             visibility: hidden;
         }
         #visa-dash .datefilter.has-filter .clear-btn { visibility: visible; }
@@ -631,67 +433,80 @@
             margin-bottom: 16px;
         }
         #visa-dash .filter-row .note { margin: 0; }
-        #visa-dash .latest-date { font-size: 15px; margin-bottom: 2px; font-weight: 600; color: var(--ink); }
-        #visa-dash .tracking-since { font-size: 12px; color: var(--ink-muted); margin-bottom: 16px; }
-
-        /* ---- skeleton ---- */
+        #visa-dash .latest-date {
+            font-size: 15px;
+            margin-bottom: 2px;
+            font-weight: 500;
+        }
+        #visa-dash .tracking-since {
+            font-size: 12px;
+            color: var(--ink-muted);
+            margin-bottom: 16px;
+        }
+        #visa-dash .topbar {
+            height: 3px;
+            background: var(--border);
+            border-radius: 2px;
+            overflow: hidden;
+            margin-bottom: 20px;
+            position: relative;
+        }
+        #visa-dash .topbar-fill {
+            position: absolute;
+            top: 0; left: 0;
+            height: 100%;
+            width: 35%;
+            background: var(--green);
+            border-radius: 2px;
+            animation: visa-indeterminate 1.1s ease-in-out infinite;
+        }
+        @keyframes visa-indeterminate {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(340%); }
+        }
         #visa-dash .skel {
-            background: linear-gradient(90deg, var(--border) 25%, var(--surface-hover) 37%, var(--border) 63%);
+            background: linear-gradient(90deg, var(--border) 25%, #f8fafc 37%, var(--border) 63%);
             background-size: 400px 100%;
             animation: visa-shimmer 1.3s ease infinite;
-            border-radius: 10px;
+            border-radius: 8px;
         }
         @keyframes visa-shimmer {
             0% { background-position: -200px 0; }
             100% { background-position: 200px 0; }
         }
         #visa-dash .skel-pill { height: 34px; width: 90px; border-radius: 100px; }
-        #visa-dash .skel-card { height: 76px; border-radius: 18px; opacity: 0; animation: visa-card-in .35s ease forwards, visa-shimmer 1.3s ease infinite; }
-        #visa-dash .skel-row { height: 16px; margin: 16px 16px; border-radius: 6px; }
-        #visa-dash .skel-wrap { border: 1px solid var(--border); border-radius: 18px; overflow: hidden; background: var(--surface); box-shadow: var(--shadow-sm); }
-
-        /* ---- tab body cross-fade ---- */
-        #visa-dash #tab-body { animation: visa-fade-in .28s ease; }
+        #visa-dash .skel-card { height: 72px; border-radius: 14px; opacity: 0; animation: visa-card-in 0.35s ease forwards, visa-shimmer 1.3s ease infinite; }
+        #visa-dash .skel-row { height: 16px; margin: 14px 14px; border-radius: 4px; }
+        #visa-dash .skel-wrap { border: 1px solid var(--border); border-radius: 14px; overflow: hidden; background: var(--surface); }
+        #visa-dash #tab-body { animation: visa-fade-in 0.25s ease; }
         @keyframes visa-fade-in {
-            from { opacity: 0; transform: translateY(6px); }
+            from { opacity: 0; transform: translateY(4px); }
             to { opacity: 1; transform: translateY(0); }
         }
-
-        /* ---- readme card ---- */
         #visa-dash .readme {
-            position: relative;
             border: 1px solid var(--border);
-            border-radius: 18px;
-            padding: 18px 20px;
-            margin-bottom: 22px;
-            background: var(--surface);
-            box-shadow: var(--shadow-sm);
-            overflow: hidden;
-        }
-        #visa-dash .readme::before {
-            content: '';
-            position: absolute;
-            left: 0; top: 0; bottom: 0;
-            width: 3px;
-            background: linear-gradient(180deg, var(--brand), var(--brand-2), var(--green-light));
+            border-radius: 14px;
+            padding: 16px 18px;
+            margin-bottom: 20px;
+            background: var(--surface-raised);
         }
         #visa-dash .readme .readme-title {
             font-size: 14px;
             font-weight: 700;
             color: var(--ink);
-            font-family: "Sora", "Inter", system-ui, sans-serif;
         }
         #visa-dash .readme p, #visa-dash .readme ul {
             font-size: 13px;
             color: var(--ink-soft);
-            line-height: 1.7;
+            line-height: 1.65;
             margin: 10px 0 0;
         }
-        #visa-dash .readme ul { padding-left: 18px; margin-top: 8px; }
+        #visa-dash .readme ul {
+            padding-left: 18px;
+            margin-top: 8px;
+        }
         #visa-dash .readme li { margin-bottom: 4px; }
         #visa-dash .readme strong { color: var(--ink); }
-
-        /* ---- suggestions layout ---- */
         #visa-dash .suggest-grid {
             display: flex;
             flex-wrap: wrap;
@@ -701,7 +516,15 @@
         #visa-dash .suggest-grid .form-col { flex: 1 1 280px; min-width: 0; }
         #visa-dash .suggest-grid .table-col { flex: 2 1 400px; min-width: 0; }
         #visa-dash .suggest-grid .table-col .table-wrap { max-height: 420px; overflow-y: auto; overflow-x: auto; }
-        #visa-dash .suggest-grid .table-col table { width: 100%; table-layout: auto; white-space: nowrap; }
+        #visa-dash .suggest-grid .table-col table {
+            width: 100%;
+            table-layout: auto;
+            white-space: nowrap;
+        }
+        #visa-dash .suggest-grid .table-col table th,
+        #visa-dash .suggest-grid .table-col table td {
+            white-space: nowrap;
+        }
         #visa-dash .suggest-grid .table-col table th,
         #visa-dash .suggest-grid .table-col table td {
             white-space: normal;
@@ -711,8 +534,8 @@
         }
         #visa-dash .suggest-grid .table-col .label {
             background: var(--surface);
-            padding: 8px 14px;
-            border-radius: 100px;
+            padding: 8px 12px;
+            border-radius: 8px;
             display: inline-block;
             margin-bottom: 8px;
             border: 1px solid var(--border);
@@ -723,28 +546,76 @@
             font-weight: 700;
         }
         #visa-dash .suggest-grid .table-col table th { background: var(--surface) !important; }
+        #visa-dash .titlerow {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        #visa-dash .titlerow h1 {
+            margin: 0 0 2px;
+        }
+        #visa-dash .stutter-badge {
+            background: var(--amber-soft);
+            color: var(--amber-text);
+            font-size: 11px;
+            font-weight: 600;
+            padding: 6px 14px;
+            border-radius: 100px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            white-space: nowrap;
+            margin-top: 3px;
+            border: 1px solid #fcd34d;
+        }
+        #visa-dash .stutter-badge i {
+            font-style: normal;
+            font-size: 12px;
+        }
 
-        /* ---- scroll-to-top ---- */
+        #visa-dash .theme-toggle {
+            background: var(--surface-raised);
+            border: 1px solid var(--border);
+            color: var(--ink-muted);
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            flex-shrink: 0;
+        }
+        #visa-dash .theme-toggle:hover {
+            background: var(--surface-hover);
+            color: var(--ink);
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        /* ===== scroll-to-top button ===== */
         #visa-dash .scroll-top-btn {
             position: fixed;
             bottom: 28px;
             right: 28px;
             z-index: 100;
-            width: 46px;
-            height: 46px;
+            width: 44px;
+            height: 44px;
             border-radius: 50%;
             border: 1px solid var(--border);
-            background: color-mix(in srgb, var(--surface) 75%, transparent);
-            -webkit-backdrop-filter: blur(14px);
-            backdrop-filter: blur(14px);
+            background: var(--surface);
             color: var(--ink-soft);
             font-size: 20px;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: var(--shadow-md);
-            transition: all .25s cubic-bezier(.34, 1.56, .64, 1);
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
             visibility: hidden;
             opacity: 0;
             transform: translateY(8px);
@@ -757,105 +628,82 @@
             pointer-events: auto;
         }
         #visa-dash .scroll-top-btn:hover {
-            background: linear-gradient(135deg, var(--brand), var(--brand-2));
+            background: var(--green);
             color: #fff;
-            border-color: transparent;
-            box-shadow: 0 12px 26px -8px rgba(255, 77, 46, .5);
-            transform: translateY(-3px);
+            border-color: var(--green);
+            box-shadow: 0 4px 18px rgba(5, 150, 105, 0.35);
+            transform: translateY(-2px);
         }
-        #visa-dash .scroll-top-btn:active { transform: scale(.9); }
+        #visa-dash .scroll-top-btn:active {
+            transform: scale(0.92);
+        }
+        @media (max-width: 760px) {
+            #visa-dash .scroll-top-btn {
+                bottom: 20px;
+                right: 16px;
+                width: 40px;
+                height: 40px;
+                font-size: 18px;
+            }
+        }
 
-        /* ============================================================
-           HERO — manus-style: per-tab gradient depth, halo glow, haikei blob
-           ============================================================ */
+        /* ===== hero (Mockup C — the hive) ===== */
         #visa-dash .hero {
             position: relative;
-            border-radius: 24px;
-            padding: 26px 30px;
+            border-radius: 20px;
+            padding: 24px 28px;
             color: #fff;
             overflow: hidden;
-            min-height: 190px;
-            box-shadow: var(--shadow-lg), inset 0 1px 0 rgba(255, 255, 255, .18);
-            margin-bottom: 22px;
-            transition: opacity .4s ease;
-            isolation: isolate;
+            min-height: 180px;
+            box-shadow: 0 12px 40px rgba(0,0,0,.10);
+            margin-bottom: 20px;
+            transition: opacity 0.4s ease;
         }
-        /* halo glow (drifts slowly) */
+        /* per-tab gradients */
+        #visa-dash .hero[data-id="home"]    { background: radial-gradient(circle, rgba(255,255,255,0.07) 1px, transparent 1px), linear-gradient(135deg, var(--green), var(--green-light)); background-size: 26px 26px, auto; }
+        #visa-dash .hero[data-id="daily"]   { background: radial-gradient(circle, rgba(255,255,255,0.07) 1px, transparent 1px), linear-gradient(135deg, #7c3aed, #a78bfa); background-size: 26px 26px, auto; }
+        #visa-dash .hero[data-id="past"]    { background: radial-gradient(circle, rgba(255,255,255,0.07) 1px, transparent 1px), linear-gradient(135deg, var(--amber), #fbbf24); background-size: 26px 26px, auto; }
+        #visa-dash .hero[data-id="suggest"] { background: radial-gradient(circle, rgba(255,255,255,0.07) 1px, transparent 1px), linear-gradient(135deg, #ec4899, #f472b6); background-size: 26px 26px, auto; }
+        /* floating blobs */
+        #visa-dash .hero::before, #visa-dash .hero::after {
+            content: ''; position: absolute; border-radius: 50%; pointer-events: none; z-index: 3;
+        }
         #visa-dash .hero::before {
-            content: '';
-            position: absolute;
-            inset: -45% -20%;
-            z-index: -2;
-            pointer-events: none;
-            background: radial-gradient(circle at 72% 26%, rgba(255, 255, 255, .32), transparent 55%);
+            width: 260px; height: 260px; top: -40%; right: -10%;
+            background: rgba(255,255,255,.10);
         }
-        /* haikei-style organic blob */
         #visa-dash .hero::after {
-            content: '';
-            position: absolute;
-            right: -46px;
-            bottom: -64px;
-            width: 290px;
-            height: 290px;
-            z-index: -1;
-            pointer-events: none;
-            background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'><path fill='%23ffffff' fill-opacity='0.15' d='M97.5,10.8C130,10.8,158,34.5,161.6,66.3C165.2,98.1,144.4,138.1,116.5,157.4C88.6,176.7,53.6,175.3,33.4,154.9C13.2,134.5,7.8,95.2,20.8,64.7C33.8,34.2,65,10.8,97.5,10.8Z'/></svg>") center/contain no-repeat;
+            width: 180px; height: 180px; bottom: -50%; left: 5%;
+            background: rgba(255,255,255,.06);
         }
         @media (prefers-reduced-motion: no-preference) {
-            #visa-dash .hero::before { animation: drift 9s ease-in-out infinite; }
-            #visa-dash .hero::after { animation: drift 13s ease-in-out -4s infinite reverse; }
+            #visa-dash .hero::before { animation: drift 8s ease-in-out infinite; }
+            #visa-dash .hero::after  { animation: drift 11s ease-in-out -3s infinite reverse; }
+            #visa-dash .hero { animation: dot-drift 30s linear infinite; }
         }
-        @keyframes drift { 50% { transform: translate(18px, -14px) scale(1.06); } }
-
-        #visa-dash .hero[data-id="home"]    { background: linear-gradient(135deg, #0c7d52 0%, #0fa36b 48%, #2fbe8a 100%); }
-        #visa-dash .hero[data-id="daily"]   { background: linear-gradient(135deg, #5b3fd4 0%, #7c5cf0 48%, #9d7bfa 100%); }
-        #visa-dash .hero[data-id="past"]    { background: linear-gradient(135deg, #c57f08 0%, #e8a50c 48%, #f8c440 100%); }
-        #visa-dash .hero[data-id="suggest"] { background: linear-gradient(135deg, #d61f47 0%, #f43f5e 48%, #f8708a 100%); }
+        @keyframes drift { 50% { transform: translate(20px,-15px) scale(1.08); } }
+        @keyframes dot-drift { from { background-position: 0 0, 0 0; } to { background-position: 26px 26px, 0 0; } }
 
         #visa-dash .hero-body {
-            position: relative;
-            z-index: 1;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 24px;
-            align-items: center;
+            position: relative; z-index: 4;
+            display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: center;
         }
         #visa-dash .hero-eyebrow {
-            font-size: 11px;
-            letter-spacing: .16em;
-            text-transform: uppercase;
-            color: rgba(255, 255, 255, .8);
-            font-weight: 700;
-            margin-bottom: 8px;
+            font-size: 11px; letter-spacing: .14em; text-transform: uppercase;
+            color: rgba(255,255,255,.78); font-weight: 700; margin-bottom: 6px;
         }
-        #visa-dash .hero-title {
-            font-family: "Sora", "Inter", system-ui, sans-serif;
-            font-size: 30px;
-            font-weight: 800;
-            letter-spacing: -.02em;
-            line-height: 1.08;
-            text-shadow: 0 2px 16px rgba(0, 0, 0, .16);
-        }
-        #visa-dash .hero-sub {
-            margin-top: 10px;
-            font-size: 14px;
-            color: rgba(255, 255, 255, .92);
-            text-shadow: 0 1px 8px rgba(0, 0, 0, .12);
-        }
+        #visa-dash .hero-title { font-size: 28px; font-weight: 800; letter-spacing: -.02em; line-height: 1.1; }
+        #visa-dash .hero-sub { margin-top: 8px; font-size: 14px; color: rgba(255,255,255,.88); }
 
-        /* ===== per-tab hero visuals ===== */
+        /* ===== per-tab visuals ===== */
         #visa-dash .visual {
-            position: relative;
-            height: 130px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            position: relative; height: 130px;
+            display: flex; align-items: center; justify-content: center;
         }
         /* Home — concentric pulse rings */
         #visa-dash .ring {
-            position: absolute;
-            border-radius: 50%;
-            border: 2px solid rgba(255, 255, 255, .65);
+            position: absolute; border-radius: 50%;
+            border: 2px solid rgba(255,255,255,.6);
         }
         @media (prefers-reduced-motion: no-preference) {
             #visa-dash .ring { animation: ring-out 4s ease-out infinite; }
@@ -865,107 +713,82 @@
         #visa-dash .ring:nth-child(3) { width: 130px; height: 130px; animation-delay: 1.6s; }
         @keyframes ring-out { to { transform: scale(1.3); opacity: 0; } }
         #visa-dash .ring-core {
-            width: 38px;
-            height: 38px;
-            border-radius: 50%;
-            background: #fff;
-            color: var(--green);
-            font-size: 18px;
-            font-weight: 800;
-            font-family: "Sora", "Inter", system-ui, sans-serif;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            width: 36px; height: 36px; border-radius: 50%;
+            background: #fff; color: var(--green);
+            font-size: 18px; font-weight: 800;
+            display: flex; align-items: center; justify-content: center;
             z-index: 2;
-            box-shadow: 0 4px 18px rgba(0, 0, 0, .28);
+            box-shadow: 0 4px 16px rgba(0,0,0,.25);
         }
         /* Daily — animated sine-wave bar chart */
         #visa-dash .wave { display: flex; align-items: flex-end; gap: 4px; height: 100%; width: 100%; }
         #visa-dash .wave-bar {
-            flex: 1;
-            background: rgba(255, 255, 255, .88);
-            border-radius: 3px 3px 0 0;
+            flex: 1; background: rgba(255,255,255,.85); border-radius: 2px 2px 0 0;
             transform-origin: bottom;
         }
         @media (prefers-reduced-motion: no-preference) {
-            #visa-dash .wave-bar { animation: wave-up 1.4s cubic-bezier(.2, .8, .2, 1) infinite alternate; }
+            #visa-dash .wave-bar { animation: wave-up 1.4s cubic-bezier(.2,.8,.2,1) infinite alternate; }
         }
         @keyframes wave-up { from { transform: scaleY(.3); } to { transform: scaleY(1); } }
         /* Past — stacked waterfall, animated + functional */
         #visa-dash .wf {
-            display: grid;
-            grid-template-columns: repeat(7, 1fr);
-            gap: 6px;
-            height: 100%;
-            width: 100%;
+            display: grid; grid-template-columns: repeat(7, 1fr);
+            gap: 6px; height: 100%; width: 100%;
             padding: 8px 6px 4px;
         }
         #visa-dash .wf-col {
-            display: flex;
-            flex-direction: column-reverse;
-            gap: 4px;
-            min-width: 0;
-            position: relative;
-            transition: transform .2s ease;
+            display: flex; flex-direction: column-reverse; gap: 4px;
+            min-width: 0; position: relative;
+            transition: transform 0.2s ease;
         }
         #visa-dash .wf-col:hover { transform: translateY(-4px); }
         #visa-dash .wf-col:hover .wf-seg { filter: brightness(1.18) saturate(1.15); }
         #visa-dash .wf-bars {
-            display: flex;
-            flex-direction: column-reverse;
-            gap: 2px;
-            flex: 1;
-            min-height: 0;
+            display: flex; flex-direction: column-reverse; gap: 2px;
+            flex: 1; min-height: 0;
         }
         #visa-dash .wf-seg {
-            width: 100%;
-            border-radius: 3px 3px 0 0;
+            width: 100%; border-radius: 2px 2px 0 0;
             transform-origin: bottom;
-            transition: filter .2s ease;
+            transition: filter 0.2s ease;
         }
-        #visa-dash .wf-seg.a { background: rgba(255, 255, 255, .92); }
-        #visa-dash .wf-seg.r { background: rgba(255, 255, 255, .55); }
+        #visa-dash .wf-seg.a { background: rgba(255,255,255,.92); }
+        #visa-dash .wf-seg.r { background: rgba(255,255,255,.55); }
         @media (prefers-reduced-motion: no-preference) {
             #visa-dash .wf-seg {
-                animation: wf-grow .55s cubic-bezier(.2, .8, .2, 1) backwards;
+                animation: wf-grow 0.55s cubic-bezier(.2,.8,.2,1) backwards;
                 animation-delay: var(--d, 0s);
             }
         }
         @keyframes wf-grow { from { transform: scaleY(0); } to { transform: scaleY(1); } }
         #visa-dash .wf-date {
-            font-size: 10px;
-            color: rgba(255, 255, 255, .78);
-            font-weight: 600;
-            letter-spacing: .03em;
-            text-align: center;
-            white-space: nowrap;
+            font-size: 10px; color: rgba(255,255,255,.75); font-weight: 600;
+            letter-spacing: .03em; text-align: center; white-space: nowrap;
+        }
+        /* On narrow viewports the .visual column is too tight (~14-16px per bar)
+           for "Sat 12" labels to fit. Date labels are nice-to-have context, the
+           bars are the core signal — drop the labels and reclaim the vertical
+           space for taller bars. Hover title still gives full counts. */
+        @media (max-width: 760px) {
+            #visa-dash .wf { padding-bottom: 0; }
+            #visa-dash .wf-date { display: none; }
         }
         /* Suggest — typewriter card */
         #visa-dash .paper {
-            background: var(--surface);
-            color: var(--ink);
-            border-radius: 14px;
-            padding: 14px 16px;
-            box-shadow: 0 12px 32px rgba(0, 0, 0, .22);
-            width: 90%;
-            max-width: 320px;
-            text-align: left;
+            background: #fff; color: var(--ink);
+            border-radius: 10px; padding: 12px 14px;
+            box-shadow: 0 8px 24px rgba(0,0,0,.18);
+            width: 90%; max-width: 320px; text-align: left;
         }
         #visa-dash .paper-title {
-            font-size: 11px;
-            color: var(--ink-muted);
-            font-weight: 700;
-            letter-spacing: .06em;
-            text-transform: uppercase;
-            margin-bottom: 6px;
+            font-size: 11px; color: var(--ink-muted); font-weight: 700;
+            letter-spacing: .06em; text-transform: uppercase; margin-bottom: 6px;
         }
         #visa-dash .paper-text {
-            font-size: 13px;
-            line-height: 1.5;
-            font-family: "JetBrains Mono", "SF Mono", Consolas, monospace;
-            white-space: nowrap;
-            overflow: hidden;
-            border-right: 2px solid var(--rose);
+            font-size: 13px; line-height: 1.5;
+            font-family: "SF Mono", Consolas, monospace;
+            white-space: nowrap; overflow: hidden;
+            border-right: 2px solid #ec4899;
             width: 100%;
         }
         @media (prefers-reduced-motion: no-preference) {
@@ -973,74 +796,49 @@
         }
         @keyframes blink-cursor { 50% { border-color: transparent; } }
 
-        /* ============================================================
-           DARK THEME — warm espresso
-           ============================================================ */
         #visa-dash[data-theme="dark"] {
-            --canvas: #131110;
-            --ink: #f3ede4;
-            --ink-soft: #c9c0b2;
-            --ink-muted: #8a8071;
-            --surface: #1b1815;
-            --surface-raised: #221e1a;
-            --surface-hover: #2c2722;
-            --border: #322c26;
-            --brand: #ff6a4d;
-            --brand-2: #ff9e66;
-            --green: #3ad99a;
-            --green-light: #6be8b8;
-            --green-soft: rgba(58, 217, 154, .14);
-            --green-text: #4ce0a5;
-            --amber: #f5b62e;
-            --amber-soft: rgba(245, 182, 46, .14);
-            --amber-text: #f2c14e;
-            --red: #f97066;
-            --red-soft: rgba(249, 112, 102, .14);
-            --red-text: #f97066;
-            --shadow-sm: 0 1px 2px rgba(0, 0, 0, .3);
-            --shadow-md: 0 10px 30px -12px rgba(0, 0, 0, .5);
-            --shadow-lg: 0 24px 60px -20px rgba(0, 0, 0, .62);
-            --ring: rgba(255, 106, 77, .18);
+            --ink: #f3e8ff;
+            --ink-soft: #ddd6fe;
+            --ink-muted: #a78bfa;
+            --surface: #0f0a1a;
+            --surface-raised: #1a102e;
+            --surface-hover: #2d1b4e;
+            --border: #2d1b4e;
+            --green: #34d399;
+            --green-light: #6ee7b7;
+            --green-soft: rgba(52, 211, 153, 0.15);
+            --green-text: #34d399;
+            --amber: #fbbf24;
+            --amber-soft: rgba(251, 191, 36, 0.15);
+            --amber-text: #fbbf24;
+            --red: #f87171;
+            --red-soft: rgba(248, 113, 113, 0.15);
+            --red-text: #f87171;
         }
         #visa-dash[data-theme="dark"] .hero {
-            box-shadow: 0 24px 60px -20px rgba(0, 0, 0, .62), inset 0 1px 0 rgba(255, 255, 255, .1);
-            border: 1px solid rgba(255, 255, 255, .08);
+            box-shadow: 0 12px 40px rgba(124, 58, 237, 0.3), inset 0 1px 0 rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.08);
         }
         #visa-dash[data-theme="dark"] .skel {
             background: linear-gradient(90deg, var(--border) 25%, var(--surface-raised) 37%, var(--border) 63%);
         }
         #visa-dash[data-theme="dark"] .searchbar:focus-within,
         #visa-dash[data-theme="dark"] .datefilter:focus-within {
-            box-shadow: 0 0 0 4px rgba(255, 106, 77, .18);
+            box-shadow: 0 0 0 3px rgba(167, 139, 250, 0.15);
         }
         #visa-dash[data-theme="dark"] input[type=text]:focus,
         #visa-dash[data-theme="dark"] textarea:focus {
-            box-shadow: 0 0 0 4px rgba(255, 106, 77, .18);
+            box-shadow: 0 0 0 3px rgba(167, 139, 250, 0.15);
         }
-        #visa-dash[data-theme="dark"] .config-warn code { background: rgba(255, 255, 255, .08); }
-
-        /* ---- accessibility: visible focus ---- */
-        #visa-dash .navpill:focus-visible,
-        #visa-dash .btn:focus-visible,
-        #visa-dash .theme-toggle:focus-visible,
-        #visa-dash .scroll-top-btn:focus-visible {
-            outline: 2px solid var(--brand);
-            outline-offset: 2px;
-        }
-        #visa-dash ::selection { background: rgba(255, 77, 46, .2); }
-
-        /* ============================================================
-           RESPONSIVE — all original breakpoints preserved
-           ============================================================ */
         @media (max-width: 760px) {
-            #visa-dash { padding: 18px 16px 64px; }
-            #visa-dash h1 { font-size: 24px; }
+            #visa-dash { padding: 16px; }
+            #visa-dash h1 { font-size: 22px; }
             #visa-dash .cards { grid-template-columns: repeat(2, 1fr); gap: 10px; }
-            #visa-dash .card { padding: 14px; border-radius: 16px; }
+            #visa-dash .card { padding: 12px; }
             #visa-dash .hero { padding: 20px 18px; }
-            #visa-dash .hero-title { font-size: 25px; }
+            #visa-dash .hero-title { font-size: 24px; }
             #visa-dash .card .value { font-size: 18px; }
-            #visa-dash .navpills { gap: 4px; }
+            #visa-dash .navpills { gap: 6px; }
             #visa-dash .navpill { padding: 7px 13px; font-size: 12px; }
             #visa-dash .searchbar { max-width: 100%; height: 42px; }
             #visa-dash input[type=text] { max-width: 100%; }
@@ -1050,28 +848,33 @@
             #visa-dash .suggest-grid .table-col { flex: 1 1 100%; }
             #visa-dash .suggest-grid .table-col .table-wrap { max-height: 300px; }
             #visa-dash .suggest-grid .table-col table { min-width: 0; }
-        }
-        @media (max-width: 480px) {
+        }        @media (max-width: 480px) {
             #visa-dash .cards { grid-template-columns: 1fr 1fr; }
             #visa-dash .hero { padding: 18px 16px; }
-            #visa-dash .hero-title { font-size: 22px; }
+            #visa-dash .hero-title { font-size: 20px; }
         }
 
         /* ===== Touch-only suppression =====
-           On hover-incapable devices (phones, pure-tablet) :hover rules fire
-           and stick after a tap. Suppress the heaviest decorations; keep
-           focus rings + ripple keyframes since they're harmless. */
+           On hover-incapable devices (phones, pure-tablet) the existing :hover
+           rules still fire and stick after a tap, leaving the page in a
+           half-pressed state. Suppress the heaviest decorations; keep focus
+           rings + ripple keyframes since they're harmless. */
         @media (hover: none), (pointer: coarse) {
+            /* Suppress sticky-tap hover decorations so a tap doesn't leave a
+               half-pressed look after the finger lifts. */
             #visa-dash tbody tr:hover { background: transparent; }
             #visa-dash tbody tr:hover td:first-child::before { opacity: 0; }
-            #visa-dash .navpill:hover { background: transparent; color: var(--ink-soft); }
-            #visa-dash .btn:hover { transform: none; box-shadow: 0 8px 20px -8px rgba(255, 77, 46, .55); filter: none; }
-            #visa-dash .card:hover { transform: none; box-shadow: var(--shadow-sm); border-color: var(--border); }
-            #visa-dash .card:hover::before { opacity: .5; }
-            /* Battery cost: stop always-on decorative animations on touch. */
+            #visa-dash .navpill:hover { background: var(--surface-raised); color: var(--ink-muted); transform: none; }
+            #visa-dash .btn:hover { background: var(--green); transform: none; box-shadow: 0 2px 8px rgba(5, 150, 105, 0.25); }
+            #visa-dash .card:hover { transform: none; box-shadow: none; border-color: var(--border); }
+            /* Battery cost: stop the always-on decorative animations on touch.
+               The per-event grow-in (wf-seg) and pulse rings are short + nice -
+               only the infinite-loops get gated. Static height + layout still
+               show, animation steps don't. */
             #visa-dash .wave-bar { animation: none; }
             #visa-dash .paper-text { animation: none; }
             #visa-dash .hero::before, #visa-dash .hero::after { animation: none; }
+            #visa-dash .hero { animation: none; }
         }
 
         /* ===== Mobile tune-ups (max-width: 760px) ===== */
@@ -1088,20 +891,21 @@
             #visa-dash thead th { position: sticky; top: 0; z-index: 5; }
             /* Suggestion table: bigger viewport on mobile (60vh vs 420px). */
             #visa-dash .suggest-grid .table-col .table-wrap { max-height: 60vh; }
-            /* Hero: stack on mobile so the visual doesn't squeeze the headline. */
+            /* Hero layout: stack the body on mobile so the visual doesn't squeeze the headline. */
             #visa-dash .hero-body { grid-template-columns: 1fr; }
             #visa-dash .visual { height: 100px; }
-            #visa-dash .wf { padding-bottom: 0; }
-            #visa-dash .wf-date { display: none; }
         }
 
-        /* ===== iOS notch / Android cutout safe-area support ===== */
+        /* ===== iOS notch / Android cutout safe-area support =====
+           Older browsers ignore @supports and fall back to the plain
+           padding inside #visa-dash's existing rules without the inset.
+           Modern browsers pick up the env() notch offset. */
         @supports (padding: max(0px)) {
             #visa-dash {
                 padding-left: max(24px, env(safe-area-inset-left));
                 padding-right: max(24px, env(safe-area-inset-right));
-                padding-top: max(28px, env(safe-area-inset-top));
-                padding-bottom: max(72px, env(safe-area-inset-bottom));
+                padding-top: max(24px, env(safe-area-inset-top));
+                padding-bottom: max(24px, env(safe-area-inset-bottom));
             }
             #visa-dash .scroll-top-btn {
                 right: max(16px, env(safe-area-inset-right, 16px));
@@ -1869,7 +1673,7 @@
                     root.innerHTML = '<div class="eyebrow">Ireland \u00b7 New Delhi Visa Section</div>' +
                         '<div class="titlerow"><h1>Visa Decision Tracker</h1>' +
                         '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">' +
-                        '<button class="theme-toggle" id="theme-toggle" title="Toggle dark mode">' + (theme === 'dark' ? '🌙' : '☀️') + '</button>' +
+                        '<button class="theme-toggle" id="theme-toggle" title="Toggle dark mode">☀️</button>' +
                         '<div class="stutter-badge"><i>\u24D8</i> Switching tabs may briefly stutter while data loads.</div></div></div>' +
                         '<div class="topbar"><div class="topbar-fill"></div></div>' +
                         '<div class="navpills">' +
@@ -1905,7 +1709,7 @@
                     '<div class="eyebrow">Ireland \u00b7 New Delhi Visa Section</div>' +
                     '<div class="titlerow"><h1>Visa Decision Tracker</h1>' +
                     '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">' +
-                    '<button class="theme-toggle" id="theme-toggle" title="Toggle dark mode">' + (theme === 'dark' ? '🌙' : '☀️') + '</button>' +
+                    '<button class="theme-toggle" id="theme-toggle" title="Toggle dark mode">☀️</button>' +
                     '<div class="stutter-badge"><i>\u24D8</i> Switching tabs may briefly stutter while data loads.</div></div>' +
                     '</div>' +
                     '<div class="sub">' + (cache && cache.length ? cache.length + ' decisions on record' :
