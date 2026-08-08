@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Irish Visa Decision Tracker</title>
 <base target="_blank">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
 <body>
     <div id="visa-dash"></div>
@@ -12,9 +15,9 @@
 
         #visa-dash * { box-sizing: border-box; }
         #visa-dash {
-            --ink: #0f172a;
-            --ink-soft: #475569;
-            --ink-muted: #94a3b8;
+            --ink: #333333;
+            --ink-soft: #777777;
+            --ink-muted: #777777;
             --surface: #ffffff;
             --surface-raised: #f8fafc;
             --surface-hover: #f1f5f9;
@@ -29,7 +32,7 @@
             --red: #dc2626;
             --red-soft: #fee2e2;
             --red-text: #991b1b;
-            font-family: -apple-system, "Segoe UI", "Inter", Helvetica, Arial, sans-serif;
+            font-family: "Inter", -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
             background: var(--surface);
             color: var(--ink);
             min-height: 100vh;
@@ -38,11 +41,12 @@
         }
         #visa-dash .mono { font-family: "SF Mono", "JetBrains Mono", Consolas, Menlo, monospace; }
         #visa-dash .eyebrow {
-            font-size: 11px;
+            font-size: 12px;
+            line-height: 16px;
             letter-spacing: .18em;
             text-transform: uppercase;
             color: var(--green);
-            font-weight: 700;
+            font-weight: 500;
             margin-bottom: 4px;
         }
         #visa-dash h1 {
@@ -137,18 +141,20 @@
         }
         @media (prefers-reduced-motion: reduce) {
             #visa-dash .card { animation: none; }
-        }
-#visa-dash .card .label {
-            font-size: 10px;
+        }        #visa-dash .card .label {
+            font-size: 12px;
+            line-height: 16px;
             color: var(--ink-muted);
             text-transform: uppercase;
             letter-spacing: .07em;
             margin-bottom: 8px;
-            font-weight: 600;
+            font-weight: 500;
         }
         #visa-dash .card .value {
-            font-size: 22px;
-            font-weight: 700;
+            font-size: 18px;
+            line-height: 24px;
+            font-weight: 600;
+            letter-spacing: -0.1px;
             transition: transform 0.15s;
         }
         #visa-dash .card:hover {
@@ -174,7 +180,8 @@
         }
         #visa-dash th {
             text-align: left;
-            font-size: 10px;
+            font-size: 12px;
+            line-height: 16px;
             text-transform: uppercase;
             letter-spacing: .07em;
             color: var(--ink-muted);
@@ -182,7 +189,7 @@
             padding: 12px 14px;
             border-bottom: 1px solid var(--border);
             white-space: nowrap;
-            font-weight: 700;
+            font-weight: 500;
         }
         #visa-dash td {
             padding: 11px 14px;
@@ -270,11 +277,11 @@
         #visa-dash .searchbar {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 8px;
             border: 1px solid var(--border);
-            border-radius: 100px;
-            padding: 0 16px;
-            height: 44px;
+            border-radius: 6px;
+            padding: 0 12px;
+            height: 28px;
             background: var(--surface);
             margin-bottom: 16px;
             max-width: 420px;
@@ -292,7 +299,9 @@
         #visa-dash .searchbar input[type=text] {
             border: none;
             outline: none;
-            font-size: 14px;
+            font-size: 13px;
+            line-height: 16px;
+            font-weight: 500;
             flex: 1;
             background: transparent;
             color: var(--ink);
@@ -394,9 +403,9 @@
             align-items: center;
             gap: 8px;
             border: 1px solid var(--border);
-            border-radius: 100px;
-            padding: 0 14px;
-            height: 44px;
+            border-radius: 6px;
+            padding: 0 12px;
+            height: 28px;
             background: var(--surface);
             transition: all 0.2s;
             flex-shrink: 0;
@@ -411,6 +420,8 @@
             outline: none;
             background: transparent;
             font-size: 13px;
+            line-height: 16px;
+            font-weight: 500;
             color: var(--ink);
             font-family: inherit;
         }
@@ -689,8 +700,8 @@
             display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: center;
         }
         #visa-dash .hero-eyebrow {
-            font-size: 11px; letter-spacing: .14em; text-transform: uppercase;
-            color: rgba(255,255,255,.78); font-weight: 700; margin-bottom: 6px;
+            font-size: 12px; line-height: 16px; letter-spacing: .14em; text-transform: uppercase;
+            color: rgba(255,255,255,.78); font-weight: 500; margin-bottom: 6px;
         }
         #visa-dash .hero-title { font-size: 28px; font-weight: 800; letter-spacing: -.02em; line-height: 1.1; }
         #visa-dash .hero-sub { margin-top: 8px; font-size: 14px; color: rgba(255,255,255,.88); }
@@ -703,7 +714,7 @@
         /* Home — concentric pulse rings */
         #visa-dash .ring {
             position: absolute; border-radius: 50%;
-            border: 2px solid rgba(255,255,255,.6);
+            border: 2px solid #519DFA;
         }
         @media (prefers-reduced-motion: no-preference) {
             #visa-dash .ring { animation: ring-out 4s ease-out infinite; }
@@ -714,8 +725,8 @@
         @keyframes ring-out { to { transform: scale(1.3); opacity: 0; } }
         #visa-dash .ring-core {
             width: 36px; height: 36px; border-radius: 50%;
-            background: #fff; color: var(--green);
-            font-size: 18px; font-weight: 800;
+            background: #0077E6; color: #fff;
+            font-size: 18px; line-height: 24px; font-weight: 600; letter-spacing: -0.1px;
             display: flex; align-items: center; justify-content: center;
             z-index: 2;
             box-shadow: 0 4px 16px rgba(0,0,0,.25);
@@ -723,7 +734,7 @@
         /* Daily — animated sine-wave bar chart */
         #visa-dash .wave { display: flex; align-items: flex-end; gap: 4px; height: 100%; width: 100%; }
         #visa-dash .wave-bar {
-            flex: 1; background: rgba(255,255,255,.85); border-radius: 2px 2px 0 0;
+            flex: 1; background: #0077E6; border-radius: 2px 2px 0 0;
             transform-origin: bottom;
         }
         @media (prefers-reduced-motion: no-preference) {
@@ -752,8 +763,8 @@
             transform-origin: bottom;
             transition: filter 0.2s ease;
         }
-        #visa-dash .wf-seg.a { background: rgba(255,255,255,.92); }
-        #visa-dash .wf-seg.r { background: rgba(255,255,255,.55); }
+        #visa-dash .wf-seg.a { background: #0077E6; }
+        #visa-dash .wf-seg.r { background: #519DFA; }
         @media (prefers-reduced-motion: no-preference) {
             #visa-dash .wf-seg {
                 animation: wf-grow 0.55s cubic-bezier(.2,.8,.2,1) backwards;
@@ -834,7 +845,7 @@
             #visa-dash { padding: 16px; }
             #visa-dash h1 { font-size: 22px; }
             #visa-dash .cards { grid-template-columns: repeat(2, 1fr); gap: 10px; }
-            #visa-dash .card { padding: 12px; }
+            #visa-dash .card { padding: 12px 16px; }
             #visa-dash .hero { padding: 20px 18px; }
             #visa-dash .hero-title { font-size: 24px; }
             #visa-dash .card .value { font-size: 18px; }
