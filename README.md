@@ -62,6 +62,13 @@ and the moment real data actually arrives, any leftover placeholder for that
 date gets deleted automatically. The Sheet never accumulates junk rows no
 matter how many times a given day's scrape has to retry.
 
+There's also a **gap alert**: if no genuinely new file has appeared for 3+
+consecutive business days (Mon–Fri, excluding dates listed on the embassy's
+closure page), the run fails loudly instead of quietly writing "no file" rows
+forever. That turns a silent site change or publication outage into a red
+GitHub Actions run you'll actually notice. Set `GAP_ALERT_BUSINESS_DAYS=0` to
+disable it, or a higher number to raise the threshold.
+
 **The dashboard** has four tabs:
 
 - **Home** — a live snapshot: total outcomes, day-on-day change, acceptance/

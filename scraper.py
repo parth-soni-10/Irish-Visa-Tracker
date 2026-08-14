@@ -25,9 +25,20 @@ All placeholders use the same insert-or-overwrite mechanism (never duplicate,
 always reflect the latest run's message). Once real data lands, its date's
 placeholder is cleared automatically.
 
+A gap alert runs on business days: if no genuinely new file has appeared for
+GAP_ALERT_BUSINESS_DAYS consecutive business days, the run fails loudly. This
+turns a silent site change/outage (which otherwise just writes "no file" rows
+forever) into a visible GitHub Actions failure.
+
 Flags (env vars, all optional):
   ENABLE_NO_UPLOAD_PLACEHOLDER "true" (default) or "false" — turns ALL of the
                                 above placeholder mechanisms on/off at once.
+  GAP_ALERT_BUSINESS_DAYS  "3" (default) — fail the run once no new file has
+                                appeared for this many consecutive business
+                                days (Mon-Fri, excluding listed closure dates),
+                                so a site change or outage shows up as a red
+                                GitHub Actions run instead of silent "no file"
+                                rows. "0" disables the check.
 """
 
 import re
@@ -46,6 +57,18 @@ PAGE_URL = "https://www.ireland.ie/en/india/newdelhi/services/visas/processing-t
 CLOSURE_DATES_URL = "https://www.ireland.ie/en/india/newdelhi/about/embassy-information/"
 WEB_APP_URL = os.environ.get("WEB_APP_URL", "").strip()
 ENABLE_NO_UPLOAD_PLACEHOLDER = os.environ.get("ENABLE_NO_UPLOAD_PLACEHOLDER", "true").strip().lower() == "true"
+
+
+def _env_int(name, default):
+    try:
+        return int(os.environ.get(name, "").strip())
+    except (TypeError, ValueError):
+        return default
+
+
+# Fail the run once this many consecutive business days (Mon-Fri, excluding
+# listed closure dates) have passed without a genuinely new file. 0 disables.
+GAP_ALERT_BUSINESS_DAYS = _env_int("GAP_ALERT_BUSINESS_DAYS", 3)
 # Cold-start tolerance: a container that has been idle for hours can take
 # 60+ seconds (sometimes minutes) to spin up, and every probe before it is
 # ready comes back 404. Budget ~5 minutes across 8 attempts so the first
@@ -299,6 +322,25 @@ def check_holiday(today_dt: datetime):
         return None
 
 
+def _closure_dates(year):
+    """Set of (month, day) closure dates listed for ``year`` on the embassy's
+    closure-dates page. Returns an empty set if the page can't be fetched or
+    parsed, which makes the gap alert treat weekdays as business days — the
+    conservative direction when a site change/outage is suspected."""
+    dates = set()
+    try:
+        resp = requests.get(CLOSURE_DATES_URL, headers=BROWSER_HEADERS, timeout=30)
+        if resp.status_code == 200:
+            section = extract_closure_section(resp.text, year)
+            for line in extract_candidate_lines(section):
+                for day, month in _dates_in_line(line):
+                    dates.add((month, day))
+    except requests.exceptions.RequestException as e:
+        print(f"Could not fetch closure-dates page for gap alert ({e}) — "
+              f"treating weekdays as business days.")
+    return dates
+
+
 # ---------------- Sheet I/O ----------------
 
 class WebAppUnavailable(RuntimeError):
@@ -539,6 +581,35 @@ def _latest_real_date(existing_rows):
     return max(dates) if dates else None
 
 
+def _latest_file_date(existing_rows, fetch_date=None):
+    """The newest file date we know of this run: today's downloaded file (if
+    any) or the latest real-data date already in the sheet, whichever is
+    newer. None if we have no real data and no file at all."""
+    latest = _latest_real_date(existing_rows)
+    if fetch_date and (latest is None or fetch_date > latest):
+        return fetch_date
+    return latest
+
+
+def _count_stale_business_days(latest_date_str, today_dt, closure_dates):
+    """Number of business days (Mon-Fri, excluding listed embassy closure
+    dates) strictly after ``latest_date_str`` through today. This is how many
+    days the office could have published a file but, as far as we know,
+    hasn't."""
+    try:
+        start = (datetime.strptime(latest_date_str, "%Y-%m-%d") + timedelta(days=1)).date()
+    except (TypeError, ValueError):
+        return 0
+    count = 0
+    cursor = start
+    end = today_dt.date()
+    while cursor <= end:
+        if cursor.weekday() < 5 and (cursor.month, cursor.day) not in closure_dates:
+            count += 1
+        cursor += timedelta(days=1)
+    return count
+
+
 def _backfill_missing_days(existing_rows, today_dt, anchor=None, skip_date=None):
     """Upsert a placeholder for every date after ``anchor`` through today that
     has no row yet (real or placeholder). ``anchor`` defaults to the newest
@@ -695,6 +766,30 @@ def main():
             clear_no_file_placeholder(fetch_date)
     else:
         print("ENABLE_NO_UPLOAD_PLACEHOLDER is false — skipping placeholder.")
+
+    # --- Gap alert: a site change or publication outage can make the scraper
+    # quietly write "no file yet" every day while the run still reports
+    # success. Fail loudly instead once no genuinely-new file has appeared for
+    # 3+ consecutive business days, so a broken .ods-link pattern or an
+    # unreachable embassy page shows up as a red run instead of silent gaps.
+    if GAP_ALERT_BUSINESS_DAYS > 0:
+        latest_file_date = _latest_file_date(existing_rows, fetch_date)
+        if latest_file_date:
+            closure_dates = _closure_dates(today_dt.year)
+            stale_days = _count_stale_business_days(latest_file_date, today_dt, closure_dates)
+            if stale_days >= GAP_ALERT_BUSINESS_DAYS:
+                message = (
+                    f"ALERT: no new visa-decisions file has appeared for {stale_days} "
+                    f"consecutive business days (latest file dated {latest_file_date}; "
+                    f"today is {today_ist}). This usually means the embassy page markup "
+                    f"changed or the site is unreachable. Verify the .ods link pattern in "
+                    f"find_ods_link() and the live page. (Set GAP_ALERT_BUSINESS_DAYS=0 to "
+                    f"disable this check.)"
+                )
+                print(message)
+                if os.environ.get("GITHUB_ACTIONS") == "true":
+                    print(f"::error::{message}")
+                sys.exit(1)
 
     if scrape_failed:
         sys.exit(1)

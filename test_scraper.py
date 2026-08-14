@@ -112,7 +112,7 @@ class MainPlaceholderTests(unittest.TestCase):
 
     @staticmethod
     def run_main(now, existing_rows, filename="20260811_NDVO_Visa_Decisions.ods",
-                 new_irls=(), fail_scrape=False, holiday=None):
+                 new_irls=(), fail_scrape=False, holiday=None, closure_dates=None):
         """Run main() with everything mocked except the decision logic.
         Returns (push, set_ph, clear_ph, exit_code)."""
         df = scraper.pd.DataFrame(
@@ -122,6 +122,7 @@ class MainPlaceholderTests(unittest.TestCase):
         with patch("scraper.now_ist", return_value=now), \
              patch("scraper.fetch_existing_rows", return_value=existing_rows), \
              patch("scraper.check_holiday", return_value=holiday), \
+             patch("scraper._closure_dates", return_value=set(closure_dates or ())), \
              patch("scraper.find_ods_link",
                    side_effect=RuntimeError("site down") if fail_scrape
                    else lambda: "https://example.org/decisions.ods"), \
@@ -147,7 +148,8 @@ class MainPlaceholderTests(unittest.TestCase):
             ["2026-08-11", "IRL101", "Refused"],
             ["2026-08-08", "NO_FILE_2026-08-08", scraper.WEEKEND_MESSAGE],
         ]
-        push, set_ph, clear_ph, exited = self.run_main(now, existing, new_irls=("100",))
+        push, set_ph, clear_ph, exited = self.run_main(
+            now, existing, new_irls=("100",), closure_dates={(8, 13), (8, 14)})
         self.assertIsNone(exited)
         push.assert_not_called()
         self.assertEqual([c.args[0] for c in set_ph.call_args_list],
@@ -185,7 +187,8 @@ class MainPlaceholderTests(unittest.TestCase):
     def test_scrape_failure_places_today_only_and_fails(self):
         now = ist("2026-08-14")
         existing = [["2026-08-11", "IRL100", "Granted"]]
-        push, set_ph, clear_ph, exited = self.run_main(now, existing, fail_scrape=True)
+        push, set_ph, clear_ph, exited = self.run_main(
+            now, existing, fail_scrape=True, closure_dates={(8, 13), (8, 14)})
         self.assertEqual(exited, 1)
         self.assertEqual([c.args[0] for c in set_ph.call_args_list], ["2026-08-14"])
         self.assertEqual(set_ph.call_args.args[1], scraper.NO_UPLOAD_MESSAGE)
@@ -225,7 +228,8 @@ class MainPlaceholderTests(unittest.TestCase):
         # the no-upload message.
         now = ist("2026-08-17")
         existing = [["2026-08-11", "IRL100", "Granted"]]
-        push, set_ph, clear_ph, exited = self.run_main(now, existing)
+        push, set_ph, clear_ph, exited = self.run_main(
+            now, existing, closure_dates={(8, 13), (8, 14)})
         self.assertIsNone(exited)
         calls = {c.args[0]: c.args[1] for c in set_ph.call_args_list}
         self.assertEqual(calls["2026-08-15"], scraper.WEEKEND_MESSAGE)
@@ -254,7 +258,8 @@ class MainPlaceholderTests(unittest.TestCase):
             ["2026-08-11", "IRL100", "Granted"],
             ["2026-08-12", "NO_FILE_2026-08-12", scraper.NO_UPLOAD_MESSAGE],
         ]
-        push, set_ph, clear_ph, exited = self.run_main(now, existing)
+        push, set_ph, clear_ph, exited = self.run_main(
+            now, existing, closure_dates={(8, 13), (8, 14)})
         self.assertIsNone(exited)
         self.assertEqual([c.args[0] for c in set_ph.call_args_list],
                          ["2026-08-13", "2026-08-14"])
@@ -441,6 +446,84 @@ class DateLineParsingTests(unittest.TestCase):
             "Embassy Closed for Relocation")
         self.assertEqual(scraper._holiday_name("New Year's Day 01 January Thursday"), "New Year's Day")
         self.assertEqual(scraper._holiday_name("13 & 14 August"), "Public Holiday")
+
+
+class GapAlertHelperTests(unittest.TestCase):
+    """Direct unit tests for _count_stale_business_days and _latest_file_date."""
+
+    def test_counts_business_days_excluding_weekends_and_closures(self):
+        # Fri 14 -> Mon 17: only Monday is a business day (Sat/Sun excluded).
+        self.assertEqual(
+            scraper._count_stale_business_days("2026-08-14", ist("2026-08-17"), set()),
+            1,
+        )
+        # Tue 11 -> Fri 14 with 13 & 14 closed: only Wed 12 counts.
+        self.assertEqual(
+            scraper._count_stale_business_days("2026-08-11", ist("2026-08-14"),
+                                               {(8, 13), (8, 14)}),
+            1,
+        )
+        # Mon 10 -> Thu 13, no closures: Tue/Wed/Thu = 3.
+        self.assertEqual(
+            scraper._count_stale_business_days("2026-08-10", ist("2026-08-13"), set()),
+            3,
+        )
+        # Same-day file date: zero stale days.
+        self.assertEqual(
+            scraper._count_stale_business_days("2026-08-13", ist("2026-08-13"), set()),
+            0,
+        )
+
+    def test_count_returns_zero_for_garbage_dates(self):
+        self.assertEqual(scraper._count_stale_business_days("garbage", ist("2026-08-13"), set()), 0)
+        self.assertEqual(scraper._count_stale_business_days(None, ist("2026-08-13"), set()), 0)
+
+    def test_latest_file_date_prefers_newer_of_fetch_and_existing(self):
+        rows = [["2026-08-11", "IRL001", "Granted"]]
+        self.assertEqual(scraper._latest_file_date(rows, "2026-08-12"), "2026-08-12")
+        self.assertEqual(scraper._latest_file_date(rows, "2026-08-10"), "2026-08-11")
+        self.assertEqual(scraper._latest_file_date(rows, None), "2026-08-11")
+        self.assertIsNone(scraper._latest_file_date([], None))
+
+
+class GapAlertTests(unittest.TestCase):
+    """The 3+-business-day no-new-file guard inside main()."""
+
+    def setUp(self):
+        self.original_url = scraper.WEB_APP_URL
+        scraper.WEB_APP_URL = "https://script.google.com/macros/s/test/exec"
+
+    def tearDown(self):
+        scraper.WEB_APP_URL = self.original_url
+
+    def test_guard_fires_after_3_business_days_without_new_file(self):
+        # Latest file dated Mon Aug 10; by Thu Aug 13 (Tue/Wed/Thu all business
+        # days, no closures) no new file has appeared -> the run must fail.
+        now = ist("2026-08-13")
+        existing = [["2026-08-10", "IRL100", "Granted"]]
+        push, set_ph, clear_ph, exited = MainPlaceholderTests.run_main(
+            now, existing, filename="20260810_NDVO_Visa_Decisions.ods")
+        self.assertEqual(exited, 1)
+        # Placeholders are still written before the guard fails the run.
+        self.assertEqual([c.args[0] for c in set_ph.call_args_list],
+                         ["2026-08-11", "2026-08-12", "2026-08-13"])
+        push.assert_not_called()
+
+    def test_guard_does_not_fire_after_only_2_business_days(self):
+        now = ist("2026-08-12")
+        existing = [["2026-08-10", "IRL100", "Granted"]]
+        push, set_ph, clear_ph, exited = MainPlaceholderTests.run_main(
+            now, existing, filename="20260810_NDVO_Visa_Decisions.ods")
+        self.assertIsNone(exited)
+
+    def test_guard_excludes_listed_closure_days(self):
+        # Relocation closure on Thu 13 + Fri 14 means only Wed 12 counts, so
+        # the guard stays silent on Fri 14.
+        now = ist("2026-08-14")
+        existing = [["2026-08-11", "IRL100", "Granted"]]
+        push, set_ph, clear_ph, exited = MainPlaceholderTests.run_main(
+            now, existing, closure_dates={(8, 13), (8, 14)})
+        self.assertIsNone(exited)
 
 
 if __name__ == "__main__":
