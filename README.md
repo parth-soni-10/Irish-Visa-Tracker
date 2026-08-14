@@ -47,9 +47,13 @@ chain before deciding what to do:
    file: finds the download link on the visa-decisions page, downloads it,
    locates the real header row (the file has several title rows above it),
    and pulls out every application number and decision not already on record.
-5. If the scrape fails for any reason — site blocked, format changed, nothing
-   published yet — it falls back to a "hasn't uploaded yet" note, dated
-   yesterday, since decisions data always lags a day behind.
+5. If no file dated today is found — the scrape failed, the site still hosts an
+   older cumulative file (its filename carries the last covered day, published
+   the following morning), or nothing new appeared — it falls back to a
+   "hasn't uploaded yet" note dated today. It also backfills a placeholder for
+   every empty day since the latest file's date, so a missed run (or a run
+   that keeps finding yesterday's file) can never leave a silent hole in the
+   daily summary.
 
 All of the fallback messages (weekend / holiday / not-uploaded-yet) use the
 same mechanism: an **upsert**, not a plain insert. A second failed run the

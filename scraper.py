@@ -6,14 +6,20 @@ Reads WEB_APP_URL from an environment variable (GitHub Actions secret).
 Every run, in priority order:
   1. If today already has REAL data on record (not just a placeholder) -> skip.
   2. If today is Saturday/Sunday -> upsert "Saturday/Sunday, Visa Office is
-     closed", dated TODAY. Stop (no scrape attempted).
+     closed", dated TODAY. Also backfill any empty days since the latest real
+     data, so a missed weekday run can't leave a hole. Stop (no scrape).
   3. Else check the embassy's closure-dates page for today's date -> if listed,
-     upsert "Embassy is closed today for <holiday name>", dated TODAY. Stop.
-  4. Else (a normal business day) -> attempt the real scrape. If it succeeds,
-     clear any stale placeholders for the file's date and push new rows as
-     usual. If it fails or finds nothing, upsert "Visa office hasn't uploaded
-     any sheet until now, check back later, or come back tomorrow", dated
-     TODAY so the placeholder is visible until real data overwrites it.
+     upsert "Embassy is closed today for <holiday name>", dated TODAY. Also
+     backfill empty days as above. Stop (no scrape attempted).
+  4. Else (a normal business day) -> attempt the real scrape. If a file dated
+     today (or later) is found, push new rows and clear any stale placeholder
+     for its date. Otherwise — the scrape failed, found nothing, or the site
+     is still hosting an OLDER file (the file is cumulative and named after its
+     last covered day, so an older file just means today's hasn't appeared
+     yet) — upsert "Visa office hasn't uploaded any sheet until now, check
+     back later, or come back tomorrow", dated TODAY. Every empty day after
+     the latest file's date is backfilled too, so a missed run can never
+     silently leave a hole in the dashboard.
 
 All placeholders use the same insert-or-overwrite mechanism (never duplicate,
 always reflect the latest run's message). Once real data lands, its date's
@@ -181,21 +187,82 @@ def extract_closure_section(html: str, year: int) -> str:
 
 
 def extract_candidate_lines(section_html: str):
-    """List/table rows are the most likely markup for a closure-dates listing;
-    fall back to sentence-splitting plain text if neither is found."""
-    items = re.findall(r"<li[^>]*>(.*?)</li>", section_html, re.IGNORECASE | re.DOTALL)
+    """Table rows are the primary markup for the closure-dates listing, with
+    list markup as a fallback (some sections render it as a list), then cells,
+    then sentence-splitting plain text.
+
+    <tr> MUST come first: the captured section can contain unrelated <li>
+    markup (footer/nav links), and picking those up first would shadow the
+    real closure table entirely (that is exactly what happened — the closure
+    rows were never scanned, so no holiday ever matched)."""
+    items = re.findall(r"<tr[^>]*>(.*?)</tr>", section_html, re.IGNORECASE | re.DOTALL)
     if not items:
-        items = re.findall(r"<tr[^>]*>(.*?)</tr>", section_html, re.IGNORECASE | re.DOTALL)
+        items = re.findall(r"<li[^>]*>(.*?)</li>", section_html, re.IGNORECASE | re.DOTALL)
+    if not items:
+        items = re.findall(r"<td[^>]*>(.*?)</td>", section_html, re.IGNORECASE | re.DOTALL)
     if not items:
         text = strip_tags(section_html)
         items = re.split(r"(?<=[.;\n])\s+", text)
     return [strip_tags(i).strip() for i in items if strip_tags(i).strip()]
 
 
+_MONTH_NAMES = {m.lower(): i for i, m in enumerate(
+    ["January", "February", "March", "April", "May", "June", "July",
+     "August", "September", "October", "November", "December"], start=1)}
+_MONTH_ABBR = {"jan": 1, "feb": 2, "mar": 3, "apr": 4, "may": 5, "jun": 6,
+               "jul": 7, "aug": 8, "sep": 9, "sept": 9, "oct": 10,
+               "nov": 11, "dec": 12}
+
+
+def _parse_month(word: str):
+    """Full or abbreviated month name -> month number (1-12), else None."""
+    w = word.lower()
+    if w in _MONTH_NAMES:
+        return _MONTH_NAMES[w]
+    return _MONTH_ABBR.get(w[:3])
+
+
+def _dates_in_line(line: str):
+    """Yield every (day, month) date a closure line mentions, expanding ranges
+    like '13 & 14 August' into BOTH days. dateparser keeps only one end of a
+    range (and mangles the year), so ranges are handled explicitly here."""
+    for m in re.finditer(
+        r"\b(\d{1,2})(?:st|nd|rd|th)?\s*(?:&|and|,|\u2013|\u2014|-)\s*"
+        r"(\d{1,2})(?:st|nd|rd|th)?\s+([A-Za-z]{3,9})\b",
+        line, re.IGNORECASE,
+    ):
+        month = _parse_month(m.group(3))
+        if month:
+            yield int(m.group(1)), month
+            yield int(m.group(2)), month
+    for m in re.finditer(
+        r"\b(\d{1,2})(?:st|nd|rd|th)?\s+([A-Za-z]{3,9})\b",
+        line, re.IGNORECASE,
+    ):
+        month = _parse_month(m.group(2))
+        if month:
+            yield int(m.group(1)), month
+
+
+def _holiday_name(line: str) -> str:
+    """Best-effort holiday name from a closure row: the row text with the date
+    tokens removed. Handles single dates and ranges ('13 & 14 August') alike."""
+    cleaned = re.split(
+        r"\b\d{1,2}(?:st|nd|rd|th)?\s*(?:&|and|,|\u2013|\u2014|-)\s*\d{1,2}(?:st|nd|rd|th)?\s+[A-Za-z]{3,9}\b"
+        r"|\b\d{1,2}(?:st|nd|rd|th)?\s+[A-Za-z]{3,9}\b",
+        line,
+    )[0]
+    return cleaned.strip(" -\u2013\u2014:,") or "Public Holiday"
+
+
 def check_holiday(today_dt: datetime):
     """Returns a holiday name string if today is a listed embassy closure date,
     else None. Never raises — any parsing failure just means 'not a holiday',
-    the safest default (falls through to the normal scrape attempt)."""
+    the safest default (falls through to the normal scrape attempt).
+
+    Matching is two-pass: explicit (day, month) extraction handles the
+    structured closure table (including ranges like "13 & 14 August" that
+    dateparser mangles); dateparser remains as a fallback for prose formats."""
     try:
         resp = requests.get(CLOSURE_DATES_URL, headers=BROWSER_HEADERS, timeout=30)
         print(f"Closure-dates page fetch status: {resp.status_code} | length: {len(resp.text)}")
@@ -208,14 +275,21 @@ def check_holiday(today_dt: datetime):
         print(f"Closure-dates: scanning {len(lines)} candidate lines for {today_dt.strftime('%d %B %Y')}.")
 
         for line in lines:
+            for day, month in set(_dates_in_line(line)):
+                if month == today_dt.month and day == today_dt.day:
+                    name = _holiday_name(line)
+                    print(f"Holiday match: {line!r} -> {name!r}")
+                    return name
+
+        # Fallback for prose formats the structured extraction can't cover.
+        for line in lines:
             try:
                 parsed, tokens = dateparser.parse(line, fuzzy_with_tokens=True, dayfirst=True)
             except (ValueError, OverflowError, TypeError):
                 continue
-            if parsed.month == today_dt.month and parsed.day == today_dt.day:
-                name = " ".join(t.strip(" -\u2013\u2014:,") for t in tokens if t.strip(" -\u2013\u2014:,"))
-                name = name or "Public Holiday"
-                print(f"Holiday match: {line!r} -> {name!r}")
+            if parsed is not None and parsed.month == today_dt.month and parsed.day == today_dt.day:
+                name = _holiday_name(line) or "Public Holiday"
+                print(f"Holiday match (dateparser): {line!r} -> {name!r}")
                 return name
 
         print("No closure-date match found for today.")
@@ -451,6 +525,51 @@ def _is_placeholder_row(row):
     return True
 
 
+def _latest_real_date(existing_rows):
+    """Newest date that has real (non-placeholder) data, or None if none."""
+    dates = []
+    for r in existing_rows:
+        if _is_placeholder_row(r) or not isinstance(r[0], str):
+            continue
+        try:
+            datetime.strptime(r[0], "%Y-%m-%d")
+        except ValueError:
+            continue
+        dates.append(r[0])
+    return max(dates) if dates else None
+
+
+def _backfill_missing_days(existing_rows, today_dt, anchor=None, skip_date=None):
+    """Upsert a placeholder for every date after ``anchor`` through today that
+    has no row yet (real or placeholder). ``anchor`` defaults to the newest
+    real-data date on record. Weekends get the closed-office message, other
+    days the no-upload message.
+
+    Idempotent: dates that already have a row are left untouched, so repeated
+    runs never duplicate or rewrite placeholders. This is what guarantees a
+    missed run (or a stale-file day like Aug 12-14 2026) can never leave a
+    silent hole in the daily summary."""
+    if anchor is None:
+        anchor = _latest_real_date(existing_rows)
+    if not anchor:
+        return
+    try:
+        start = (datetime.strptime(anchor, "%Y-%m-%d") + timedelta(days=1)).date()
+    except ValueError:
+        return
+    existing_dates = {r[0] for r in existing_rows}
+    cursor = start
+    end = today_dt.date()
+    while cursor <= end:
+        date_str = cursor.strftime("%Y-%m-%d")
+        if date_str != skip_date and date_str not in existing_dates:
+            message = WEEKEND_MESSAGE if cursor.weekday() in (5, 6) else NO_UPLOAD_MESSAGE
+            print(f"Backfilling placeholder for {date_str}: {message!r}")
+            set_no_file_placeholder(date_str, message)
+            existing_dates.add(date_str)
+        cursor += timedelta(days=1)
+
+
 # ---------------- main ----------------
 
 def main():
@@ -497,6 +616,8 @@ def main():
         print(f"Today ({today_ist}) is a weekend — no scrape attempted.")
         if ENABLE_NO_UPLOAD_PLACEHOLDER:
             set_no_file_placeholder(today_ist, WEEKEND_MESSAGE)
+            # Heal any weekday gaps left by missed runs.
+            _backfill_missing_days(existing_rows, today_dt, skip_date=today_ist)
         else:
             print("ENABLE_NO_UPLOAD_PLACEHOLDER is false — skipping placeholder.")
         return
@@ -507,14 +628,16 @@ def main():
         print(f"Today ({today_ist}) is a listed closure date: {holiday_name!r} — no scrape attempted.")
         if ENABLE_NO_UPLOAD_PLACEHOLDER:
             set_no_file_placeholder(today_ist, f"Embassy is closed today for {holiday_name}")
+            # Heal any gaps left by missed runs.
+            _backfill_missing_days(existing_rows, today_dt, skip_date=today_ist)
         else:
             print("ENABLE_NO_UPLOAD_PLACEHOLDER is false — skipping placeholder.")
         return
 
     # --- Priority 3: normal business day, attempt the real scrape ---
-    no_file_found = True
     scrape_failed = False
     new_rows = []
+    fetch_date = None  # date of the file actually downloaded this run, if any
     try:
         ods_url = find_ods_link()
         filename, df = download_and_parse_ods(ods_url)
@@ -524,7 +647,6 @@ def main():
         if not app_col or not decision_col:
             raise RuntimeError(f"Could not detect columns. Headers seen: {list(df.columns)}")
 
-        no_file_found = False
         print(f"{len(existing_irl)} existing IRL numbers already on record.")
 
         for _, r in df.iterrows():
@@ -545,18 +667,34 @@ def main():
 
     except Exception as e:
         scrape_failed = True
-        no_file_found = True
         print(f"Scrape step failed: {e}")
 
-    if no_file_found:
-        if ENABLE_NO_UPLOAD_PLACEHOLDER:
+    if ENABLE_NO_UPLOAD_PLACEHOLDER:
+        # The embassy's file is CUMULATIVE ("decisions made from 1 January to
+        # <date>") and named after its last covered day, published the
+        # following morning. "No file for date X" is therefore true for every
+        # X strictly after the latest file's date — even when the site still
+        # hosts, and we successfully parse, an older file. Treating a stale
+        # file as success used to silently drop the day's placeholder, leaving
+        # whole days with no row in the dashboard (Aug 12-14 2026).
+        if fetch_date is None:
+            # Scrape failed outright — we can't see the latest file, so at
+            # minimum make sure today's placeholder exists.
             print(f"No file found this run — upserting placeholder for {today_ist}.")
             set_no_file_placeholder(today_ist, NO_UPLOAD_MESSAGE)
+        elif fetch_date < today_ist:
+            # Stale file: today's file hasn't been published yet. Fill every
+            # empty day from the latest file's date through today so a missed
+            # run can never silently leave a hole in the daily summary.
+            print(f"Latest file ({fetch_date}) predates today ({today_ist}) — "
+                  f"ensuring placeholders for every gap day.")
+            _backfill_missing_days(existing_rows, today_dt, anchor=fetch_date)
         else:
-            print("ENABLE_NO_UPLOAD_PLACEHOLDER is false — skipping placeholder.")
+            # File dated today (or later) is live — no placeholder needed.
+            print(f"File for {fetch_date} found — clearing any stale placeholder for {fetch_date}.")
+            clear_no_file_placeholder(fetch_date)
     else:
-        print(f"File was found this run — clearing any stale placeholder for {fetch_date}.")
-        clear_no_file_placeholder(fetch_date)
+        print("ENABLE_NO_UPLOAD_PLACEHOLDER is false — skipping placeholder.")
 
     if scrape_failed:
         sys.exit(1)
