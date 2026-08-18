@@ -55,6 +55,10 @@ chain before deciding what to do:
    that keeps finding yesterday's file) can never leave a silent hole in the
    daily summary.
 
+New decisions are dated with the day they were **scraped** (today), not the
+date in the file's filename — so the daily summary shows each day's count
+against that day, regardless of which cumulative file it came from.
+
 All of the fallback messages (weekend / holiday / not-uploaded-yet) use the
 same mechanism: an **upsert**, not a plain insert. A second failed run the
 same day overwrites the first message instead of creating a duplicate row,

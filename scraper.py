@@ -21,6 +21,11 @@ Every run, in priority order:
      the latest file's date is backfilled too, so a missed run can never
      silently leave a hole in the dashboard.
 
+New rows are dated with the day they were SCRAPED (today), not the date in
+ the file's filename — so the daily summary always shows a day's count
+ against that day, regardless of which cumulative file the decisions came
+ from.
+
 All placeholders use the same insert-or-overwrite mechanism (never duplicate,
 always reflect the latest run's message). Once real data lands, its date's
 placeholder is cleared automatically.
@@ -708,7 +713,8 @@ def main():
     # --- Priority 3: normal business day, attempt the real scrape ---
     scrape_failed = False
     new_rows = []
-    fetch_date = None  # date of the file actually downloaded this run, if any
+    fetch_date = None  # date embedded in the downloaded file's name — used for
+                       # staleness/placeholder decisions only; rows are dated today
     try:
         ods_url = find_ods_link()
         filename, df = download_and_parse_ods(ods_url)
@@ -727,7 +733,7 @@ def main():
                 continue
             if looks_like_header(irl, decision):
                 continue
-            new_rows.append({"date": fetch_date, "irl": irl, "decision": decision})
+            new_rows.append({"date": today_ist, "irl": irl, "decision": decision})
             existing_irl.add(irl)
 
         print(f"{len(new_rows)} new rows to push (out of {len(df)} rows in file).")
@@ -748,14 +754,22 @@ def main():
         # hosts, and we successfully parse, an older file. Treating a stale
         # file as success used to silently drop the day's placeholder, leaving
         # whole days with no row in the dashboard (Aug 12-14 2026).
-        if fetch_date is None:
+        if new_rows:
+            # Real data landed and is stamped with today's date — today is not
+            # a "no file" day. Clear any stale placeholder for it.
+            print(f"Real data for {today_ist} pushed ({len(new_rows)} rows) — "
+                  f"clearing any stale placeholder for {today_ist}.")
+            clear_no_file_placeholder(today_ist)
+        elif fetch_date is None:
             # Scrape failed outright — we can't see the latest file, so at
             # minimum make sure today's placeholder exists.
             print(f"No file found this run — upserting placeholder for {today_ist}.")
             set_no_file_placeholder(today_ist, NO_UPLOAD_MESSAGE)
         elif fetch_date < today_ist:
-            # Stale file: today's file hasn't been published yet. Fill every
-            # empty day from the latest file's date through today so a missed
+            # A stale file was scraped but had nothing new (its decisions were
+            # already recorded). Today's file hasn't been published yet, so
+            # today gets the no-upload note and every empty gap day from the
+            # latest file's date through today is backfilled too — a missed
             # run can never silently leave a hole in the daily summary.
             print(f"Latest file ({fetch_date}) predates today ({today_ist}) — "
                   f"ensuring placeholders for every gap day.")

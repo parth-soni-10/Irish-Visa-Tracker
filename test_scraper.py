@@ -158,18 +158,31 @@ class MainPlaceholderTests(unittest.TestCase):
             self.assertEqual(c.args[1], scraper.NO_UPLOAD_MESSAGE)
         clear_ph.assert_not_called()
 
-    def test_stale_file_with_new_rows_still_places_today_placeholder(self):
+    def test_new_rows_stamped_with_today_not_filename_date(self):
         # Normal lag day: the file dated Aug 11 appears on Aug 12 (published
-        # the following morning). New rows get pushed dated Aug 11, AND Aug 12
-        # gets its "no file yet" placeholder because no file dated Aug 12
-        # exists yet.
+        # the following morning). New rows are stamped with TODAY (Aug 12), not
+        # the filename date (Aug 11), so the daily summary shows the count
+        # against the day it was scraped. Today has real data, so no "no file"
+        # placeholder is written for it — any stale one is cleared instead.
         now = ist("2026-08-12")
         existing = [["2026-08-10", "IRL100", "Granted"]]
         push, set_ph, clear_ph, exited = self.run_main(now, existing, new_irls=("101",))
         self.assertIsNone(exited)
         push.assert_called_once()
         self.assertEqual(push.call_args.args[0],
-                         [{"date": "2026-08-11", "irl": "IRL101", "decision": "Granted"}])
+                         [{"date": "2026-08-12", "irl": "IRL101", "decision": "Granted"}])
+        set_ph.assert_not_called()
+        clear_ph.assert_called_once_with("2026-08-12")
+
+    def test_stale_file_with_no_new_rows_places_today_placeholder(self):
+        # A stale file whose decisions are all already recorded means no new
+        # data today: today keeps its "no file yet" placeholder, and empty gap
+        # days after the file's date are backfilled too.
+        now = ist("2026-08-12")
+        existing = [["2026-08-11", "IRL100", "Granted"]]
+        push, set_ph, clear_ph, exited = self.run_main(now, existing, new_irls=("100",))
+        self.assertIsNone(exited)
+        push.assert_not_called()
         self.assertEqual([c.args[0] for c in set_ph.call_args_list], ["2026-08-12"])
         clear_ph.assert_not_called()
 
