@@ -73,6 +73,15 @@ forever. That turns a silent site change or publication outage into a red
 GitHub Actions run you'll actually notice. Set `GAP_ALERT_BUSINESS_DAYS=0` to
 disable it, or a higher number to raise the threshold.
 
+**Sheet rotation (Code.gs):** Google Sheets caps a spreadsheet at 10 million
+cells, and the Raw tab is 3 columns wide — so once the active Raw tab
+approaches ~95% of that budget (~3.17M rows), the Apps Script automatically
+creates the next tab (`Raw2`, `Raw3`, ...) and starts appending there. Every
+Raw* tab is treated as one logical dataset: dedupe, placeholder cleanup, and
+the dashboard's JSON all read across all of them in tab order, so history is
+never split or lost. Tune it via `MAX_CELLS_PER_SPREADSHEET` /
+`CAPACITY_WARN_PCT` at the top of `Code.gs`.
+
 **The dashboard** has four tabs:
 
 - **Home** — a live snapshot: total outcomes, day-on-day change, acceptance/
