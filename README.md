@@ -93,8 +93,15 @@ never split or lost. Tune it via `MAX_CELLS_PER_SPREADSHEET` /
 - **Past Results** — the full history, with a date-picker filter (native
   calendar widget) that narrows the table and recalculates the acceptance/
   rejection cards to just that day.
-- **Suggestions** — a simple form (name + note) that writes straight into a
-  separate tab in the Sheet.
+- **Suggestions** — a form (name + note) submitted through **Netlify Forms**.
+  Submissions land in the Netlify dashboard (Site settings → Forms →
+  Submissions); nothing touches the Sheet for suggestions anymore.
+
+Netlify needs the form in the served HTML to register it, but the dashboard
+renders its tabs in JS — so `index.html` carries a hidden static twin of the
+Suggestions form (same `name="suggestions"` and fields) that Netlify's form
+detector picks up at deploy time. The visible form AJAX-posts
+`form-name=suggestions` back to the site itself, which Netlify intercepts.
 
 Day-on-day averages deliberately exclude 12 July 2026, an anomalous data day.
 The dashboard fetches from the Sheet once per page load and holds it in
@@ -107,9 +114,9 @@ memory for the session — switching tabs doesn't re-fetch.
 | `scraper.py` | Scrapes the embassy site, runs the weekend/holiday/no-upload decision chain, pushes to the Sheet |
 | `requirements.txt` | Python deps for the GitHub Actions runner |
 | `.github/workflows/scrape.yml` | Schedule (every 30 min, 08:00–12:00 IST) + manual trigger |
-| `Code.gs` | Apps Script backend — the only thing that reads/writes the Sheet |
+| `Code.gs` | Apps Script backend — the only thing that reads/writes the Sheet (scraper data + placeholders only; suggestions are Netlify Forms) |
 | `index.html` | The dashboard |
-| `netlify.toml` | Static hosting config |
+| `netlify.toml` | Static hosting config + security headers |
 
 ## Why it's built this way
 

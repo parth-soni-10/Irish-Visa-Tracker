@@ -21,9 +21,7 @@
 const SHEET_ID   = '16wCHAUP1l9Gaehmai6GTkjzPhYafV7fyOtGm2y2tb_I';
 const PAGE_URL   = 'https://www.ireland.ie/en/india/newdelhi/services/visas/processing-times-and-decisions/';
 const RAW_TAB    = 'Raw';
-const SUGG_TAB   = 'Suggestions';
 const RAW_HEADERS  = ['Date', 'Application Number', 'Decision'];
-const SUGG_HEADERS = ['Timestamp', 'Name', 'Suggestion'];
 
 // Capacity limits — Google Sheets allows 10,000,000 cells per spreadsheet.
 // The Raw tab uses RAW_HEADERS.length columns, so its practical row budget is
@@ -220,16 +218,6 @@ function detectColumns_(headerRow) {
   return { appNumberCol, decisionCol };
 }
 
-function getOrCreateSheet_(name, headers) {
-  const ss = SpreadsheetApp.openById(SHEET_ID);
-  let sheet = ss.getSheetByName(name);
-  if (!sheet) {
-    sheet = ss.insertSheet(name);
-    sheet.getRange(1, 1, 1, headers.length).setValues([headers]).setFontWeight('bold');
-    sheet.setFrozenRows(1);
-  }
-  return sheet;
-}
 
 /** Every IRL number already recorded, across ALL Raw* tabs. */
 function getExistingIrlSet_() {
@@ -251,8 +239,6 @@ function doGet(e) {
   let payload;
   if (action === 'raw') {
     payload = getAllRawRows_();
-  } else if (action === 'suggestions') {
-    payload = getSuggestionsRows_();
   } else {
     payload = { error: 'unknown action' };
   }
@@ -288,30 +274,20 @@ function isoDate_(d) {
 }
 
 /**
- * Handles three producers:
- *  - Dashboard suggestion form: form-encoded POST { name, suggestion }
- *  - scraper.py real data: JSON POST { action: 'append_rows', rows: [{date, irl, decision}, ...] }
- *  - scraper.py no-file fallback: JSON POST { action: 'set_no_file_placeholder', date, message }
+ * Handles the scraper producers (JSON only):
+ *  - real data: JSON POST { action: 'append_rows', rows: [{date, irl, decision}, ...] }
+ *  - no-file fallback: JSON POST { action: 'set_no_file_placeholder', date, message }
+ *  - placeholder cleanup: JSON POST { action: 'clear_no_file_placeholder', date }
+ * Dashboard suggestions no longer post here — they go to Netlify Forms.
  */
 function doPost(e) {
   const isJson = e.postData && e.postData.type === 'application/json';
-  if (isJson) {
-    const body = JSON.parse(e.postData.contents);
-    if (body.action === 'append_rows') return handleAppendRows_(body.rows || []);
-    if (body.action === 'set_no_file_placeholder') return handleSetNoFilePlaceholder_(body.date, body.message);
-    if (body.action === 'clear_no_file_placeholder') return handleClearNoFilePlaceholder_(body.date);
-    return jsonOut_({ ok: false, error: 'unknown action' });
-  }
-  return handleSuggestion_(e.parameter.name, e.parameter.suggestion);
-}
-
-function handleSuggestion_(name, suggestion) {
-  name = (name || '').trim();
-  suggestion = (suggestion || '').trim();
-  if (!name || !suggestion) return jsonOut_({ ok: false, error: 'name and suggestion required' });
-  const sheet = getOrCreateSheet_(SUGG_TAB, SUGG_HEADERS);
-  sheet.appendRow([new Date(), name, suggestion]);
-  return jsonOut_({ ok: true });
+  if (!isJson) return jsonOut_({ ok: false, error: 'json required' });
+  const body = JSON.parse(e.postData.contents);
+  if (body.action === 'append_rows') return handleAppendRows_(body.rows || []);
+  if (body.action === 'set_no_file_placeholder') return handleSetNoFilePlaceholder_(body.date, body.message);
+  if (body.action === 'clear_no_file_placeholder') return handleClearNoFilePlaceholder_(body.date);
+  return jsonOut_({ ok: false, error: 'unknown action' });
 }
 
 /** Bulk append from external scraper. Dedupes against existing IRL numbers server-side too
@@ -418,20 +394,3 @@ function jsonOut_(obj) {
   return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
 }
 
-// ---------- NEW: Fetch suggestions for the dashboard ----------
-function getSuggestionsRows_() {
-  const sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName(SUGG_TAB);
-  if (!sheet) return [];
-  const data = sheet.getDataRange().getValues();
-  if (data.length < 2) return [];
-  const headers = data[0];
-  const rows = data.slice(1);
-  const out = rows.map(row => {
-    const obj = {};
-    headers.forEach((h, i) => {
-      obj[h] = row[i] !== undefined ? row[i] : '';
-    });
-    return obj;
-  });
-  return out;
-}

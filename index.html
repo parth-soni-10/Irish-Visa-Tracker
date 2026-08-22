@@ -11,6 +11,21 @@
 </head>
 <body>
     <div id="visa-dash"></div>
+    <!-- Hidden twin of the JS-rendered Suggestions form. The dashboard builds its
+         tabs dynamically, so Netlify can't crawl the real form — this static copy
+         (same name + fields) is what Netlify's form detector registers at deploy
+         time. Submissions are AJAX-posted with form-name=suggestions and land in
+         the Netlify dashboard (Forms → Submissions). -->
+    <form name="suggestions" netlify netlify-honeypot="bot-field" style="position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden;" aria-hidden="true" tabindex="-1">
+        <input type="hidden" name="form-name" value="suggestions" />
+        <p>
+            <label>Name <input type="text" name="name" tabindex="-1" autocomplete="off" /></label>
+        </p>
+        <p>
+            <label>Suggestion <textarea name="suggestion" tabindex="-1"></textarea></label>
+        </p>
+        <input type="text" name="bot-field" tabindex="-1" autocomplete="off" />
+    </form>
     <style>
 
         #visa-dash * { box-sizing: border-box; }
@@ -551,38 +566,102 @@
             align-items: flex-start;
         }
         #visa-dash .suggest-grid .form-col { flex: 1 1 280px; min-width: 0; }
-        #visa-dash .suggest-grid .table-col { flex: 2 1 400px; min-width: 0; }
-        #visa-dash .suggest-grid .table-col .table-wrap { max-height: 420px; overflow-y: auto; overflow-x: auto; }
-        #visa-dash .suggest-grid .table-col table {
-            width: 100%;
-            table-layout: auto;
-            white-space: nowrap;
-        }
-        #visa-dash .suggest-grid .table-col table th,
-        #visa-dash .suggest-grid .table-col table td {
-            white-space: nowrap;
-        }
-        #visa-dash .suggest-grid .table-col table th,
-        #visa-dash .suggest-grid .table-col table td {
-            white-space: normal;
-            overflow-wrap: anywhere;
-            vertical-align: top;
-            padding: 10px 12px;
-        }
-        #visa-dash .suggest-grid .table-col .label {
-            background: var(--surface);
-            padding: 8px 12px;
-            border-radius: 8px;
-            display: inline-block;
-            margin-bottom: 8px;
-            border: 1px solid var(--border);
+        /* Netlify-style form: fields wrapped in <p><label>…</label></p>. */
+        #visa-dash #sugg-form p { margin: 0 0 12px; }
+        #visa-dash #sugg-form label {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
             font-size: 11px;
+            font-weight: 700;
             text-transform: uppercase;
             letter-spacing: .06em;
             color: var(--ink-muted);
-            font-weight: 700;
         }
-        #visa-dash .suggest-grid .table-col table th { background: var(--surface) !important; }
+        #visa-dash #sugg-form input[type=text] { margin-bottom: 0; max-width: none; }
+        #visa-dash #sugg-form textarea { margin-bottom: 0; }
+        /* Post-submit success card: animated checkmark + confirmation. */
+        #visa-dash .sugg-success {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            gap: 10px;
+            padding: 30px 20px;
+        }
+        #visa-dash .sugg-success .check-wrap { position: relative; width: 66px; height: 66px; }
+        #visa-dash .sugg-success .check { width: 66px; height: 66px; position: relative; z-index: 1; }
+        /* Sparkle burst behind the checkmark. Each span flies outward along
+           its own (--tx, --ty) vector with a per-spark delay (--d). */
+        #visa-dash .sugg-success .burst { position: absolute; inset: 0; pointer-events: none; }
+        #visa-dash .sugg-success .burst span {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            width: 7px;
+            height: 7px;
+            margin: -3px 0 0 -3px;
+            opacity: 0;
+            animation: spark-pop 0.65s cubic-bezier(.15,.75,.35,1) var(--d, 0s) forwards;
+        }
+        #visa-dash .sugg-success .burst span.dot { border-radius: 50%; background: var(--green); }
+        #visa-dash .sugg-success .burst span.diamond {
+            background: var(--amber);
+            border-radius: 2px;
+            rotate: 45deg; /* separate property: composes with the transform animation */
+        }
+        @keyframes spark-pop {
+            0%   { opacity: 0; transform: translate(0, 0) scale(0.3); }
+            18%  { opacity: 1; }
+            100% { opacity: 0; transform: translate(var(--tx), var(--ty)) scale(0.85); }
+        }
+        #visa-dash .sugg-success .check circle {
+            fill: none;
+            stroke: var(--green);
+            stroke-width: 3;
+            stroke-dasharray: 160;
+            stroke-dashoffset: 160;
+            animation: check-draw 0.5s ease-out forwards;
+        }
+        #visa-dash .sugg-success .check path {
+            fill: none;
+            stroke: var(--green);
+            stroke-width: 4;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            stroke-dasharray: 48;
+            stroke-dashoffset: 48;
+            animation: check-draw 0.35s ease-out 0.45s forwards;
+        }
+        @keyframes check-draw { to { stroke-dashoffset: 0; } }
+        #visa-dash .sugg-success-title {
+            font-size: 18px;
+            font-weight: 800;
+            color: var(--ink);
+            animation: visa-fade-in 0.4s ease 0.3s backwards;
+        }
+        #visa-dash .sugg-success-text {
+            font-size: 13px;
+            color: var(--ink-muted);
+            animation: visa-fade-in 0.4s ease 0.5s backwards;
+        }
+        #visa-dash .sugg-success .btn {
+            margin-top: 8px;
+            animation: visa-fade-in 0.4s ease 0.7s backwards;
+        }
+        #visa-dash .sugg-success .btn:hover { background: var(--green); }
+        /* Reduced motion: skip the draw/fade, just show the final state. */
+        @media (prefers-reduced-motion: reduce) {
+            #visa-dash .sugg-success .check circle,
+            #visa-dash .sugg-success .check path,
+            #visa-dash .sugg-success-title,
+            #visa-dash .sugg-success-text,
+            #visa-dash .sugg-success .btn,
+            #visa-dash .sugg-success .burst span { animation: none; }
+            #visa-dash .sugg-success .burst { display: none; }
+            #visa-dash .sugg-success .check circle { stroke-dashoffset: 0; }
+            #visa-dash .sugg-success .check path { stroke-dashoffset: 0; }
+        }
         #visa-dash .titlerow {
             display: flex;
             align-items: flex-start;
@@ -881,10 +960,7 @@
             #visa-dash input[type=text] { max-width: 100%; }
             #visa-dash .filter-row { flex-direction: column; align-items: stretch; gap: 8px; }
             #visa-dash .datefilter { width: 100%; }
-            #visa-dash .suggest-grid .form-col,
-            #visa-dash .suggest-grid .table-col { flex: 1 1 100%; }
-            #visa-dash .suggest-grid .table-col .table-wrap { max-height: 300px; }
-            #visa-dash .suggest-grid .table-col table { min-width: 0; }
+            #visa-dash .suggest-grid .form-col { flex: 1 1 100%; }
         }        @media (max-width: 480px) {
             #visa-dash .cards { grid-template-columns: 1fr 1fr; }
             #visa-dash .hero { padding: 18px 16px; }
@@ -926,8 +1002,6 @@
             #visa-dash .scroll-top-btn { width: 48px; height: 48px; font-size: 20px; }
             /* Sticky table headers so column titles stay visible on long scrolls. */
             #visa-dash thead th { position: sticky; top: 0; z-index: 5; }
-            /* Suggestion table: bigger viewport on mobile (60vh vs 420px). */
-            #visa-dash .suggest-grid .table-col .table-wrap { max-height: 60vh; }
             /* Hero layout: stack the body on mobile so the visual doesn't squeeze the headline. */
             #visa-dash .hero-body { grid-template-columns: 1fr; }
             #visa-dash .visual { height: 100px; }
@@ -992,7 +1066,6 @@
             let cache = null;
             let cacheFetchedAt = null;
             let dataPromise = null;
-            let suggestionsCache = null;
             let activeTab = 'home';
             let homeSearchTerm = '';
             let pastDateFilter = '';
@@ -1050,20 +1123,6 @@
                         '</td><td><span class="pill ' + r._pillClass + '">' + (r.decision || '\u2014') + '</span></td></tr>';
                 }
                 return r;
-            }
-
-            // Mirror of preloadRow for the Suggest tab. Caches each row's
-            // pre-rendered <tr>...</tr> string so paintSuggestRows is pure
-            // string concat (no per-cell escape work).  Also escapes every
-            // value and header (the prior full-render path didn't, which
-            // was an XSS vector if the Google Sheet ever had hostile data).
-            function preloadSuggestionRow(s) {
-                if (s._html) return s;
-                var keys = Object.keys(s);
-                s._html = '<tr>' + keys.map(function(h) {
-                    return '<td>' + escapeHtml(s[h]) + '</td>';
-                }).join('') + '</tr>';
-                return s;
             }
 
             function escapeHtml(value) {
@@ -1134,33 +1193,6 @@
                 return dataPromise;
             }
 
-
-            async function loadSuggestions() {
-                if (suggestionsCache) return suggestionsCache;
-                if (!WEB_APP_URL) { suggestionsCache = []; return suggestionsCache; }
-                try {
-                    const res = await fetch(WEB_APP_URL + '?action=suggestions');
-                    const raw = await res.json();
-                    if (Array.isArray(raw) && raw.length > 0) {
-                        if (Array.isArray(raw[0])) {
-                            const headers = raw[0];
-                            suggestionsCache = raw.slice(1).map(row => {
-                                const obj = {};
-                                headers.forEach((h, i) => { obj[h] = row[i] !== undefined ? row[i] : ''; });
-                                return preloadSuggestionRow(obj);
-                            });
-                        } else {
-                            suggestionsCache = raw.map(preloadSuggestionRow);
-                        }
-                    } else {
-                        suggestionsCache = [];
-                    }
-                    return suggestionsCache;
-                } catch (e) {
-                    suggestionsCache = [];
-                    return suggestionsCache;
-                }
-            }
 
             function renderConfigWarning() {
                 return WEB_APP_URL ? '' :
@@ -1321,28 +1353,7 @@
                         eyebrow: 'FROM USERS',
                         title: 'Real notes,<br/>real replies.',
                         sub: 'Leave a suggestion below. I read every one and reply asap.',
-                        visual: (function() {
-                            // The suggestion object's keys come straight from the
-                            // backend header row, so they could be anything
-                            // (e.g. SUGGESTION/PROBLEM, Suggestion, Message,
-                            // Name, NAME). A regex-based key finder keeps the
-                            // hero rendering correctly no matter how the sheet
-                            // is titled.
-                            var lastSugg = (suggestionsCache && suggestionsCache.length) ? suggestionsCache[suggestionsCache.length - 1] : null;
-                            if (!lastSugg) {
-                                return '<div class="paper"><div class="paper-title">Recent</div><div class="paper-text">No suggestions yet</div></div>';
-                            }
-                            var keys = Object.keys(lastSugg);
-                            var textKey = keys.find(function(k) {
-                                var lk = k.toLowerCase();
-                                return /sugg|comment|message|feedback|body|note|problem/.test(lk) && !/^name|^user|^from|^by/.test(lk);
-                            });
-                            var nameKey = keys.find(function(k) { return /^(name|user|from|by)$/i.test(k); });
-                            var text = textKey ? (lastSugg[textKey] || '') : '';
-                            var name = nameKey ? (lastSugg[nameKey] || '') : '';
-                            var display = text || 'No suggestions yet';
-                            return '<div class="paper"><div class="paper-title">' + (name ? 'From: ' + escapeHtml(name) : 'Recent') + '</div><div class="paper-text">' + escapeHtml(display) + '</div></div>';
-                        })()
+                        visual: '<div class="paper"><div class="paper-title">Feedback</div><div class="paper-text">Every suggestion gets read and answered.</div></div>'
                     }
                 };
                 return states[tabId] || states.home;
@@ -1420,8 +1431,14 @@
                     }
                     if (activeTab === 'past') paintPastRows();
                 });
-                var suggBtn = document.getElementById('sugg-submit');
-                if (suggBtn) suggBtn.addEventListener('click', submitSuggestion);
+                // Real <form> — intercept the submit event (covers the button
+                // AND Enter-key submission) and POST via fetch instead of
+                // letting the browser navigate to Netlify's success page.
+                var suggForm = document.getElementById('sugg-form');
+                if (suggForm) suggForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    submitSuggestion();
+                });
                 var scrollBtn = document.getElementById('scroll-top-btn');
                 if (scrollBtn) {
                     var onScroll = function() {
@@ -1445,15 +1462,13 @@
                 }
                 // Use cached data to avoid stutter
                 var rows = cache && cache.length ? cache : await loadData();
-                // Load suggestions BEFORE hero so the typewriter card shows real data
-                if (tabId === 'suggest') await loadSuggestions();
                 animateHeroSwitch(tabId, rows);
                 var tabBody = document.getElementById('tab-body');
                 if (!tabBody) return;
                 if (tabId === 'home') tabBody.innerHTML = renderHomeLayout(rows);
                 else if (tabId === 'daily') tabBody.innerHTML = renderDailySummary(rows);
                 else if (tabId === 'past') tabBody.innerHTML = renderPastLayout(rows);
-                else { tabBody.innerHTML = renderSuggestLayout(); paintSuggestRows(suggestionsCache); }
+                else { tabBody.innerHTML = renderSuggestLayout(); }
                 wireTabListeners();
                 // Paint deferred row content after the layout is in the DOM.
                 if (tabId === 'home') paintHomeRows();
@@ -1704,58 +1719,69 @@
             }
 
             // ====== SUGGEST TAB ======
-            // Two-phase render, same pattern as Home / Past:
-            //   renderSuggestLayout()  — paints ONCE per tab switch: form +
-            //                            table shell with empty <thead>/<tbody>.
-            //                            The submit button + inputs stay alive
-            //                            across paints, so typed text and the
-            //                            listener are never destroyed on filter
-            //                            or post-submit updates.
-            //   paintSuggestRows(s)    — updates ONLY #suggest-tbody + thead +
-            //                            the empty-state div. No innerHTML
-            //                            wipe on the form.
+            // Single-purpose layout: the Netlify Forms submission form. Submissions
+            // are collected server-side by Netlify — nothing is read back here.
+            // The form body lives in SUGG_FORM_HTML so it can be restored after
+            // the post-submit success card is shown.
+            // Minimum time the "Submitting…" state stays visible — on a fast
+            // connection the fetch can resolve in a few ms, which would flash
+            // the success card before the label was ever readable.
+            const MIN_SUBMIT_MS = 800;
+
+            // Markup mirrors Netlify's official contact-form example: bare
+            // `netlify` attribute, fields wrapped in <p><label>…</label></p>.
+            const SUGG_FORM_HTML =
+                '<input type="hidden" name="form-name" value="suggestions" />' +
+                '<p><label>Name <input type="text" id="sugg-name" name="name" placeholder="Your name" /></label></p>' +
+                '<p><label>Suggestion <textarea id="sugg-text" name="suggestion" placeholder="Your suggestion\u2026"></textarea></label></p>' +
+                '<button class="btn" type="submit" id="sugg-submit">Submit</button>' +
+                '<div class="note" id="sugg-status"></div>';
+
             function renderSuggestLayout() {
                 return renderConfigWarning() +
                     '<div class="suggest-grid">' +
-                        '<div class="form-col">' +
-                            '<div class="card" style="max-width:100%;">' +
-                                '<div class="label" style="margin-bottom:12px;">Submit a suggestion</div>' +
-                                '<input type="text" id="sugg-name" placeholder="Your name" />' +
-                                '<textarea id="sugg-text" placeholder="Your suggestion\u2026"></textarea>' +
-                                '<button class="btn" id="sugg-submit">Submit</button>' +
-                                '<div class="note" id="sugg-status"></div>' +
-                            '</div>' +
-                        '</div>' +
-                        '<div class="table-col">' +
-                            '<div class="label" style="margin-bottom:8px;">All suggestions</div>' +
-                            '<div class="table-wrap">' +
-                                '<table class="suggest-table">' +
-                                    '<thead><tr id="suggest-thead-row"></tr></thead>' +
-                                    '<tbody id="suggest-tbody"></tbody>' +
-                                '</table>' +
-                            '</div>' +
-                            '<div class="empty" id="suggest-empty" style="padding:20px;">No suggestions yet.</div>' +
+                        '<div class="form-col" style="max-width:560px;">' +
+                            '<form class="card" id="sugg-form" name="suggestions" netlify netlify-honeypot="bot-field" novalidate style="max-width:100%;">' +
+                                SUGG_FORM_HTML +
+                            '</form>' +
                         '</div>' +
                     '</div>';
             }
 
-            function paintSuggestRows(suggestions) {
-                var tbody = document.getElementById('suggest-tbody');
-                var theadRow = document.getElementById('suggest-thead-row');
-                var emptyEl = document.getElementById('suggest-empty');
-                if (!tbody) return;
-                if (!suggestions || !suggestions.length) {
-                    tbody.innerHTML = '';
-                    if (theadRow) theadRow.innerHTML = '';
-                    if (emptyEl) emptyEl.style.display = '';
-                    return;
+            function showSuggestionSuccess(name) {
+                const form = document.getElementById('sugg-form');
+                if (!form) return;
+                // Sparkle burst: dots + diamonds radiating from the checkmark.
+                // Each spark gets a direction vector, size, and stagger delay.
+                let sparks = '';
+                const SPARK_COUNT = 16;
+                for (let i = 0; i < SPARK_COUNT; i++) {
+                    const ang = (i / SPARK_COUNT) * Math.PI * 2;
+                    const dist = 34 + (i % 3) * 9;                    // varied reach
+                    const tx = Math.round(Math.cos(ang) * dist);
+                    const ty = Math.round(Math.sin(ang) * dist);
+                    const size = 5 + (i % 3) * 2;                      // varied size
+                    const delay = 0.5 + (i % 5) * 0.045;               // after check draws
+                    const cls = i % 3 === 2 ? 'diamond' : 'dot';
+                    sparks += '<span class="' + cls + '" style="width:' + size + 'px;height:' + size + 'px;--tx:' + tx + 'px;--ty:' + ty + 'px;--d:' + delay.toFixed(3) + 's;"></span>';
                 }
-                if (emptyEl) emptyEl.style.display = 'none';
-                var firstKeys = Object.keys(suggestions[0]).filter(function(k) { return k !== '_html' && k !== '_keys'; });
-                if (theadRow) theadRow.innerHTML = firstKeys.map(function(h) {
-                    return '<th>' + escapeHtml(h) + '</th>';
-                }).join('');
-                tbody.innerHTML = suggestions.map(function(s) { return s._html; }).join('');
+                form.innerHTML =
+                    '<div class="sugg-success">' +
+                        '<div class="check-wrap">' +
+                            '<div class="burst" aria-hidden="true">' + sparks + '</div>' +
+                            '<svg class="check" viewBox="0 0 52 52" aria-hidden="true"><circle cx="26" cy="26" r="24"/><path d="M14 27l8 8 16-16"/></svg>' +
+                        '</div>' +
+                        '<div class="sugg-success-title">Thanks, ' + escapeHtml(name) + '!</div>' +
+                        '<div class="sugg-success-text">Your suggestion is in. I\'ll read it and get back to you asap.</div>' +
+                        '<button class="btn" type="button" id="sugg-again">Send another</button>' +
+                    '</div>';
+                const again = document.getElementById('sugg-again');
+                if (again) again.addEventListener('click', function() {
+                    // Restore the form body and re-bind the submit handler
+                    // (wireTabListeners won't run again until the next tab switch).
+                    form.innerHTML = SUGG_FORM_HTML;
+                    form.addEventListener('submit', function(e) { e.preventDefault(); submitSuggestion(); });
+                });
             }
 
             async function submitSuggestion() {
@@ -1764,33 +1790,30 @@
                 const status = document.getElementById('sugg-status');
                 const btn = document.getElementById('sugg-submit');
                 if (!name || !suggestion) { status.textContent = 'Please fill in both fields.'; return; }
-                if (!WEB_APP_URL) { status.textContent = 'Data source not configured yet.'; return; }
                 btn.disabled = true;
                 status.textContent = 'Submitting…';
+                const startedAt = Date.now();
                 try {
-                    const now = new Date();
-                    const timestamp = now.toISOString();
-                    const timezone = 'Asia/Kolkata';
-                    await fetch(WEB_APP_URL, {
-                        method: 'POST',
-                        body: new URLSearchParams({ name, suggestion, timestamp, timezone })
+                    // POST straight to the site itself — Netlify intercepts any
+                    // form post carrying form-name=suggestions and records it.
+                    const body = new URLSearchParams({
+                        'form-name': 'suggestions',
+                        'bot-field': '',          // honeypot must stay empty
+                        name: name,
+                        suggestion: suggestion
                     });
-                    status.textContent = 'Thanks — suggestion recorded. I\'ll read your suggestion and get back to you.';
-                    document.getElementById('sugg-name').value = '';
-                    document.getElementById('sugg-text').value = '';
-                    suggestionsCache = null;
-                    const newSuggestions = await loadSuggestions();
-                    const tabBody = document.getElementById('tab-body');
-                    if (tabBody && activeTab === 'suggest') {
-                        // Don't innerHTML the whole tabBody — the user might
-                        // have started typing a new suggestion, and re-binding
-                        // the listener manually is fragile.  Just paint the
-                        // new rows. The submit button is still the same DOM
-                        // node from renderSuggestLayout, with its existing
-                        // listener intact.
-                        suggestionsCache = newSuggestions;
-                        paintSuggestRows(newSuggestions);
-                    }
+                    const res = await fetch(window.location.pathname, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                        body: body.toString()
+                    });
+                    if (!res.ok) throw new Error('HTTP ' + res.status);
+                    // Hold the "Submitting…" state until at least MIN_SUBMIT_MS
+                    // has elapsed since it appeared, so a fast response still
+                    // reads as a real submission. Slow requests aren't delayed.
+                    const remaining = MIN_SUBMIT_MS - (Date.now() - startedAt);
+                    if (remaining > 0) await new Promise(r => setTimeout(r, remaining));
+                    showSuggestionSuccess(name);
                 } catch (err) {
                     status.textContent = 'Could not submit — try again.';
                 } finally {
@@ -1835,7 +1858,6 @@
                         '</div>';
                 }
                 await loadData();
-                if (activeTab === 'suggest') await loadSuggestions();
 
                 const tabs = [
                     ['home', 'Home'],
@@ -1900,7 +1922,6 @@
                         paintPastRows();
                     } else {
                         tabBody.innerHTML = renderSuggestLayout();
-                        paintSuggestRows(suggestionsCache);
                     }
                 }
                 wireTabListeners();
