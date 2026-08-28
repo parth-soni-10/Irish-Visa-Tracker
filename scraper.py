@@ -44,6 +44,14 @@ Flags (env vars, all optional):
                                 so a site change or outage shows up as a red
                                 GitHub Actions run instead of silent "no file"
                                 rows. "0" disables the check.
+  ALERT_WEBHOOK_URL         unset (default) — set to a webhook URL to ALSO
+                                fire an out-of-band notification outside GitHub
+                                whenever the gap alert trips. Accepts Slack /
+                                Teams / Discord / Telegram-bot / generic-email-
+                                gateway webhook URLs; the payload is shaped to
+                                the URL automatically. Webhook failures are
+                                always non-fatal (an alert must never suppress
+                                the real signal).
 """
 
 import re
@@ -52,7 +60,7 @@ import os
 import sys
 import time
 from datetime import datetime, timedelta, timezone
-from urllib.parse import urlsplit
+from urllib.parse import parse_qs, urlsplit
 
 import requests
 import pandas as pd
@@ -62,6 +70,11 @@ PAGE_URL = "https://www.ireland.ie/en/india/newdelhi/services/visas/processing-t
 CLOSURE_DATES_URL = "https://www.ireland.ie/en/india/newdelhi/about/embassy-information/"
 WEB_APP_URL = os.environ.get("WEB_APP_URL", "").strip()
 ENABLE_NO_UPLOAD_PLACEHOLDER = os.environ.get("ENABLE_NO_UPLOAD_PLACEHOLDER", "true").strip().lower() == "true"
+# Optional out-of-band alert webhook. When set, a POST is fired the moment the
+# gap alert trips (not a replacement for the red run — a complement to it).
+# Works with any generic webhook (Slack/Teams/Discord/Telegram bot/email-gateway):
+# the payload is adapted to the well-known formats automatically. Empty string = off.
+ALERT_WEBHOOK_URL = os.environ.get("ALERT_WEBHOOK_URL", "").strip()
 
 
 def _env_int(name, default):
@@ -556,6 +569,55 @@ def clear_no_file_placeholder(date_str):
     }, "Placeholder clear")
 
 
+def send_webhook_alert(message):
+    """Fire an out-of-band notification when the gap alert trips.
+
+    Adapts the payload to the well-known webhook formats by host so a single
+    URL works with Slack, Teams, Discord, a Telegram bot, or a plain generic/
+    email-gateway endpoint:
+
+      * hooks.slack.com            -> text block (Slack)
+      * webhook.office.com         -> MessageCard with Text (Microsoft Teams)
+      * discord.com/api/webhooks   -> content (Discord)
+      * api.telegram.org/...botN/sendMessage -> chat_id + text (Telegram)
+      * anything else              -> {"text": ...} generic fallback
+
+    Completely best-effort and NEVER fatal: a webhook outage (network error,
+    non-2xx, bad JSON) is logged but must not suppress the real signal — the
+    run still fails on the gap alert as before. Only sends when
+    ``ALERT_WEBHOOK_URL`` is configured.
+    """
+    if not ALERT_WEBHOOK_URL:
+        return
+    host = urlsplit(ALERT_WEBHOOK_URL).netloc.lower()
+    data = None
+    if "hooks.slack.com" in host:
+        data = {"text": message}
+    elif "teams.microsoft.com" in host or "webhook.office.com" in host:
+        data = {"@type": "MessageCard", "@context": "http://schema.org/extensions",
+                "summary": "Visa tracker gap alert", "text": message}
+    elif "discord.com" in host:
+        data = {"content": message, "username": "Visa Decision Tracker"}
+    elif "api.telegram.org" in host:
+        # chat_id carried in the URL via ?chat_id=. If absent, the bot simply
+        # won't deliver and we fall back to the console message below.
+        query = parse_qs(urlsplit(ALERT_WEBHOOK_URL).query)
+        data = {"chat_id": query.get("chat_id", [""])[0], "text": message}
+    else:
+        data = {"text": message}
+    try:
+        resp = requests.post(ALERT_WEBHOOK_URL, json=data, timeout=30)
+        if resp.status_code >= 300:
+            print(f"Alert webhook returned {resp.status_code} — alert not delivered "
+                  f"(non-fatal; text below).")
+        else:
+            print("Alert webhook sent successfully.")
+    except requests.exceptions.RequestException as e:
+        print(f"Alert webhook failed to send ({e}) — non-fatal, the run still "
+              f"fails on the gap alert itself as usual.")
+
+
+
 def _is_placeholder_row(row):
     """Return True if a [date, irl, decision] row looks like a placeholder
     rather than real visa-decision data."""
@@ -803,6 +865,9 @@ def main():
                 print(message)
                 if os.environ.get("GITHUB_ACTIONS") == "true":
                     print(f"::error::{message}")
+                # Push the alert outside GitHub too, so it isn't missed if
+                # nobody is watching the Actions tab. Best-effort by design.
+                send_webhook_alert(message)
                 sys.exit(1)
 
     if scrape_failed:

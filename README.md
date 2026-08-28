@@ -73,6 +73,16 @@ forever. That turns a silent site change or publication outage into a red
 GitHub Actions run you'll actually notice. Set `GAP_ALERT_BUSINESS_DAYS=0` to
 disable it, or a higher number to raise the threshold.
 
+You can also push the alert **outside GitHub** so you don't have to watch the
+Actions tab: set the `ALERT_WEBHOOK_URL` secret to any webhook URL and the
+scraper POSTs a notification the moment the gap alert trips, in addition to
+failing the run. It auto-detects the format by host — Slack (`hooks.slack.com`),
+Microsoft Teams (`webhook.office.com`), Discord (`discord.com/api/webhooks`),
+or a Telegram bot (`api.telegram.org.../sendMessage?chat_id=…` for a chat or
+user id) — everything else falls back to a plain `{"text": ...}` JSON POST.
+Leave it unset to rely on the red run alone. Webhook failures are never fatal
+(an alerting outage must not suppress the real signal).
+
 ## Why no days can silently go missing
 
 Two independent safety nets catch a day when GitHub's own `schedule` trigger

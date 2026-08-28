@@ -1,7 +1,9 @@
+import os
 import unittest
 from datetime import datetime, timedelta, timezone
 from unittest.mock import Mock, patch
 
+import requests
 import scraper
 
 
@@ -537,6 +539,71 @@ class GapAlertTests(unittest.TestCase):
         push, set_ph, clear_ph, exited = MainPlaceholderTests.run_main(
             now, existing, closure_dates={(8, 13), (8, 14)})
         self.assertIsNone(exited)
+
+class WebhookAlertTests(unittest.TestCase):
+    """send_webhook_alert(): out-of-band notification for the gap alert."""
+
+    def setUp(self):
+        self.original_url = scraper.ALERT_WEBHOOK_URL
+        self.original_env = os.environ.get("ALERT_WEBHOOK_URL")
+
+    def tearDown(self):
+        scraper.ALERT_WEBHOOK_URL = self.original_url
+        if self.original_env is None:
+            os.environ.pop("ALERT_WEBHOOK_URL", None)
+        else:
+            os.environ["ALERT_WEBHOOK_URL"] = self.original_env
+
+    def _send(self, url, message):
+        scraper.ALERT_WEBHOOK_URL = url
+        with patch("scraper.requests.post") as post:
+            post.return_value = Mock(status_code=204)
+            scraper.send_webhook_alert(message)
+        return post
+
+    def test_no_url_is_a_noop_and_never_raises(self):
+        scraper.ALERT_WEBHOOK_URL = ""
+        with patch("scraper.requests.post") as post:
+            scraper.send_webhook_alert("alert")
+        post.assert_not_called()
+
+    def test_slack_payload(self):
+        post = self._send("https://hooks.slack.com/services/AAA/BBB/ccc", "msg")
+        post.assert_called_once()
+        self.assertEqual(post.call_args[1]["json"], {"text": "msg"})
+
+    def test_teams_messagecard_payload(self):
+        post = self._send("https://my.webhook.office.com/webhookb2/aaa", "msg")
+        post.assert_called_once()
+        body = post.call_args[1]["json"]
+        self.assertEqual(body["@type"], "MessageCard")
+        self.assertIn("text", body)
+
+    def test_discord_payload(self):
+        post = self._send("https://discord.com/api/webhooks/123/abc", "msg")
+        post.assert_called_once()
+        self.assertEqual(post.call_args[1]["json"]["content"], "msg")
+
+    def test_telegram_payload_reads_chat_id_from_query(self):
+        post = self._send(
+            "https://api.telegram.org/bot123:TOKEN/sendMessage?chat_id=98765", "msg")
+        post.assert_called_once()
+        body = post.call_args[1]["json"]
+        self.assertEqual(body["chat_id"], "98765")
+        self.assertEqual(body["text"], "msg")
+
+    def test_generic_payload_is_text_dict(self):
+        post = self._send("https://worker.example.dev/hook", "msg")
+        post.assert_called_once()
+        self.assertEqual(post.call_args[1]["json"], {"text": "msg"})
+
+    def test_webhook_error_is_non_fatal(self):
+        # A failing webhook must never raise — the gap alert's sys.exit is the
+        # real signal and must not be masked by an alerting failure.
+        scraper.ALERT_WEBHOOK_URL = "https://hooks.slack.com/services/x"
+        with patch("scraper.requests.post",
+                   side_effect=requests.exceptions.ConnectionError("refused")):
+            scraper.send_webhook_alert("msg")  # must not raise
 
 
 if __name__ == "__main__":
