@@ -73,6 +73,53 @@ forever. That turns a silent site change or publication outage into a red
 GitHub Actions run you'll actually notice. Set `GAP_ALERT_BUSINESS_DAYS=0` to
 disable it, or a higher number to raise the threshold.
 
+## Why no days can silently go missing
+
+Two independent safety nets catch a day when GitHub's own `schedule` trigger
+delays or skips a run (which it does under platform load — e.g. Aug 27 2026
+ran ~7 hours late, and Aug 28 never fired a run at all). The scraper is fully
+idempotent, so **overlapping triggers are safe**: every run first checks
+"does today already have real data?" and skips if so, then backfills a
+placeholder for any empty day since the latest file's date. So:
+
+1. **Self-healing catch-up** — whenever *any* run actually fires, it fills
+   every gap day back to the latest real data, so a delayed run corrects
+   itself on the next successful run.
+2. **External watchdog (recommended backstop)** — `scrape.yml` already
+   enables `workflow_dispatch`, which lets an always-on cron service trigger
+   the workflow over the GitHub REST API. GitHub's *schedule* trigger is the
+   unreliable part; `workflow_dispatch` fired from an independent scheduler is
+   not. Firing both is safe — no double counting — because of the
+   skip-if-already-recorded guard above.
+
+### Setting up the external watchdog
+
+The workflow already accepts `workflow_dispatch`. You need a free cron service
+that can POST to GitHub's API with a Bearer token (e.g. **cron-job.org**,
+which lets you set one `Authorization` header per job). Setup:
+
+1. **Create an Actions-scoped token.** In GitHub → *Settings → Developer
+   settings → Fine-grained personal access tokens → Generate new token*,
+   select this repo, grant **Actions: Read and write**, and copy it.
+2. **Paste it into the cron service** (it calls the API, not the workflow, so
+   it doesn't need to live in a repo secret). Give it an expiry and rotate it
+   before then — the service is now holding a write token to your repo.
+3. **Create a cron-job.org job** pointing at:
+   ```
+   POST https://api.github.com/repos/parth-soni-10/Irish-Visa-Tracker/actions/workflows/312233452/dispatches
+   Body (JSON): {"ref":"main"}
+   Authorization: Bearer <WATCHDOG_TOKEN>
+   Content-Type: application/json
+   ```
+   Schedule it every 30 minutes on weekdays (matching the primary runs).
+   cron-job.org sends a 204 on success; a 401/403 there means the token was
+   revoked or lacks Actions write permission.
+
+Even without the watchdog, a GitHub-stalled day never *vanishes* from the
+history: the next successful run (scheduled or manual) backfills its
+placeholder. The watchdog just removes reliance on GitHub's schedule firing
+at all.
+
 **Sheet rotation (Code.gs):** Google Sheets caps a spreadsheet at 10 million
 cells, and the Raw tab is 3 columns wide — so once the active Raw tab
 approaches ~95% of that budget (~3.17M rows), the Apps Script automatically
