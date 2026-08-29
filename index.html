@@ -1677,8 +1677,6 @@
                 renderRowsProgressive(tbody, visible);
             }
 
-            function rowHtml(r) { return r._html; }
-
             // Append a list of rows to a tbody progressively: render first CHUNK
             // synchronously, then use IntersectionObserver to append more chunks as
             // the user scrolls toward the sentinel row. Bounds the initial layout

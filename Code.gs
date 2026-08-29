@@ -32,6 +32,31 @@ const CAPACITY_WARN_PCT = 0.95; // rotate at 95% of the cell budget
 const ROW_CAPACITY = Math.floor((MAX_CELLS_PER_SPREADSHEET * CAPACITY_WARN_PCT) / RAW_HEADERS.length);
 // -----------------------------------------
 
+// ---------------- WRITE AUTHORIZATION ----------------
+// Reads stay public; all writes require a shared secret the scraper sends.
+// Set VISA_WRITE_SECRET in Apps Script Script properties and the identical
+// value as the VISAS_WRITE_SECRET secret in GitHub Actions. Writes fail
+// closed until a secret is configured.
+const WRITE_SECRET_PROPERTY = 'VISA_WRITE_SECRET';
+const WRITE_ACTIONS = ['append_rows', 'set_no_file_placeholder', 'clear_no_file_placeholder'];
+
+function constantTimeEqual_(left, right) {
+  left = String(left || '');
+  right = String(right || '');
+  if (left.length !== right.length) return false;
+  let result = 0;
+  for (let i = 0; i < left.length; i++) {
+    result |= left.charCodeAt(i) ^ right.charCodeAt(i);
+  }
+  return result === 0;
+}
+
+function authorizeWrite_(payload) {
+  const expected = String(PropertiesService.getScriptProperties().getProperty(WRITE_SECRET_PROPERTY) || '').trim();
+  if (!expected) return false;
+  return constantTimeEqual_(String((payload && payload.writeSecret) || '').trim(), expected);
+}
+
 /** Entry point — run manually or via trigger later. */
 function fetchAndAppendVisaData() {
   const odsUrl = findOdsLink_();
@@ -143,41 +168,6 @@ function findOdsLink_() {
   return href;
 }
 
-/** TEMP DEBUG — run this alone, check the log, then tell Claude what it says. */
-function debugFindLink() {
-  const link = findOdsLink_();
-  Logger.log('Result: ' + link);
-}
-
-/** TEMP DEBUG — tests whether the block is on the HTML page, the .ods file, or both. */
-function debugTestBlock() {
-  const browserHeaders = {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-    'Accept-Language': 'en-US,en;q=0.9',
-    'Referer': 'https://www.ireland.ie/'
-  };
-
-  Logger.log('--- Test 1: HTML page, full browser headers ---');
-  try {
-    const r1 = UrlFetchApp.fetch(PAGE_URL, { muteHttpExceptions: true, headers: browserHeaders });
-    Logger.log('Status: ' + r1.getResponseCode() + ' | Length: ' + r1.getContentText().length);
-  } catch (e) { Logger.log('Threw: ' + e); }
-
-  Logger.log('--- Test 2: Direct .ods file, full browser headers ---');
-  const directOdsUrl = 'https://www.ireland.ie/4980/20260712_NDVO_Visa_Decisions.ods';
-  try {
-    const r2 = UrlFetchApp.fetch(directOdsUrl, { muteHttpExceptions: true, headers: browserHeaders });
-    Logger.log('Status: ' + r2.getResponseCode() + ' | Bytes: ' + r2.getBlob().getBytes().length);
-  } catch (e) { Logger.log('Threw: ' + e); }
-
-  Logger.log('--- Test 3: Direct .ods file, no custom headers at all ---');
-  try {
-    const r3 = UrlFetchApp.fetch(directOdsUrl, { muteHttpExceptions: true });
-    Logger.log('Status: ' + r3.getResponseCode() + ' | Bytes: ' + r3.getBlob().getBytes().length);
-  } catch (e) { Logger.log('Threw: ' + e); }
-}
-
 /** First 8 chars of filename -> Date. Expects YYYYMMDD prefix. */
 function parseDateFromFilename_(fileName) {
   const digits = fileName.replace(/[^0-9]/g, '');
@@ -284,6 +274,9 @@ function doPost(e) {
   const isJson = e.postData && e.postData.type === 'application/json';
   if (!isJson) return jsonOut_({ ok: false, error: 'json required' });
   const body = JSON.parse(e.postData.contents);
+  if (WRITE_ACTIONS.includes(body.action) && !authorizeWrite_(body)) {
+    return jsonOut_({ ok: false, error: 'unauthorized' });
+  }
   if (body.action === 'append_rows') return handleAppendRows_(body.rows || []);
   if (body.action === 'set_no_file_placeholder') return handleSetNoFilePlaceholder_(body.date, body.message);
   if (body.action === 'clear_no_file_placeholder') return handleClearNoFilePlaceholder_(body.date);
@@ -374,20 +367,6 @@ function looksLikeHeader_(irl, decision) {
   const i = irl.toLowerCase(), d = decision.toLowerCase();
   return i === 'application number' || i === 'irl' || i === 'irl number' ||
          d === 'decision' || d === 'outcome';
-}
-
-/** ONE-TIME CLEANUP — run once manually to remove the old "Fetched At" column (D)
- *  from your already-populated Raw sheet. Safe to delete/ignore after running. */
-function cleanupDeleteFetchedAtColumn() {
-  const sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName(RAW_TAB);
-  const header = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
-  const colIdx = header.findIndex(h => String(h).trim() === 'Fetched At');
-  if (colIdx === -1) {
-    Logger.log('No "Fetched At" column found — already clean, or check header text.');
-    return;
-  }
-  sheet.deleteColumn(colIdx + 1); // 1-indexed
-  Logger.log('Deleted column ' + (colIdx + 1) + ' ("Fetched At").');
 }
 
 function jsonOut_(obj) {

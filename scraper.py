@@ -69,6 +69,8 @@ from dateutil import parser as dateparser
 PAGE_URL = "https://www.ireland.ie/en/india/newdelhi/services/visas/processing-times-and-decisions/"
 CLOSURE_DATES_URL = "https://www.ireland.ie/en/india/newdelhi/about/embassy-information/"
 WEB_APP_URL = os.environ.get("WEB_APP_URL", "").strip()
+# Required by the backend for every write; must match the VISA_WRITE_SECRET script property.
+VISAS_WRITE_SECRET = os.environ.get("VISAS_WRITE_SECRET", "").strip()
 ENABLE_NO_UPLOAD_PLACEHOLDER = os.environ.get("ENABLE_NO_UPLOAD_PLACEHOLDER", "true").strip().lower() == "true"
 # Optional out-of-band alert webhook. When set, a POST is fired the moment the
 # gap alert trips (not a replacement for the red run — a complement to it).
@@ -533,6 +535,7 @@ def _post_json(payload, label):
     crash the run or look like data that was actually written.
     """
     try:
+        payload = {**payload, 'writeSecret': VISAS_WRITE_SECRET}
         resp = requests.post(WEB_APP_URL, json=payload, timeout=90)
         if resp.status_code != 200:
             print(f"{label} returned {resp.status_code} — treating as non-fatal, skipping this step.")
