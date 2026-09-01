@@ -681,48 +681,6 @@
         }
         #visa-dash .datefilter.has-filter .clear-btn { visibility: visible; }
         #visa-dash .datefilter .clear-btn:hover { color: var(--red); }
-        /* ===== Watchlist: tracked application numbers ===== */
-        #visa-dash .watchlist {
-            background: var(--surface-raised);
-            border: 1px solid var(--border);
-            border-radius: var(--r-container);
-            padding: 12px 16px;
-            margin-bottom: 16px;
-            max-width: 560px;
-        }
-        #visa-dash .watchlist-title {
-            font-size: 12px; line-height: 16px; font-weight: 500;
-            text-transform: uppercase; letter-spacing: .07em;
-            color: var(--ink-muted); margin: 0 0 8px;
-        }
-        #visa-dash .wl-list { list-style: none; margin: 0 0 10px; padding: 0; display: flex; flex-direction: column; gap: 6px; }
-        #visa-dash .wl-item {
-            display: flex; align-items: center; gap: 10px;
-            padding: 6px 10px;
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: var(--r-control);
-        }
-        #visa-dash .wl-num { font-weight: 600; }
-        #visa-dash .wl-item .pill { flex-shrink: 0; }
-        #visa-dash .wl-date { font-size: 12px; color: var(--ink-muted); white-space: nowrap; }
-        #visa-dash .wl-pending { font-size: 12px; color: var(--ink-muted); }
-        #visa-dash .wl-empty { font-size: 13px; color: var(--ink-muted); margin: 0 0 10px; }
-        #visa-dash .wl-remove {
-            margin-left: auto;
-            background: none; border: none; cursor: pointer;
-            color: var(--ink-muted); font-size: 16px; line-height: 1;
-            padding: 2px 6px; border-radius: 4px;
-        }
-        #visa-dash .wl-remove:hover { color: var(--red); }
-        #visa-dash .wl-add { display: flex; gap: 8px; }
-        #visa-dash .wl-add .wl-input {
-            flex: 1; min-width: 0; margin-bottom: 0;
-            max-width: none; height: 28px; padding: 0 10px;
-            font-size: 13px; line-height: 16px; font-weight: 500;
-            border-radius: var(--r-control);
-        }
-        #visa-dash .wl-btn { padding: 0 14px; font-size: 13px; height: 28px; flex-shrink: 0; }
         #visa-dash .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
         #visa-dash .filter-row {
             display: flex;
@@ -1246,7 +1204,6 @@
             #visa-dash .navpill { padding: 11px 22px; min-height: 44px; }
             #visa-dash .btn { min-height: 44px; padding: 12px 26px; }
             #visa-dash .searchbar, #visa-dash .datefilter { height: 48px; }
-            #visa-dash .wl-add .wl-input { height: 44px; }
             #visa-dash .scroll-top-btn { width: 48px; height: 48px; font-size: 20px; }
             /* Sticky table headers so column titles stay visible on long scrolls. */
             #visa-dash thead th { position: sticky; top: 0; z-index: 5; }
@@ -1341,8 +1298,7 @@
                 return {
                     tab: KNOWN_TABS.indexOf(tab) !== -1 ? tab : 'home',
                     q: (p.get('q') || '').slice(0, 200),
-                    date: (p.get('date') || '').slice(0, 10),
-                    watch: (p.get('watch') || '').slice(0, 500)
+                    date: (p.get('date') || '').slice(0, 10)
                 };
             }
             function syncUrl(mode) {
@@ -1362,19 +1318,6 @@
             let lastVisitAt = Number(localStorage.getItem('visa-last-visit') || '0') || 0;
             let visited = false;
             let staleAt = null; // data being shown is from this timestamp (live refresh failed)
-
-            // A shared ?watch=... link seeds the watchlist (numbers merge in
-            // silently — their current status is stored, so no false "new").
-            if (urlState.watch) {
-                const list = getWatchlist();
-                const seen = {};
-                list.forEach(x => { seen[x.irl] = true; });
-                urlState.watch.split(',').forEach(v => {
-                    v = (v || '').trim();
-                    if (v && !seen[v]) { list.push({ irl: v, lastStatus: null }); seen[v] = true; }
-                });
-                saveWatchlist(list);
-            }
 
             function classify(decision) {
                 const s = (decision || '').toLowerCase();
@@ -1989,9 +1932,6 @@
                         }
                     });
                 });
-                // Personal watchlist lives on Home; wire it every render so the
-                // add/remove handlers always match the DOM (safe no-op elsewhere).
-                wireWatchlist(cache || []);
                 var scrollBtn = document.getElementById('scroll-top-btn');
                 if (scrollBtn) {
                     var onScroll = function() {
@@ -2070,7 +2010,6 @@
                     '</strong></div>' +
                     '<div class="tracking-since">Tracking started ' + weekdayLong(TRACKING_STARTED) + '</div>' +
                     (latestPlaceholder ? '<div class="ph-banner">' + placeholderNote(latestPlaceholder.decision) + '</div>' : '') +
-                    renderWatchlist(rows) +
                     '<div class="note" style="margin-bottom:16px;">' +
                     '<ul style="margin:0; padding-left:18px; list-style-type: disc;">' +
                     '<li>The latest Excel file from the embassy contains decisions up to <strong>' + weekdayLong(latestDate) + '</strong>. This website includes all decisions recorded up to that date.</li>' +
@@ -2096,161 +2035,6 @@
                     '<div class="note" id="home-results-count" aria-live="polite" style="margin-bottom:8px;margin-top:0;"></div>' +
                     '<div class="table-wrap"><table class="results-table"><thead><tr><th>Date</th><th>Application No.</th><th>Decision</th></tr></thead>' +
                     '<tbody id="home-rows"></tbody></table></div>';
-            }
-
-            // ====== WATCHLIST (tracked application numbers) ======
-            // A personal "is my application decided yet?" list. Numbers live in
-            // localStorage; statuses are derived from the fetched rows on every
-            // render, so a decided number shows its outcome and a number not in
-            // the published decisions yet shows a pending note.
-            function getWatchlist() {
-                try {
-                    const raw = JSON.parse(localStorage.getItem('visa-watchlist') || '[]');
-                    return Array.isArray(raw) ? raw
-                        .map(x => typeof x === 'string' ? { irl: x, lastStatus: undefined } : x)
-                        .filter(x => x && typeof x.irl === 'string' && x.irl.trim()) : [];
-                } catch (e) { return []; }
-            }
-            function saveWatchlist(list) {
-                try { localStorage.setItem('visa-watchlist', JSON.stringify(list)); } catch (e) { /* private mode */ }
-            }
-            // Entries whose decision changed since the last render — one-shot
-            // "New" flags that survive re-renders within the session.
-            const wlNew = {};
-            function watchHit(irl, rows) {
-                for (let i = 0; i < rows.length; i++) {
-                    if (!rows[i]._placeholder && rows[i].irl === irl) return rows[i];
-                }
-                return null;
-            }
-            function watchStatusHTML(entry, rows) {
-                const irl = entry.irl;
-                const hit = watchHit(irl, rows);
-                if (hit) {
-                    const c = hit._status || classify(hit.decision);
-                    const pill = c === 'accepted' ? 'green' : c === 'rejected' ? 'red' : 'amber';
-                    // lastStatus undefined = never seen (legacy/fresh) -> no alert;
-                    // null = was pending -> a decision is NEW; a differing string
-                    // would also be new (decisions are append-only, so this
-                    // shouldn't happen).
-                    const isNew = entry.lastStatus !== undefined && entry.lastStatus !== hit.decision;
-                    if (isNew) wlNew[irl] = true;
-                    if (entry.lastStatus !== hit.decision) entry.lastStatus = hit.decision;
-                    return '<li class="wl-item' + (wlNew[irl] ? ' wl-new' : '') + '"><span class="wl-num mono">' + escapeHtml(irl) +
-                        (wlNew[irl] ? '<span class="wl-newchip">New</span>' : '') +
-                        '</span><span class="pill ' + pill + '">' + escapeHtml(hit.decision) +
-                        '</span><span class="wl-date">' + escapeHtml(hit.date) +
-                        '</span><button type="button" class="wl-copy" data-irl="' + escapeHtml(irl) + '" title="Copy result">Copy</button>' +
-                        '<button type="button" class="wl-remove" data-irl="' + escapeHtml(irl) +
-                        '" aria-label="Remove ' + escapeHtml(irl) + '" title="Remove">\u00d7</button></li>';
-                }
-                if (entry.lastStatus === undefined) entry.lastStatus = null;
-                return '<li class="wl-item"><span class="wl-num mono">' + escapeHtml(irl) +
-                    '</span><span class="wl-pending">Not in the published decisions yet</span>' +
-                    '<span class="wl-date">Check back after 11:15 AM IST</span>' +
-                    '<button type="button" class="wl-remove" data-irl="' + escapeHtml(irl) +
-                    '" aria-label="Remove ' + escapeHtml(irl) + '" title="Remove">\u00d7</button></li>';
-            }
-            function watchlistItemsHTML(rows) {
-                const list = getWatchlist();
-                if (!list.length) {
-                    return '<p class="wl-empty">Track your application numbers to see their status at a glance.</p>';
-                }
-                const items = list.map(entry => watchStatusHTML(entry, rows)).join('');
-                saveWatchlist(list); // persist updated lastStatus values
-                return '<ul class="wl-list">' + items + '</ul>';
-            }
-            function renderWatchlist(rows) {
-                const itemsHTML = watchlistItemsHTML(rows);
-                const newCount = getWatchlist().filter(e => wlNew[e.irl]).length;
-                return '<section class="watchlist" aria-label="Tracked applications">' +
-                    '<div class="watchlist-title-row"><h3 class="watchlist-title">Your applications' +
-                    (newCount ? ' <span class="wl-newchip">' + newCount + ' new</span>' : '') +
-                    '</h3>' +
-                    (getWatchlist().length ? '<button type="button" class="wl-share" id="wl-share" title="Copy a link that tracks these numbers">Share</button>' : '') +
-                    '</div>' +
-                    '<div id="wl-items" aria-live="polite">' + itemsHTML + '</div>' +
-                    '<form class="wl-add" id="wl-add">' +
-                    '<label class="visually-hidden" for="wl-input">Application number</label>' +
-                    '<input type="text" id="wl-input" name="irl" class="wl-input" placeholder="Add an application number\u2026" autocomplete="off" inputmode="numeric">' +
-                    '<button type="submit" class="btn wl-btn">Track</button>' +
-                    '</form>' +
-                    '</section>';
-            }
-            function clipboardWrite(text, ok) {
-                const fallback = function() {
-                    try {
-                        const ta = document.createElement('textarea');
-                        ta.value = text;
-                        ta.style.position = 'fixed';
-                        ta.style.opacity = '0';
-                        document.body.appendChild(ta);
-                        ta.select();
-                        document.execCommand('copy');
-                        document.body.removeChild(ta);
-                        ok();
-                    } catch (e) { /* ignore */ }
-                };
-                if (navigator.clipboard && navigator.clipboard.writeText) {
-                    navigator.clipboard.writeText(text).then(ok).catch(fallback);
-                } else fallback();
-            }
-            function copyResult(btn, hit) {
-                const text = 'Irish Visa Decision Tracker, Application ' + hit.irl + ': ' + hit.decision + ' on ' + weekdayLong(hit.date);
-                clipboardWrite(text, function() {
-                    btn.textContent = 'Copied';
-                    setTimeout(function() { btn.textContent = 'Copy'; }, 1500);
-                });
-            }
-            function shareWatchlist() {
-                const irls = getWatchlist().map(x => x.irl);
-                if (!irls.length) return;
-                const url = location.origin + location.pathname + '?tab=home&watch=' + encodeURIComponent(irls.join(','));
-                clipboardWrite(url, function() {
-                    const btn = document.getElementById('wl-share');
-                    if (btn) {
-                        btn.textContent = 'Link copied';
-                        setTimeout(function() { btn.textContent = 'Share'; }, 1500);
-                    }
-                });
-            }
-            function wireWatchlist(rows) {
-                const items = document.getElementById('wl-items');
-                const form = document.getElementById('wl-add');
-                if (!items || !form) return;
-                // Delegated handlers so re-renders never leave stale listeners.
-                items.onclick = function(e) {
-                    const el = e.target;
-                    const copyBtn = el && el.closest ? el.closest('.wl-copy') : null;
-                    if (copyBtn) {
-                        const hit = watchHit(copyBtn.getAttribute('data-irl'), rows);
-                        if (hit) copyResult(copyBtn, hit);
-                        return;
-                    }
-                    const btn = el && el.closest ? el.closest('.wl-remove') : null;
-                    if (!btn) return;
-                    const irl = btn.getAttribute('data-irl');
-                    delete wlNew[irl];
-                    saveWatchlist(getWatchlist().filter(x => x.irl !== irl));
-                    items.innerHTML = watchlistItemsHTML(rows);
-                };
-                form.onsubmit = function(e) {
-                    e.preventDefault();
-                    const input = document.getElementById('wl-input');
-                    const v = (input && input.value || '').trim();
-                    if (!v) return;
-                    const list = getWatchlist();
-                    if (!list.some(x => x.irl === v)) {
-                        const hit = watchHit(v, rows);
-                        list.push({ irl: v, lastStatus: hit ? hit.decision : null });
-                        saveWatchlist(list);
-                    }
-                    if (input) input.value = '';
-                    items.innerHTML = watchlistItemsHTML(rows);
-                    if (input) input.focus();
-                };
-                const share = document.getElementById('wl-share');
-                if (share) share.onclick = shareWatchlist;
             }
 
             function paintHomeRows() {
