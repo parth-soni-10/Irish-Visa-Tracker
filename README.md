@@ -41,6 +41,13 @@ python -m http.server
 
 The live sections read from the Google Sheet, so they need an internet connection.
 
+### Run the scraper tests
+
+```
+python -m pip install -r requirements.txt
+python test_scraper.py
+```
+
 ## Built with
 
 Plain **HTML / CSS / JavaScript** for the dashboard, a little **Python** for the automation, and **Google Apps Script** to read and write the sheet. Hosted on **Netlify**.
