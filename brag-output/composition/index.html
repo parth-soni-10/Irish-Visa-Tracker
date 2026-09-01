@@ -1,0 +1,568 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1080, height=1920" />
+    <title>Irish Visa Tracker — Brag</title>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      body {
+        margin: 0;
+        background: #0f172a;
+        font-family: 'Inter', system-ui, sans-serif;
+      }
+      #root {
+        position: relative;
+        width: 1080px;
+        height: 1920px;
+        overflow: hidden;
+      }
+      .scene {
+        position: absolute;
+        inset: 0;
+      }
+      .white {
+        background: #f8fafc;
+      }
+      .ink {
+        background: #0f172a;
+      }
+      #proof,
+      #work,
+      #philosophy,
+      #outro {
+        opacity: 0;
+      }
+      #glow {
+        position: absolute;
+        left: 50%;
+        top: 46%;
+        width: 900px;
+        height: 900px;
+        transform: translate(-50%, -50%);
+        background: radial-gradient(closest-side, rgba(5, 150, 105, 0.2), rgba(5, 150, 105, 0) 70%);
+        border-radius: 50%;
+        opacity: 0.5;
+      }
+
+      /* Scene 1 — Hook */
+      #hook {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 20px;
+        padding: 0 70px;
+      }
+      #eyebrow {
+        margin: 0 0 52px 0;
+        font-size: 32px;
+        font-weight: 600;
+        letter-spacing: 0.4em;
+        color: #64748b;
+        text-transform: uppercase;
+      }
+      #visas-word {
+        margin: 0;
+        font-size: 230px;
+        font-weight: 900;
+        letter-spacing: -0.04em;
+        line-height: 0.95;
+        color: #0f172a;
+      }
+      #tracked-word {
+        margin: 0;
+        font-size: 230px;
+        font-weight: 900;
+        letter-spacing: -0.04em;
+        line-height: 1.05;
+        color: #059669;
+      }
+      #status-dots {
+        display: flex;
+        gap: 34px;
+        margin-top: 70px;
+      }
+      .dot {
+        width: 46px;
+        height: 46px;
+        border-radius: 50%;
+      }
+      #dot-accepted {
+        background: #059669;
+      }
+      #dot-pending {
+        background: #d97706;
+      }
+      #dot-refused {
+        background: #dc2626;
+      }
+
+      /* Scene 2 — Proof */
+      #proof {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 84px;
+        padding: 0 70px;
+      }
+      #sub {
+        margin: 0;
+        font-size: 56px;
+        font-weight: 500;
+        line-height: 1.4;
+        text-align: center;
+        color: #1e293b;
+        max-width: 880px;
+      }
+      #pills {
+        display: flex;
+        flex-direction: column;
+        gap: 32px;
+        align-items: center;
+      }
+      .pill {
+        display: grid;
+        place-items: center;
+        width: 560px;
+        height: 118px;
+        border-radius: 59px;
+        background: #0f172a;
+        color: #f8fafc;
+        font-size: 52px;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+      }
+
+      /* Scene 3 — The Work */
+      #work {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      #dash-card {
+        width: 880px;
+        border-radius: 36px;
+        background: #ffffff;
+        border: 2px solid rgba(15, 23, 42, 0.08);
+        padding: 56px 56px 50px 56px;
+        box-sizing: border-box;
+        box-shadow: 0 30px 80px rgba(15, 23, 42, 0.35);
+      }
+      #dash-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 6px;
+      }
+      #dash-title {
+        margin: 0;
+        font-size: 38px;
+        font-weight: 700;
+        color: #0f172a;
+      }
+      #dash-live {
+        font-size: 26px;
+        font-weight: 600;
+        color: #059669;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+      }
+      #dash-intro {
+        margin: 0 0 34px 0;
+        font-size: 26px;
+        font-weight: 400;
+        color: #64748b;
+        line-height: 1.4;
+      }
+      #search-box {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        background: #f1f5f9;
+        border-radius: 18px;
+        padding: 26px 30px;
+        margin-bottom: 30px;
+      }
+      #search-icon {
+        font-size: 34px;
+        color: #64748b;
+      }
+      #search-text {
+        margin: 0;
+        font-size: 32px;
+        font-weight: 500;
+        color: #64748b;
+      }
+      .row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 24px 4px;
+        border-bottom: 1px solid #e2e8f0;
+      }
+      .row-app {
+        margin: 0;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 30px;
+        font-weight: 500;
+        color: #334155;
+      }
+      .chip {
+        font-size: 26px;
+        font-weight: 700;
+        padding: 12px 26px;
+        border-radius: 999px;
+      }
+      #chip-approved {
+        background: #dcfce7;
+        color: #166534;
+      }
+      #chip-pending {
+        background: #fef3c7;
+        color: #92400e;
+      }
+      #chip-refused {
+        background: #fee2e2;
+        color: #991b1b;
+      }
+      #rate-row {
+        display: flex;
+        justify-content: space-between;
+        padding-top: 30px;
+      }
+      .rate-card {
+        flex: 1;
+        background: #f8fafc;
+        border-radius: 20px;
+        padding: 26px;
+        text-align: center;
+      }
+      .rate-card + .rate-card {
+        margin-left: 22px;
+      }
+      .rate-label {
+        margin: 0 0 10px 0;
+        font-size: 24px;
+        font-weight: 500;
+        color: #64748b;
+      }
+      .rate-value {
+        margin: 0;
+        font-size: 54px;
+        font-weight: 800;
+        color: #0f172a;
+        font-variant-numeric: tabular-nums;
+      }
+
+      /* Scene 4 — Philosophy */
+      #philosophy {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 0 90px;
+      }
+      #quote-mark {
+        font-weight: 900;
+        font-size: 300px;
+        line-height: 0.6;
+        color: #059669;
+        margin-bottom: 10px;
+      }
+      #quote {
+        margin: 0;
+        font-weight: 800;
+        font-size: 88px;
+        line-height: 1.26;
+        text-align: center;
+        color: #0f172a;
+      }
+
+      /* Scene 5 — Outro */
+      #outro {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 84px;
+        padding: 0 60px;
+      }
+      #cta {
+        margin: 0;
+        font-weight: 900;
+        font-size: 118px;
+        line-height: 1.14;
+        text-align: center;
+        color: #f8fafc;
+      }
+      #name-card {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 18px;
+      }
+      #name {
+        margin: 0;
+        font-weight: 800;
+        font-size: 84px;
+        color: #f8fafc;
+      }
+      #role {
+        margin: 0;
+        font-size: 42px;
+        font-weight: 600;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: #34d399;
+      }
+    </style>
+  </head>
+  <body>
+    <div
+      id="root"
+      data-composition-id="brag"
+      data-start="0"
+      data-width="1080"
+      data-height="1920"
+      data-duration="30"
+    >
+      <!-- Audio -->
+      <audio
+        id="bg-music"
+        data-start="0"
+        data-duration="30"
+        data-track-index="10"
+        data-volume="1"
+        src="assets/music/happy-beats-business-moves-vol-9-by-ende-dot-app.mp3"
+      ></audio>
+      <audio
+        id="sfx-dots"
+        data-start="4.226"
+        data-duration="0.18"
+        data-track-index="11"
+        data-volume="0.6"
+        src="assets/sfx/impactSoft_medium_001.ogg"
+      ></audio>
+      <audio
+        id="sfx-dash"
+        data-start="14.22"
+        data-duration="0.11"
+        data-track-index="12"
+        data-volume="0.5"
+        src="assets/sfx/drop_001.ogg"
+      ></audio>
+      <audio
+        id="sfx-bell"
+        data-start="28.44"
+        data-duration="1.48"
+        data-track-index="13"
+        data-volume="0.8"
+        src="assets/sfx/impactBell_heavy_000.ogg"
+      ></audio>
+
+      <!-- Shared glow (behind display type) -->
+      <div id="glow" aria-hidden="true"></div>
+
+      <!-- Scene 1: Hook (0.0-5.6) -->
+      <section id="hook" class="clip scene white" data-start="0" data-duration="7.0">
+        <p id="eyebrow">Irish Visa Tracker</p>
+        <p id="visas-word">VISAS,</p>
+        <p id="tracked-word">tracked.</p>
+        <div id="status-dots">
+          <div class="dot" id="dot-accepted"></div>
+          <div class="dot" id="dot-pending"></div>
+          <div class="dot" id="dot-refused"></div>
+        </div>
+      </section>
+
+      <!-- Scene 2: Proof (4.8-11.8) -->
+      <section id="proof" class="clip scene white" data-start="6.2" data-duration="7.6">
+        <p id="sub">The embassy posts one spreadsheet a day. No history. No search. No answers.</p>
+        <div id="pills">
+          <div class="pill" id="pill-1">Search by number</div>
+          <div class="pill" id="pill-2">Watchlist</div>
+          <div class="pill" id="pill-3">Daily history</div>
+        </div>
+      </section>
+
+      <!-- Scene 3: The Work (11.0-18.2) -->
+      <section id="work" class="clip scene ink" data-start="13.0" data-duration="10.0">
+        <div id="dash-card">
+          <div id="dash-head">
+            <p id="dash-title">Visa Decision Tracker</p>
+            <p id="dash-live">New Delhi</p>
+          </div>
+          <p id="dash-intro">Every published decision, archived and searchable.</p>
+          <div id="search-box">
+            <span id="search-icon">&#128269;</span>
+            <p id="search-text">Search by application number&hellip;</p>
+          </div>
+          <div class="row">
+            <p class="row-app" id="app-1">2401-223847</p>
+            <span class="chip" id="chip-approved">Approved</span>
+          </div>
+          <div class="row">
+            <p class="row-app" id="app-2">2401-227510</p>
+            <span class="chip" id="chip-pending">Pending</span>
+          </div>
+          <div class="row">
+            <p class="row-app" id="app-3">2401-219304</p>
+            <span class="chip" id="chip-refused">Refused</span>
+          </div>
+          <div id="rate-row">
+            <div class="rate-card">
+              <p class="rate-label">Acceptance rate</p>
+              <p class="rate-value" id="rate-accept">0%</p>
+            </div>
+            <div class="rate-card">
+              <p class="rate-label">Decisions today</p>
+              <p class="rate-value" id="rate-today">0</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Scene 4: Philosophy (17.4-22.2) -->
+      <section id="philosophy" class="clip scene white" data-start="22.2" data-duration="4.8">
+        <span id="quote-mark" aria-hidden="true">&ldquo;</span>
+        <p id="quote">One search. Every decision. No refresh spamming.</p>
+      </section>
+
+      <!-- Scene 5: Outro (21.4-26.4) -->
+      <section id="outro" class="clip scene ink" data-start="26.2" data-duration="3.8">
+        <h2 id="cta">The answer,<br />the day it's posted.</h2>
+        <div id="name-card">
+          <p id="name">Irish Visa Tracker</p>
+          <p id="role">New Delhi &rarr; You</p>
+        </div>
+      </section>
+    </div>
+
+    <script>
+      document.fonts.ready.then(function () {
+        const tl = gsap.timeline({ paused: true });
+
+        // Audio fades (targets match the data-volume baseline of 1)
+        tl.fromTo('#bg-music', { volume: 0 }, { volume: 0.32, duration: 0.6 }, 0);
+        tl.to('#bg-music', { volume: 0, duration: 2.4 }, 27.6);
+
+        // Scene 1 — Hook (visual 0.0-4.8)
+        tl.fromTo('#glow', { opacity: 0 }, { opacity: 0.5, duration: 1.4 }, 0.4);
+        tl.to('#glow', { opacity: 0.62, duration: 2.6, ease: 'sine.inOut', yoyo: true, repeat: 5 }, 1.8);
+        tl.fromTo('#eyebrow', { autoAlpha: 0, y: 14 }, { autoAlpha: 1, y: 0, duration: 0.9, ease: 'power2.out' }, 0.5);
+        // beat-locked: 1.59s (vol-9 strong cue)
+        tl.fromTo(
+          '#visas-word',
+          { autoAlpha: 0, y: 60, scale: 1.06 },
+          { autoAlpha: 1, y: 0, scale: 1, duration: 1.2, ease: 'power3.out' },
+          1.5906
+        );
+        tl.fromTo('#tracked-word', { autoAlpha: 0, y: 34 }, { autoAlpha: 1, y: 0, duration: 1.2, ease: 'power3.out' }, 3.02);
+        // beat-grid: dots at 4.226 / 4.7485 / 5.2825 (vol-9)
+        const dots = ['#dot-accepted', '#dot-pending', '#dot-refused'];
+        const dotStarts = [4.226, 4.7485, 5.2825];
+        dots.forEach(function (sel, i) {
+          tl.fromTo(
+            sel,
+            { autoAlpha: 0, scale: 0.6 },
+            { autoAlpha: 1, scale: 1, duration: 0.45, ease: 'power2.out' },
+            dotStarts[i]
+          );
+        });
+
+        // Scene 1 → 2 crossfade (6.2-7.0)
+        tl.to('#hook', { autoAlpha: 0, duration: 0.8, ease: 'none' }, 6.2);
+        tl.fromTo('#proof', { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.8, ease: 'none' }, 6.2);
+
+        // Scene 2 — Proof (visual 7.0-13.0)
+        tl.fromTo('#sub', { autoAlpha: 0, y: 26 }, { autoAlpha: 1, y: 0, duration: 1.2, ease: 'power2.out' }, 7.2);
+        // beat-grid: pills at 8.4405 / 9.497 / 10.5419 (vol-9)
+        const pills = ['#pill-1', '#pill-2', '#pill-3'];
+        const pillStarts = [8.4405, 9.497, 10.5419];
+        pills.forEach(function (sel, i) {
+          tl.fromTo(
+            sel,
+            { autoAlpha: 0, y: 22, scale: 0.96 },
+            { autoAlpha: 1, y: 0, scale: 1, duration: 0.9, ease: 'power2.out' },
+            pillStarts[i]
+          );
+        });
+
+        // Scene 2 → 3 crossfade (13.0-13.8)
+        tl.to('#proof', { autoAlpha: 0, duration: 0.8, ease: 'none' }, 13.0);
+        tl.fromTo('#work', { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.8, ease: 'none' }, 13.0);
+
+        // Scene 3 — The Work (visual 13.8-22.2)
+        // beat-locked: 14.22s (vol-9 strong cue)
+        tl.fromTo(
+          '#dash-card',
+          { autoAlpha: 0, y: 130 },
+          { autoAlpha: 1, y: 0, duration: 1.3, ease: 'power3.out' },
+          14.22
+        );
+        tl.to('#dash-card', { scale: 1.012, duration: 2.4, ease: 'sine.inOut', yoyo: true, repeat: 2 }, 16.0);
+        // beat-grid: rows at 15.81 / 16.34 / 16.86 (vol-9)
+        const rows = ['#app-1', '#app-2', '#app-3'];
+        const rowStarts = [15.81, 16.34, 16.86];
+        rows.forEach(function (sel, i) {
+          tl.fromTo(sel, { autoAlpha: 0, x: -28 }, { autoAlpha: 1, x: 0, duration: 0.6, ease: 'power2.out' }, rowStarts[i]);
+        });
+        const chips = ['#chip-approved', '#chip-pending', '#chip-refused'];
+        chips.forEach(function (sel, i) {
+          tl.fromTo(sel, { autoAlpha: 0, scale: 0.7 }, { autoAlpha: 1, scale: 1, duration: 0.5, ease: 'power2.out' }, rowStarts[i]);
+        });
+        const rates = [
+          { el: '#rate-accept', to: 62, suffix: '%' },
+          { el: '#rate-today', to: 128 }
+        ];
+        // beat-grid: rates at 18.44 / 19.48 (vol-9)
+        const rateStarts = [18.44, 19.48];
+        rates.forEach(function (c, i) {
+          const obj = { v: 0 };
+          tl.to(
+            obj,
+            {
+              v: c.to,
+              duration: 1.3,
+              ease: 'power1.inOut',
+              onUpdate: function () {
+                document.querySelector(c.el).textContent = Math.round(obj.v) + (c.suffix || '');
+              }
+            },
+            rateStarts[i]
+          );
+        });
+
+        // Scene 3 → 4 crossfade (22.2-23.0)
+        tl.to('#work', { autoAlpha: 0, duration: 0.8, ease: 'none' }, 22.2);
+        tl.fromTo('#philosophy', { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.8, ease: 'none' }, 22.2);
+
+        // Scene 4 — Philosophy (visual 23.0-26.2)
+        // beat-locked: 23.17s (vol-9 strong cue)
+        tl.fromTo('#quote-mark', { autoAlpha: 0, scale: 0.85 }, { autoAlpha: 1, scale: 1, duration: 0.8, ease: 'power2.out' }, 23.17);
+        // beat-locked: 23.70s (vol-9 strong cue)
+        tl.fromTo('#quote', { autoAlpha: 0, y: 30 }, { autoAlpha: 1, y: 0, duration: 1.3, ease: 'power2.out' }, 23.7);
+
+        // Scene 4 → 5 crossfade (26.2-27.0)
+        tl.to('#philosophy', { autoAlpha: 0, duration: 0.8, ease: 'none' }, 26.2);
+        tl.fromTo('#outro', { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.8, ease: 'none' }, 26.2);
+
+        // Scene 5 — Outro (visual 27.0-30.0)
+        // beat-locked: 27.38s (vol-9 beat)
+        tl.fromTo('#cta', { autoAlpha: 0, y: 36 }, { autoAlpha: 1, y: 0, duration: 1.2, ease: 'power3.out' }, 27.38);
+        // beat-locked: 28.44s (vol-9 strong cue)
+        tl.fromTo('#name-card', { autoAlpha: 0, y: 26 }, { autoAlpha: 1, y: 0, duration: 1.0, ease: 'power2.out' }, 28.44);
+
+        window.__timelines['brag'] = tl;
+      });
+    </script>
+  </body>
+</html>

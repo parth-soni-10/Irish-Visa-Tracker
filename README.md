@@ -2,6 +2,12 @@
 
 A personal tool that keeps an eye on the daily visa-decision list published by the **Embassy of Ireland in New Delhi**, and turns it into a clean, searchable dashboard.
 
+## Watch it
+
+A 30-second trailer:
+
+<video src="brag-output/brag.mp4" controls poster="brag-output/brag.jpg" width="360"></video>
+
 ## Why it exists
 
 Every business day the embassy posts a spreadsheet of visa decisions. It's a single flat file — **no history, no search, no trends**. If you were applying, checking your decision meant opening that day's file and hunting.
