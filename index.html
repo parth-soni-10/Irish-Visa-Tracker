@@ -6,6 +6,9 @@
     <title>Irish Visa Decision Tracker</title>
 <base target="_blank">
 <meta name="theme-color" content="#ffffff">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="preload" href="fonts/geist-sans.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="fonts/geist-mono.woff2" as="font" type="font/woff2" crossorigin>
 </head>
@@ -37,9 +40,9 @@
             /* Single green accent (the brand "approved" color) on slate
                neutrals. Green/red/amber are semantic data states, so they
                stay for status only - decoration uses the one accent. */
-            --ink: #1e293b;
-            --ink-soft: #475569;
-            --ink-muted: #667085;
+            --ink: #333333;
+            --ink-soft: #777777;
+            --ink-muted: #777777;
             --surface: #ffffff;
             --surface-raised: #f8fafc;
             --surface-hover: #f1f5f9;
@@ -56,10 +59,10 @@
             --red: #dc2626;
             --red-soft: #fee2e2;
             --red-text: #991b1b;
-            /* Radius scale: 16px containers, 10px controls, 999px pills. */
-            --r-container: 16px;
-            --r-control: 10px;
-            font-family: "Geist", -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+            /* Radius scale: 14px containers, 6px controls, 999px pills. */
+            --r-container: 14px;
+            --r-control: 6px;
+            font-family: "Inter", "Geist", -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
             background: var(--surface);
             color: var(--ink);
             min-height: 100vh;
@@ -307,6 +310,18 @@
         #visa-dash .daily-table th:nth-child(3), #visa-dash .daily-table td:nth-child(3),
         #visa-dash .daily-table th:nth-child(4), #visa-dash .daily-table td:nth-child(4),
         #visa-dash .daily-table th:nth-child(5), #visa-dash .daily-table td:nth-child(5) { min-width: 10ch; }
+        /* Daily summary drill-down: each day's date cell toggles a detail row
+           listing the applications behind that day's counts. */
+        #visa-dash .dd-toggle { cursor: pointer; user-select: none; white-space: nowrap; }
+        #visa-dash .dd-toggle:hover { text-decoration: underline; }
+        #visa-dash .dd-caret { display: inline-block; width: 1.3em; color: var(--ink-muted); }
+        #visa-dash .dd-row { display: none; }
+        #visa-dash .dd-row.open { display: table-row; }
+        #visa-dash .dd-row td { background: var(--surface-raised); }
+        #visa-dash .dd-note { font-size: 12px; color: var(--ink-muted); margin-bottom: 8px; }
+        #visa-dash .dd-list { max-height: 240px; overflow: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 2px 18px; }
+        #visa-dash .dd-list-item { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 12px; padding: 1px 0; }
+        #visa-dash .dd-list-item .mono { overflow: hidden; text-overflow: ellipsis; }
         /* Sentinel row appended by IntersectionObserver infinite scroll.
            contain-intrinsic-size hints the browser's content-visibility:auto
            layout that the sentinel occupies 18px even before it has been
@@ -368,6 +383,137 @@
             display: flex;
             align-items: center;
         }
+        /* Home status lines: publish-time awareness + "since you last checked". */
+        #visa-dash .status-line {
+            font-size: 13px;
+            color: var(--ink-soft);
+            background: var(--surface-raised);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 9px 14px;
+            margin-bottom: 12px;
+        }
+        #visa-dash .status-line.pub-live { background: var(--green-soft); border-color: var(--green-soft); color: var(--green-text); }
+        #visa-dash .status-line.pub-late { background: var(--amber-soft); border-color: #fcd34d; color: var(--amber-text); }
+        /* Last-known-good offline banner shown when the live refresh failed. */
+        #visa-dash .stale-banner {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            background: var(--amber-soft);
+            border: 1px solid #fcd34d;
+            color: var(--amber-text);
+            border-radius: 10px;
+            padding: 10px 14px;
+            font-size: 13px;
+            font-weight: 500;
+            margin-bottom: 16px;
+        }
+        #visa-dash .stale-retry {
+            flex-shrink: 0;
+            padding: 4px 12px;
+            font-size: 12px;
+            font-weight: 600;
+            border-radius: 6px;
+            cursor: pointer;
+            border: 1px solid var(--border);
+            background: var(--surface);
+            color: var(--ink);
+        }
+        #visa-dash .stale-retry:hover { background: var(--surface-hover); }
+        /* Scraper health card (from ?action=meta): last-run status, sheet/file
+           reconciliation, and embassy closure dates. */
+        #visa-dash .meta-card {
+            font-size: 13px;
+            color: var(--ink-soft);
+            background: var(--surface-raised);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 10px 14px;
+            margin-bottom: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        #visa-dash .meta-line { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+        #visa-dash .meta-line strong { color: var(--ink); font-weight: 600; }
+        #visa-dash .meta-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+        #visa-dash .meta-dot.ok { background: #22c55e; }
+        #visa-dash .meta-dot.bad { background: #ef4444; }
+        #visa-dash .meta-dot.stale { background: #f59e0b; }
+        #visa-dash .closure-chips { display: flex; flex-wrap: wrap; gap: 5px; }
+        #visa-dash .closure-chip {
+            font-size: 11px;
+            font-weight: 600;
+            padding: 2px 8px;
+            border-radius: 999px;
+            background: var(--surface);
+            color: var(--ink-soft);
+            border: 1px solid var(--border);
+        }
+        /* Busiest-days heatmap (Daily tab): last 14 weeks, shaded by volume. */
+        #visa-dash .heat-wrap { overflow-x: auto; margin-bottom: 16px; }
+        #visa-dash .heat-head {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            gap: 10px;
+            margin-bottom: 4px;
+            flex-wrap: wrap;
+        }
+        #visa-dash .heat-head .note2 { font-size: 12px; color: var(--ink-muted); }
+        #visa-dash .heat-grid {
+            display: grid;
+            grid-auto-flow: column;
+            grid-auto-columns: 13px;
+            grid-template-rows: repeat(7, 13px);
+            gap: 3px;
+            width: max-content;
+            padding: 2px 0 4px;
+        }
+        #visa-dash .heat-cell { width: 13px; height: 13px; border-radius: 3px; }
+        #visa-dash .heat-0 { background: var(--surface-hover); }
+        #visa-dash .heat-1 { background: rgba(0, 119, 230, 0.22); }
+        #visa-dash .heat-2 { background: rgba(0, 119, 230, 0.45); }
+        #visa-dash .heat-3 { background: rgba(0, 119, 230, 0.72); }
+        #visa-dash .heat-4 { background: #0077e6; }
+        #visa-dash .heat-legend { display: flex; align-items: center; gap: 4px; font-size: 11px; color: var(--ink-muted); }
+        #visa-dash .heat-legend .heat-cell { width: 11px; height: 11px; }
+        /* Export CSV button + recent-search chips. */
+        #visa-dash .export-btn {
+            padding: 0 12px;
+            height: 28px;
+            font-size: 12.5px;
+            font-weight: 600;
+            border-radius: 6px;
+            cursor: pointer;
+            border: 1px solid var(--border);
+            background: var(--surface);
+            color: var(--ink);
+        }
+        #visa-dash .export-btn:hover { background: var(--surface-hover); }
+        #visa-dash .toolbar-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin: 8px 0 10px;
+        }
+        #visa-dash .recent-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+        #visa-dash .recent-label { font-size: 12px; color: var(--ink-muted); }
+        #visa-dash .recent-chip {
+            padding: 2px 10px;
+            font-size: 12px;
+            font-weight: 500;
+            border-radius: 999px;
+            border: 1px solid var(--border);
+            background: var(--surface);
+            color: var(--ink-soft);
+            cursor: pointer;
+        }
+        #visa-dash .recent-chip:hover { background: var(--surface-hover); color: var(--ink); }
         #visa-dash .searchbar {
             display: flex;
             align-items: center;
@@ -535,6 +681,49 @@
         }
         #visa-dash .datefilter.has-filter .clear-btn { visibility: visible; }
         #visa-dash .datefilter .clear-btn:hover { color: var(--red); }
+        /* ===== Watchlist: tracked application numbers ===== */
+        #visa-dash .watchlist {
+            background: var(--surface-raised);
+            border: 1px solid var(--border);
+            border-radius: var(--r-container);
+            padding: 12px 16px;
+            margin-bottom: 16px;
+            max-width: 560px;
+        }
+        #visa-dash .watchlist-title {
+            font-size: 12px; line-height: 16px; font-weight: 500;
+            text-transform: uppercase; letter-spacing: .07em;
+            color: var(--ink-muted); margin: 0 0 8px;
+        }
+        #visa-dash .wl-list { list-style: none; margin: 0 0 10px; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+        #visa-dash .wl-item {
+            display: flex; align-items: center; gap: 10px;
+            padding: 6px 10px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--r-control);
+        }
+        #visa-dash .wl-num { font-weight: 600; }
+        #visa-dash .wl-item .pill { flex-shrink: 0; }
+        #visa-dash .wl-date { font-size: 12px; color: var(--ink-muted); white-space: nowrap; }
+        #visa-dash .wl-pending { font-size: 12px; color: var(--ink-muted); }
+        #visa-dash .wl-empty { font-size: 13px; color: var(--ink-muted); margin: 0 0 10px; }
+        #visa-dash .wl-remove {
+            margin-left: auto;
+            background: none; border: none; cursor: pointer;
+            color: var(--ink-muted); font-size: 16px; line-height: 1;
+            padding: 2px 6px; border-radius: 4px;
+        }
+        #visa-dash .wl-remove:hover { color: var(--red); }
+        #visa-dash .wl-add { display: flex; gap: 8px; }
+        #visa-dash .wl-add .wl-input {
+            flex: 1; min-width: 0; margin-bottom: 0;
+            max-width: none; height: 28px; padding: 0 10px;
+            font-size: 13px; line-height: 16px; font-weight: 500;
+            border-radius: var(--r-control);
+        }
+        #visa-dash .wl-btn { padding: 0 14px; font-size: 13px; height: 28px; flex-shrink: 0; }
+        #visa-dash .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
         #visa-dash .filter-row {
             display: flex;
             align-items: center;
@@ -589,7 +778,7 @@
         #visa-dash .skel-card { height: 72px; border-radius: 14px; opacity: 0; animation: visa-card-in 0.35s ease forwards, visa-shimmer 1.3s ease infinite; }
         #visa-dash .skel-row { height: 16px; margin: 14px 14px; border-radius: 4px; }
         #visa-dash .skel-wrap { border: 1px solid var(--border); border-radius: 14px; overflow: hidden; background: var(--surface); }
-        #visa-dash #tab-body { animation: visa-fade-in 0.25s ease; }
+        #visa-dash #tab-body { animation: visa-fade-in 0.25s ease; scroll-margin-top: 16px; }
         @keyframes visa-fade-in {
             from { opacity: 0; transform: translateY(4px); }
             to { opacity: 1; transform: translateY(0); }
@@ -865,7 +1054,7 @@
         /* Home — concentric pulse rings */
         #visa-dash .ring {
             position: absolute; border-radius: 50%;
-            border: 2px solid rgba(255,255,255,.55);
+            border: 2px solid #519DFA;
         }
         /* One expanding pulse on mount (entry), then it settles - not an
            infinite loop. */
@@ -882,7 +1071,7 @@
         }
         #visa-dash .ring-core {
             width: 36px; height: 36px; border-radius: 50%;
-            background: rgba(255,255,255,.16);
+            background: #0077E6;
             border: 1px solid rgba(255,255,255,.35);
             color: #fff;
             font-size: 18px; line-height: 24px; font-weight: 700; letter-spacing: -0.1px;
@@ -894,7 +1083,7 @@
         /* Daily — animated sine-wave bar chart */
         #visa-dash .wave { display: flex; align-items: flex-end; gap: 4px; height: 100%; width: 100%; }
         #visa-dash .wave-bar {
-            flex: 1; background: rgba(255,255,255,.8); border-radius: 2px 2px 0 0;
+            flex: 1; background: #0077E6; border-radius: 2px 2px 0 0;
             transform-origin: bottom;
         }
         /* One-shot grow-in on mount (data reveal), then settle. */
@@ -924,10 +1113,10 @@
             transform-origin: bottom;
             transition: filter 0.2s ease;
         }
-        /* Accepted = bright, rejected = dim: one hue family, luminance
-           separates the two series. */
-        #visa-dash .wf-seg.a { background: rgba(255,255,255,.9); }
-        #visa-dash .wf-seg.r { background: rgba(255,255,255,.35); }
+        /* Accepted = solid blue, rejected = lighter blue: one hue family,
+           lightness separates the two series. */
+        #visa-dash .wf-seg.a { background: #0077E6; }
+        #visa-dash .wf-seg.r { background: #519DFA; }
         @media (prefers-reduced-motion: no-preference) {
             #visa-dash .wf-seg {
                 animation: wf-grow 0.55s cubic-bezier(.2,.8,.2,1) backwards;
@@ -1057,6 +1246,7 @@
             #visa-dash .navpill { padding: 11px 22px; min-height: 44px; }
             #visa-dash .btn { min-height: 44px; padding: 12px 26px; }
             #visa-dash .searchbar, #visa-dash .datefilter { height: 48px; }
+            #visa-dash .wl-add .wl-input { height: 44px; }
             #visa-dash .scroll-top-btn { width: 48px; height: 48px; font-size: 20px; }
             /* Sticky table headers so column titles stay visible on long scrolls. */
             #visa-dash thead th { position: sticky; top: 0; z-index: 5; }
@@ -1090,7 +1280,7 @@
     <script src="lucide.min.js"></script>
     <script>
     (function() {
-        function go() { if (window.lucide) lucide.createIcons({ nameAttr: 'data-lucide' }); }
+        function go() { if (window.lucide) lucide.createIcons({ nameAttr: 'data-lucide', attrs: { 'aria-hidden': 'true' } }); }
         if (window.MutationObserver) new MutationObserver(function(){ setTimeout(go, 0); }).observe(document.body, { subtree: true, childList: true });
         go();
     })();
@@ -1151,7 +1341,8 @@
                 return {
                     tab: KNOWN_TABS.indexOf(tab) !== -1 ? tab : 'home',
                     q: (p.get('q') || '').slice(0, 200),
-                    date: (p.get('date') || '').slice(0, 10)
+                    date: (p.get('date') || '').slice(0, 10),
+                    watch: (p.get('watch') || '').slice(0, 500)
                 };
             }
             function syncUrl(mode) {
@@ -1166,6 +1357,24 @@
             let activeTab = urlState.tab;
             let homeSearchTerm = urlState.q;
             let pastDateFilter = urlState.date;
+
+            // ---- visit tracking + stale-data state ----
+            let lastVisitAt = Number(localStorage.getItem('visa-last-visit') || '0') || 0;
+            let visited = false;
+            let staleAt = null; // data being shown is from this timestamp (live refresh failed)
+
+            // A shared ?watch=... link seeds the watchlist (numbers merge in
+            // silently — their current status is stored, so no false "new").
+            if (urlState.watch) {
+                const list = getWatchlist();
+                const seen = {};
+                list.forEach(x => { seen[x.irl] = true; });
+                urlState.watch.split(',').forEach(v => {
+                    v = (v || '').trim();
+                    if (v && !seen[v]) { list.push({ irl: v, lastStatus: null }); seen[v] = true; }
+                });
+                saveWatchlist(list);
+            }
 
             function classify(decision) {
                 const s = (decision || '').toLowerCase();
@@ -1241,6 +1450,152 @@
                 return d.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
             }
 
+            // ---- Home status lines: publish-time awareness + since-last-visit ----
+            // IST = UTC+5:30; a Date shifted by 5.5h makes toISOString() read as IST.
+            function istNow() {
+                return new Date(Date.now() + 330 * 60000);
+            }
+            function publishStatusHTML(rows) {
+                const ist = istNow();
+                const istDate = ist.toISOString().slice(0, 10);
+                const hhmm = ist.toISOString().slice(11, 16);
+                const wd = ist.getUTCDay();
+                if (wd === 0 || wd === 6) {
+                    return '<div class="status-line">Embassy closed today (' + weekdayLong(istDate) +
+                        '). The next file is expected Monday after <strong>11:00 AM IST</strong>.</div>';
+                }
+                const todayReal = rows.filter(r => !r._placeholder && r.date === istDate);
+                if (todayReal.length) {
+                    return '<div class="status-line pub-live">Today\u2019s file: <strong>published</strong>, ' +
+                        todayReal.length + ' decision' + (todayReal.length === 1 ? '' : 's') + ' recorded today.</div>';
+                }
+                if (hhmm < '11:00') {
+                    return '<div class="status-line">Today\u2019s file: <strong>expected at 11:00 AM IST</strong> (now ' + hhmm + ' IST).</div>';
+                }
+                return '<div class="status-line pub-late">Today\u2019s file: <strong>not published yet</strong>. ' +
+                    'It usually appears by 11:00 AM IST; check back after 11:15.</div>';
+            }
+            function localDateStr(ts) {
+                const d = new Date(ts);
+                const m = String(d.getMonth() + 1).padStart(2, '0');
+                const day = String(d.getDate()).padStart(2, '0');
+                return d.getFullYear() + '-' + m + '-' + day;
+            }
+            function sinceBannerHTML(rows) {
+                if (!lastVisitAt) return '';
+                const fresh = rows.filter(r => !r._placeholder && r.date > localDateStr(lastVisitAt));
+                if (!fresh.length) return '';
+                const refused = fresh.filter(r => classify(r.decision) === 'rejected').length;
+                const d = new Date(lastVisitAt);
+                const when = d.toLocaleString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+                return '<div class="status-line pub-live">Since you last checked (' + when + '): <strong>' + fresh.length +
+                    ' new decision' + (fresh.length === 1 ? '' : 's') + '</strong>' +
+                    (refused ? ' \u00b7 ' + refused + ' refused' : '') + '.</div>';
+            }
+            function markVisited() {
+                if (visited || !cache || !cache.length) return;
+                visited = true;
+                lastVisitAt = Date.now();
+                try { localStorage.setItem('visa-last-visit', String(lastVisitAt)); } catch (e) { /* private mode */ }
+            }
+
+            // ---- last-known-good cache: survive backend hiccups ----
+            // The latest successful fetch is snapshotted to localStorage so a
+            // failed refresh shows real (stale) data with a banner instead of an
+            // empty page. ~1.3MB for the full history — within the 5MB quota.
+            function persistSnapshot(raw) {
+                try { localStorage.setItem('visa-cache', JSON.stringify({ fetchedAt: Date.now(), rows: raw })); } catch (e) { /* quota/private mode */ }
+            }
+            function restoreSnapshot() {
+                try {
+                    const snap = JSON.parse(localStorage.getItem('visa-cache') || 'null');
+                    if (snap && Array.isArray(snap.rows) && snap.rows.length) return snap;
+                } catch (e) { /* corrupted */ }
+                return null;
+            }
+            function staleBannerHTML() {
+                if (!staleAt) return '';
+                const d = new Date(staleAt);
+                const when = d.toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+                return '<div class="stale-banner" aria-live="polite">Showing data from ' + when +
+                    '. Live refresh failed.' +
+                    '<button type="button" class="stale-retry" id="stale-retry">Retry now</button></div>';
+            }
+
+            // ---- scraper health card (?action=meta) ----
+            // The scraper stores a small run-status object after every run;
+            // the card renders the last-scrape time, a sheet-vs-file
+            // reconciliation line, and the embassy's closure calendar. Absent
+            // or unreachable meta (older backend) just hides the card.
+            let metaData = null;
+
+            function fmtISTStamp(s) {
+                // s is an IST wall-clock "YYYY-MM-DDTHH:MM:SS" from the scraper.
+                const [y, m, d] = String(s).slice(0, 10).split('-').map(Number);
+                const dt = new Date(Date.UTC(y, m - 1, d));
+                const dateStr = dt.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' });
+                return dateStr + ', ' + String(s).slice(11, 16) + ' IST';
+            }
+            function fmtClosureDates(dates) {
+                const parse = iso => { const [y, m, d] = iso.split('-').map(Number); return { y, m, d, dt: new Date(Date.UTC(y, m - 1, d)) }; };
+                const dayNum = p => p.dt.toLocaleDateString('en-GB', { day: 'numeric', timeZone: 'UTC' });
+                const month = p => p.dt.toLocaleDateString('en-GB', { month: 'short', timeZone: 'UTC' });
+                const parts = [];
+                let i = 0;
+                while (i < dates.length) {
+                    let j = i;
+                    while (j + 1 < dates.length && (parse(dates[j + 1]).dt - parse(dates[j]).dt) === 86400000) j++;
+                    const a = parse(dates[i]), b = parse(dates[j]);
+                    if (j === i) parts.push(dayNum(a) + ' ' + month(a));
+                    else if (a.m === b.m) parts.push(dayNum(a) + '-' + dayNum(b) + ' ' + month(b));
+                    else parts.push(dayNum(a) + ' ' + month(a) + ' - ' + dayNum(b) + ' ' + month(b));
+                    i = j + 1;
+                }
+                return parts.join(', ');
+            }
+            async function loadMeta() {
+                if (!WEB_APP_URL) return;
+                try {
+                    const res = await fetch(WEB_APP_URL + '?action=meta');
+                    if (!res.ok) return;
+                    const m = await res.json();
+                    if (m && typeof m === 'object' && m.lastRunAt) metaData = m;
+                } catch (e) { /* older backend or outage — card stays hidden */ }
+                renderMetaCard();
+            }
+            function renderMetaCard() {
+                const box = document.getElementById('meta-box');
+                if (!box || !metaData) return;
+                const m = metaData;
+                const html = [];
+                const today = istNow().toISOString().slice(0, 10);
+                const isToday = String(m.lastRunAt).slice(0, 10) === today;
+                let dot = 'ok', health;
+                if (m.ok === false) {
+                    dot = 'bad';
+                    health = 'Last scrape <strong>failed</strong> (' + fmtISTStamp(m.lastRunAt) + ')';
+                } else if (isToday) {
+                    health = 'Last scrape: <strong>' + fmtISTStamp(m.lastRunAt) + '</strong>' +
+                        (m.newRows ? ' \u00b7 <strong>' + m.newRows + ' new</strong> rows' : ' \u00b7 no new rows');
+                } else {
+                    dot = 'stale';
+                    health = 'Last scrape: <strong>' + fmtISTStamp(m.lastRunAt) + '</strong>. Nothing recorded today yet.';
+                }
+                html.push('<div class="meta-line"><span class="meta-dot ' + dot + '" aria-hidden="true"></span><span>' + health + '</span></div>');
+                if (m.fileRows && m.sheetRows) {
+                    const synced = m.sheetRows >= m.fileRows;
+                    html.push('<div class="meta-line">Recorded <strong>' + m.sheetRows + '</strong> of <strong>' + m.fileRows +
+                        '</strong> decisions in the latest file' + (m.fileDate ? ' (dated ' + m.fileDate + ')' : '') +
+                        (synced ? '. Fully synced.' : '. ' + (m.fileRows - m.sheetRows) + ' still missing.') + '</div>');
+                }
+                if (m.closureDates && m.closureDates.length) {
+                    const chips = fmtClosureDates(m.closureDates).split(', ').map(c =>
+                        '<span class="closure-chip">' + escapeHtml(c) + '</span>').join('');
+                    html.push('<div class="meta-line">Embassy closed: <span class="closure-chips">' + chips + '</span></div>');
+                }
+                box.innerHTML = '<div class="meta-card">' + html.join('') + '</div>';
+            }
+
             function groupByDate(rows) {
                 const m = new Map();
                 rows.forEach(r => { if (!m.has(r.date)) m.set(r.date, []);
@@ -1278,6 +1633,8 @@
                         const res = await fetch(WEB_APP_URL + '?action=raw');
                         if (!res.ok) throw new Error('HTTP ' + res.status);
                         const raw = await res.json();
+                        staleAt = null;
+                        persistSnapshot(raw);
                         // Pre-compute classify + row HTML once per row, then sort by
                         // date desc so render paths are pure filter + string concat.
                         cache = raw.map(r => preloadRow(Array.isArray(r) ? { date: r[0], irl: r[1], decision: r[2] } : r));
@@ -1285,7 +1642,13 @@
                         cacheFetchedAt = Date.now();
                     } catch (e) {
                         console.warn('loadData failed:', e);
-                        if (cache === null) cache = [];
+                        const snap = restoreSnapshot();
+                        if (snap) {
+                            cache = snap.rows.map(r => preloadRow(Array.isArray(r) ? { date: r[0], irl: r[1], decision: r[2] } : r));
+                            cache.sort((a, b) => b.date.localeCompare(a.date));
+                            cacheFetchedAt = snap.fetchedAt;
+                            staleAt = snap.fetchedAt;
+                        } else if (cache === null) cache = [];
                     } finally {
                         dataPromise = null;
                     }
@@ -1502,6 +1865,15 @@
                             syncUrl('replace');
                         }, 150);
                     });
+                    // A committed search (Enter or leaving the field) is kept in
+                    // the "Recent:" chips below the search bar.
+                    homeSearchEl.addEventListener('keydown', function(e) {
+                        if (e.key === 'Enter') { saveRecentSearch(homeSearchTerm); refreshRecentChips(); }
+                    });
+                    homeSearchEl.addEventListener('blur', function() {
+                        saveRecentSearch(homeSearchTerm);
+                        refreshRecentChips();
+                    });
                     // Don't pop the keyboard on touch devices (env detector sets
                     // body[data-env="touch"]); desktop keeps the search focused.
                     if (activeTab === 'home' && document.body.dataset.env !== 'touch') {
@@ -1530,6 +1902,26 @@
                     if (activeTab === 'past') paintPastRows();
                     syncUrl('replace');
                 });
+                // Daily Summary drill-down: delegated handler survives re-renders;
+                // clicking (or Enter/Space on) a day's date cell toggles the
+                // detail row beneath it listing that day's applications.
+                var dailyTbody = document.querySelector('#tab-body .daily-table tbody');
+                if (dailyTbody) {
+                    dailyTbody.onclick = function(e) {
+                        var t = e.target && e.target.closest ? e.target.closest('.dd-toggle') : null;
+                        if (!t) return;
+                        var detail = t.closest('tr') && t.closest('tr').nextElementSibling;
+                        if (detail && detail.classList.contains('dd-row')) toggleDayDetail(t, detail);
+                    };
+                    dailyTbody.onkeydown = function(e) {
+                        if (e.key !== 'Enter' && e.key !== ' ') return;
+                        var t = e.target && e.target.closest ? e.target.closest('.dd-toggle') : null;
+                        if (!t) return;
+                        e.preventDefault();
+                        var detail = t.closest('tr') && t.closest('tr').nextElementSibling;
+                        if (detail && detail.classList.contains('dd-row')) toggleDayDetail(t, detail);
+                    };
+                }
                 // Real <form> — intercept the submit event (covers the button
                 // AND Enter-key submission) and POST via fetch instead of
                 // letting the browser navigate to Netlify's success page.
@@ -1538,6 +1930,68 @@
                     e.preventDefault();
                     submitSuggestion();
                 });
+                // Recent-search chips re-run the search they were saved from.
+                var recentRow = document.getElementById('recent-searches');
+                if (recentRow) recentRow.onclick = function(e) {
+                    var chip = e.target && e.target.closest ? e.target.closest('.recent-chip') : null;
+                    if (!chip) return;
+                    homeSearchTerm = chip.getAttribute('data-q') || '';
+                    var input = document.getElementById('home-search');
+                    if (input) input.value = homeSearchTerm;
+                    paintHomeRows();
+                    syncUrl('replace');
+                };
+                // CSV export: Home exports the current search (or everything),
+                // Past exports the filtered day (or everything).
+                var homeExport = document.getElementById('home-export');
+                if (homeExport) homeExport.addEventListener('click', function() {
+                    var rows = (cache || []).filter(function(r) { return !r._placeholder; });
+                    var file = 'visa-decisions-all.csv';
+                    if (homeSearchTerm.trim()) {
+                        var term = normalizeIRL(homeSearchTerm);
+                        rows = rows.filter(function(r) { return normalizeIRL(r.irl).indexOf(term) !== -1; });
+                        file = 'visa-search.csv';
+                    }
+                    exportCSV(rows, file);
+                });
+                var pastExport = document.getElementById('past-export');
+                if (pastExport) pastExport.addEventListener('click', function() {
+                    var rows = (cache || []).filter(function(r) { return !r._placeholder; });
+                    var file = 'visa-decisions-all.csv';
+                    if (pastDateFilter) {
+                        rows = rows.filter(function(r) { return r.date === pastDateFilter; });
+                        file = 'visa-decisions-' + pastDateFilter + '.csv';
+                    }
+                    exportCSV(rows, file);
+                });
+                // Fill the health card when meta has loaded (no-op otherwise).
+                renderMetaCard();
+                // Stale-data banner: "Retry now" re-fetches and re-renders the
+                // current tab in place; if the refresh fails again the banner
+                // simply returns with the button re-enabled.
+                var staleRetry = document.getElementById('stale-retry');
+                if (staleRetry) staleRetry.addEventListener('click', function() {
+                    staleRetry.disabled = true;
+                    staleRetry.textContent = 'Retrying\u2026';
+                    loadData({ force: true }).then(function() {
+                        var body = document.getElementById('tab-body');
+                        if (!body) return location.reload();
+                        if (activeTab === 'home') body.innerHTML = renderHomeLayout(cache || []);
+                        else if (activeTab === 'daily') body.innerHTML = renderDailySummary(cache || []);
+                        else if (activeTab === 'past') body.innerHTML = renderPastLayout(cache || []);
+                        else body.innerHTML = renderSuggestLayout();
+                        wireTabListeners();
+                        if (activeTab === 'home') paintHomeRows();
+                        else if (activeTab === 'past') paintPastRows();
+                        if (staleAt) {
+                            staleRetry.disabled = false;
+                            staleRetry.textContent = 'Retry now';
+                        }
+                    });
+                });
+                // Personal watchlist lives on Home; wire it every render so the
+                // add/remove handlers always match the DOM (safe no-op elsewhere).
+                wireWatchlist(cache || []);
                 var scrollBtn = document.getElementById('scroll-top-btn');
                 if (scrollBtn) {
                     var onScroll = function() {
@@ -1573,6 +2027,8 @@
                 // Paint deferred row content after the layout is in the DOM.
                 if (tabId === 'home') paintHomeRows();
                 else if (tabId === 'past') paintPastRows();
+                // Stamp "last visited" once per page load (guarded inside).
+                markVisited();
             }
 
             // ====== HOME TAB ======
@@ -1605,11 +2061,16 @@
                 const rejected = real.filter(r => r._status === 'rejected').length;
 
                 return renderConfigWarning() +
+                    staleBannerHTML() +
+                    publishStatusHTML(rows) +
+                    sinceBannerHTML(rows) +
+                    '<div id="meta-box" aria-live="polite"></div>' +
                     readmeSection() +
                     '<div class="latest-date">Latest available data: <strong>' + weekdayLong(latestDate) +
                     '</strong></div>' +
                     '<div class="tracking-since">Tracking started ' + weekdayLong(TRACKING_STARTED) + '</div>' +
                     (latestPlaceholder ? '<div class="ph-banner">' + placeholderNote(latestPlaceholder.decision) + '</div>' : '') +
+                    renderWatchlist(rows) +
                     '<div class="note" style="margin-bottom:16px;">' +
                     '<ul style="margin:0; padding-left:18px; list-style-type: disc;">' +
                     '<li>The latest Excel file from the embassy contains decisions up to <strong>' + weekdayLong(latestDate) + '</strong>. This website includes all decisions recorded up to that date.</li>' +
@@ -1618,8 +2079,13 @@
                     '</ul>' +
                     '</div>' +
                     '<div class="searchbar">' + searchIcon() +
-                    '<input type="text" id="home-search" name="q" autocomplete="off" placeholder="Search by application number\u2026" value="' +
-                    homeSearchTerm + '"></div>' +
+                    '<input type="text" id="home-search" name="q" list="home-suggestions" autocomplete="off" maxlength="200" aria-label="Search by application number" placeholder="Search by application number\u2026" value="' +
+                    escapeHtml(homeSearchTerm) + '"></div>' +
+                    '<datalist id="home-suggestions"></datalist>' +
+                    '<div class="toolbar-row">' +
+                    '<div id="recent-searches">' + recentSearchesHTML() + '</div>' +
+                    '<button type="button" class="export-btn" id="home-export" title="Download the current results as CSV">Export CSV</button>' +
+                    '</div>' +
                     '<div class="cards">' +
                     '<div class="card"><div class="label"><i data-lucide="trending-up"></i>Day-on-day change</div><div class="value ' + (latestPlaceholder ? '' : (dayDiff >= 0 ? 'green' : 'red')) + '">' +
                     (latestPlaceholder ? '-' : ((dayDiff >= 0 ? '+' : '') + dayDiff)) + '</div></div>' +
@@ -1630,6 +2096,161 @@
                     '<div class="note" id="home-results-count" aria-live="polite" style="margin-bottom:8px;margin-top:0;"></div>' +
                     '<div class="table-wrap"><table class="results-table"><thead><tr><th>Date</th><th>Application No.</th><th>Decision</th></tr></thead>' +
                     '<tbody id="home-rows"></tbody></table></div>';
+            }
+
+            // ====== WATCHLIST (tracked application numbers) ======
+            // A personal "is my application decided yet?" list. Numbers live in
+            // localStorage; statuses are derived from the fetched rows on every
+            // render, so a decided number shows its outcome and a number not in
+            // the published decisions yet shows a pending note.
+            function getWatchlist() {
+                try {
+                    const raw = JSON.parse(localStorage.getItem('visa-watchlist') || '[]');
+                    return Array.isArray(raw) ? raw
+                        .map(x => typeof x === 'string' ? { irl: x, lastStatus: undefined } : x)
+                        .filter(x => x && typeof x.irl === 'string' && x.irl.trim()) : [];
+                } catch (e) { return []; }
+            }
+            function saveWatchlist(list) {
+                try { localStorage.setItem('visa-watchlist', JSON.stringify(list)); } catch (e) { /* private mode */ }
+            }
+            // Entries whose decision changed since the last render — one-shot
+            // "New" flags that survive re-renders within the session.
+            const wlNew = {};
+            function watchHit(irl, rows) {
+                for (let i = 0; i < rows.length; i++) {
+                    if (!rows[i]._placeholder && rows[i].irl === irl) return rows[i];
+                }
+                return null;
+            }
+            function watchStatusHTML(entry, rows) {
+                const irl = entry.irl;
+                const hit = watchHit(irl, rows);
+                if (hit) {
+                    const c = hit._status || classify(hit.decision);
+                    const pill = c === 'accepted' ? 'green' : c === 'rejected' ? 'red' : 'amber';
+                    // lastStatus undefined = never seen (legacy/fresh) -> no alert;
+                    // null = was pending -> a decision is NEW; a differing string
+                    // would also be new (decisions are append-only, so this
+                    // shouldn't happen).
+                    const isNew = entry.lastStatus !== undefined && entry.lastStatus !== hit.decision;
+                    if (isNew) wlNew[irl] = true;
+                    if (entry.lastStatus !== hit.decision) entry.lastStatus = hit.decision;
+                    return '<li class="wl-item' + (wlNew[irl] ? ' wl-new' : '') + '"><span class="wl-num mono">' + escapeHtml(irl) +
+                        (wlNew[irl] ? '<span class="wl-newchip">New</span>' : '') +
+                        '</span><span class="pill ' + pill + '">' + escapeHtml(hit.decision) +
+                        '</span><span class="wl-date">' + escapeHtml(hit.date) +
+                        '</span><button type="button" class="wl-copy" data-irl="' + escapeHtml(irl) + '" title="Copy result">Copy</button>' +
+                        '<button type="button" class="wl-remove" data-irl="' + escapeHtml(irl) +
+                        '" aria-label="Remove ' + escapeHtml(irl) + '" title="Remove">\u00d7</button></li>';
+                }
+                if (entry.lastStatus === undefined) entry.lastStatus = null;
+                return '<li class="wl-item"><span class="wl-num mono">' + escapeHtml(irl) +
+                    '</span><span class="wl-pending">Not in the published decisions yet</span>' +
+                    '<span class="wl-date">Check back after 11:15 AM IST</span>' +
+                    '<button type="button" class="wl-remove" data-irl="' + escapeHtml(irl) +
+                    '" aria-label="Remove ' + escapeHtml(irl) + '" title="Remove">\u00d7</button></li>';
+            }
+            function watchlistItemsHTML(rows) {
+                const list = getWatchlist();
+                if (!list.length) {
+                    return '<p class="wl-empty">Track your application numbers to see their status at a glance.</p>';
+                }
+                const items = list.map(entry => watchStatusHTML(entry, rows)).join('');
+                saveWatchlist(list); // persist updated lastStatus values
+                return '<ul class="wl-list">' + items + '</ul>';
+            }
+            function renderWatchlist(rows) {
+                const itemsHTML = watchlistItemsHTML(rows);
+                const newCount = getWatchlist().filter(e => wlNew[e.irl]).length;
+                return '<section class="watchlist" aria-label="Tracked applications">' +
+                    '<div class="watchlist-title-row"><h3 class="watchlist-title">Your applications' +
+                    (newCount ? ' <span class="wl-newchip">' + newCount + ' new</span>' : '') +
+                    '</h3>' +
+                    (getWatchlist().length ? '<button type="button" class="wl-share" id="wl-share" title="Copy a link that tracks these numbers">Share</button>' : '') +
+                    '</div>' +
+                    '<div id="wl-items" aria-live="polite">' + itemsHTML + '</div>' +
+                    '<form class="wl-add" id="wl-add">' +
+                    '<label class="visually-hidden" for="wl-input">Application number</label>' +
+                    '<input type="text" id="wl-input" name="irl" class="wl-input" placeholder="Add an application number\u2026" autocomplete="off" inputmode="numeric">' +
+                    '<button type="submit" class="btn wl-btn">Track</button>' +
+                    '</form>' +
+                    '</section>';
+            }
+            function clipboardWrite(text, ok) {
+                const fallback = function() {
+                    try {
+                        const ta = document.createElement('textarea');
+                        ta.value = text;
+                        ta.style.position = 'fixed';
+                        ta.style.opacity = '0';
+                        document.body.appendChild(ta);
+                        ta.select();
+                        document.execCommand('copy');
+                        document.body.removeChild(ta);
+                        ok();
+                    } catch (e) { /* ignore */ }
+                };
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(text).then(ok).catch(fallback);
+                } else fallback();
+            }
+            function copyResult(btn, hit) {
+                const text = 'Irish Visa Decision Tracker, Application ' + hit.irl + ': ' + hit.decision + ' on ' + weekdayLong(hit.date);
+                clipboardWrite(text, function() {
+                    btn.textContent = 'Copied';
+                    setTimeout(function() { btn.textContent = 'Copy'; }, 1500);
+                });
+            }
+            function shareWatchlist() {
+                const irls = getWatchlist().map(x => x.irl);
+                if (!irls.length) return;
+                const url = location.origin + location.pathname + '?tab=home&watch=' + encodeURIComponent(irls.join(','));
+                clipboardWrite(url, function() {
+                    const btn = document.getElementById('wl-share');
+                    if (btn) {
+                        btn.textContent = 'Link copied';
+                        setTimeout(function() { btn.textContent = 'Share'; }, 1500);
+                    }
+                });
+            }
+            function wireWatchlist(rows) {
+                const items = document.getElementById('wl-items');
+                const form = document.getElementById('wl-add');
+                if (!items || !form) return;
+                // Delegated handlers so re-renders never leave stale listeners.
+                items.onclick = function(e) {
+                    const el = e.target;
+                    const copyBtn = el && el.closest ? el.closest('.wl-copy') : null;
+                    if (copyBtn) {
+                        const hit = watchHit(copyBtn.getAttribute('data-irl'), rows);
+                        if (hit) copyResult(copyBtn, hit);
+                        return;
+                    }
+                    const btn = el && el.closest ? el.closest('.wl-remove') : null;
+                    if (!btn) return;
+                    const irl = btn.getAttribute('data-irl');
+                    delete wlNew[irl];
+                    saveWatchlist(getWatchlist().filter(x => x.irl !== irl));
+                    items.innerHTML = watchlistItemsHTML(rows);
+                };
+                form.onsubmit = function(e) {
+                    e.preventDefault();
+                    const input = document.getElementById('wl-input');
+                    const v = (input && input.value || '').trim();
+                    if (!v) return;
+                    const list = getWatchlist();
+                    if (!list.some(x => x.irl === v)) {
+                        const hit = watchHit(v, rows);
+                        list.push({ irl: v, lastStatus: hit ? hit.decision : null });
+                        saveWatchlist(list);
+                    }
+                    if (input) input.value = '';
+                    items.innerHTML = watchlistItemsHTML(rows);
+                    if (input) input.focus();
+                };
+                const share = document.getElementById('wl-share');
+                if (share) share.onclick = shareWatchlist;
             }
 
             function paintHomeRows() {
@@ -1643,8 +2264,12 @@
                 var visible;
                 var latestPlaceholder = null;
                 if (isSearching) {
-                    var term = homeSearchTerm.toLowerCase();
-                    visible = rows.filter(function(r) { return !r._placeholder && r.irl.toLowerCase().indexOf(term) !== -1; });
+                    // Normalized matching: dashes, spaces and leading zeros in
+                    // the query (or the stored number) don't block a match. A
+                    // query that normalizes to nothing (punctuation-only)
+                    // matches nothing, not everything.
+                    var term = normalizeIRL(homeSearchTerm);
+                    visible = term ? rows.filter(function(r) { return !r._placeholder && normalizeIRL(r.irl).indexOf(term) !== -1; }) : [];
                 } else {
                     var byDate = groupByDate(rows);
                     var latest = byDate.length ? byDate[0] : null;
@@ -1676,6 +2301,21 @@
                     return;
                 }
                 renderRowsProgressive(tbody, visible);
+                // Type-ahead: refresh the datalist from the current match set (or
+                // the newest rows when idle) so suggestions narrow as you type.
+                const suggEl = document.getElementById('home-suggestions');
+                if (suggEl) {
+                    const suggRows = isSearching ? visible : (cache || []).slice(0, 300);
+                    const seen = {};
+                    const opts = [];
+                    for (let i = 0; i < suggRows.length && opts.length < 50; i++) {
+                        const s = suggRows[i];
+                        if (s._placeholder || seen[s.irl]) continue;
+                        seen[s.irl] = 1;
+                        opts.push('<option value="' + escapeHtml(s.irl) + '"></option>');
+                    }
+                    suggEl.innerHTML = opts.join('');
+                }
             }
 
             // Append a list of rows to a tbody progressively: render first CHUNK
@@ -1719,6 +2359,92 @@
                 tbody._sentinelObs = obs;
             }
 
+            function toggleDayDetail(t, detail) {
+                const open = detail.classList.toggle('open');
+                t.setAttribute('aria-expanded', open ? 'true' : 'false');
+                const caret = t.querySelector('.dd-caret');
+                if (caret) caret.textContent = open ? '\u25be' : '\u25b8';
+            }
+
+            // ---- search power-ups + export ----
+            // Matching ignores formatting: dashes, spaces and leading zeros are
+            // stripped, so "8540-8562" and "085408562" both find "85408562".
+            function normalizeIRL(s) {
+                return String(s == null ? '' : s).replace(/\D/g, '').replace(/^0+/, '');
+            }
+            function getRecentSearches() {
+                try {
+                    const raw = JSON.parse(localStorage.getItem('visa-recent-searches') || '[]');
+                    return Array.isArray(raw) ? raw.filter(x => typeof x === 'string' && x.trim()).slice(0, 5) : [];
+                } catch (e) { return []; }
+            }
+            function saveRecentSearch(term) {
+                term = (term || '').trim();
+                if (!term) return;
+                try {
+                    const list = getRecentSearches().filter(t => t !== term);
+                    list.unshift(term);
+                    localStorage.setItem('visa-recent-searches', JSON.stringify(list.slice(0, 5)));
+                } catch (e) { /* private mode */ }
+            }
+            function recentSearchesHTML() {
+                const list = getRecentSearches();
+                if (!list.length) return '';
+                return '<div class="recent-row"><span class="recent-label">Recent:</span>' +
+                    list.map(t => '<button type="button" class="recent-chip" data-q="' + escapeHtml(t) + '">' + escapeHtml(t) + '</button>').join('') +
+                    '</div>';
+            }
+            function refreshRecentChips() {
+                const el = document.getElementById('recent-searches');
+                if (el) el.innerHTML = recentSearchesHTML();
+            }
+            function exportCSV(rows, filename) {
+                const esc = function(v) {
+                    v = String(v == null ? '' : v);
+                    return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
+                };
+                const lines = ['Date,Application Number,Decision'];
+                for (let i = 0; i < rows.length; i++) {
+                    const r = rows[i];
+                    lines.push(esc(r.date) + ',' + esc(r.irl) + ',' + esc(r.decision));
+                }
+                const blob = new Blob(['\ufeff' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                setTimeout(function() { URL.revokeObjectURL(a.href); if (a.parentNode) a.parentNode.removeChild(a); }, 0);
+            }
+
+            // Busiest-days heatmap: a GitHub-style grid of the last ~14 weeks,
+            // each column a Sun-Sat week, shaded by decision volume.
+            function heatmapHTML(byDate) {
+                const counts = new Map();
+                byDate.forEach(([date, dayRows]) => {
+                    counts.set(date, dayRows.filter(r => !r._placeholder).length);
+                });
+                const ist = istNow();
+                const start = new Date(ist);
+                start.setUTCDate(start.getUTCDate() - 90);
+                start.setUTCDate(start.getUTCDate() - start.getUTCDay()); // back to Sunday
+                const cells = [];
+                const cur = new Date(start);
+                while (cur <= ist) {
+                    const iso = cur.toISOString().slice(0, 10);
+                    const n = counts.get(iso) || 0;
+                    const lvl = n === 0 ? 0 : n <= 2 ? 1 : n <= 5 ? 2 : n <= 10 ? 3 : 4;
+                    cells.push('<div class="heat-cell heat-' + lvl + '" title="' + iso +
+                        (n ? ' \u00b7 ' + n + ' decision' + (n === 1 ? '' : 's') : ' \u00b7 no decisions') + '"></div>');
+                    cur.setUTCDate(cur.getUTCDate() + 1);
+                }
+                return '<div class="heat-wrap">' +
+                    '<div class="heat-head"><span class="note2">Decisions per day, last 14 weeks</span>' +
+                    '<span class="heat-legend">less <span class="heat-cell heat-0"></span><span class="heat-cell heat-1"></span><span class="heat-cell heat-2"></span><span class="heat-cell heat-3"></span><span class="heat-cell heat-4"></span> more</span></div>' +
+                    '<div class="heat-grid" role="img" aria-label="Decision volume per day for the last 14 weeks; darker blue means more decisions">' + cells.join('') + '</div>' +
+                    '</div>';
+            }
+
             function renderDailySummary(rows) {
                 if (!rows.length) return renderConfigWarning() +
                     '<div class="empty">No decisions recorded yet.</div>';
@@ -1739,12 +2465,20 @@
                     const diff = prevCount === null ? null : real.length - prevCount;
                     const acc = real.filter(r => classify(r.decision) === 'accepted').length / real.length;
                     const rej = real.filter(r => classify(r.decision) === 'rejected').length / real.length;
-                    return '<tr><td class="mono">' + date + '</td><td>' + real.length + '</td><td>' +
+                    return '<tr><td class="mono dd-toggle" role="button" tabindex="0" aria-expanded="false" title="Show the applications behind this day\u2019s numbers">' +
+                        '<span class="dd-caret" aria-hidden="true">\u25b8</span>' + date + '</td><td>' + real.length + '</td><td>' +
                         (diff === null ? '-' : ('<span class="pill ' + (diff >= 0 ? 'green' : 'red') + '">' + (
                             diff >= 0 ? '+' : '') + diff + '</span>')) +
-                        '</td><td>' + fmtPct(acc) + '</td><td>' + fmtPct(rej) + '</td></tr>';
+                        '</td><td>' + fmtPct(acc) + '</td><td>' + fmtPct(rej) + '</td></tr>' +
+                        '<tr class="dd-row"><td colspan="5"><div class="dd-note">These ' + real.length +
+                        ' rows were first recorded on this day. The embassy file is sorted by application number, so this is the day the tracker first saw them, not their decision date.</div>' +
+                        '<div class="dd-list">' + real.map(function(r) {
+                            return '<div class="dd-list-item"><span class="mono">' + escapeHtml(r.irl) +
+                                '</span><span class="pill ' + r._pillClass + '">' + escapeHtml(r.decision || '-') + '</span></div>';
+                        }).join('') + '</div></td></tr>';
                 }).join('');
                 return renderConfigWarning() +
+                    heatmapHTML(byDate) +
                     '<div class="table-wrap"><table class="daily-table"><thead><tr><th>Date</th><th>Applications Processed</th><th>Day-on-Day</th><th>Acceptance Rate</th><th>Rejection Rate</th></tr></thead>' +
                     '<tbody>' + trs + '</tbody></table></div>';
             }
@@ -1767,24 +2501,34 @@
                 const thisWeek = real.filter(r => daysAgo(r.date) < 7).length;
                 const lastWeek = real.filter(r => daysAgo(r.date) >= 7 && daysAgo(r.date) < 14).length;
                 const wow = lastWeek ? (thisWeek - lastWeek) / lastWeek : null;
+                // Rolling windows so a trend doesn't drown in all-time history.
+                const last7 = real.filter(r => daysAgo(r.date) < 7);
+                const last30 = real.filter(r => daysAgo(r.date) < 30);
+                const acc7 = last7.length ? last7.filter(r => r._status === 'accepted').length / last7.length : null;
+                const acc30 = last30.length ? last30.filter(r => r._status === 'accepted').length / last30.length : null;
 
                 return renderConfigWarning() +
                     '<div class="cards">' +
                     '<div class="card"><div class="label"><i data-lucide="check-circle"></i>Acceptance rate</div><div class="value green">' + fmtPct(accepted / total) + '</div></div>' +
+                    '<div class="card"><div class="label"><i data-lucide="calendar-check"></i>7-day acceptance</div><div class="value ' + (acc7 === null ? '' : 'green') + '">' + (acc7 === null ? '-' : fmtPct(acc7)) + '</div></div>' +
+                    '<div class="card"><div class="label"><i data-lucide="calendar-days"></i>30-day acceptance</div><div class="value ' + (acc30 === null ? '' : 'green') + '">' + (acc30 === null ? '-' : fmtPct(acc30)) + '</div></div>' +
                     '<div class="card"><div class="label"><i data-lucide="x-circle"></i>Rejection rate</div><div class="value red">' + fmtPct(rejected / total) + '</div></div>' +
                     '<div class="card"><div class="label"><i data-lucide="calendar-check"></i>Avg applications/day</div><div class="value">' + avg.toFixed(1) + '</div></div>' +
                     '<div class="card"><div class="label"><i data-lucide="percent"></i>Week-on-week</div><div class="value ' + (wow === null ? '' : (wow >= 0 ? 'green' : 'red')) + '">' + (wow === null ? '-' : ((wow >= 0 ? '+' : '') + fmtPct(wow))) + '</div></div>' +
                     '</div>' +
                     '<div class="filter-row">' +
                     '<div class="note" style="margin-top:0;">Use the search bar on the Home tab to look up a specific application number.</div>' +
-                    '<div class="datefilter' + (pastDateFilter ? ' has-filter' : '') + '"><input type="date" id="past-date-filter" name="date" autocomplete="off" value="' + pastDateFilter + '">' +
+                    '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">' +
+                    '<button type="button" class="export-btn" id="past-export" title="Download the visible rows as CSV">Export CSV</button>' +
+                    '<div class="datefilter' + (pastDateFilter ? ' has-filter' : '') + '"><label class="visually-hidden" for="past-date-filter">Filter by date</label><input type="date" id="past-date-filter" name="date" autocomplete="off" aria-label="Filter by date" value="' + escapeHtml(pastDateFilter) + '">' +
                     '<button type="button" class="clear-btn" id="past-date-clear" aria-label="Clear date filter" title="Clear date filter">\u00d7</button>' +
+                    '</div>' +
                     '</div>' +
                     '</div>' +
                     '<div class="note" id="past-results-count" aria-live="polite" style="margin-bottom:8px;margin-top:0;"></div>' +
                     '<div class="table-wrap"><table class="results-table"><thead><tr><th>Date</th><th>Application No.</th><th>Decision</th></tr></thead>' +
                     '<tbody id="past-rows"></tbody></table></div>' +
-                    '<button class="scroll-top-btn" id="scroll-top-btn" title="Scroll to top">\u2191</button>';
+                    '<button class="scroll-top-btn" id="scroll-top-btn" title="Scroll to top" aria-label="Scroll to top">\u2191</button>';
             }
 
             function paintPastRows() {
@@ -1971,6 +2715,7 @@
                         '</div>';
                 }
                 await loadData();
+                loadMeta(); // health card / reconciliation / closures (non-blocking)
 
                 const tabs = [
                     ['home', 'Home'],
@@ -2038,6 +2783,10 @@
                     }
                 }
                 wireTabListeners();
+                // Initial paint bypasses switchTab (no hero cross-fade dip), so
+                // mark the visit here too — otherwise the "since you last
+                // checked" banner would re-show on every load until a tab click.
+                markVisited();
             }
 
             root.setAttribute('data-theme', theme);

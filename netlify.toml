@@ -8,3 +8,7 @@
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
     Permissions-Policy = "geolocation=(), microphone=(), camera=(), payment=()"
+    # Single-file app: inline scripts/styles are intrinsic, so lock down
+    # everything else (objects, frames, base-uri, form-action). Data comes
+    # from the Apps Script web app (script.google.com -> googleusercontent).
+    Content-Security-Policy = "default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://script.google.com https://script.googleusercontent.com; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"

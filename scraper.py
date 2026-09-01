@@ -390,6 +390,22 @@ def _retry_delay(attempt: int, response=None) -> float:
     return WEB_APP_RETRY_DELAYS[min(attempt - 1, len(WEB_APP_RETRY_DELAYS) - 1)]
 
 
+def _retry_or_break(attempt: int, message: str = "", response=None) -> bool:
+    """Back off before the next attempt; False once the retry budget is spent.
+
+    Returns True when the caller should retry (a delay has been slept) and
+    False when attempts are exhausted and the caller should stop and surface
+    the error. ``message`` is a short reason printed before the delay, if any.
+    """
+    if attempt >= WEB_APP_GET_ATTEMPTS:
+        return False
+    delay = _retry_delay(attempt, response)
+    reason = f"{message} " if message else ""
+    print(f"{reason}Retrying in {delay:g}s...")
+    time.sleep(delay)
+    return True
+
+
 def _validate_existing_rows(rows):
     """Reject a successful but unusable response before any write is attempted."""
     if not isinstance(rows, list):
@@ -447,41 +463,31 @@ def fetch_existing_rows():
                 last_error = requests.exceptions.HTTPError(
                     f"Apps Script returned HTTP {resp.status_code}", response=resp
                 )
-                if attempt < WEB_APP_GET_ATTEMPTS:
-                    delay = _retry_delay(attempt, resp)
-                    print(f"Transient Apps Script response; retrying in {delay:g}s...")
-                    time.sleep(delay)
-                    continue
-                break
+                if not _retry_or_break(attempt, "Transient Apps Script response.", resp):
+                    break
+                continue
 
             resp.raise_for_status()
             try:
                 rows = resp.json()
             except ValueError as e:
                 last_error = e
-                if attempt < WEB_APP_GET_ATTEMPTS:
-                    delay = _retry_delay(attempt)
-                    print(f"Apps Script returned non-JSON data; retrying in {delay:g}s...")
-                    time.sleep(delay)
-                    continue
-                break
-            try:
+                if not _retry_or_break(attempt, "Apps Script returned non-JSON data."):
+                    break
+                continue
+
+            try:
                 return _validate_existing_rows(rows)  # list of [date, irl, decision]
             except ValueError as e:
                 last_error = e
-                if attempt < WEB_APP_GET_ATTEMPTS:
-                    delay = _retry_delay(attempt)
-                    print(f"Apps Script returned an invalid row payload; retrying in {delay:g}s...")
-                    time.sleep(delay)
-                    continue
-                break
-        except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
+                if not _retry_or_break(attempt, "Apps Script returned an invalid row payload."):
+                    break
+                continue
+
+        except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
             last_error = e
             print(f"Attempt {attempt} failed: {e}")
-            if attempt < WEB_APP_GET_ATTEMPTS:
-                delay = _retry_delay(attempt)
-                print(f"Retrying in {delay:g}s...")
-                time.sleep(delay)
+            _retry_or_break(attempt)
         except requests.exceptions.HTTPError as e:
             last_error = e
             # Non-retryable HTTP errors (for example 401/403) should be reported
@@ -489,21 +495,15 @@ def fetch_existing_rows():
             break
         except ValueError as e:
             last_error = e
-            if attempt < WEB_APP_GET_ATTEMPTS:
-                delay = _retry_delay(attempt)
-                print(f"Apps Script returned an invalid payload; retrying in {delay:g}s...")
-                time.sleep(delay)
-                continue
-            break
+            if not _retry_or_break(attempt, "Apps Script returned an invalid payload."):
+                break
+            continue
         except requests.exceptions.RequestException as e:
             # SSLError, ChunkedEncodingError and other transient transport
             # failures that can self-heal in CI on retry.
             last_error = e
             print(f"Attempt {attempt} failed with transport error: {e}")
-            if attempt < WEB_APP_GET_ATTEMPTS:
-                delay = _retry_delay(attempt)
-                print(f"Retrying in {delay:g}s...")
-                time.sleep(delay)
+            _retry_or_break(attempt)
 
     detail = str(last_error) if last_error else "unknown error"
     status_code = getattr(getattr(last_error, "response", None), "status_code", None)
@@ -570,6 +570,28 @@ def clear_no_file_placeholder(date_str):
         "action": "clear_no_file_placeholder",
         "date": date_str,
     }, "Placeholder clear")
+
+
+def _run_meta(today_dt, existing_irl, new_rows=(), fetch_date=None, file_rows=None,
+              ok=True, closure_dates=None):
+    """The run-status object stored via ?action=meta for the dashboard's health
+    card, reconciliation line and closure calendar. Pure data — no I/O."""
+    return {
+        "lastRunAt": today_dt.strftime("%Y-%m-%dT%H:%M:%S"),
+        "sheetRows": len(existing_irl),
+        "newRows": len(new_rows),
+        "fileDate": fetch_date,
+        "fileRows": file_rows,
+        "ok": ok,
+        "closureDates": sorted(
+            f"{today_dt.year:04d}-{m:02d}-{d:02d}" for m, d in (closure_dates or ())),
+    }
+
+
+def update_meta(meta):
+    """Best-effort: store the run-status object for the dashboard (?action=meta).
+    Non-fatal — the sheet data is the source of truth."""
+    return _post_json({"action": "update_meta", "meta": meta}, "Update meta")
 
 
 def send_webhook_alert(message):
@@ -749,6 +771,7 @@ def main():
     today_real = [r for r in existing_rows if r[0] == today_ist and not _is_placeholder_row(r)]
     if today_real:
         print(f"Real data already present for {today_ist} ({len(today_real)} rows) — skipping this run.")
+        update_meta(_run_meta(today_dt, existing_irl))
         return
 
     # --- Priority 1: weekend ---
@@ -761,6 +784,7 @@ def main():
             _backfill_missing_days(existing_rows, today_dt, skip_date=today_ist)
         else:
             print("ENABLE_NO_UPLOAD_PLACEHOLDER is false — skipping placeholder.")
+        update_meta(_run_meta(today_dt, existing_irl))
         return
 
     # --- Priority 2: public holiday per embassy closure-dates page ---
@@ -773,6 +797,7 @@ def main():
             _backfill_missing_days(existing_rows, today_dt, skip_date=today_ist)
         else:
             print("ENABLE_NO_UPLOAD_PLACEHOLDER is false — skipping placeholder.")
+        update_meta(_run_meta(today_dt, existing_irl))
         return
 
     # --- Priority 3: normal business day, attempt the real scrape ---
@@ -780,10 +805,12 @@ def main():
     new_rows = []
     fetch_date = None  # date embedded in the downloaded file's name — used for
                        # staleness/placeholder decisions only; rows are dated today
+    file_rows = None   # decision rows in the latest file — for the reconciliation line
     try:
         ods_url = find_ods_link()
         filename, df = download_and_parse_ods(ods_url)
         fetch_date = parse_date_from_filename(filename)
+        file_rows = len(df)
 
         app_col, decision_col = detect_columns(df)
         if not app_col or not decision_col:
@@ -846,6 +873,10 @@ def main():
     else:
         print("ENABLE_NO_UPLOAD_PLACEHOLDER is false — skipping placeholder.")
 
+    # The closure page feeds both the gap alert below and the dashboard's
+    # closure calendar, so fetch it once per run.
+    closure_dates = _closure_dates(today_dt.year)
+
     # --- Gap alert: a site change or publication outage can make the scraper
     # quietly write "no file yet" every day while the run still reports
     # success. Fail loudly instead once no genuinely-new file has appeared for
@@ -854,7 +885,6 @@ def main():
     if GAP_ALERT_BUSINESS_DAYS > 0:
         latest_file_date = _latest_file_date(existing_rows, fetch_date)
         if latest_file_date:
-            closure_dates = _closure_dates(today_dt.year)
             stale_days = _count_stale_business_days(latest_file_date, today_dt, closure_dates)
             if stale_days >= GAP_ALERT_BUSINESS_DAYS:
                 message = (
@@ -872,6 +902,12 @@ def main():
                 # nobody is watching the Actions tab. Best-effort by design.
                 send_webhook_alert(message)
                 sys.exit(1)
+
+    # --- Store run status for the dashboard (?action=meta) ---
+    # The health card, "fully synced" line and closure calendar on Home all
+    # render from this object, so a run only ends after it is recorded.
+    update_meta(_run_meta(today_dt, existing_irl, new_rows, fetch_date, file_rows,
+                          ok=not scrape_failed, closure_dates=closure_dates))
 
     if scrape_failed:
         sys.exit(1)

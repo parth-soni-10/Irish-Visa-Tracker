@@ -1,13 +1,16 @@
 /**
  * Irish Visa Decision Tracker — Apps Script backend
  * ---------------------------------------------------
- * Deploy: paste into Apps Script bound to your Sheet (Extensions > Apps Script).
- * Enable Advanced Drive Service: Services (+) > Drive API > Add.
- * Run fetchAndAppendVisaData once manually, authorize, check Raw tab.
- * Scheduling (deliberately NOT set up yet, per request) — when ready:
- *   Triggers (clock icon) > Add Trigger > fetchAndAppendVisaData > Time-driven > Day timer.
- * Deploy > New deployment > Web app > Execute as: Me > Who has access: Anyone
- *   -> copy the /exec URL into dashboard.html WEB_APP_URL.
+ * The sheet is fed by scraper.py (GitHub Actions), which fetches the embassy's
+ * daily .ods file and pushes new rows here through the web app's POST endpoints.
+ * This file owns the sheet (append/dedupe/placeholder/meta) and the health-card
+ * meta. It never fetches the embassy itself.
+ *
+ * Deploy: paste into Apps Script bound to your Sheet (Extensions > Apps Script),
+ * set VISA_WRITE_SECRET in Script Properties (same value as the VISAS_WRITE_SECRET
+ * GitHub secret), then Deploy > New deployment > Web app > Execute as: Me > Who
+ * has access: Anyone. Copy the /exec URL into the frontend's WEB_APP_URL and the
+ * GitHub Actions WEB_APP_URL secret. No extra services (Drive API etc.) needed.
  *
  * Sheet rotation: Google Sheets caps a spreadsheet at MAX_CELLS_PER_SPREADSHEET
  * cells (10M). The Raw tab is 3 columns wide, so once it approaches ~95% of that
@@ -19,7 +22,6 @@
 
 // ---------------- CONFIG ----------------
 const SHEET_ID   = '16wCHAUP1l9Gaehmai6GTkjzPhYafV7fyOtGm2y2tb_I';
-const PAGE_URL   = 'https://www.ireland.ie/en/india/newdelhi/services/visas/processing-times-and-decisions/';
 const RAW_TAB    = 'Raw';
 const RAW_HEADERS  = ['Date', 'Application Number', 'Decision'];
 
@@ -38,7 +40,10 @@ const ROW_CAPACITY = Math.floor((MAX_CELLS_PER_SPREADSHEET * CAPACITY_WARN_PCT) 
 // value as the VISAS_WRITE_SECRET secret in GitHub Actions. Writes fail
 // closed until a secret is configured.
 const WRITE_SECRET_PROPERTY = 'VISA_WRITE_SECRET';
-const WRITE_ACTIONS = ['append_rows', 'set_no_file_placeholder', 'clear_no_file_placeholder'];
+const WRITE_ACTIONS = ['append_rows', 'set_no_file_placeholder', 'clear_no_file_placeholder', 'update_meta'];
+// Run-status object the scraper stores after every run; the dashboard reads it
+// via ?action=meta for the health card, reconciliation line and closure calendar.
+const META_PROPERTY = 'VISA_META';
 
 function constantTimeEqual_(left, right) {
   left = String(left || '');
@@ -55,41 +60,6 @@ function authorizeWrite_(payload) {
   const expected = String(PropertiesService.getScriptProperties().getProperty(WRITE_SECRET_PROPERTY) || '').trim();
   if (!expected) return false;
   return constantTimeEqual_(String((payload && payload.writeSecret) || '').trim(), expected);
-}
-
-/** Entry point — run manually or via trigger later. */
-function fetchAndAppendVisaData() {
-  const odsUrl = findOdsLink_();
-  if (!odsUrl) throw new Error('Could not find .ods link on page — site markup may have changed.');
-
-  const fileName = decodeURIComponent(odsUrl.split('/').pop().split('?')[0]);
-  const fetchDate = parseDateFromFilename_(fileName);
-
-  const rows = parseOdsRows_(odsUrl, fileName);
-  const { appNumberCol, decisionCol } = detectColumns_(rows[0]);
-  if (appNumberCol === -1 || decisionCol === -1) {
-    throw new Error('Could not detect IRL/Decision columns. Headers seen: ' + JSON.stringify(rows[0]));
-  }
-
-  const sheet = ensureRawCapacity_();
-  const existingIrl = getExistingIrlSet_();
-
-  const toAppend = [];
-  for (let i = 1; i < rows.length; i++) {
-    const r = rows[i];
-    const irl = String(r[appNumberCol] || '').trim();
-    const decision = String(r[decisionCol] || '').trim();
-    if (!irl || existingIrl.has(irl)) continue; // skip blank / already-recorded, no dupes
-    if (looksLikeHeader_(irl, decision)) continue; // guard against header row leaking in as data
-    toAppend.push([fetchDate, irl, decision]);
-    existingIrl.add(irl);
-  }
-
-  if (toAppend.length) {
-    sheet.getRange(sheet.getLastRow() + 1, 1, toAppend.length, RAW_HEADERS.length).setValues(toAppend);
-  }
-  Logger.log('Appended ' + toAppend.length + ' new rows (source file: ' + fileName + ')');
-  return toAppend.length;
 }
 
 // ---------------- RAW SHEET ROTATION ----------------
@@ -141,74 +111,6 @@ function ensureRawCapacity_() {
   return next;
 }
 
-// ---------------- SCRAPING HELPERS ----------------
-
-/** Scrape the processing-times page HTML and find the .ods href. */
-function findOdsLink_() {
-  const resp = UrlFetchApp.fetch(PAGE_URL, {
-    muteHttpExceptions: true,
-    followRedirects: true,
-    headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' }
-  });
-  const code = resp.getResponseCode();
-  const html = resp.getContentText();
-  Logger.log('HTTP status: ' + code + ' | HTML length: ' + html.length);
-
-  // Try a few patterns — quotes, no-quotes, single vs double.
-  let match = html.match(/href\s*=\s*["']([^"']+\.ods)["']/i);
-  if (!match) match = html.match(/(https?:\/\/[^\s"'<>]+\.ods)/i);
-  if (!match) {
-    Logger.log('No .ods pattern matched. First 1500 chars of HTML:\n' + html.substring(0, 1500));
-    return null;
-  }
-  let href = match[1];
-  if (href.startsWith('//')) href = 'https:' + href;
-  else if (href.startsWith('/')) href = 'https://www.ireland.ie' + href;
-  Logger.log('Found ODS link: ' + href);
-  return href;
-}
-
-/** First 8 chars of filename -> Date. Expects YYYYMMDD prefix. */
-function parseDateFromFilename_(fileName) {
-  const digits = fileName.replace(/[^0-9]/g, '');
-  const stamp = digits.substring(0, 8);
-  if (stamp.length !== 8) return new Date(); // fallback: today
-  const y = +stamp.substring(0, 4), m = +stamp.substring(4, 6), d = +stamp.substring(6, 8);
-  return new Date(y, m - 1, d);
-}
-
-/** Download .ods, convert to a temp Google Sheet via Drive API, read values, clean up. */
-function parseOdsRows_(odsUrl, fileName) {
-  const blob = UrlFetchApp.fetch(odsUrl, { muteHttpExceptions: true }).getBlob().setName(fileName);
-
-  // Requires Advanced Drive Service enabled (Services > Drive API).
-  const file = Drive.Files.create(
-    { name: 'tmp_import_' + fileName, mimeType: MimeType.GOOGLE_SHEETS },
-    blob,
-    { fields: 'id' }
-  );
-
-  try {
-    const ss = SpreadsheetApp.openById(file.id);
-    const values = ss.getSheets()[0].getDataRange().getValues();
-    return values;
-  } finally {
-    Drive.Files.remove(file.id); // delete temp converted file
-  }
-}
-
-/** Fuzzy-match header row to find IRL number column + Decision column. */
-function detectColumns_(headerRow) {
-  let appNumberCol = -1, decisionCol = -1;
-  headerRow.forEach((h, i) => {
-    const s = String(h).toLowerCase();
-    if (appNumberCol === -1 && (s.includes('irl') || s.includes('application'))) appNumberCol = i;
-    if (decisionCol === -1 && (s.includes('decision') || s.includes('outcome'))) decisionCol = i;
-  });
-  return { appNumberCol, decisionCol };
-}
-
-
 /** Every IRL number already recorded, across ALL Raw* tabs. */
 function getExistingIrlSet_() {
   const set = new Set();
@@ -229,6 +131,9 @@ function doGet(e) {
   let payload;
   if (action === 'raw') {
     payload = getAllRawRows_();
+  } else if (action === 'meta') {
+    const raw = PropertiesService.getScriptProperties().getProperty(META_PROPERTY);
+    payload = raw ? JSON.parse(raw) : {};
   } else {
     payload = { error: 'unknown action' };
   }
@@ -279,8 +184,19 @@ function doPost(e) {
   }
   if (body.action === 'append_rows') return handleAppendRows_(body.rows || []);
   if (body.action === 'set_no_file_placeholder') return handleSetNoFilePlaceholder_(body.date, body.message);
-  if (body.action === 'clear_no_file_placeholder') return handleClearNoFilePlaceholder_(body.date);
+  if (body.action === 'clear_no_file_placeholder') return handleClearNoFilePlaceholder_(body.date);  if (body.action === 'update_meta') return handleUpdateMeta_(body.meta);
   return jsonOut_({ ok: false, error: 'unknown action' });
+}
+
+
+/** Stores the scraper's run-status object (health card / reconciliation / closures). */
+function handleUpdateMeta_(meta) {
+  if (!meta || typeof meta !== 'object') {
+    return jsonOut_({ ok: false, error: 'meta object required' });
+  }
+  PropertiesService.getScriptProperties().setProperty(
+    META_PROPERTY, JSON.stringify({ updatedAt: new Date().toISOString(), ...meta }));
+  return jsonOut_({ ok: true });
 }
 
 /** Bulk append from external scraper. Dedupes against existing IRL numbers server-side too
