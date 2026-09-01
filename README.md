@@ -4,9 +4,9 @@ A personal tool that keeps an eye on the daily visa-decision list published by t
 
 ## Watch it
 
-A 30-second trailer:
+A 30-second trailer — click the poster to play:
 
-<video src="brag-output/brag.mp4" controls poster="brag-output/brag.jpg" width="360"></video>
+[![Play the Irish Visa trailer](brag-output/brag.jpg)](brag-output/brag.mp4)
 
 ## Why it exists
 
