@@ -19,6 +19,7 @@ This project saves a running record automatically, so you can:
 - It's smart about **weekends and public holidays** — if the office is closed, it simply notes that and moves on.
 - The results are kept in a **Google Sheet** (no separate database, no hosting cost).
 - A simple dashboard reads from that sheet, so everything stays up to date by itself.
+- The embassy's published file is sorted by **application number**, not decision date — so a day's count in the dashboard can't be verified by counting rows from the end of the file.
 
 ## Checking your own application
 
