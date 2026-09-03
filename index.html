@@ -5,7 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Irish Visa Decision Tracker</title>
 <base target="_blank">
-<meta name="theme-color" content="#f4f6f3">
+<meta name="theme-color" content="#ffffff">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="preload" href="fonts/geist-sans.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="fonts/geist-mono.woff2" as="font" type="font/woff2" crossorigin>
 </head>
@@ -34,33 +37,33 @@
         @font-face { font-family: 'Geist Mono'; src: url('fonts/geist-mono.woff2') format('woff2'); font-weight: 100 900; font-display: swap; font-style: normal; }
         #visa-dash * { box-sizing: border-box; }
         #visa-dash {
-            /* Single green accent (the brand "approved" color) on warm paper
+            /* Single green accent (the brand "approved" color) on slate
                neutrals. Green/red/amber are semantic data states, so they
                stay for status only - decoration uses the one accent. */
-            --ink: #1c2a24;
-            --ink-soft: #4d5f56;
-            --ink-muted: #6b7c72;
+            --ink: #333333;
+            --ink-soft: #777777;
+            --ink-muted: #777777;
             --surface: #ffffff;
-            --surface-raised: #f4f6f3;
-            --surface-hover: #eaeeE9;
-            --border: #dde5df;
-            --green: #0e7a4e;
-            --green-deep: #0b6a44;
-            --green-deeper: #085c3a;
-            --green-light: #34b984;
-            --green-soft: #e2f4ea;
-            --green-text: #0e6a44;
-            --amber: #b96a0e;
-            --amber-soft: #fdf1dd;
-            --amber-text: #8a5208;
-            --red: #c23535;
-            --red-soft: #fdeaea;
-            --red-text: #962020;
-            /* Radius scale: 16px containers, 8px controls, 999px pills. */
-            --r-container: 16px;
-            --r-control: 8px;
-            font-family: "Geist", "Inter", -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
-            background: var(--surface-raised);
+            --surface-raised: #f8fafc;
+            --surface-hover: #f1f5f9;
+            --border: #e2e8f0;
+            --green: #059669;
+            --green-deep: #047857;
+            --green-deeper: #065f46;
+            --green-light: #10b981;
+            --green-soft: #dcfce7;
+            --green-text: #166534;
+            --amber: #d97706;
+            --amber-soft: #fef3c7;
+            --amber-text: #92400e;
+            --red: #dc2626;
+            --red-soft: #fee2e2;
+            --red-text: #991b1b;
+            /* Radius scale: 14px containers, 6px controls, 999px pills. */
+            --r-container: 14px;
+            --r-control: 6px;
+            font-family: "Inter", "Geist", -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+            background: var(--surface);
             color: var(--ink);
             min-height: 100vh;
             padding: 24px;
@@ -115,10 +118,10 @@
             margin-bottom: 4px;
         }
         #visa-dash h1 {
-            font-size: 30px;
+            font-size: 28px;
             margin: 0 0 2px;
             font-weight: 800;
-            letter-spacing: -.03em;
+            letter-spacing: -.02em;
             text-wrap: balance;
         }
         #visa-dash .sub {
@@ -133,16 +136,16 @@
             flex-wrap: wrap;
         }
         #visa-dash .navpill {
-            padding: 9px 20px;
+            padding: 8px 18px;
             font-size: 13px;
             font-weight: 600;
             border-radius: 100px;
             cursor: pointer;
-            border: 1px solid transparent;
+            border: none;
             color: var(--ink-muted);
-            background: var(--surface);
+            background: var(--surface-raised);
             font-family: inherit;
-            transition: background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1), color 0.2s cubic-bezier(0.4, 0, 0.2, 1), transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1), color 0.2s cubic-bezier(0.4, 0, 0.2, 1), transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1);
             position: relative;
             overflow: hidden;
         }
@@ -172,8 +175,7 @@
         #visa-dash .navpill.active {
             color: #fff;
             background: var(--green-deep);
-            border-color: var(--green-deep);
-            box-shadow: 0 5px 16px -4px rgba(11, 106, 68, 0.45);
+            box-shadow: 0 4px 14px rgba(4, 120, 87, 0.35);
         }
         #visa-dash .navpill.active:hover { background: var(--green-deeper); }
         #visa-dash .cards {
@@ -183,11 +185,10 @@
             margin-bottom: 22px;
         }
         #visa-dash .card {
-            background: var(--surface);
+            background: var(--surface-raised);
             border: 1px solid var(--border);
             border-radius: var(--r-container);
-            padding: 18px 16px;
-            box-shadow: 0 1px 2px rgba(28, 42, 36, .04);
+            padding: 16px;
             opacity: 0;
             transform: translateY(12px);
             animation: visa-card-in 0.45s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
@@ -226,9 +227,9 @@
             transition: transform 0.15s;
         }
         #visa-dash .card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 2px 4px rgba(28, 42, 36, .05), 0 18px 36px -16px rgba(8, 92, 58, .30);
-            border-color: #c8d8ce;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px -12px rgba(30, 41, 59, 0.25);
+            border-color: #cbd5e1;
         }
         #visa-dash .card:hover .value { transform: scale(1.02); }
         #visa-dash .card .value.green { color: var(--green); }
@@ -238,8 +239,8 @@
             overflow-x: auto;
             border-radius: var(--r-container);
             border: 1px solid var(--border);
-            background: var(--surface);
-            box-shadow: 0 1px 2px rgba(28, 42, 36, .04);
+            background: var(--surface-raised);
+            box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
         }
         #visa-dash table {
             width: 100%;
@@ -249,16 +250,16 @@
         }
         #visa-dash th {
             text-align: left;
-            font-size: 11.5px;
+            font-size: 12px;
             line-height: 16px;
             text-transform: uppercase;
-            letter-spacing: .08em;
+            letter-spacing: .07em;
             color: var(--ink-muted);
             background: var(--surface-raised);
-            padding: 13px 14px;
+            padding: 12px 14px;
             border-bottom: 1px solid var(--border);
             white-space: nowrap;
-            font-weight: 600;
+            font-weight: 500;
         }
         #visa-dash td {
             padding: 11px 14px;
@@ -979,26 +980,21 @@
         #visa-dash .hero {
             position: relative;
             border-radius: 20px;
-            padding: 26px 30px;
+            padding: 24px 28px;
             color: #fff;
             overflow: hidden;
-            min-height: 184px;
-            box-shadow: 0 16px 44px -16px rgba(8, 92, 58, 0.5);
-            margin-bottom: 22px;
+            min-height: 180px;
+            box-shadow: 0 12px 40px -12px rgba(4, 120, 87, 0.45);
+            margin-bottom: 20px;
             transition: opacity 0.4s ease;
-            background: linear-gradient(140deg, #0a4f33 0%, #0d6a43 55%, #0e7a4e 100%);
+            background: linear-gradient(135deg, var(--green-deeper), var(--green));
         }
         #visa-dash .hero::before {
             content: '';
             position: absolute;
             inset: 0;
             pointer-events: none;
-            background:
-                radial-gradient(120% 90% at 85% -10%, rgba(255,255,255,.22), transparent 55%),
-                linear-gradient(rgba(255,255,255,.05) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(255,255,255,.05) 1px, transparent 1px);
-            background-size: auto, 22px 22px, 22px 22px;
-            mask-image: linear-gradient(180deg, rgba(0,0,0,.8), transparent 90%);
+            background: radial-gradient(120% 90% at 85% -10%, rgba(255,255,255,.28), transparent 55%);
         }
 
         #visa-dash .hero-body {
@@ -1118,42 +1114,32 @@
         }
 
         #visa-dash[data-theme="dark"] {
-            /* Deep evergreen-based dark mode: same green accent, no purple. */
-            --ink: #e2ece6;
-            --ink-soft: #a9bcb1;
-            --ink-muted: #82968b;
-            --surface: #0d1512;
-            --surface-raised: #132019;
-            --surface-hover: #1b2c22;
-            --border: #243a2d;
-            --green: #3dd68f;
-            --green-deep: #21b26f;
-            --green-deeper: #159a5e;
+            /* Slate-based dark mode: same green accent, no purple. */
+            --ink: #e6edf5;
+            --ink-soft: #a8b4c4;
+            --ink-muted: #8b98ab;
+            --surface: #0b1220;
+            --surface-raised: #101a2e;
+            --surface-hover: #16233b;
+            --border: #1e2c47;
+            --green: #34d399;
+            --green-deep: #10b981;
+            --green-deeper: #059669;
             --green-light: #6ee7b7;
-            --green-soft: rgba(61, 214, 143, 0.14);
-            --green-text: #5fe0a4;
-            --amber: #f5b644;
-            --amber-soft: rgba(245, 182, 68, 0.14);
-            --amber-text: #f5b644;
+            --green-soft: rgba(52, 211, 153, 0.15);
+            --green-text: #6ee7b7;
+            --amber: #fbbf24;
+            --amber-soft: rgba(251, 191, 36, 0.15);
+            --amber-text: #fbbf24;
             --red: #f87171;
-            --red-soft: rgba(248, 113, 113, 0.14);
+            --red-soft: rgba(248, 113, 113, 0.15);
             --red-text: #f87171;
             color-scheme: dark;
         }
-        #visa-dash[data-theme="dark"] {
-            background: #0a110e;
-        }
         #visa-dash[data-theme="dark"] .hero {
-            box-shadow: 0 16px 44px -16px rgba(21, 154, 94, 0.4), inset 0 1px 0 rgba(255,255,255,0.08);
+            box-shadow: 0 12px 40px -12px rgba(16, 185, 129, 0.35), inset 0 1px 0 rgba(255,255,255,0.08);
             border: 1px solid rgba(255,255,255,0.08);
         }
-        #visa-dash[data-theme="dark"] .navpill.active {
-            color: #7cf0b8;
-            background: #0c3d26;
-            border-color: #17673f;
-            box-shadow: 0 5px 16px -6px rgba(21, 154, 94, 0.35);
-        }
-        #visa-dash[data-theme="dark"] .navpill.active:hover { background: #104d30; }
         #visa-dash[data-theme="dark"] .skel {
             background: linear-gradient(90deg, var(--border) 25%, var(--surface-raised) 37%, var(--border) 63%);
         }
