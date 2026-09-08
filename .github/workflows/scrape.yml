@@ -1,0 +1,37 @@
+name: Scrape Visa Decisions
+
+on:
+  workflow_dispatch: {}   # manual "Run workflow" button — still available for on-demand runs
+  schedule:
+    - cron: '30 2 * * 1-5'  # Mon–Fri 08:00 IST
+    - cron: '0 3 * * 1-5'   # Mon–Fri 08:30 IST
+    - cron: '30 3 * * 1-5'  # Mon–Fri 09:00 IST
+    - cron: '0 4 * * 1-5'   # Mon–Fri 09:30 IST
+    - cron: '30 4 * * 1-5'  # Mon–Fri 10:00 IST
+    - cron: '0 5 * * 1-5'   # Mon–Fri 10:30 IST
+    - cron: '30 5 * * 1-5'  # Mon–Fri 11:00 IST
+    - cron: '0 6 * * 1-5'   # Mon–Fri 11:30 IST
+    - cron: '30 6 * * 1-5'  # Mon–Fri 12:00 IST — final weekday run
+    - cron: '30 2 * * 6,0'  # Sat–Sun 08:00 IST — weekend placeholder (run 1)
+    - cron: '30 6 * * 6,0'  # Sat–Sun 12:00 IST — weekend placeholder (run 2)
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run scraper
+        env:
+          WEB_APP_URL: ${{ secrets.WEB_APP_URL }}
+          VISAS_WRITE_SECRET: ${{ secrets.VISAS_WRITE_SECRET }}
+        run: python scraper.py
