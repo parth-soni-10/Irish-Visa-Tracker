@@ -2812,7 +2812,7 @@
                     '</div>';
                 var projHtml;
                 if (!proj.ok) {
-                    projHtml = '<div class="note">Projections need at least 2 daily observations — check back after the cron has run twice.</div>';
+                    projHtml = '';
                 } else {
                     var pace = proj.recentWeek >= 6.5 ? 'On pace — the queue is roughly keeping up with new applications.' :
                         proj.recentWeek > 0.5 ? 'Moving, but slower than real time — the backlog is growing.' :
