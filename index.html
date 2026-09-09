@@ -1008,6 +1008,15 @@
             max-width: 880px;
             margin: 20px auto 24px;
         }
+        /* Landing fills the viewport height so the two cards sit in the
+           vertical middle instead of hugging the top. Scoped to the landing
+           wrapper only — visa/1G pages keep their normal flow. */
+        #visa-dash .landing-wrap {
+            min-height: calc(100vh - 48px);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
         #visa-dash .tracker-card {
             font-family: inherit;
             text-align: left;
@@ -2753,6 +2762,8 @@
                 var d = new Date(Date.UTC(+p[0], +p[1] - 1, +p[2]));
                 return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
             }
+            // Mean Gregorian month — good enough for a "how long" readout.
+            function fmtLagMonths(days) { return (days / 30.44).toFixed(1); }
 
             // Processing-date advancement line: x = observation date,
             // y = ISD processing date. Dots + first/last labels, no deps.
@@ -2794,7 +2805,7 @@
                 var proj = computeG1Projections(rows);
                 var latest = rows[rows.length - 1];
                 var heroTitle = 'Processing ' + fmtG1Date(latest.processing_date) + '.';
-                var heroSub = latest.lag_days + ' days behind today' +
+                var heroSub = latest.lag_days + ' days (~' + fmtLagMonths(latest.lag_days) + ' mo) behind today' +
                     (proj.ok && proj.recentWeek !== null ? ', advancing ~' + proj.recentWeek.toFixed(1) + ' days/week.' : '.');
                 var hero = '<div class="hero" id="hero" data-id="g1" style="opacity:0">' +
                     '<div class="hero-body"><div>' +
@@ -2806,7 +2817,7 @@
                     '</div></div></div>';
                 var cards = '<div class="cards">' +
                     '<div class="card"><div class="label"><i data-lucide="calendar-check"></i>ISD processing date</div><div class="value">' + fmtG1Date(latest.processing_date) + '</div></div>' +
-                    '<div class="card"><div class="label"><i data-lucide="hourglass"></i>Current lag</div><div class="value">' + latest.lag_days + ' days</div></div>' +
+                    '<div class="card"><div class="label"><i data-lucide="hourglass"></i>Current lag</div><div class="value">' + latest.lag_days + ' days <span style="font-size:13px;font-weight:600;">(~' + fmtLagMonths(latest.lag_days) + ' mo)</span></div></div>' +
                     '<div class="card"><div class="label"><i data-lucide="trending-up"></i>Advancement rate</div><div class="value">' +
                     (proj.ok ? proj.recentWeek.toFixed(1) + ' <span style="font-size:13px;font-weight:600;">days/week</span>' : '-') + '</div></div>' +
                     '<div class="card"><div class="label"><i data-lucide="flag"></i>ETA to today</div><div class="value">' +
@@ -2888,6 +2899,7 @@
                 // cold start; the 1G JSON takes milliseconds). Clicking a card
                 // works from the first paint.
                 root.innerHTML =
+                    '<div class="landing-wrap">' +
                     '<div class="eyebrow">Ireland \u00b7 Live trackers</div>' +
                     '<div class="titlerow"><h1>Choose your tracker</h1>' +
                     '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">' + THEME_BTN_HTML + '</div></div>' +
@@ -2897,7 +2909,7 @@
                         'Daily decisions published by the Embassy of Ireland in New Delhi — searchable by application number, with trends and summaries.', 'Loading\u2026', 'visa-meta') +
                     trackerCardHTML('1g', 'stamp', 'Stamp 1G Processing',
                         'ISD renewal queue: which application date is being processed now, how far behind it is, and when it may catch up.', 'Loading\u2026', 'g1-meta') +
-                    '</div>';
+                    '</div></div>';
                 wireChrome();
                 var cards = root.querySelectorAll('.tracker-card');
                 for (var i = 0; i < cards.length; i++) {
@@ -2923,7 +2935,7 @@
                     rows = rows || [];
                     el.textContent = rows.length
                         ? 'Processing ' + fmtG1Date(rows[rows.length - 1].processing_date) +
-                          ' \u00b7 ' + rows[rows.length - 1].lag_days + 'd lag \u00b7 ' + rows.length + ' observations'
+                          ' \u00b7 ' + rows[rows.length - 1].lag_days + 'd lag (~' + fmtLagMonths(rows[rows.length - 1].lag_days) + ' mo) \u00b7 ' + rows.length + ' observations'
                         : 'Awaiting first observation';
                 });
             }
