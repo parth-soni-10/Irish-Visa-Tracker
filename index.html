@@ -1141,6 +1141,10 @@
             font-size: 14px;
             line-height: 1.6;
         }
+        #visa-dash .g1-estimate .pill {
+            display: inline-block;
+            vertical-align: middle;
+        }
 
         /* ===== hero =====
            One gradient for every tab (single-accent lock). The ::before is a
@@ -2805,6 +2809,36 @@
                 } catch (e) { /* private mode */ }
             }
 
+            function g1TodayLocal() {
+                var d = new Date();
+                return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') +
+                    '-' + String(d.getDate()).padStart(2, '0');
+            }
+            function g1ShiftLocal(iso, delta) {
+                var p = String(iso).split('-');
+                var d = new Date(+p[0], +p[1] - 1, +p[2]);
+                d.setDate(d.getDate() + delta);
+                return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') +
+                    '-' + String(d.getDate()).padStart(2, '0');
+            }
+            // "plan" allows future dates only, "applied" today-or-past. Native
+            // min/max grey out invalid days in the picker; a stored value left
+            // invalid by a mode switch is cleared so the estimate resets.
+            function applyG1DateBounds() {
+                var input = document.getElementById('g1-apply-date');
+                if (!input) return;
+                var today = g1TodayLocal();
+                if (g1StoredMode() === 'plan') {
+                    input.min = g1ShiftLocal(today, 1);
+                    input.removeAttribute('max');
+                    if (input.value && input.value <= today) { input.value = ''; g1SaveEstimate(); }
+                } else {
+                    input.max = today;
+                    input.removeAttribute('min');
+                    if (input.value && input.value > today) { input.value = ''; g1SaveEstimate(); }
+                }
+            }
+
             function paintG1Estimate() {
                 var box = document.getElementById('g1-estimate');
                 if (!box) return;
@@ -2964,6 +2998,7 @@
                 wireChrome();
                 var g1DateEl = document.getElementById('g1-apply-date');
                 if (g1DateEl) g1DateEl.addEventListener('change', function() {
+                    applyG1DateBounds();
                     g1SaveEstimate();
                     paintG1Estimate();
                 });
@@ -2983,9 +3018,11 @@
                             modeChips[mj].classList.toggle('active', on);
                             modeChips[mj].setAttribute('aria-pressed', on ? 'true' : 'false');
                         }
+                        applyG1DateBounds();
                         paintG1Estimate();
                     });
                 }
+                applyG1DateBounds();
                 paintG1Estimate();
                 showHero();
             }
