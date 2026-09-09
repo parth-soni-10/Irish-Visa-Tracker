@@ -1003,7 +1003,8 @@
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 16px;
-            margin: 20px 0 24px;
+            max-width: 880px;
+            margin: 20px auto 24px;
         }
         #visa-dash .tracker-card {
             font-family: inherit;
@@ -2911,8 +2912,7 @@
                         'Daily decisions published by the Embassy of Ireland in New Delhi — searchable by application number, with trends and summaries.', visaMeta) +
                     trackerCardHTML('1g', 'stamp', 'Stamp 1G Processing',
                         'ISD renewal queue: which application date is being processed now, how far behind it is, and when it may catch up.', g1Meta) +
-                    '</div>' +
-                    '<div class="note">Bookmark a tracker directly: <code>?tracker=visa</code> or <code>?tracker=1g</code>.</div>';
+                    '</div>';
                 wireChrome();
                 var cards = root.querySelectorAll('.tracker-card');
                 for (var i = 0; i < cards.length; i++) {
