@@ -14,6 +14,13 @@
     "lag_weeks": 11.57
   },
   {
+    "run_date": "2026-04-08",
+    "processing_date": "2026-01-09",
+    "lag_days": 89,
+    "lag_weeks": 12.71,
+    "origin": "mrci"
+  },
+  {
     "run_date": "2026-05-18",
     "run_time": "11:39:07",
     "processing_date": "2026-02-07",

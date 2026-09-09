@@ -2932,8 +2932,15 @@
                     return '<text x="' + xx + '" y="' + (H - 10) + '" font-size="11" fill="currentColor" opacity="0.7" text-anchor="' + anchor + '">' +
                         shortDay(weeks[i]) + '</text>';
                 }).join('');
+                // Dashed all-time average lag across every observation.
+                var avgLag = rows.reduce(function(s, r) { return s + r.lag_days; }, 0) / rows.length;
+                var ay = Y(avgLag).toFixed(1);
+                var avgLine = '<line x1="' + PL + '" y1="' + ay + '" x2="' + (W - PR) + '" y2="' + ay +
+                    '" stroke="currentColor" stroke-width="1.5" stroke-dasharray="6 4" opacity="0.55"/>' +
+                    '<text x="' + (W - PR) + '" y="' + (+ay - 6) + '" font-size="11" font-weight="700" fill="currentColor" opacity="0.75" text-anchor="end">avg ' +
+                    avgLag.toFixed(0) + 'd</text>';
                 return '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Average Stamp 1G lag per week, ' + weeks.length + ' weeks">' +
-                    grid + bars + xlabels + '</svg>';
+                    grid + bars + avgLine + xlabels + '</svg>';
             }
 
             function renderG1Layout(rows) {
@@ -2989,7 +2996,7 @@
                         '</tbody></table></div></div>';
                 }
                 var chart = '<div class="g1-chart"><h3>Lag over time</h3>' +
-                    '<div class="note2">Each bar averages one week of observations (daily cron runs plus archived snapshots). Lag ' +
+                    '<div class="note2">Each bar averages one week of observations (daily cron runs plus archived snapshots). Dashed line: all-time average. Lag ' +
                     (proj.ok && proj.lagDelta !== 0 ? (proj.lagDelta > 0 ? 'grew' : 'shrank') + ' by ' + Math.abs(proj.lagDelta) + ' days across this history.' : 'is flat across this history.') + '</div>' +
                     g1TrendSVG(rows) + '</div>';
                 var histRows = rows.slice().reverse().map(function(r) {
