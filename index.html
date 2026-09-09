@@ -548,11 +548,16 @@
             box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.1);
         }
         /* Hide Chrome's datalist dropdown arrow on the search box (the
-           suggestions still work via typing). Both pseudo-elements covered:
-           picker-indicator is what Chrome uses today, list-button is the
-           legacy name. Scoped to #home-search so date inputs keep theirs. */
+           suggestions still work via typing). All three pseudo-element names
+           Chrome has used for it; unknown ones are dropped harmlessly.
+           Scoped to #home-search so date inputs keep their indicators. */
         #visa-dash #home-search::-webkit-calendar-picker-indicator,
-        #visa-dash #home-search::-webkit-list-button { display: none; }
+        #visa-dash #home-search::-webkit-list-button,
+        #visa-dash #home-search::picker-icon { display: none; }
+        /* Hammer fallback: strip all native decoration from the search box
+           itself (its border/background come from .searchbar, so this only
+           removes built-in chrome like the datalist arrow). */
+        #visa-dash #home-search { -webkit-appearance: none; appearance: none; }
         #visa-dash .searchbar svg {
             flex-shrink: 0;
             opacity: 0.4;
@@ -1238,6 +1243,11 @@
             z-index: 2;
             box-shadow: inset 0 1px 0 rgba(255,255,255,.25), 0 4px 16px rgba(0,0,0,.18);
         }
+        /* Big counts (thousands/day) become a pill so the digits fit. */
+        #visa-dash .ring-core.big {
+            width: auto; min-width: 36px; padding: 0 12px; border-radius: 19px;
+            font-size: 14px;
+        }
         /* Daily — animated sine-wave bar chart */
         #visa-dash .wave { display: flex; align-items: flex-end; gap: 4px; height: 100%; width: 100%; }
         #visa-dash .wave-bar {
@@ -1458,8 +1468,11 @@
 
 
         (function() {
-            const HARDCODED_WEB_APP_URL = '';
-            const WEB_APP_URL = (window.VISA_WEB_APP_URL || HARDCODED_WEB_APP_URL || '').trim();
+            // Static data files committed by the scraper workflow — no backend,
+            // no secrets, no configuration. Same shape the Apps Script API
+            // used to serve, so every render path below is untouched.
+            const VISA_DATA_URL = 'data/visa_decisions.json';
+            const VISA_META_URL = 'data/visa_meta.json';
             const TRACKING_STARTED = '2026-07-13';
             const EXCLUDE_FROM_AVERAGES = '2026-07-12';
             const CACHE_FRESH_MS = 5 * 60 * 1000;
@@ -1557,7 +1570,7 @@
 
             // A "placeholder" row is a notice the scraper writes for a date that
             // has no decisions file yet (or the office is closed) — NOT an
-            // application. Code.gs keys them with an IRL of "NO_FILE_<date>";
+            // application. The scraper keys them with an IRL of "NO_FILE_<date>";
             // message-based checks catch any older/odd rows as a fallback.
             function isPlaceholderRow(r) {
                 if (!r) return false;
@@ -1726,13 +1739,12 @@
                 return parts.join(', ');
             }
             async function loadMeta() {
-                if (!WEB_APP_URL) return;
                 try {
-                    const res = await fetch(WEB_APP_URL + '?action=meta');
+                    const res = await fetch(VISA_META_URL);
                     if (!res.ok) return;
                     const m = await res.json();
                     if (m && typeof m === 'object' && m.lastRunAt) metaData = m;
-                } catch (e) { /* older backend or outage — card stays hidden */ }
+                } catch (e) { /* pre-migration or outage — card stays hidden */ }
                 renderMetaCard();
             }
             function renderMetaCard() {
@@ -1795,16 +1807,12 @@
                 // Return cached data only if it's still fresh AND we're not forcing a refresh.
                 if (!force && cache !== null && cacheFetchedAt && (Date.now() - cacheFetchedAt < CACHE_FRESH_MS)) return cache;
                 if (dataPromise) return dataPromise;
-                if (!WEB_APP_URL) {
-                    if (cache === null) cache = [];
-                    cacheFetchedAt = Date.now();
-                    return cache;
-                }
                 dataPromise = (async () => {
                     try {
-                        const res = await fetch(WEB_APP_URL + '?action=raw');
+                        const res = await fetch(VISA_DATA_URL);
                         if (!res.ok) throw new Error('HTTP ' + res.status);
                         const raw = await res.json();
+                        if (!Array.isArray(raw)) throw new Error('bad payload');
                         staleAt = null;
                         persistSnapshot(raw);
                         // Pre-compute classify + row HTML once per row, then sort by
@@ -1831,8 +1839,9 @@
 
 
             function renderConfigWarning() {
-                return WEB_APP_URL ? '' :
-                    '<div class="config-warn">No data source configured yet. Deploy <code>Code.gs</code> as a Web App and paste its <code>/exec</code> URL into <code>WEB_APP_URL</code> at the top of this file\'s script.</div>';
+                // No configuration step exists anymore (static data files) —
+                // kept as a function so every layout call site is untouched.
+                return '';
             }
 
             function searchIcon() {
@@ -1883,7 +1892,7 @@
                             : (dayDiff >= 0 ? '+' : '') + dayDiff + ' vs. yesterday, ' + fmtPct(accPct) + ' accepted.',
                         visual: latestPlaceholder
                             ? '<div class="ring"></div><div class="ring"></div><div class="ring"></div><div class="ring-core">-</div>'
-                            : '<div class="ring"></div><div class="ring"></div><div class="ring"></div><div class="ring-core">' + latestCount + '</div>'
+                            : '<div class="ring"></div><div class="ring"></div><div class="ring"></div><div class="ring-core' + (String(latestCount).length > 3 ? ' big' : '') + '">' + latestCount + '</div>'
                     },
                     daily: {
                         title: byDate.length + ' days on record.',
@@ -2773,14 +2782,12 @@
             let visaCountCache = null;
             async function loadVisaCount() {
                 if (visaCountCache !== null) return visaCountCache;
-                if (!WEB_APP_URL) return 0;
                 try {
-                    const res = await fetch(WEB_APP_URL + '?action=count', { cache: 'no-store' });
+                    const res = await fetch(VISA_META_URL, { cache: 'no-store' });
                     if (!res.ok) throw new Error('HTTP ' + res.status);
-                    const j = await res.json();
-                    const n = Array.isArray(j) ? j.length : (j && typeof j.count === 'number' ? j.count : null);
-                    if (n === null) throw new Error('bad count payload');
-                    visaCountCache = n;
+                    const m = await res.json();
+                    if (!m || typeof m.sheetRows !== 'number') throw new Error('bad meta');
+                    visaCountCache = m.sheetRows;
                 } catch (e) {
                     const rows = await loadData();
                     visaCountCache = (rows || []).length;
@@ -3191,9 +3198,9 @@
                 document.title = 'Ireland Trackers';
                 // Paint the cards IMMEDIATELY with placeholder stats — never
                 // block on the network. Each card's meta line fills in as its
-                // own fetch resolves (the Apps Script fetch can take 10s+ on
-                // cold start; the 1G JSON takes milliseconds). Clicking a card
-                // works from the first paint.
+                // own fetch resolves (both are small static files, so this is
+                // fast; the full visa history still loads on tracker entry).
+                // Clicking a card works from the first paint.
                 root.innerHTML =
                     '<div class="landing-wrap">' +
                     '<div class="eyebrow">Ireland \u00b7 Live trackers</div>' +

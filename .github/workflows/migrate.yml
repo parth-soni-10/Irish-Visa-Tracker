@@ -1,0 +1,40 @@
+name: Migrate Sheet to JSON (one-time)
+
+# One-time migration: export the Google Sheet history (via the Apps Script
+# Web App) into data/visa_decisions.json + data/visa_meta.json, then never
+# needed again. Run manually ONCE from the Actions tab ("Run workflow"),
+# verify the row counts, and from then on the normal scraper owns the files.
+# Afterwards the Apps Script deployment, the Sheet, and both secrets can go.
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # needed to commit the exported JSON back to the repo
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install requests
+
+      - name: Export Sheet to JSON
+        env:
+          WEB_APP_URL: ${{ secrets.WEB_APP_URL }}
+        run: python migrate_sheet_to_json.py
+
+      - name: Commit exported data
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/visa_decisions.json data/visa_meta.json
+          git diff --staged --quiet || git commit -m "visa: migrate Sheet history to JSON"
+          git push

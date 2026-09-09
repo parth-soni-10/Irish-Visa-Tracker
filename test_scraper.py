@@ -1,6 +1,9 @@
+import json
 import os
+import tempfile
 import unittest
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 from unittest.mock import Mock, patch
 
 import requests
@@ -15,114 +18,126 @@ def ist(dt_str, hour=11):
     return datetime.fromisoformat(dt_str).replace(tzinfo=IST).replace(hour=hour)
 
 
-class FetchExistingRowsTests(unittest.TestCase):
+class LocalHistoryTests(unittest.TestCase):
+    """load_history / save_history against a tmp DATA_DIR."""
+
     def setUp(self):
-        self.original_url = scraper.WEB_APP_URL
-        scraper.WEB_APP_URL = "https://script.google.com/macros/s/test/exec"
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.dir_patch = patch("scraper.DATA_DIR", Path(self.tmp.name))
+        self.dir_patch.start()
+        self.addCleanup(self.dir_patch.stop)
 
-    def tearDown(self):
-        scraper.WEB_APP_URL = self.original_url
+    def test_missing_file_returns_empty_list(self):
+        self.assertEqual(scraper.load_history(), [])
 
-    @staticmethod
-    def response(status_code, payload=None, body="", url="https://script.googleusercontent.com/macros/echo"):
-        response = Mock()
-        response.status_code = status_code
-        response.headers = {}
-        response.text = body
-        response.url = url
-        response.json.return_value = payload
-        response.raise_for_status.side_effect = (
-            None if status_code < 400 else scraper.requests.exceptions.HTTPError(response=response)
-        )
-        return response
+    def test_roundtrip_preserves_rows(self):
+        rows = [["2026-08-11", "IRL100", "Granted"],
+                ["2026-08-12", "NO_FILE_2026-08-12", scraper.NO_UPLOAD_MESSAGE]]
+        scraper.save_history(rows)
+        self.assertEqual(scraper.load_history(), rows)
 
-    @patch("scraper.time.sleep")
-    @patch("scraper.requests.get")
-    def test_retries_transient_redirect_404_from_fresh_exec_url(self, get, sleep):
-        get.side_effect = [
-            self.response(404, body="expired redirect"),
-            self.response(200, payload=[["2026-08-01", "IRL123", "Granted"]]),
-        ]
+    def test_corrupt_json_raises_history_error(self):
+        scraper._history_path().parent.mkdir(parents=True, exist_ok=True)
+        scraper._history_path().write_text("{not json", encoding="utf-8")
+        with self.assertRaises(scraper.HistoryError):
+            scraper.load_history()
 
-        rows = scraper.fetch_existing_rows()
-
-        self.assertEqual(rows, [["2026-08-01", "IRL123", "Granted"]])
-        self.assertEqual(get.call_count, 2)
-        self.assertEqual(get.call_args_list[0].args[0], scraper.WEB_APP_URL)
-        self.assertEqual(get.call_args_list[1].args[0], scraper.WEB_APP_URL)
-        self.assertEqual(get.call_args_list[0].kwargs["allow_redirects"], True)
-        sleep.assert_called_once_with(scraper.WEB_APP_RETRY_DELAYS[0])
-
-    @patch("scraper.time.sleep")
-    @patch("scraper.requests.get")
-    def test_malformed_success_payload_is_not_used_for_writes(self, get, sleep):
-        get.return_value = self.response(200, payload=[["2026-08-01", "IRL123"]])
-
-        with self.assertRaises(scraper.WebAppUnavailable):
-            scraper.fetch_existing_rows()
-
-        self.assertEqual(get.call_count, scraper.WEB_APP_GET_ATTEMPTS)
-
-    @patch("scraper.time.sleep")
-    @patch("scraper.requests.get")
-    def test_persistent_endpoint_failure_is_wrapped(self, get, sleep):
-        get.return_value = self.response(404, body="deployment not found")
-
-        with self.assertRaises(scraper.WebAppUnavailable) as caught:
-            scraper.fetch_existing_rows()
-
-        self.assertIn(f"after {scraper.WEB_APP_GET_ATTEMPTS} attempts", str(caught.exception))
-        self.assertEqual(get.call_count, scraper.WEB_APP_GET_ATTEMPTS)
-        self.assertEqual(sleep.call_count, scraper.WEB_APP_GET_ATTEMPTS - 1)
+    def test_invalid_row_shape_raises_history_error(self):
+        path = scraper._history_path()
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text('[["2026-08-11", "IRL100"]]', encoding="utf-8")
+        with self.assertRaises(scraper.HistoryError):
+            scraper.load_history()
 
 
-class MainFailClosedTests(unittest.TestCase):
-    @patch("scraper.find_ods_link")
-    @patch("scraper.fetch_existing_rows", side_effect=scraper.WebAppUnavailable("endpoint down"))
-    def test_main_skips_scraping_when_sheet_baseline_is_unavailable(self, fetch, find_ods_link):
-        scraper.WEB_APP_URL = "https://script.google.com/macros/s/test/exec"
+class PlaceholderOpsTests(unittest.TestCase):
+    """push/upsert/clear operate on plain lists, no I/O."""
 
-        with self.assertRaises(SystemExit) as exited:
-            scraper.main()
+    def test_push_appends_arrays(self):
+        rows = [["2026-08-10", "IRL100", "Granted"]]
+        scraper.push_new_rows(
+            rows, [{"date": "2026-08-12", "irl": "IRL101", "decision": "Refused"}])
+        self.assertEqual(rows[-1], ["2026-08-12", "IRL101", "Refused"])
 
-        self.assertEqual(exited.exception.code, 1)
-        fetch.assert_called_once_with()
-        find_ods_link.assert_not_called()
+    def test_placeholder_upsert_never_duplicates(self):
+        rows = []
+        scraper.set_no_file_placeholder(rows, "2026-08-12", scraper.NO_UPLOAD_MESSAGE)
+        scraper.set_no_file_placeholder(rows, "2026-08-12", scraper.WEEKEND_MESSAGE)
+        self.assertEqual(
+            rows, [["2026-08-12", "NO_FILE_2026-08-12", scraper.WEEKEND_MESSAGE]])
 
-    @patch("scraper.find_ods_link")
-    @patch("scraper.fetch_existing_rows", side_effect=scraper.WebAppUnavailable("invalid payload"))
-    def test_main_does_not_scrape_after_malformed_sheet_response(self, fetch, find_ods_link):
-        scraper.WEB_APP_URL = "https://script.google.com/macros/s/test/exec"
+    def test_clear_removes_only_that_dates_placeholder(self):
+        rows = [["2026-08-12", "NO_FILE_2026-08-12", scraper.NO_UPLOAD_MESSAGE],
+                ["2026-08-12", "IRL100", "Granted"]]
+        scraper.clear_no_file_placeholder(rows, "2026-08-12")
+        self.assertEqual(rows, [["2026-08-12", "IRL100", "Granted"]])
+        scraper.clear_no_file_placeholder(rows, "2026-08-12")  # no-op, must not raise
 
-        with self.assertRaises(SystemExit) as exited:
-            scraper.main()
 
-        self.assertEqual(exited.exception.code, 1)
-        fetch.assert_called_once_with()
-        find_ods_link.assert_not_called()
+class UpdateMetaTests(unittest.TestCase):
+    def test_update_meta_writes_json_file(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            with patch("scraper.DATA_DIR", Path(tmp)):
+                scraper.update_meta({"lastRunAt": "2026-08-12T11:00:00", "ok": True})
+                saved = json.loads(
+                    (Path(tmp) / "visa_meta.json").read_text(encoding="utf-8"))
+        self.assertTrue(saved["ok"])
+
+
+class CorruptHistoryTests(unittest.TestCase):
+    """A corrupt local baseline must fail loudly — never scrape or write."""
+
+    def _run_with_history(self, content):
+        with tempfile.TemporaryDirectory() as tmp:
+            if content is not None:
+                Path(tmp, "visa_decisions.json").write_text(content, encoding="utf-8")
+            with patch("scraper.DATA_DIR", Path(tmp)), \
+                 patch("scraper.find_ods_link") as find_ods_link:
+                with self.assertRaises(SystemExit) as exited:
+                    scraper.main()
+                self.assertEqual(exited.exception.code, 1)
+                find_ods_link.assert_not_called()
+
+    def test_main_exits_1_on_corrupt_history(self):
+        self._run_with_history("{not json")
+
+    def test_main_exits_1_on_invalid_row_shape(self):
+        self._run_with_history('[["2026-08-11", "IRL100"]]')
+
+    def test_main_starts_clean_on_missing_history(self):
+        # Missing file is fine (first run): the weekend path writes its
+        # placeholder and meta to the fresh DATA_DIR.
+        with tempfile.TemporaryDirectory() as tmp:
+            with patch("scraper.DATA_DIR", Path(tmp)), \
+                 patch("scraper.now_ist", return_value=ist("2026-08-15")), \
+                 patch("scraper.check_holiday", return_value=None):
+                try:
+                    scraper.main()
+                    exited = None
+                except SystemExit as e:
+                    exited = e.code
+            self.assertIsNone(exited)
+            saved = json.loads(
+                (Path(tmp) / "visa_decisions.json").read_text(encoding="utf-8"))
+            self.assertIn(
+                ["2026-08-15", "NO_FILE_2026-08-15", scraper.WEEKEND_MESSAGE], saved)
 
 
 class MainPlaceholderTests(unittest.TestCase):
     """The placeholder / gap-filling decision logic inside main()."""
 
-    def setUp(self):
-        self.original_url = scraper.WEB_APP_URL
-        scraper.WEB_APP_URL = "https://script.google.com/macros/s/test/exec"
-
-    def tearDown(self):
-        scraper.WEB_APP_URL = self.original_url
-
     @staticmethod
     def run_main(now, existing_rows, filename="20260811_NDVO_Visa_Decisions.ods",
                  new_irls=(), fail_scrape=False, holiday=None, closure_dates=None):
         """Run main() with everything mocked except the decision logic.
-        Returns (push, set_ph, clear_ph, exit_code)."""
+        Returns (push, set_ph, clear_ph, exit_code, meta, save)."""
         df = scraper.pd.DataFrame(
             [["IRL" + irl, "Granted"] for irl in new_irls],
             columns=["IRL Number", "Decision"],
         )
         with patch("scraper.now_ist", return_value=now), \
-             patch("scraper.fetch_existing_rows", return_value=existing_rows), \
+             patch("scraper.load_history", return_value=existing_rows), \
              patch("scraper.check_holiday", return_value=holiday), \
              patch("scraper._closure_dates", return_value=set(closure_dates or ())), \
              patch("scraper.find_ods_link",
@@ -133,13 +148,14 @@ class MainPlaceholderTests(unittest.TestCase):
              patch("scraper.push_new_rows") as push, \
              patch("scraper.set_no_file_placeholder") as set_ph, \
              patch("scraper.clear_no_file_placeholder") as clear_ph, \
-             patch("scraper.update_meta") as upd_meta:
+             patch("scraper.update_meta") as upd_meta, \
+             patch("scraper.save_history") as save:
             try:
                 scraper.main()
                 exited = None
             except SystemExit as e:
                 exited = e.code
-        return push, set_ph, clear_ph, exited, upd_meta
+        return push, set_ph, clear_ph, exited, upd_meta, save
 
     def test_stale_file_backfills_all_gap_days_and_today(self):
         # The exact Aug 2026 incident: last file dated 2026-08-11, runs keep
@@ -151,14 +167,14 @@ class MainPlaceholderTests(unittest.TestCase):
             ["2026-08-11", "IRL101", "Refused"],
             ["2026-08-08", "NO_FILE_2026-08-08", scraper.WEEKEND_MESSAGE],
         ]
-        push, set_ph, clear_ph, exited, upd_meta = self.run_main(
+        push, set_ph, clear_ph, exited, upd_meta, save = self.run_main(
             now, existing, new_irls=("100",), closure_dates={(8, 13), (8, 14)})
         self.assertIsNone(exited)
         push.assert_not_called()
-        self.assertEqual([c.args[0] for c in set_ph.call_args_list],
+        self.assertEqual([c.args[1] for c in set_ph.call_args_list],
                          ["2026-08-12", "2026-08-13", "2026-08-14"])
         for c in set_ph.call_args_list:
-            self.assertEqual(c.args[1], scraper.NO_UPLOAD_MESSAGE)
+            self.assertEqual(c.args[2], scraper.NO_UPLOAD_MESSAGE)
         clear_ph.assert_not_called()
 
     def test_new_rows_stamped_with_today_not_filename_date(self):
@@ -169,13 +185,14 @@ class MainPlaceholderTests(unittest.TestCase):
         # placeholder is written for it — any stale one is cleared instead.
         now = ist("2026-08-12")
         existing = [["2026-08-10", "IRL100", "Granted"]]
-        push, set_ph, clear_ph, exited, upd_meta = self.run_main(now, existing, new_irls=("101",))
+        push, set_ph, clear_ph, exited, upd_meta, save = self.run_main(now, existing, new_irls=("101",))
         self.assertIsNone(exited)
         push.assert_called_once()
-        self.assertEqual(push.call_args.args[0],
+        self.assertEqual(push.call_args.args[1],
                          [{"date": "2026-08-12", "irl": "IRL101", "decision": "Granted"}])
         set_ph.assert_not_called()
-        clear_ph.assert_called_once_with("2026-08-12")
+        clear_ph.assert_called_once()
+        self.assertEqual(clear_ph.call_args.args[1], "2026-08-12")
 
     def test_stale_file_with_no_new_rows_places_today_placeholder(self):
         # A stale file whose decisions are all already recorded means no new
@@ -183,31 +200,32 @@ class MainPlaceholderTests(unittest.TestCase):
         # days after the file's date are backfilled too.
         now = ist("2026-08-12")
         existing = [["2026-08-11", "IRL100", "Granted"]]
-        push, set_ph, clear_ph, exited, upd_meta = self.run_main(now, existing, new_irls=("100",))
+        push, set_ph, clear_ph, exited, upd_meta, save = self.run_main(now, existing, new_irls=("100",))
         self.assertIsNone(exited)
         push.assert_not_called()
-        self.assertEqual([c.args[0] for c in set_ph.call_args_list], ["2026-08-12"])
+        self.assertEqual([c.args[1] for c in set_ph.call_args_list], ["2026-08-12"])
         clear_ph.assert_not_called()
 
     def test_file_dated_today_clears_placeholder_and_skips_placeholder(self):
         now = ist("2026-08-12")
         existing = [["2026-08-11", "IRL100", "Granted"]]
-        push, set_ph, clear_ph, exited, upd_meta = self.run_main(
+        push, set_ph, clear_ph, exited, upd_meta, save = self.run_main(
             now, existing, filename="20260812_NDVO_Visa_Decisions.ods", new_irls=("200",))
         self.assertIsNone(exited)
         push.assert_called_once()
-        self.assertEqual(push.call_args.args[0][0]["date"], "2026-08-12")
-        clear_ph.assert_called_once_with("2026-08-12")
+        self.assertEqual(push.call_args.args[1][0]["date"], "2026-08-12")
+        clear_ph.assert_called_once()
+        self.assertEqual(clear_ph.call_args.args[1], "2026-08-12")
         set_ph.assert_not_called()
 
     def test_scrape_failure_places_today_only_and_fails(self):
         now = ist("2026-08-14")
         existing = [["2026-08-11", "IRL100", "Granted"]]
-        push, set_ph, clear_ph, exited, upd_meta = self.run_main(
+        push, set_ph, clear_ph, exited, upd_meta, save = self.run_main(
             now, existing, fail_scrape=True, closure_dates={(8, 13), (8, 14)})
         self.assertEqual(exited, 1)
-        self.assertEqual([c.args[0] for c in set_ph.call_args_list], ["2026-08-14"])
-        self.assertEqual(set_ph.call_args.args[1], scraper.NO_UPLOAD_MESSAGE)
+        self.assertEqual([c.args[1] for c in set_ph.call_args_list], ["2026-08-14"])
+        self.assertEqual(set_ph.call_args.args[2], scraper.NO_UPLOAD_MESSAGE)
         push.assert_not_called()
 
     def test_weekend_creates_closed_placeholder_and_heals_weekday_gaps(self):
@@ -215,9 +233,9 @@ class MainPlaceholderTests(unittest.TestCase):
         # weekday gaps (12, 13, 14) since the last real data (Aug 11).
         now = ist("2026-08-15")
         existing = [["2026-08-11", "IRL100", "Granted"]]
-        push, set_ph, clear_ph, exited, upd_meta = self.run_main(now, existing)
+        push, set_ph, clear_ph, exited, upd_meta, save = self.run_main(now, existing)
         self.assertIsNone(exited)
-        calls = {c.args[0]: c.args[1] for c in set_ph.call_args_list}
+        calls = {c.args[1]: c.args[2] for c in set_ph.call_args_list}
         self.assertEqual(calls["2026-08-15"], scraper.WEEKEND_MESSAGE)
         self.assertEqual(calls["2026-08-12"], scraper.NO_UPLOAD_MESSAGE)
         self.assertEqual(calls["2026-08-13"], scraper.NO_UPLOAD_MESSAGE)
@@ -228,10 +246,10 @@ class MainPlaceholderTests(unittest.TestCase):
     def test_holiday_creates_closed_placeholder_and_heals_gaps(self):
         now = ist("2026-08-13")
         existing = [["2026-08-11", "IRL100", "Granted"]]
-        push, set_ph, clear_ph, exited, upd_meta = self.run_main(
+        push, set_ph, clear_ph, exited, upd_meta, save = self.run_main(
             now, existing, holiday="Embassy Closed for Relocation")
         self.assertIsNone(exited)
-        calls = {c.args[0]: c.args[1] for c in set_ph.call_args_list}
+        calls = {c.args[1]: c.args[2] for c in set_ph.call_args_list}
         self.assertEqual(calls["2026-08-13"],
                          "Embassy is closed today for Embassy Closed for Relocation")
         self.assertEqual(calls["2026-08-12"], scraper.NO_UPLOAD_MESSAGE)
@@ -244,10 +262,10 @@ class MainPlaceholderTests(unittest.TestCase):
         # the no-upload message.
         now = ist("2026-08-17")
         existing = [["2026-08-11", "IRL100", "Granted"]]
-        push, set_ph, clear_ph, exited, upd_meta = self.run_main(
+        push, set_ph, clear_ph, exited, upd_meta, save = self.run_main(
             now, existing, closure_dates={(8, 13), (8, 14)})
         self.assertIsNone(exited)
-        calls = {c.args[0]: c.args[1] for c in set_ph.call_args_list}
+        calls = {c.args[1]: c.args[2] for c in set_ph.call_args_list}
         self.assertEqual(calls["2026-08-15"], scraper.WEEKEND_MESSAGE)
         self.assertEqual(calls["2026-08-16"], scraper.WEEKEND_MESSAGE)
         self.assertEqual(calls["2026-08-12"], scraper.NO_UPLOAD_MESSAGE)
@@ -260,7 +278,7 @@ class MainPlaceholderTests(unittest.TestCase):
     def test_today_real_data_skips_entirely(self):
         now = ist("2026-08-12")
         existing = [["2026-08-12", "IRL100", "Granted"]]
-        push, set_ph, clear_ph, exited, upd_meta = self.run_main(now, existing)
+        push, set_ph, clear_ph, exited, upd_meta, save = self.run_main(now, existing)
         self.assertIsNone(exited)
         push.assert_not_called()
         set_ph.assert_not_called()
@@ -274,10 +292,10 @@ class MainPlaceholderTests(unittest.TestCase):
             ["2026-08-11", "IRL100", "Granted"],
             ["2026-08-12", "NO_FILE_2026-08-12", scraper.NO_UPLOAD_MESSAGE],
         ]
-        push, set_ph, clear_ph, exited, upd_meta = self.run_main(
+        push, set_ph, clear_ph, exited, upd_meta, save = self.run_main(
             now, existing, closure_dates={(8, 13), (8, 14)})
         self.assertIsNone(exited)
-        self.assertEqual([c.args[0] for c in set_ph.call_args_list],
+        self.assertEqual([c.args[1] for c in set_ph.call_args_list],
                          ["2026-08-13", "2026-08-14"])
         push.assert_not_called()
 
@@ -353,13 +371,6 @@ class FilenameDateTests(unittest.TestCase):
     """parse_date_from_filename: valid stamps parse, anything else falls back
     to today so a malformed name can never push garbage dates into the Sheet."""
 
-    def setUp(self):
-        self.original_url = scraper.WEB_APP_URL
-        scraper.WEB_APP_URL = "https://script.google.com/macros/s/test/exec"
-
-    def tearDown(self):
-        scraper.WEB_APP_URL = self.original_url
-
     @patch("scraper.now_ist", return_value=ist("2026-08-14"))
     def test_parses_valid_stamp(self, _now):
         self.assertEqual(scraper.parse_date_from_filename("20260811_NDVO_Visa_Decisions.ods"),
@@ -384,13 +395,6 @@ class FilenameDateTests(unittest.TestCase):
 class BackfillHelperTests(unittest.TestCase):
     """Direct unit tests for _latest_real_date and _backfill_missing_days."""
 
-    def setUp(self):
-        self.original_url = scraper.WEB_APP_URL
-        scraper.WEB_APP_URL = "https://script.google.com/macros/s/test/exec"
-
-    def tearDown(self):
-        scraper.WEB_APP_URL = self.original_url
-
     def test_latest_real_date_ignores_placeholders_and_garbage(self):
         rows = [
             ["2026-08-11", "IRL001", "Granted"],
@@ -413,7 +417,7 @@ class BackfillHelperTests(unittest.TestCase):
         ]
         scraper._backfill_missing_days(existing, ist("2026-08-15"),
                                        anchor="2026-08-11", skip_date="2026-08-15")
-        calls = {c.args[0]: c.args[1] for c in set_ph.call_args_list}
+        calls = {c.args[1]: c.args[2] for c in set_ph.call_args_list}
         # 12 missing -> no-upload; 13 already exists -> untouched;
         # 14 missing -> no-upload; 15 skipped by skip_date
         self.assertEqual(calls, {
@@ -424,7 +428,7 @@ class BackfillHelperTests(unittest.TestCase):
     @patch("scraper.set_no_file_placeholder")
     def test_backfill_weekend_days_get_closed_message(self, set_ph):
         scraper._backfill_missing_days([], ist("2026-08-17"), anchor="2026-08-14")
-        calls = {c.args[0]: c.args[1] for c in set_ph.call_args_list}
+        calls = {c.args[1]: c.args[2] for c in set_ph.call_args_list}
         self.assertEqual(calls["2026-08-15"], scraper.WEEKEND_MESSAGE)
         self.assertEqual(calls["2026-08-16"], scraper.WEEKEND_MESSAGE)
         self.assertEqual(calls["2026-08-17"], scraper.NO_UPLOAD_MESSAGE)
@@ -433,7 +437,7 @@ class BackfillHelperTests(unittest.TestCase):
     def test_backfill_uses_latest_real_date_when_no_anchor(self, set_ph):
         existing = [["2026-08-10", "IRL001", "Granted"]]
         scraper._backfill_missing_days(existing, ist("2026-08-12"))
-        self.assertEqual([c.args[0] for c in set_ph.call_args_list],
+        self.assertEqual([c.args[1] for c in set_ph.call_args_list],
                          ["2026-08-11", "2026-08-12"])
 
     @patch("scraper.set_no_file_placeholder")
@@ -505,30 +509,23 @@ class GapAlertHelperTests(unittest.TestCase):
 class GapAlertTests(unittest.TestCase):
     """The 3+-business-day no-new-file guard inside main()."""
 
-    def setUp(self):
-        self.original_url = scraper.WEB_APP_URL
-        scraper.WEB_APP_URL = "https://script.google.com/macros/s/test/exec"
-
-    def tearDown(self):
-        scraper.WEB_APP_URL = self.original_url
-
     def test_guard_fires_after_3_business_days_without_new_file(self):
         # Latest file dated Mon Aug 10; by Thu Aug 13 (Tue/Wed/Thu all business
         # days, no closures) no new file has appeared -> the run must fail.
         now = ist("2026-08-13")
         existing = [["2026-08-10", "IRL100", "Granted"]]
-        push, set_ph, clear_ph, exited, upd_meta = MainPlaceholderTests.run_main(
+        push, set_ph, clear_ph, exited, upd_meta, save = MainPlaceholderTests.run_main(
             now, existing, filename="20260810_NDVO_Visa_Decisions.ods")
         self.assertEqual(exited, 1)
         # Placeholders are still written before the guard fails the run.
-        self.assertEqual([c.args[0] for c in set_ph.call_args_list],
+        self.assertEqual([c.args[1] for c in set_ph.call_args_list],
                          ["2026-08-11", "2026-08-12", "2026-08-13"])
         push.assert_not_called()
 
     def test_guard_does_not_fire_after_only_2_business_days(self):
         now = ist("2026-08-12")
         existing = [["2026-08-10", "IRL100", "Granted"]]
-        push, set_ph, clear_ph, exited, upd_meta = MainPlaceholderTests.run_main(
+        push, set_ph, clear_ph, exited, upd_meta, save = MainPlaceholderTests.run_main(
             now, existing, filename="20260810_NDVO_Visa_Decisions.ods")
         self.assertIsNone(exited)
 
@@ -537,7 +534,7 @@ class GapAlertTests(unittest.TestCase):
         # the guard stays silent on Fri 14.
         now = ist("2026-08-14")
         existing = [["2026-08-11", "IRL100", "Granted"]]
-        push, set_ph, clear_ph, exited, upd_meta = MainPlaceholderTests.run_main(
+        push, set_ph, clear_ph, exited, upd_meta, save = MainPlaceholderTests.run_main(
             now, existing, closure_dates={(8, 13), (8, 14)})
         self.assertIsNone(exited)
 
@@ -610,13 +607,6 @@ class WebhookAlertTests(unittest.TestCase):
 class RunMetaTests(unittest.TestCase):
     """_run_meta(): the run-status object the dashboard reads via ?action=meta."""
 
-    def setUp(self):
-        self.original_url = scraper.WEB_APP_URL
-        scraper.WEB_APP_URL = "https://script.google.com/macros/s/test/exec"
-
-    def tearDown(self):
-        scraper.WEB_APP_URL = self.original_url
-
     def test_run_meta_shape_and_closure_formatting(self):
         now = ist("2026-08-14")
         meta = scraper._run_meta(now, {"A", "B"}, new_rows=[{"irl": "C"}],
@@ -642,7 +632,7 @@ class RunMetaTests(unittest.TestCase):
     def test_main_records_meta_with_closure_dates_on_success(self):
         now = ist("2026-08-12")
         existing = [["2026-08-10", "IRL100", "Granted"]]
-        push, set_ph, clear_ph, exited, upd_meta = MainPlaceholderTests.run_main(
+        push, set_ph, clear_ph, exited, upd_meta, save = MainPlaceholderTests.run_main(
             now, existing, new_irls=("101",), closure_dates={(8, 13), (8, 14)})
         self.assertIsNone(exited)
         upd_meta.assert_called_once()
@@ -658,7 +648,7 @@ class RunMetaTests(unittest.TestCase):
     def test_main_records_failed_meta_when_scrape_fails(self):
         now = ist("2026-08-12")
         existing = [["2026-08-10", "IRL100", "Granted"]]
-        push, set_ph, clear_ph, exited, upd_meta = MainPlaceholderTests.run_main(
+        push, set_ph, clear_ph, exited, upd_meta, save = MainPlaceholderTests.run_main(
             now, existing, fail_scrape=True)
         self.assertEqual(exited, 1)
         upd_meta.assert_called_once()
@@ -670,7 +660,7 @@ class RunMetaTests(unittest.TestCase):
         # its status, so the health card shows the pipeline is alive.
         now = ist("2026-08-12")
         existing = [["2026-08-12", "IRL100", "Granted"]]
-        push, set_ph, clear_ph, exited, upd_meta = MainPlaceholderTests.run_main(
+        push, set_ph, clear_ph, exited, upd_meta, save = MainPlaceholderTests.run_main(
             now, existing)
         self.assertIsNone(exited)
         upd_meta.assert_called_once()

@@ -1,7 +1,8 @@
 """
 Irish Visa Decision Tracker — scraper for GitHub Actions
 -----------------------------------------------------------
-Reads WEB_APP_URL from an environment variable (GitHub Actions secret).
+Reads the embassy's visa-decision file and upserts rows into
+data/visa_decisions.json in this repo (committed by the workflow).
 
 Every run, in priority order:
   1. If today already has REAL data on record (not just a placeholder) -> skip.
@@ -54,11 +55,12 @@ Flags (env vars, all optional):
                                 the real signal).
 """
 
+import json
 import re
 import io
 import os
 import sys
-import time
+from pathlib import Path
 from datetime import datetime, timedelta, timezone
 from urllib.parse import parse_qs, urlsplit
 
@@ -68,9 +70,13 @@ from dateutil import parser as dateparser
 
 PAGE_URL = "https://www.ireland.ie/en/india/newdelhi/services/visas/processing-times-and-decisions/"
 CLOSURE_DATES_URL = "https://www.ireland.ie/en/india/newdelhi/about/embassy-information/"
-WEB_APP_URL = os.environ.get("WEB_APP_URL", "").strip()
-# Required by the backend for every write; must match the VISA_WRITE_SECRET script property.
-VISAS_WRITE_SECRET = os.environ.get("VISAS_WRITE_SECRET", "").strip()
+# Local JSON history (replaces the old Google Sheet backend): the scraper
+# reads/writes these files and the workflow commits them; the dashboard
+# fetches them as static assets. DATA_DIR is module-level (not inlined in
+# path helpers) so tests can point it at a tmp dir.
+DATA_DIR = Path(__file__).resolve().parent / "data"
+HISTORY_FILENAME = "visa_decisions.json"
+META_FILENAME = "visa_meta.json"
 ENABLE_NO_UPLOAD_PLACEHOLDER = os.environ.get("ENABLE_NO_UPLOAD_PLACEHOLDER", "true").strip().lower() == "true"
 # Optional out-of-band alert webhook. When set, a POST is fired the moment the
 # gap alert trips (not a replacement for the red run — a complement to it).
@@ -89,13 +95,15 @@ def _env_int(name, default):
 # Fail the run once this many consecutive business days (Mon-Fri, excluding
 # listed closure dates) have passed without a genuinely new file. 0 disables.
 GAP_ALERT_BUSINESS_DAYS = _env_int("GAP_ALERT_BUSINESS_DAYS", 3)
-# Cold-start tolerance: a container that has been idle for hours can take
-# 60+ seconds (sometimes minutes) to spin up, and every probe before it is
-# ready comes back 404. Budget ~5 minutes across 8 attempts so the first
-# run of the day survives the warm-up instead of failing.
-WEB_APP_GET_ATTEMPTS = 8
-WEB_APP_RETRY_DELAYS = (10, 15, 30, 45, 60, 60, 60)
-WEB_APP_RETRYABLE_STATUS_CODES = {404, 408, 425, 429, 500, 502, 503, 504}
+
+
+class HistoryError(RuntimeError):
+    """The local history file is unreadable or unusable.
+
+    Raised instead of returning an empty list when the file exists but
+    cannot be trusted (corrupt JSON, wrong shape): main() fails loudly
+    rather than continuing with a fabricated empty baseline, which would
+    duplicate history on the next write."""
 
 NO_UPLOAD_MESSAGE = "Visa office hasn't uploaded any sheet until now, check back later, or come back tomorrow"
 WEEKEND_MESSAGE = "Saturday/Sunday, Visa Office is closed"
@@ -149,7 +157,7 @@ def parse_date_from_filename(filename: str) -> str:
     """Extract an ISO date from the first 8 digits of the filename, falling back
     to today's date if no 8-digit stamp is present. Validates the result so a
     malformed filename (e.g. random digits from a UUID) can't push garbage into
-    the Sheet."""
+    the history file."""
     digits = re.sub(r"[^0-9]", "", filename)
     stamp = digits[:8]
     if len(stamp) == 8:
@@ -361,52 +369,18 @@ def _closure_dates(year):
     return dates
 
 
-# ---------------- Sheet I/O ----------------
+# ---------------- local JSON history (data/visa_decisions.json) ----------------
 
-class WebAppUnavailable(RuntimeError):
-    """The Apps Script endpoint could not be read safely this run.
+def _history_path():
+    return DATA_DIR / HISTORY_FILENAME
 
-    ``transient`` is True when the failure looks self-healing (a cold start,
-    a gateway hiccup, or exhausted retryable status codes) — the run should
-    be skipped and the next scheduled run will retry. False means a config,
-    permission or deployment problem that needs human attention.
-    """
 
-    def __init__(self, message, transient=False):
-        super().__init__(message)
-        self.transient = transient
+def _meta_path():
+    return DATA_DIR / META_FILENAME
 
 
 
-def _retry_delay(attempt: int, response=None) -> float:
-    """Use Google's Retry-After hint when present, otherwise exponential backoff."""
-    if response is not None:
-        retry_after = getattr(response, "headers", {}).get("Retry-After")
-        if retry_after:
-            try:
-                return min(float(retry_after), 30.0)
-            except (TypeError, ValueError):
-                pass
-    return WEB_APP_RETRY_DELAYS[min(attempt - 1, len(WEB_APP_RETRY_DELAYS) - 1)]
-
-
-def _retry_or_break(attempt: int, message: str = "", response=None) -> bool:
-    """Back off before the next attempt; False once the retry budget is spent.
-
-    Returns True when the caller should retry (a delay has been slept) and
-    False when attempts are exhausted and the caller should stop and surface
-    the error. ``message`` is a short reason printed before the delay, if any.
-    """
-    if attempt >= WEB_APP_GET_ATTEMPTS:
-        return False
-    delay = _retry_delay(attempt, response)
-    reason = f"{message} " if message else ""
-    print(f"{reason}Retrying in {delay:g}s...")
-    time.sleep(delay)
-    return True
-
-
-def _validate_existing_rows(rows):
+def _validate_history_rows(rows):
     """Reject a successful but unusable response before any write is attempted."""
     if not isinstance(rows, list):
         raise ValueError(f"Expected a JSON list of rows, got {type(rows).__name__}")
@@ -422,154 +396,68 @@ def _validate_existing_rows(rows):
     return rows
 
 
-def fetch_existing_rows():
-    """Fetch Raw rows, tolerating Apps Script redirects, cold starts and transient 404s.
+def load_history():
+    """Read [date, irl, decision] rows from the repo JSON history file.
 
-    Content Service responses are redirected to a one-time
-    ``script.googleusercontent.com`` URL. Every retry starts from the stable
-    ``/exec`` URL so it receives a fresh redirect instead of retrying an expired
-    one-time URL. If the deployment is genuinely unavailable, fail closed: the
-    caller must not scrape or write without first reading the Sheet, because
-    doing so could create duplicate rows.
+    A missing file means no data yet (first run, or pre-migration) and
+    returns []. A present-but-unusable file raises HistoryError — main()
+    fails loudly instead of continuing with a fabricated empty baseline,
+    which would duplicate history on write.
     """
-    if not WEB_APP_URL:
-        raise WebAppUnavailable("WEB_APP_URL is empty.")
-
-    print(f"WEB_APP_URL length: {len(WEB_APP_URL)} | starts: {WEB_APP_URL[:45]!r} | ends: {WEB_APP_URL[-15:]!r}")
-    last_error = None
-    for attempt in range(1, WEB_APP_GET_ATTEMPTS + 1):
-        try:
-            print(f"Attempt {attempt}/{WEB_APP_GET_ATTEMPTS}: fetching existing rows...")
-            # requests follows the Apps Script Content Service redirect by default;
-            # make that contract explicit and prevent a cached redirect response.
-            resp = requests.get(
-                WEB_APP_URL,
-                # Cache-buster: forces a fresh request to /exec instead of any
-                # stale proxied response for the identical URL.
-                params={"action": "raw", "_": str(int(time.time() * 1000))},
-                headers={"Accept": "application/json", "Cache-Control": "no-cache"},
-                timeout=90,
-                allow_redirects=True,
-            )
-            final_url = getattr(resp, "url", "")
-            final_host = urlsplit(final_url).netloc if final_url else "unknown"
-            print(
-                f"Existing-rows fetch status: {resp.status_code} | "
-                f"final URL host: {final_host!r} | "
-                f"first 300 chars of body: {resp.text[:300]!r}"
-            )
-
-            if resp.status_code in WEB_APP_RETRYABLE_STATUS_CODES:
-                last_error = requests.exceptions.HTTPError(
-                    f"Apps Script returned HTTP {resp.status_code}", response=resp
-                )
-                if not _retry_or_break(attempt, "Transient Apps Script response.", resp):
-                    break
-                continue
-
-            resp.raise_for_status()
-            try:
-                rows = resp.json()
-            except ValueError as e:
-                last_error = e
-                if not _retry_or_break(attempt, "Apps Script returned non-JSON data."):
-                    break
-                continue
-
-            try:
-                return _validate_existing_rows(rows)  # list of [date, irl, decision]
-            except ValueError as e:
-                last_error = e
-                if not _retry_or_break(attempt, "Apps Script returned an invalid row payload."):
-                    break
-                continue
-
-        except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
-            last_error = e
-            print(f"Attempt {attempt} failed: {e}")
-            _retry_or_break(attempt)
-        except requests.exceptions.HTTPError as e:
-            last_error = e
-            # Non-retryable HTTP errors (for example 401/403) should be reported
-            # immediately; retrying cannot repair a permissions/deployment error.
-            break
-        except ValueError as e:
-            last_error = e
-            if not _retry_or_break(attempt, "Apps Script returned an invalid payload."):
-                break
-            continue
-        except requests.exceptions.RequestException as e:
-            # SSLError, ChunkedEncodingError and other transient transport
-            # failures that can self-heal in CI on retry.
-            last_error = e
-            print(f"Attempt {attempt} failed with transport error: {e}")
-            _retry_or_break(attempt)
-
-    detail = str(last_error) if last_error else "unknown error"
-    status_code = getattr(getattr(last_error, "response", None), "status_code", None)
-    # Cold starts and gateway hiccups surface as retryable statuses; anything
-    # else (401/403, empty URL, etc.) is a real problem.
-    transient = status_code is None or status_code in WEB_APP_RETRYABLE_STATUS_CODES
-    deployment_hint = (
-        " If this happens on many consecutive runs rather than just the first "
-        "of the day, the deployment was probably removed or the secret holds an "
-        "old URL; redeploy the Apps Script as a Web App and update the "
-        "WEB_APP_URL secret."
-    ) if status_code == 404 else ""
-    raise WebAppUnavailable(
-        "Google Apps Script data endpoint unavailable after "
-        f"{WEB_APP_GET_ATTEMPTS} attempts: {detail}.{deployment_hint} Verify that "
-        "WEB_APP_URL is the current deployed /exec URL and that the Web App is "
-        "accessible to anyone who has the link. This run was skipped without "
-        "writing data.",
-        transient=transient,
-    ) from last_error
+    path = _history_path()
+    if not path.exists():
+        return []
+    try:
+        rows = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as e:
+        raise HistoryError(f"cannot read {path}: {e}")
+    try:
+        return _validate_history_rows(rows)
+    except ValueError as e:
+        raise HistoryError(str(e))
 
 
-def _post_json(payload, label):
-    """POST to the Apps Script web app, tolerating transient failures.
+def save_history(rows):
+    """Persist rows in append order (the dashboard sorts by date itself)."""
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
+    _history_path().write_text(
+        json.dumps(rows, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
 
-    Returns the parsed JSON response on success; on any failure prints a
-    warning and returns None. Callers treat None as "this step was skipped —
-    the next scheduled run will retry it", so a transient blip can never
-    crash the run or look like data that was actually written.
+
+def push_new_rows(rows, new_rows):
+    """Append {date, irl, decision} dicts as [date, irl, decision] arrays."""
+    for r in new_rows:
+        rows.append([r["date"], r["irl"], r["decision"]])
+
+
+def set_no_file_placeholder(rows, date_str, message):
+    """Insert-or-overwrite (never duplicates) the placeholder row for date_str."""
+    key = "NO_FILE_" + date_str
+    for r in rows:
+        if r[1] == key:
+            r[2] = message
+            return
+    rows.append([date_str, key, message])
+
+
+def clear_no_file_placeholder(rows, date_str):
+    """Remove a stale placeholder for date_str, if one exists. No-op if not."""
+    rows[:] = [r for r in rows
+               if not (r[0] == date_str and str(r[1]).startswith("NO_FILE_"))]
+
+
+def update_meta(meta):
+    """Best-effort: store the run-status object for the dashboard.
+
+    Local file write replaces the old ?action=meta POST; still non-fatal —
+    the history data is the source of truth, not the meta file.
     """
     try:
-        payload = {**payload, 'writeSecret': VISAS_WRITE_SECRET}
-        resp = requests.post(WEB_APP_URL, json=payload, timeout=90)
-        if resp.status_code != 200:
-            print(f"{label} returned {resp.status_code} — treating as non-fatal, skipping this step.")
-            return None
-        result = resp.json()
-        print(f"{label} response:", result)
-        return result
-    except requests.exceptions.RequestException as e:
-        print(f"{label} failed ({e}) — continuing (non-fatal).")
-        return None
-    except ValueError as e:
-        print(f"{label} returned non-JSON data ({e}) — continuing (non-fatal).")
-        return None
-
-
-def push_new_rows(rows):
-    return _post_json({"action": "append_rows", "rows": rows}, "Append rows")
-
-
-def set_no_file_placeholder(date_str, message):
-    """Insert-or-overwrite (never duplicates) the placeholder row for date_str."""
-    return _post_json({
-        "action": "set_no_file_placeholder",
-        "date": date_str,
-        "message": message,
-    }, "Placeholder upsert")
-
-
-def clear_no_file_placeholder(date_str):
-    """Remove a stale placeholder for date_str, if one exists. No-op if not."""
-    return _post_json({
-        "action": "clear_no_file_placeholder",
-        "date": date_str,
-    }, "Placeholder clear")
+        DATA_DIR.mkdir(parents=True, exist_ok=True)
+        _meta_path().write_text(
+            json.dumps(meta, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
+    except OSError as e:
+        print(f"Update meta failed ({e}) — continuing (non-fatal).")
 
 
 def _run_meta(today_dt, existing_irl, new_rows=(), fetch_date=None, file_rows=None,
@@ -586,12 +474,6 @@ def _run_meta(today_dt, existing_irl, new_rows=(), fetch_date=None, file_rows=No
         "closureDates": sorted(
             f"{today_dt.year:04d}-{m:02d}-{d:02d}" for m, d in (closure_dates or ())),
     }
-
-
-def update_meta(meta):
-    """Best-effort: store the run-status object for the dashboard (?action=meta).
-    Non-fatal — the sheet data is the source of truth."""
-    return _post_json({"action": "update_meta", "meta": meta}, "Update meta")
 
 
 def send_webhook_alert(message):
@@ -728,7 +610,7 @@ def _backfill_missing_days(existing_rows, today_dt, anchor=None, skip_date=None)
         if date_str != skip_date and date_str not in existing_dates:
             message = WEEKEND_MESSAGE if cursor.weekday() in (5, 6) else NO_UPLOAD_MESSAGE
             print(f"Backfilling placeholder for {date_str}: {message!r}")
-            set_no_file_placeholder(date_str, message)
+            set_no_file_placeholder(existing_rows, date_str, message)
             existing_dates.add(date_str)
         cursor += timedelta(days=1)
 
@@ -736,34 +618,27 @@ def _backfill_missing_days(existing_rows, today_dt, anchor=None, skip_date=None)
 # ---------------- main ----------------
 
 def main():
-    if not WEB_APP_URL:
-        print("ERROR: WEB_APP_URL env var not set.")
+    """Load history, run, always persist — even on failure paths, so
+    placeholders written before a gap-alert exit are not lost."""
+    try:
+        existing_rows = load_history()
+    except HistoryError as e:
+        # Never continue with an empty/fabricated baseline: that could
+        # duplicate history on write. A failed run is safer.
+        print(f"ERROR: {e}")
         sys.exit(1)
+    print(f"Loaded {len(existing_rows)} history rows from {_history_path()}.")
+    try:
+        code = _run(existing_rows)
+    finally:
+        save_history(existing_rows)
+    if code:
+        sys.exit(code)
 
+
+def _run(existing_rows):
     today_dt = now_ist()
     today_ist = today_dt.strftime("%Y-%m-%d")
-
-    try:
-        existing_rows = fetch_existing_rows()
-    except WebAppUnavailable as e:
-        # Never continue with an empty/fabricated baseline: that could duplicate
-        # every historical row. A skipped run is safer than a failed write.
-        message = f"WARNING: {e}"
-        print(message)
-        transient = getattr(e, "transient", False)
-        if os.environ.get("GITHUB_ACTIONS") == "true":
-            # Annotate the run so it is visible in the Actions UI, but do not
-            # fail the job for a transient cold start — the next scheduled run
-            # retries ~30 min later and almost certainly succeeds.
-            level = "warning" if transient else "error"
-            print(f"::{level}::{message}")
-        if transient:
-            print("This looks transient (cold start / gateway hiccup) — skipping "
-                  "this run. The next scheduled run will retry automatically.")
-            return
-        # Non-transient (stale deployment, permission change): fail visibly so
-        # GitHub Actions alerts on a stale/invalid deployment or secret.
-        sys.exit(1)
 
     existing_irl = {r[1] for r in existing_rows if not _is_placeholder_row(r)}
 
@@ -779,7 +654,7 @@ def main():
     if weekday in (5, 6):
         print(f"Today ({today_ist}) is a weekend — no scrape attempted.")
         if ENABLE_NO_UPLOAD_PLACEHOLDER:
-            set_no_file_placeholder(today_ist, WEEKEND_MESSAGE)
+            set_no_file_placeholder(existing_rows, today_ist, WEEKEND_MESSAGE)
             # Heal any weekday gaps left by missed runs.
             _backfill_missing_days(existing_rows, today_dt, skip_date=today_ist)
         else:
@@ -792,7 +667,7 @@ def main():
     if holiday_name:
         print(f"Today ({today_ist}) is a listed closure date: {holiday_name!r} — no scrape attempted.")
         if ENABLE_NO_UPLOAD_PLACEHOLDER:
-            set_no_file_placeholder(today_ist, f"Embassy is closed today for {holiday_name}")
+            set_no_file_placeholder(existing_rows, today_ist, f"Embassy is closed today for {holiday_name}")
             # Heal any gaps left by missed runs.
             _backfill_missing_days(existing_rows, today_dt, skip_date=today_ist)
         else:
@@ -830,7 +705,7 @@ def main():
 
         print(f"{len(new_rows)} new rows to push (out of {len(df)} rows in file).")
         if new_rows:
-            push_new_rows(new_rows)
+            push_new_rows(existing_rows, new_rows)
         else:
             print("File fetched fine, nothing new in it — Sheet already up to date.")
 
@@ -851,12 +726,12 @@ def main():
             # a "no file" day. Clear any stale placeholder for it.
             print(f"Real data for {today_ist} pushed ({len(new_rows)} rows) — "
                   f"clearing any stale placeholder for {today_ist}.")
-            clear_no_file_placeholder(today_ist)
+            clear_no_file_placeholder(existing_rows, today_ist)
         elif fetch_date is None:
             # Scrape failed outright — we can't see the latest file, so at
             # minimum make sure today's placeholder exists.
             print(f"No file found this run — upserting placeholder for {today_ist}.")
-            set_no_file_placeholder(today_ist, NO_UPLOAD_MESSAGE)
+            set_no_file_placeholder(existing_rows, today_ist, NO_UPLOAD_MESSAGE)
         elif fetch_date < today_ist:
             # A stale file was scraped but had nothing new (its decisions were
             # already recorded). Today's file hasn't been published yet, so
@@ -869,7 +744,7 @@ def main():
         else:
             # File dated today (or later) is live — no placeholder needed.
             print(f"File for {fetch_date} found — clearing any stale placeholder for {fetch_date}.")
-            clear_no_file_placeholder(fetch_date)
+            clear_no_file_placeholder(existing_rows, fetch_date)
     else:
         print("ENABLE_NO_UPLOAD_PLACEHOLDER is false — skipping placeholder.")
 
@@ -901,7 +776,7 @@ def main():
                 # Push the alert outside GitHub too, so it isn't missed if
                 # nobody is watching the Actions tab. Best-effort by design.
                 send_webhook_alert(message)
-                sys.exit(1)
+                return 1
 
     # --- Store run status for the dashboard (?action=meta) ---
     # The health card, "fully synced" line and closure calendar on Home all
@@ -910,7 +785,7 @@ def main():
                           ok=not scrape_failed, closure_dates=closure_dates))
 
     if scrape_failed:
-        sys.exit(1)
+        return 1
 
 
 if __name__ == "__main__":

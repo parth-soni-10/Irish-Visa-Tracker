@@ -23,8 +23,8 @@ This project saves a running record automatically, so you can:
 
 - A small automated **scraper** checks the embassy's site several times each morning and saves anything new.
 - It's smart about **weekends and public holidays** — if the office is closed, it simply notes that and moves on.
-- The results are kept in a **Google Sheet** (no separate database, no hosting cost).
-- A simple dashboard reads from that sheet, so everything stays up to date by itself.
+- The results are kept in **JSON files in this repo** (`data/visa_decisions.json`) — no separate database, no hosting cost, no backend to deploy.
+- A simple dashboard reads those files, so everything stays up to date by itself.
 - The embassy's published file is sorted by **application number**, not decision date — so a day's count in the dashboard can't be verified by counting rows from the end of the file.
 
 ## Checking your own application
@@ -45,21 +45,18 @@ The live sections read from the Google Sheet, so they need an internet connectio
 
 ```
 python -m pip install -r requirements.txt
-python test_scraper.py
+python -m pytest test_scraper.py test_track_1g.py
 ```
 
 ## Built with
 
-Plain **HTML / CSS / JavaScript** for the dashboard, a little **Python** for the automation, and **Google Apps Script** to read and write the sheet. Hosted on **Netlify**.
+Plain **HTML / CSS / JavaScript** for the dashboard and a little **Python** for the automation. Hosted on **Netlify**.
 
-## Set up secure writing (required)
+## No setup, no secrets
 
-The dashboard reads are public, but all **writes** to the tracker require a shared secret so that only the scraper can add data. If this isn't set up, the scraper will report errors and no new rows will be added.
+Older versions of this project stored data in a Google Sheet behind an Apps Script web app (see git history for `Code.gs`). That whole layer is gone: the scraper commits its results straight into `data/` and the dashboard reads them as static files. Fork the repo, enable Actions, deploy on Netlify — nothing to paste anywhere.
 
-1. In **Apps Script** (the `Code.gs` project): *Project Settings → Script properties →* add `VISA_WRITE_SECRET` with a long random string.
-2. In **GitHub Actions** secrets (repo → Settings → Secrets and variables): add `VISAS_WRITE_SECRET` with the **same** value.
-
-Make a strong random value, e.g. `openssl rand -hex 32`, and use it in both places.
+One-time note: if you're migrating an existing Sheet-backed install, run the **Migrate Sheet to JSON** workflow once (Actions tab → Run workflow, needs the old `WEB_APP_URL` secret); it exports the full history into `data/` and the normal scraper takes over from there.
 
 ---
 

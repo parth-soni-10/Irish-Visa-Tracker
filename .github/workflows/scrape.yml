@@ -18,6 +18,8 @@ on:
 jobs:
   scrape:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write   # needed to commit data/*.json back to the repo
     steps:
       - name: Check out repo
         uses: actions/checkout@v4
@@ -31,7 +33,15 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: Run scraper
-        env:
-          WEB_APP_URL: ${{ secrets.WEB_APP_URL }}
-          VISAS_WRITE_SECRET: ${{ secrets.VISAS_WRITE_SECRET }}
         run: python scraper.py
+
+      - name: Commit updated data
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/visa_decisions.json data/visa_meta.json
+          git diff --staged --quiet || git commit -m "visa: record $(date -u +%F) decisions"
+          # A failed push (e.g. a concurrent run committed first) is safe to
+          # ignore: the embassy file is cumulative, so the next run re-derives
+          # any missing rows by IRL dedupe and reconciles automatically.
+          git push || echo "push failed — next scheduled run reconciles"
