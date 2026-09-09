@@ -1,1 +1,10 @@
-[]
+[
+  {
+    "run_date": "2026-09-09",
+    "run_time": "11:35:59",
+    "processing_date": "2026-07-04",
+    "lag_days": 67,
+    "lag_weeks": 9.57,
+    "source": "https://www.irishimmigration.ie/registering-your-immigration-permission/how-to-renew-your-current-permission/renewing-your-registration-permission-if-you-live-in-the-republic-of-ireland/"
+  }
+]
