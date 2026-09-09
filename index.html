@@ -8,7 +8,9 @@
 <meta name="theme-color" content="#ffffff">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" as="style">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"></noscript>
 <link rel="preload" href="fonts/geist-sans.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="fonts/geist-mono.woff2" as="font" type="font/woff2" crossorigin>
 </head>
@@ -2870,38 +2872,21 @@
                 showHero();
             }
 
-            function trackerCardHTML(id, icon, title, desc, meta) {
+            function trackerCardHTML(id, icon, title, desc, meta, metaId) {
                 return '<button type="button" class="tracker-card' + (id === '1g' ? ' g1' : '') + '" data-tracker="' + id + '">' +
                     '<span class="tracker-chip"><i data-lucide="' + icon + '"></i></span>' +
                     '<h3>' + title + '</h3><p>' + desc + '</p>' +
-                    '<span class="tracker-meta">' + meta + '</span>' +
+                    '<span class="tracker-meta" id="' + metaId + '" aria-live="polite">' + meta + '</span>' +
                     '<span class="tracker-cta">Open tracker \u2192</span></button>';
             }
 
             async function renderLandingPage() {
                 document.title = 'Ireland Trackers';
-                root.innerHTML =
-                    '<div class="eyebrow">Ireland \u00b7 Live trackers</div>' +
-                    '<div class="titlerow"><h1>Choose your tracker</h1>' +
-                    '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">' + THEME_BTN_HTML + '</div></div>' +
-                    '<div class="sub">Two daily trackers, one dashboard.</div>' +
-                    '<div class="tracker-grid">' +
-                    '<div class="skel skel-card" style="min-height:180px"></div>' +
-                    '<div class="skel skel-card" style="min-height:180px;animation-delay:0.07s"></div>' +
-                    '</div>';
-                wireChrome();
-                var results = await Promise.all([loadData(), loadG1Data()]);
-                // User may have navigated away while we fetched.
-                if (activeTracker !== 'home') return;
-                var visaRows = results[0] || [];
-                var g1Rows = results[1] || [];
-                var visaMeta = visaRows.length
-                    ? visaRows.length.toLocaleString() + ' decisions on record'
-                    : 'Awaiting data';
-                var g1Meta = g1Rows.length
-                    ? 'Processing ' + fmtG1Date(g1Rows[g1Rows.length - 1].processing_date) +
-                      ' · ' + g1Rows[g1Rows.length - 1].lag_days + 'd lag · ' + g1Rows.length + ' observations'
-                    : 'Awaiting first observation';
+                // Paint the cards IMMEDIATELY with placeholder stats — never
+                // block on the network. Each card's meta line fills in as its
+                // own fetch resolves (the Apps Script fetch can take 10s+ on
+                // cold start; the 1G JSON takes milliseconds). Clicking a card
+                // works from the first paint.
                 root.innerHTML =
                     '<div class="eyebrow">Ireland \u00b7 Live trackers</div>' +
                     '<div class="titlerow"><h1>Choose your tracker</h1>' +
@@ -2909,9 +2894,9 @@
                     '<div class="sub">Two daily trackers, one dashboard.</div>' +
                     '<div class="tracker-grid">' +
                     trackerCardHTML('visa', 'plane', 'Embassy Visa Decisions',
-                        'Daily decisions published by the Embassy of Ireland in New Delhi — searchable by application number, with trends and summaries.', visaMeta) +
+                        'Daily decisions published by the Embassy of Ireland in New Delhi — searchable by application number, with trends and summaries.', 'Loading\u2026', 'visa-meta') +
                     trackerCardHTML('1g', 'stamp', 'Stamp 1G Processing',
-                        'ISD renewal queue: which application date is being processed now, how far behind it is, and when it may catch up.', g1Meta) +
+                        'ISD renewal queue: which application date is being processed now, how far behind it is, and when it may catch up.', 'Loading\u2026', 'g1-meta') +
                     '</div>';
                 wireChrome();
                 var cards = root.querySelectorAll('.tracker-card');
@@ -2920,6 +2905,27 @@
                         setTracker(this.getAttribute('data-tracker'));
                     });
                 }
+                // Side effect worth keeping: warming the visa cache here means
+                // opening the visa tracker afterwards usually paints instantly.
+                loadData().then(function(rows) {
+                    if (activeTracker !== 'home') return;
+                    var el = document.getElementById('visa-meta');
+                    if (!el) return;
+                    rows = rows || [];
+                    el.textContent = rows.length
+                        ? rows.length.toLocaleString() + ' decisions on record'
+                        : 'Awaiting data';
+                });
+                loadG1Data().then(function(rows) {
+                    if (activeTracker !== 'home') return;
+                    var el = document.getElementById('g1-meta');
+                    if (!el) return;
+                    rows = rows || [];
+                    el.textContent = rows.length
+                        ? 'Processing ' + fmtG1Date(rows[rows.length - 1].processing_date) +
+                          ' \u00b7 ' + rows[rows.length - 1].lag_days + 'd lag \u00b7 ' + rows.length + ' observations'
+                        : 'Awaiting first observation';
+                });
             }
             // Initial mount: build the chrome (eyebrow, title, navpills, hero) and
             // delegate all tab-content rendering to switchTab() so the layout/rows
