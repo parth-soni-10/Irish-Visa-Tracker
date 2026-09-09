@@ -1116,6 +1116,34 @@
             font-weight: 700;
             color: var(--green);
         }
+        /* Landing helpers: live status strip, quick-search form, footer.
+           Reserve the strip's line-height so filling it in never shifts
+           the cards below (CLS). */
+        #visa-dash .landing-status {
+            max-width: 880px;
+            margin: 0 auto 14px;
+            font-size: 13px;
+            color: var(--ink-soft);
+            text-align: center;
+            min-height: 20px;
+        }
+        #visa-dash .landing-status strong { color: var(--ink); }
+        #visa-dash .landing-search {
+            display: flex;
+            gap: 8px;
+            align-items: stretch;
+            max-width: 560px;
+            margin: 0 auto 20px;
+        }
+        #visa-dash .landing-search .searchbar { flex: 1; margin-bottom: 0; }
+        #visa-dash .landing-search .btn { flex-shrink: 0; }
+        #visa-dash .landing-foot {
+            max-width: 880px;
+            margin: 4px auto 0;
+            font-size: 12px;
+            color: var(--ink-muted);
+            text-align: center;
+        }
         #visa-dash .tracker-card.g1 .tracker-cta { color: #0077E6; }
         #visa-dash[data-theme="dark"] .tracker-card.g1 .tracker-cta { color: #7db9f8; }
         @media (max-width: 760px) {
@@ -3108,8 +3136,6 @@
                         '</tbody></table></div></div>';
                 }
                 var chart = '<div class="g1-chart"><h3>Lag over time</h3>' +
-                    '<div class="note2">Each bar averages one week of observations (daily cron runs plus archived snapshots). Dashed line: all-time average. Dark line: weekly trend — set your date in Your application above to mark your week with a dot. Lag ' +
-                    (proj.ok && proj.lagDelta !== 0 ? (proj.lagDelta > 0 ? 'grew' : 'shrank') + ' by ' + Math.abs(proj.lagDelta) + ' days across this history.' : 'is flat across this history.') + '</div>' +
                     g1TrendSVG(rows, g1StoredDate()) + '</div>';
                 var histRows = rows.slice().reverse().map(function(r) {
                     return '<tr><td class="mono">' + r.run_date + '</td><td class="mono">' + r.processing_date +
@@ -3194,6 +3220,31 @@
                     '<span class="tracker-cta">Open tracker \u2192</span></button>';
             }
 
+            // Landing status strip: one glanceable line built from the tiny
+            // meta file + 1G history (never the full visa payload). Pure
+            // function of its inputs so it can be unit-tested; numbers only,
+            // no user-controlled strings — no escaping needed.
+            function landingStatusHTML(meta, g1Rows, todayIST) {
+                var parts = [];
+                var wd = new Date(todayIST + 'T00:00:00').getDay();
+                if (wd === 0 || wd === 6) {
+                    parts.push('Embassy closed today — back Monday');
+                } else if (meta && meta.lastRunAt) {
+                    if (String(meta.lastRunAt).slice(0, 10) === todayIST) {
+                        parts.push('Today\u2019s embassy file is in' +
+                            (meta.newRows ? ' \u00b7 <strong>' + meta.newRows + ' new decisions</strong>' : ''));
+                    } else {
+                        parts.push('Today\u2019s embassy file not yet published (expected ~11:00 AM IST)');
+                    }
+                } else {
+                    parts.push('Visa decisions updated daily');
+                }
+                if (g1Rows && g1Rows.length) {
+                    parts.push('Stamp 1G lag <strong>' + g1Rows[g1Rows.length - 1].lag_days + ' days</strong>');
+                }
+                return parts.join(' <span aria-hidden="true">\u00b7</span> ');
+            }
+
             async function renderLandingPage() {
                 document.title = 'Ireland Trackers';
                 // Paint the cards IMMEDIATELY with placeholder stats — never
@@ -3207,12 +3258,18 @@
                     '<div class="titlerow"><h1>Choose your tracker</h1>' +
                     '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">' + THEME_BTN_HTML + '</div></div>' +
                     '<div class="sub">Two daily trackers, one dashboard.</div>' +
+                    '<div class="landing-status" id="landing-status" aria-live="polite"><span class="note2">Checking today\u2019s updates\u2026</span></div>' +
+                    '<form class="landing-search" id="landing-search" role="search">' +
+                    '<div class="searchbar">' + searchIcon() +
+                    '<input type="text" id="landing-q" name="q" autocomplete="off" maxlength="200" aria-label="Search by application number" placeholder="Enter your application number\u2026"></div>' +
+                    '<button class="btn" type="submit">Track</button></form>' +
                     '<div class="tracker-grid">' +
                     trackerCardHTML('visa', 'plane', 'Embassy Visa Decisions',
                         'Daily decisions published by the Embassy of Ireland in New Delhi — searchable by application number, with trends and summaries.', 'Loading\u2026', 'visa-meta') +
                     trackerCardHTML('1g', 'stamp', 'Stamp 1G Processing',
                         'ISD renewal queue: which application date is being processed now, how far behind it is, and when it may catch up.', 'Loading\u2026', 'g1-meta') +
-                    '</div></div>';
+                    '</div>' +
+                    '<div class="landing-foot">Data: Embassy of Ireland, New Delhi \u00b7 ISD \u00b7 Updated daily ~11:15 IST \u00b7 Unofficial tracker, not affiliated with the Irish government.</div></div>';
                 wireChrome();
                 var cards = root.querySelectorAll('.tracker-card');
                 for (var i = 0; i < cards.length; i++) {
@@ -3220,26 +3277,40 @@
                         setTracker(this.getAttribute('data-tracker'));
                     });
                 }
+                var lform = document.getElementById('landing-search');
+                if (lform) lform.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    var q = document.getElementById('landing-q');
+                    homeSearchTerm = q ? q.value.trim() : '';
+                    setTracker('visa');
+                });
                 // Count only — the full visa fetch happens on tracker entry
                 // (with its own skeleton + snapshot fallback), so landing
                 // stays instant no matter how large the history grows.
-                loadVisaCount().then(function(n) {
+                Promise.all([
+                    loadVisaCount(),
+                    loadG1Data(),
+                    fetch(VISA_META_URL).then(function(r) { return r.ok ? r.json() : null; }).catch(function() { return null; })
+                ]).then(function(res) {
                     if (activeTracker !== 'home') return;
+                    var n = res[0], grows = res[1] || [], meta = res[2];
                     var el = document.getElementById('visa-meta');
-                    if (!el) return;
-                    el.textContent = n
+                    if (el) el.textContent = n
                         ? n.toLocaleString() + ' decisions on record'
                         : 'Awaiting data';
-                });
-                loadG1Data().then(function(rows) {
-                    if (activeTracker !== 'home') return;
-                    var el = document.getElementById('g1-meta');
-                    if (!el) return;
-                    rows = rows || [];
-                    el.textContent = rows.length
-                        ? 'Processing ' + fmtG1Date(rows[rows.length - 1].processing_date) +
-                          ' \u00b7 ' + rows[rows.length - 1].lag_days + 'd lag (~' + fmtLagMonths(rows[rows.length - 1].lag_days) + ' mo) \u00b7 ' + rows.length + ' observations'
+                    var g1 = document.getElementById('g1-meta');
+                    if (g1) g1.textContent = grows.length
+                        ? 'Processing ' + fmtG1Date(grows[grows.length - 1].processing_date) +
+                          ' \u00b7 ' + grows[grows.length - 1].lag_days + 'd lag (~' + fmtLagMonths(grows[grows.length - 1].lag_days) + ' mo) \u00b7 ' + grows.length + ' observations'
                         : 'Awaiting first observation';
+                    var strip = document.getElementById('landing-status');
+                    if (strip) {
+                        try {
+                            strip.innerHTML = landingStatusHTML(meta, grows, istNow().toISOString().slice(0, 10));
+                        } catch (e) {
+                            strip.innerHTML = '<span class="note2">Trackers updated daily ~11:15 IST.</span>';
+                        }
+                    }
                 });
             }
             // Initial mount: build the chrome (eyebrow, title, navpills, hero) and
