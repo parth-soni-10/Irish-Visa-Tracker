@@ -1125,6 +1125,22 @@
             background: rgba(0, 119, 230, 0.18);
             color: #7db9f8;
         }
+        /* 1G estimator: Applied/Planning toggle reuses .recent-chip shape,
+           active state borrows the 1G blue. */
+        #visa-dash .mode-chip.active {
+            background: #0077E6;
+            border-color: #0077E6;
+            color: #fff;
+        }
+        #visa-dash .mode-chip.active:hover {
+            background: #0077E6;
+            color: #fff;
+        }
+        #visa-dash .g1-estimate {
+            margin-top: 12px;
+            font-size: 14px;
+            line-height: 1.6;
+        }
 
         /* ===== hero =====
            One gradient for every tab (single-accent lock). The ::before is a
@@ -2768,6 +2784,57 @@
             // Mean Gregorian month — good enough for a "how long" readout.
             function fmtLagMonths(days) { return (days / 30.44).toFixed(1); }
 
+            // ---- 1G personal estimator ----
+            // The user's application date + mode persist in localStorage so the
+            // tentative outcome recomputes from the LATEST cron row on every
+            // load — the estimate tracks the moving lag automatically.
+            function g1StoredDate() {
+                try { return (localStorage.getItem('stamp1g-apply-date') || '').slice(0, 10); }
+                catch (e) { return ''; }
+            }
+            function g1StoredMode() {
+                try { return localStorage.getItem('stamp1g-apply-mode') === 'plan' ? 'plan' : 'applied'; }
+                catch (e) { return 'applied'; }
+            }
+            function g1SaveEstimate() {
+                try {
+                    var input = document.getElementById('g1-apply-date');
+                    var v = input ? input.value : '';
+                    if (v) localStorage.setItem('stamp1g-apply-date', v);
+                    else localStorage.removeItem('stamp1g-apply-date');
+                } catch (e) { /* private mode */ }
+            }
+
+            function paintG1Estimate() {
+                var box = document.getElementById('g1-estimate');
+                if (!box) return;
+                var input = document.getElementById('g1-apply-date');
+                var entered = input ? input.value : '';
+                var rows = g1Cache || [];
+                if (!rows.length) {
+                    box.innerHTML = '<span class="note2">Estimates appear once the cron records its first observation.</span>';
+                    return;
+                }
+                if (!entered) {
+                    box.innerHTML = '<span class="note2">Enter your date above — your estimate appears here and refreshes with every cron run.</span>';
+                    return;
+                }
+                var latest = rows[rows.length - 1];
+                var mode = g1StoredMode();
+                var when = mode === 'plan' ? 'Apply on ' + fmtG1Date(entered) : 'Applied ' + fmtG1Date(entered);
+                if (entered <= latest.processing_date) {
+                    box.innerHTML = '<div class="g1-estimate">' + when +
+                        ' — ISD is already processing <strong>' + fmtG1Date(latest.processing_date) +
+                        '</strong>, past your date. Your outcome may already be decided.</div>';
+                    return;
+                }
+                var tentative = g1FromDay(g1ToDay(entered) + latest.lag_days);
+                box.innerHTML = '<div class="g1-estimate">' + when +
+                    ' \u2192 tentative outcome around <strong>' + fmtG1Date(tentative) + '</strong>' +
+                    ' <span class="pill blue">current lag ' + latest.lag_days + 'd (~' + fmtLagMonths(latest.lag_days) + ' mo)</span></div>' +
+                    '<div class="note2" style="margin-top:6px;">Your date + the current lag, recalculated automatically when new observations arrive.</div>';
+            }
+
             // Processing-date advancement line: x = observation date,
             // y = ISD processing date. Dots + first/last labels, no deps.
             function g1TrendSVG(rows) {
@@ -2860,7 +2927,19 @@
                 var note = '<div class="readme"><h3 class="readme-title">How this tracker works</h3>' +
                     '<p>Every day, an automated job reads the ISD renewal page, finds the Stamp 1G processing date, and appends one row to ' +
                     '<a href="data/stamp_1g.json"><code>data/stamp_1g.json</code></a> in this repo. The rate and ETA above are a straight-line fit through that history — not a promise.</p></div>';
-                return head + hero + cards + projHtml + chart + hist + note;
+                var storedDate = g1StoredDate();
+                var storedMode = g1StoredMode();
+                var estimatorHtml = '<div class="g1-chart"><h3>Your application</h3>' +
+                    '<div class="note2">When did you apply — or when do you plan to? Your tentative outcome date updates itself as the lag moves.</div>' +
+                    '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:12px;">' +
+                    '<button type="button" class="recent-chip mode-chip' + (storedMode === 'applied' ? ' active' : '') + '" data-mode="applied" aria-pressed="' + (storedMode === 'applied') + '">I applied</button>' +
+                    '<button type="button" class="recent-chip mode-chip' + (storedMode === 'plan' ? ' active' : '') + '" data-mode="plan" aria-pressed="' + (storedMode === 'plan') + '">I plan to apply</button>' +
+                    '<div class="datefilter"><label class="visually-hidden" for="g1-apply-date">Application date</label>' +
+                    '<input type="date" id="g1-apply-date" autocomplete="off" aria-label="Your application date" value="' + escapeHtml(storedDate) + '">' +
+                    '<button type="button" class="clear-btn" id="g1-apply-clear" aria-label="Clear application date" title="Clear application date">\u00d7</button>' +
+                    '</div></div>' +
+                    '<div id="g1-estimate" aria-live="polite"></div></div>';
+                return head + hero + cards + estimatorHtml + projHtml + chart + hist + note;
             }
 
             async function renderG1Page() {
@@ -2883,6 +2962,31 @@
                 if (activeTracker !== '1g') return;
                 root.innerHTML = renderG1Layout(g1Cache || []);
                 wireChrome();
+                var g1DateEl = document.getElementById('g1-apply-date');
+                if (g1DateEl) g1DateEl.addEventListener('change', function() {
+                    g1SaveEstimate();
+                    paintG1Estimate();
+                });
+                var g1ClearEl = document.getElementById('g1-apply-clear');
+                if (g1ClearEl) g1ClearEl.addEventListener('click', function() {
+                    if (g1DateEl) g1DateEl.value = '';
+                    g1SaveEstimate();
+                    paintG1Estimate();
+                    if (g1DateEl) g1DateEl.focus();
+                });
+                var modeChips = root.querySelectorAll('.mode-chip');
+                for (var mi = 0; mi < modeChips.length; mi++) {
+                    modeChips[mi].addEventListener('click', function() {
+                        try { localStorage.setItem('stamp1g-apply-mode', this.getAttribute('data-mode')); } catch (e) { /* private mode */ }
+                        for (var mj = 0; mj < modeChips.length; mj++) {
+                            var on = modeChips[mj] === this;
+                            modeChips[mj].classList.toggle('active', on);
+                            modeChips[mj].setAttribute('aria-pressed', on ? 'true' : 'false');
+                        }
+                        paintG1Estimate();
+                    });
+                }
+                paintG1Estimate();
                 showHero();
             }
 
