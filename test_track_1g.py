@@ -67,7 +67,7 @@ class HistoryTests(unittest.TestCase):
 
     def test_same_run_date_skipped(self):
         existing = [{"run_date": "2026-09-09", "processing_date": "2026-07-04",
-                     "lag_days": 67, "lag_weeks": 9.57, "source": track_1g.ISD_URL}]
+                     "lag_days": 67, "lag_weeks": 9.57}]
         with patch.object(track_1g, "load_history", return_value=existing), \
              patch.object(track_1g, "save_history") as save:
             added = track_1g.append_tracking_row(date(2026, 7, 5),
@@ -78,7 +78,7 @@ class HistoryTests(unittest.TestCase):
     def test_stalled_processing_date_still_recorded_next_day(self):
         # Flat stretches matter for projections — a new run date always appends.
         existing = [{"run_date": "2026-09-08", "processing_date": "2026-07-04",
-                     "lag_days": 66, "lag_weeks": 9.43, "source": track_1g.ISD_URL}]
+                     "lag_days": 66, "lag_weeks": 9.43}]
         with patch.object(track_1g, "load_history", return_value=list(existing)), \
              patch.object(track_1g, "save_history") as save:
             added = track_1g.append_tracking_row(date(2026, 7, 4),

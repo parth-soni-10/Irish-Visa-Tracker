@@ -18,8 +18,7 @@ Row schema:
         "run_time": "08:31:05",          # HH:MM:SS local runner time
         "processing_date": "2026-07-04", # ISD Stamp 1G date, YYYY-MM-DD
         "lag_days": 67,                  # (run_date - processing_date).days
-        "lag_weeks": 9.57,               # round(lag_days / 7, 2)
-        "source": "https://..."          # ISD page URL
+        "lag_weeks": 9.57                # round(lag_days / 7, 2)
     }
 
 Requirements:
@@ -212,7 +211,6 @@ def append_tracking_row(processing_date: date, today: date | None = None) -> boo
         "processing_date": processing_date.isoformat(),
         "lag_days": lag_days,
         "lag_weeks": round(lag_days / 7, 2),
-        "source": ISD_URL,
     })
     save_history(rows)
     return True
