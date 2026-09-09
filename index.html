@@ -1008,14 +1008,17 @@
             max-width: 880px;
             margin: 20px auto 24px;
         }
-        /* Landing fills the viewport height so the two cards sit in the
-           vertical middle instead of hugging the top. Scoped to the landing
-           wrapper only — visa/1G pages keep their normal flow. */
+        /* Landing fills the viewport height; the header stays at the top
+           while the grid grows to fill the rest and centres the cards
+           within it. Scoped to the landing wrapper only. */
         #visa-dash .landing-wrap {
             min-height: calc(100vh - 48px);
             display: flex;
             flex-direction: column;
-            justify-content: center;
+        }
+        #visa-dash .landing-wrap .tracker-grid {
+            flex: 1;
+            align-content: center;
         }
         #visa-dash .tracker-card {
             font-family: inherit;
