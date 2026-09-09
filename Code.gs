@@ -134,11 +134,33 @@ function doGet(e) {
   } else if (action === 'meta') {
     const raw = PropertiesService.getScriptProperties().getProperty(META_PROPERTY);
     payload = raw ? JSON.parse(raw) : {};
+  } else if (action === 'count') {
+    // Lightweight landing-page stat: row counts per Raw tab via getLastRow()
+    // only — no row data is read, so this stays fast at tens of thousands of
+    // rows. Matches the dashboard's "decisions on record" total (placeholders
+    // included, same as ?action=raw .length).
+    payload = getRowCounts_();
   } else {
     payload = { error: 'unknown action' };
   }
   return ContentService.createTextOutput(JSON.stringify(payload))
     .setMimeType(ContentService.MimeType.JSON);
+}
+
+/** Row counts + newest date per Raw tab, without reading any row data. */
+function getRowCounts_() {
+  const ss = SpreadsheetApp.openById(SHEET_ID);
+  let count = 0, latestDate = '';
+  getRawSheetNames_().forEach(name => {
+    const sheet = ss.getSheetByName(name);
+    if (!sheet) return;
+    const last = sheet.getLastRow();
+    if (last < 2) return;
+    count += last - 1;
+    const iso = isoDate_(sheet.getRange(last, 1).getValue());
+    if (iso > latestDate) latestDate = iso;
+  });
+  return { count: count, latestDate: latestDate };
 }
 
 /** All rows from every Raw* tab, concatenated in tab order. */

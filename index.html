@@ -6,6 +6,10 @@
     <title>Irish Visa Decision Tracker</title>
 <base target="_blank">
 <meta name="theme-color" content="#ffffff">
+<meta name="description" content="Track Irish embassy visa decisions from New Delhi and Stamp 1G processing dates — searchable history, trends and projections.">
+<meta property="og:title" content="Irish Visa Decision Tracker">
+<meta property="og:description" content="Daily Irish visa decisions + Stamp 1G processing tracker with trends and projections.">
+<meta property="og:type" content="website">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" as="style">
@@ -69,6 +73,9 @@
             color: var(--ink);
             min-height: 100vh;
             padding: 24px;
+            /* Page-level backstop against horizontal overflow (clip, not
+               hidden, so sticky table headers keep working). */
+            overflow-x: clip;
             color-scheme: light;
             -webkit-font-smoothing: antialiased;
         }
@@ -306,12 +313,18 @@
         #visa-dash .results-table th:nth-child(2), #visa-dash .results-table td:nth-child(2) { min-width: 16ch; }
         /* Daily summary table: 5 columns. Same fixed auto-width layout. */
         #visa-dash .daily-table { table-layout: fixed; width: 100%; min-width: 480px; }
+        /* (Header no-wrap lives after the column rules below.) */
         #visa-dash .daily-table th, #visa-dash .daily-table td { white-space: normal; overflow-wrap: break-word; }
         #visa-dash .daily-table th:nth-child(1), #visa-dash .daily-table td:nth-child(1),
         #visa-dash .daily-table th:nth-child(2), #visa-dash .daily-table td:nth-child(2),
         #visa-dash .daily-table th:nth-child(3), #visa-dash .daily-table td:nth-child(3),
         #visa-dash .daily-table th:nth-child(4), #visa-dash .daily-table td:nth-child(4),
         #visa-dash .daily-table th:nth-child(5), #visa-dash .daily-table td:nth-child(5) { min-width: 10ch; }
+        /* Headers never break mid-word — the wrap scrolls instead. (Placed
+           after every table rule: equal specificity means last one wins.
+           overflow-wrap MUST reset too: break-word would still force
+           emergency mid-word breaks despite nowrap.) */
+        #visa-dash .results-table th, #visa-dash .daily-table th { white-space: nowrap; overflow-wrap: normal; }
         /* Daily summary drill-down: each day's date cell toggles a detail row
            listing the applications behind that day's counts. */
         #visa-dash .dd-toggle { cursor: pointer; user-select: none; white-space: nowrap; }
@@ -475,7 +488,7 @@
             padding: 2px 0 4px;
         }
         #visa-dash .heat-cell { width: 13px; height: 13px; border-radius: 3px; }
-        #visa-dash .heat-0 { background: var(--surface-hover); }
+        #visa-dash .heat-0 { background: var(--border); }
         #visa-dash .heat-1 { background: rgba(0, 119, 230, 0.22); }
         #visa-dash .heat-2 { background: rgba(0, 119, 230, 0.45); }
         #visa-dash .heat-3 { background: rgba(0, 119, 230, 0.72); }
@@ -534,6 +547,12 @@
             border-color: var(--green);
             box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.1);
         }
+        /* Hide Chrome's datalist dropdown arrow on the search box (the
+           suggestions still work via typing). Both pseudo-elements covered:
+           picker-indicator is what Chrome uses today, list-button is the
+           legacy name. Scoped to #home-search so date inputs keep theirs. */
+        #visa-dash #home-search::-webkit-calendar-picker-indicator,
+        #visa-dash #home-search::-webkit-list-button { display: none; }
         #visa-dash .searchbar svg {
             flex-shrink: 0;
             opacity: 0.4;
@@ -768,6 +787,11 @@
         }
         #visa-dash .readme li { margin-bottom: 4px; }
         #visa-dash .readme strong { color: var(--ink); }
+        /* Collapsible readme: native marker, pointer cursor, disclosure caret. */
+        #visa-dash details.readme > summary { cursor: pointer; list-style: none; }
+        #visa-dash details.readme > summary::-webkit-details-marker { display: none; }
+        #visa-dash details.readme > summary::before { content: '+ '; color: var(--green); font-weight: 700; }
+        #visa-dash details.readme[open] > summary::before { content: '\2212  '; }
         #visa-dash .suggest-grid {
             display: flex;
             flex-wrap: wrap;
@@ -1174,6 +1198,9 @@
             position: relative; z-index: 4;
             display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: center;
         }
+        /* Grid blowout guard: children may never force their track wider
+           than the hero (the wave visual once pushed bars past the card). */
+        #visa-dash .hero-body > * { min-width: 0; }
         #visa-dash .hero-title { margin: 0; font-size: 30px; font-weight: 800; letter-spacing: -0.025em; line-height: 1.1; text-wrap: balance; }
         #visa-dash .hero-sub { margin-top: 8px; font-size: 14px; color: rgba(255,255,255,.92); }
 
@@ -1185,7 +1212,7 @@
         /* Home — concentric pulse rings */
         #visa-dash .ring {
             position: absolute; border-radius: 50%;
-            border: 2px solid #519DFA;
+            border: 2px solid rgba(255,255,255,.7);
         }
         /* One expanding pulse on mount (entry), then it settles - not an
            infinite loop. */
@@ -1202,7 +1229,7 @@
         }
         #visa-dash .ring-core {
             width: 36px; height: 36px; border-radius: 50%;
-            background: #0077E6;
+            background: var(--green-deep);
             border: 1px solid rgba(255,255,255,.35);
             color: #fff;
             font-size: 18px; line-height: 24px; font-weight: 700; letter-spacing: -0.1px;
@@ -1216,6 +1243,11 @@
         #visa-dash .wave-bar {
             flex: 1; background: #0077E6; border-radius: 2px 2px 0 0;
             transform-origin: bottom;
+            /* Inline heights are tuned for the 130px desktop visual; cap them
+               so they can't overshoot the shorter mobile visual. min-width: 0
+               lets narrow columns shrink instead of overflowing the hero. */
+            max-height: 100%;
+            min-width: 0;
         }
         /* One-shot grow-in on mount (data reveal), then settle. */
         @media (prefers-reduced-motion: no-preference) {
@@ -1327,7 +1359,7 @@
         @media (max-width: 760px) {
             #visa-dash { padding: 16px; }
             #visa-dash h1 { font-size: 22px; }
-            #visa-dash .cards { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+            #visa-dash .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
             #visa-dash .card { padding: 12px 16px; }
             #visa-dash .hero { padding: 20px 18px; }
             #visa-dash .hero-title { font-size: 24px; }
@@ -1340,7 +1372,11 @@
             #visa-dash .datefilter { width: 100%; }
             #visa-dash .suggest-grid .form-col { flex: 1 1 100%; }
         }        @media (max-width: 480px) {
-            #visa-dash .cards { grid-template-columns: 1fr 1fr; }
+            /* Single column: stat labels (e.g. "7-DAY ACCEPTANCE") need the
+               full row width — two narrow columns clip them on phones. */
+            #visa-dash .cards { grid-template-columns: minmax(0, 1fr); }
+            #visa-dash .card .label { font-size: 11px; letter-spacing: .04em; white-space: normal; }
+            #visa-dash .card .label .lucide { width: 13px; height: 13px; margin-right: 5px; }
             #visa-dash .hero { padding: 18px 16px; }
             #visa-dash .hero-title { font-size: 20px; }
         }
@@ -1373,8 +1409,11 @@
             /* 16px input font prevents iOS Safari auto-zoom on focus. */
             #visa-dash input[type=text], #visa-dash input[type=date] { font-size: 16px; min-height: 44px; }
             #visa-dash textarea { font-size: 16px; min-height: 120px; }
-            /* Apple HIG: tap targets >= 44px. */
-            #visa-dash .navpill { padding: 11px 22px; min-height: 44px; }
+            /* Apple HIG: tap targets >= 44px. Scrollable single-row pills so
+               labels are never clipped at narrow widths. */
+            #visa-dash .navpills { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
+            #visa-dash .navpills::-webkit-scrollbar { display: none; }
+            #visa-dash .navpill { flex-shrink: 0; padding: 11px 18px; min-height: 44px; }
             #visa-dash .btn { min-height: 44px; padding: 12px 26px; }
             #visa-dash .searchbar, #visa-dash .datefilter { height: 48px; }
             #visa-dash .scroll-top-btn { width: 48px; height: 48px; font-size: 20px; }
@@ -1801,7 +1840,7 @@
             }
 
             function readmeSection() {
-                return '<div class="readme"><h3 class="readme-title">How this tracker works</h3>' +
+                return '<details class="readme"><summary class="readme-title">How this tracker works</summary>' +
                     '<p>Every day, an automated job checks the Irish embassy\'s New Delhi visa decisions page for the latest published spreadsheet and pulls any application numbers that haven\'t been recorded yet.</p>' +
                     '<ul>' +
                     '<li><strong>Home</strong>: today\'s snapshot, headline stats, and every result from the most recent file.</li>' +
@@ -1810,7 +1849,7 @@
                     '<li><strong>Suggestions</strong>: leave feedback. I check the suggestions and get back with a reply asap.</li>' +
                     '</ul>' +
                     '<p style="margin-top:12px;"><strong>After approval:</strong> Once your visa is approved, it is dispatched through <strong>BlueDart</strong> (in most cases) and follows standard courier delivery timelines from Delhi to your address.</p>' +
-                    '</div>';
+                    '</details>';
             }
 
             // ===== hero builder (Mockup C) — per-tab hero with real data =====
@@ -2727,6 +2766,28 @@
                 return g1Cache;
             }
 
+            // Lightweight visa total for the landing card: ?action=count reads
+            // no row data server-side, so this stays fast at tens of thousands
+            // of rows. Falls back to the full fetch (older backend, or the
+            // local mock which serves the same file for every action).
+            let visaCountCache = null;
+            async function loadVisaCount() {
+                if (visaCountCache !== null) return visaCountCache;
+                if (!WEB_APP_URL) return 0;
+                try {
+                    const res = await fetch(WEB_APP_URL + '?action=count', { cache: 'no-store' });
+                    if (!res.ok) throw new Error('HTTP ' + res.status);
+                    const j = await res.json();
+                    const n = Array.isArray(j) ? j.length : (j && typeof j.count === 'number' ? j.count : null);
+                    if (n === null) throw new Error('bad count payload');
+                    visaCountCache = n;
+                } catch (e) {
+                    const rows = await loadData();
+                    visaCountCache = (rows || []).length;
+                }
+                return visaCountCache;
+            }
+
             function g1ToDay(iso) {
                 var p = String(iso).split('-');
                 return Date.UTC(+p[0], +p[1] - 1, +p[2]) / 86400000;
@@ -2749,7 +2810,27 @@
             // run_date (slope = ISD days advanced per calendar day). Overall
             // fit uses every observation; recent fit uses the last 10.
             function computeG1Projections(rows) {
-                if (!rows || rows.length < 2) return { ok: false, count: rows ? rows.length : 0 };
+                if (!rows || !rows.length) return { ok: false, count: 0 };
+                if (rows.length < 2) {
+                    // Thin history: assume the queue keeps a 1:1 pace
+                    // (constant lag) rather than inventing a trend from a
+                    // single point. Recomputed properly once history grows.
+                    var only = rows[0];
+                    var todayStr0 = new Date().toISOString().slice(0, 10);
+                    var remaining0 = g1ToDay(todayStr0) - g1ToDay(only.processing_date);
+                    var eta0 = Math.max(0, Math.ceil(remaining0));
+                    return {
+                        ok: true, fallback: true, count: 1,
+                        first: only, latest: only, todayStr: todayStr0,
+                        rateWeek: 7, recentWeek: 7,
+                        remaining: remaining0, etaDays: eta0,
+                        etaDate: g1FromDay(g1ToDay(todayStr0) + eta0),
+                        ahead: [14, 28, 56, 84].map(function(d) {
+                            return { days: d, proc: g1FromDay(g1ToDay(only.processing_date) + d) };
+                        }),
+                        lagDelta: 0
+                    };
+                }
                 var pts = rows.map(function(r) { return { x: g1ToDay(r.run_date), y: g1ToDay(r.processing_date) }; });
                 var all = g1LinReg(pts);
                 if (!all) return { ok: false, count: rows.length };
@@ -2864,8 +2945,9 @@
                     return;
                 }
                 var tentative = g1FromDay(g1ToDay(entered) + latest.lag_days);
+                var inDays = Math.round(g1ToDay(tentative) - g1ToDay(new Date().toISOString().slice(0, 10)));
                 box.innerHTML = '<div class="g1-estimate">' + when +
-                    ' \u2192 tentative outcome around <strong>' + fmtG1Date(tentative) + '</strong>' +
+                    ' \u2192 tentative outcome around <strong>' + fmtG1Date(tentative) + '</strong> (in ~' + inDays + ' days)' +
                     ' <span class="pill blue">current lag ' + latest.lag_days + 'd (~' + fmtLagMonths(latest.lag_days) + ' mo)</span></div>' +
                     '<div class="note2" style="margin-top:6px;">Your date + the current lag, recalculated automatically when new observations arrive.</div>';
             }
@@ -2883,7 +2965,7 @@
                 var mon = new Date(d.getTime() - ((d.getUTCDay() + 6) % 7) * 86400000);
                 return mon.toISOString().slice(0, 10);
             }
-            function g1TrendSVG(rows) {
+            function g1TrendSVG(rows, userDate) {
                 var weeks = [];
                 var byWeek = {};
                 rows.forEach(function(r) {
@@ -2939,8 +3021,30 @@
                     '" stroke="currentColor" stroke-width="1.5" stroke-dasharray="6 4" opacity="0.55"/>' +
                     '<text x="' + (W - PR) + '" y="' + (+ay - 6) + '" font-size="11" font-weight="700" fill="currentColor" opacity="0.75" text-anchor="end">avg ' +
                     avgLag.toFixed(0) + 'd</text>';
-                return '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Average Stamp 1G lag per week, ' + weeks.length + ' weeks">' +
-                    grid + bars + avgLine + xlabels + '</svg>';
+                // Solid linear trend through the weekly means (same OLS helper
+                // as the projections) + a marker for the user's saved
+                // application week, if it falls inside the observed range.
+                // Marker is neutral dark, not amber — amber is reserved for
+                // decision states elsewhere in this dashboard.
+                var regLine = '', marker = '';
+                var reg = g1LinReg(vals.map(function(v, i) { return { x: i, y: v }; }));
+                if (reg) {
+                    var rx0 = PL + slot / 2, rx1 = PL + slot * (weeks.length - 1) + slot / 2;
+                    regLine = '<line x1="' + rx0.toFixed(1) + '" y1="' + Y(reg.intercept).toFixed(1) +
+                        '" x2="' + rx1.toFixed(1) + '" y2="' + Y(reg.intercept + reg.slope * (weeks.length - 1)).toFixed(1) +
+                        '" stroke="#0369a1" stroke-width="2" opacity="0.8"/>';
+                    if (userDate) {
+                        var wi = weeks.indexOf(g1WeekKey(userDate));
+                        if (wi !== -1) {
+                            marker = '<circle cx="' + (PL + slot * wi + slot / 2).toFixed(1) +
+                                '" cy="' + Y(reg.intercept + reg.slope * wi).toFixed(1) +
+                                '" r="5.5" fill="currentColor" stroke="#fff" stroke-width="2"><title>Your week of ' +
+                                shortDay(weeks[wi]) + '</title></circle>';
+                        }
+                    }
+                }
+                return '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Average Stamp 1G lag per week with trend, ' + weeks.length + ' weeks">' +
+                    grid + bars + avgLine + regLine + marker + xlabels + '</svg>';
             }
 
             function renderG1Layout(rows) {
@@ -2948,7 +3052,7 @@
                     '<div class="eyebrow">Ireland \u00b7 Immigration Service Delivery</div>' +
                     '<div class="titlerow"><h1>Stamp 1G Tracker</h1>' +
                     '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">' + THEME_BTN_HTML + '</div></div>' +
-                    '<div class="sub">' + (rows.length ? rows.length + ' daily observation' + (rows.length === 1 ? '' : 's') + ' on record' : 'Awaiting data') + '</div>';
+                    '<div class="sub">' + (rows.length ? rows.length + ' observation' + (rows.length === 1 ? '' : 's') + ' on record' : 'Awaiting data') + '</div>';
                 if (!rows.length) {
                     return head +
                         '<div class="empty">No observations recorded yet. The daily job writes to <code>data/stamp_1g.json</code> — check back after its first run.</div>';
@@ -2972,13 +3076,14 @@
                     '<div class="card"><div class="label"><i data-lucide="trending-up"></i>Advancement rate</div><div class="value">' +
                     (proj.ok ? proj.recentWeek.toFixed(1) + ' <span style="font-size:13px;font-weight:600;">days/week</span>' : '-') + '</div></div>' +
                     '<div class="card"><div class="label"><i data-lucide="flag"></i>ETA to today</div><div class="value">' +
-                    (proj.ok && proj.etaDate ? fmtG1Date(proj.etaDate) : (proj.ok ? 'Stalled' : '-')) + '</div></div>' +
+                    (proj.ok && proj.etaDate ? fmtG1Date(proj.etaDate) + ' <span style="font-size:13px;font-weight:600;">(in ~' + proj.etaDays + 'd)</span>' : (proj.ok ? 'Stalled' : '-')) + '</div></div>' +
                     '</div>';
                 var projHtml;
                 if (!proj.ok) {
                     projHtml = '';
                 } else {
-                    var pace = proj.recentWeek >= 6.5 ? 'On pace — the queue is roughly keeping up with new applications.' :
+                    var pace = proj.fallback ? 'Early estimate — only one observation so far; assuming the queue keeps a 1:1 pace until more history arrives.' :
+                        proj.recentWeek >= 6.5 ? 'On pace — the queue is roughly keeping up with new applications.' :
                         proj.recentWeek > 0.5 ? 'Moving, but slower than real time — the backlog is growing.' :
                         'Stalled — the processing date is barely moving.';
                     projHtml = '<div class="g1-chart"><h3><i data-lucide="chart-line" style="width:15px;height:15px;vertical-align:-2px;"></i> Projections</h3>' +
@@ -2996,9 +3101,9 @@
                         '</tbody></table></div></div>';
                 }
                 var chart = '<div class="g1-chart"><h3>Lag over time</h3>' +
-                    '<div class="note2">Each bar averages one week of observations (daily cron runs plus archived snapshots). Dashed line: all-time average. Lag ' +
+                    '<div class="note2">Each bar averages one week of observations (daily cron runs plus archived snapshots). Dashed line: all-time average. Dark line: weekly trend — set your date in Your application above to mark your week with a dot. Lag ' +
                     (proj.ok && proj.lagDelta !== 0 ? (proj.lagDelta > 0 ? 'grew' : 'shrank') + ' by ' + Math.abs(proj.lagDelta) + ' days across this history.' : 'is flat across this history.') + '</div>' +
-                    g1TrendSVG(rows) + '</div>';
+                    g1TrendSVG(rows, g1StoredDate()) + '</div>';
                 var histRows = rows.slice().reverse().map(function(r) {
                     return '<tr><td class="mono">' + r.run_date + '</td><td class="mono">' + r.processing_date +
                         '</td><td>' + r.lag_days + '</td><td>' + r.lag_weeks.toFixed(2) + '</td></tr>';
@@ -3108,15 +3213,15 @@
                         setTracker(this.getAttribute('data-tracker'));
                     });
                 }
-                // Side effect worth keeping: warming the visa cache here means
-                // opening the visa tracker afterwards usually paints instantly.
-                loadData().then(function(rows) {
+                // Count only — the full visa fetch happens on tracker entry
+                // (with its own skeleton + snapshot fallback), so landing
+                // stays instant no matter how large the history grows.
+                loadVisaCount().then(function(n) {
                     if (activeTracker !== 'home') return;
                     var el = document.getElementById('visa-meta');
                     if (!el) return;
-                    rows = rows || [];
-                    el.textContent = rows.length
-                        ? rows.length.toLocaleString() + ' decisions on record'
+                    el.textContent = n
+                        ? n.toLocaleString() + ' decisions on record'
                         : 'Awaiting data';
                 });
                 loadG1Data().then(function(rows) {
