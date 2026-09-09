@@ -1,22 +1,26 @@
 #!/usr/bin/env python3
 """
-Stamp 1G processing-date tracker — GitHub Actions cron job.
+Stamp renewal processing-date tracker — GitHub Actions cron job.
 
 Each run:
 1. Fetches the current ISD processing page.
-2. Finds the Stamp 1G processing date shown on the page.
+2. Finds every stamp category's processing date shown on the page.
 3. Computes the lag vs today (calendar days + weeks).
-4. Appends one row per run date to data/stamp_1g.json (creates it if missing).
-5. Skips when today's run date is already recorded (cron re-runs are safe).
+4. Appends one row per (run date, category) to data/stamp_1g.json
+   (creates it if missing).
+5. Skips pairs already recorded (cron re-runs are safe).
 
 The JSON file is the dashboard's data source — index.html fetches it
 directly and builds advancement-rate + ETA projections from it.
 
 Row schema:
     {
-        "run_date": "2026-09-09",        # YYYY-MM-DD, one row max per date
+        "run_date": "2026-09-09",        # YYYY-MM-DD
         "run_time": "08:31:05",          # HH:MM:SS local runner time
-        "processing_date": "2026-07-04", # ISD Stamp 1G date, YYYY-MM-DD
+        "category": "1G",                # ISD stamp category (rows written
+                                         # before multi-category support
+                                         # have no key and count as 1G)
+        "processing_date": "2026-07-04", # ISD date for that category
         "lag_days": 67,                  # (run_date - processing_date).days
         "lag_weeks": 9.57                # round(lag_days / 7, 2)
     }
@@ -159,6 +163,55 @@ def find_stamp_1g_date(html: str) -> date:
     )
 
 
+def normalize_category(raw: str) -> str:
+    """Short stable key for an ISD table category cell."""
+    s = re.sub(r"\s+", " ", str(raw)).strip()
+    if re.search(r"all\s+other", s, re.IGNORECASE):
+        return "Other"
+    s = re.sub(r"(?i)^stamp\s+", "", s)
+    return s.strip() or "Other"
+
+
+def find_all_stamp_dates(html: str) -> dict[str, date]:
+    """Map every stamp category on the ISD page to its processing date.
+
+    Prefers the timelines table (a table whose header mentions submission /
+    processing dates); each subsequent two-cell row reads as
+    (category, date). Falls back to the single-date 1G finder so at least
+    1G survives a layout change.
+    """
+    soup = BeautifulSoup(html, "html.parser")
+    for table in soup.find_all("table"):
+        head = " ".join(" ".join(th.stripped_strings)
+                         for th in table.find_all("th"))
+        if not re.search(r"submission|processing", head, re.IGNORECASE):
+            continue
+        if not re.search(r"date|stamp|categor", head, re.IGNORECASE):
+            continue
+        found: dict[str, date] = {}
+        for row in table.find_all("tr"):
+            cells = [" ".join(c.stripped_strings)
+                     for c in row.find_all(["th", "td"])]
+            if len(cells) < 2:
+                continue
+            # The header row's date cell holds text like "Submission Date*",
+            # which never parses — so it filters itself out, no special case.
+            parsed = parse_date(cells[1])
+            if parsed:
+                found.setdefault(normalize_category(cells[0]), parsed)
+        if found:
+            return found
+    # Fallback: at least keep 1G working.
+    try:
+        return {"1G": find_stamp_1g_date(html)}
+    except RuntimeError:
+        pass
+    raise RuntimeError(
+        "Could not find any stamp processing dates on the ISD page. "
+        f"Check the page manually: {ISD_URL}"
+    )
+
+
 def load_history() -> list[dict]:
     """Read the JSON history file; return [] when missing or corrupt."""
     if not DATA_FILE.exists():
@@ -183,61 +236,67 @@ def save_history(rows: list[dict]) -> None:
     DATA_FILE.write_text(json.dumps(rows, indent=2) + "\n", encoding="utf-8")
 
 
-def append_tracking_row(processing_date: date, today: date | None = None) -> bool:
+def append_tracking_rows(dates: dict, today: date | None = None) -> int:
     """
-    Append today's measurement unless this run date is already recorded.
+    Append one row per stamp category unless that (run date, category) pair
+    is already recorded. Rows without a category (pre-multi-category
+    history) count as 1G for dedupe purposes.
 
     Unlike the original Excel version (which skipped when the ISD date was
     unchanged), one row per run date is kept even when the processing date
     stalls — flat stretches are exactly what the dashboard's advancement-rate
     projections need to see.
 
-    Returns:
-        True  -> a new row was added
-        False -> this run date is already recorded, nothing appended
+    Returns the number of rows added.
     """
     today = today or date.today()
     now = datetime.now()
     run_date_str = today.isoformat()
 
     rows = load_history()
-    if any(r.get("run_date") == run_date_str for r in rows):
-        return False
-
-    lag_days = (today - processing_date).days
-    rows.append({
-        "run_date": run_date_str,
-        "run_time": now.strftime("%H:%M:%S"),
-        "processing_date": processing_date.isoformat(),
-        "lag_days": lag_days,
-        "lag_weeks": round(lag_days / 7, 2),
-    })
-    save_history(rows)
-    return True
+    seen = {(r.get("run_date"), r.get("category", "1G")) for r in rows}
+    added = 0
+    for category, processing_date in dates.items():
+        if (run_date_str, category) in seen:
+            continue
+        lag_days = (today - processing_date).days
+        rows.append({
+            "run_date": run_date_str,
+            "run_time": now.strftime("%H:%M:%S"),
+            "category": category,
+            "processing_date": processing_date.isoformat(),
+            "lag_days": lag_days,
+            "lag_weeks": round(lag_days / 7, 2),
+        })
+        seen.add((run_date_str, category))
+        added += 1
+    if added:
+        save_history(rows)
+    return added
 
 
 def main() -> None:
-    print("Checking ISD Stamp 1G processing date...")
+    print("Checking ISD stamp processing dates...")
     print(f"URL: {ISD_URL}")
 
     try:
         html = fetch_isd_page()
-        processing_date = find_stamp_1g_date(html)
+        dates = find_all_stamp_dates(html)
 
         today = date.today()
-        lag_days = (today - processing_date).days
-
-        appended = append_tracking_row(processing_date, today)
+        added = append_tracking_rows(dates, today)
 
         print()
-        print(f"Today:             {today.strftime('%d/%m/%Y')}")
-        print(f"ISD Stamp 1G date: {processing_date.strftime('%d/%m/%Y')}")
-        print(f"Lag:               {lag_days} days ({lag_days / 7:.2f} weeks)")
+        print(f"Today: {today.strftime('%d/%m/%Y')}")
+        for category, proc in dates.items():
+            lag_days = (today - proc).days
+            print(f"  {category:12s} {proc.strftime('%d/%m/%Y')}  "
+                  f"(lag {lag_days} days / {lag_days / 7:.2f} weeks)")
 
-        if appended:
-            print(f"JSON:              NEW ROW APPENDED -> {DATA_FILE}")
+        if added:
+            print(f"JSON:    {added} NEW ROW(S) APPENDED -> {DATA_FILE}")
         else:
-            print("JSON:              NOT APPENDED (this run date is already recorded)")
+            print("JSON:    NOT APPENDED (this run date is already recorded)")
 
     except requests.RequestException as exc:
         print(f"ERROR: Could not fetch the ISD website: {exc}", file=sys.stderr)

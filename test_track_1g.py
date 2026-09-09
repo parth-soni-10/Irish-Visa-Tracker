@@ -52,38 +52,91 @@ class FindStamp1GDateTests(unittest.TestCase):
             track_1g.find_stamp_1g_date("<html><body><p>No dates here.</p></body></html>")
 
 
+class FindAllStampDatesTests(unittest.TestCase):
+    TABLEPRESS_HTML = """
+    <html><body><table class="tablepress">
+      <thead><tr><th>Stamp Category</th><th>Submission Date*</th></tr></thead>
+      <tbody>
+      <tr><td>1, 1H</td><td>29/07/26</td></tr>
+      <tr><td>1G</td><td>04/07/26</td></tr>
+      <tr><td>2, 2A, 1A</td><td>27/06/26</td></tr>
+      <tr><td>4</td><td>13/07/26</td></tr>
+      <tr><td>All other categories</td><td>02/08/26</td></tr>
+      </tbody>
+    </table></body></html>
+    """
+
+    def test_parses_every_category(self):
+        self.assertEqual(
+            track_1g.find_all_stamp_dates(self.TABLEPRESS_HTML),
+            {"1, 1H": date(2026, 7, 29), "1G": date(2026, 7, 4),
+             "2, 2A, 1A": date(2026, 6, 27), "4": date(2026, 7, 13),
+             "Other": date(2026, 8, 2)})
+
+    def test_falls_back_to_1g_finder(self):
+        html = ("<html><body><p>Renewing Stamp 1G applications, "
+                "currently processing 4 July 2026.</p></body></html>")
+        self.assertEqual(track_1g.find_all_stamp_dates(html),
+                         {"1G": date(2026, 7, 4)})
+
+    def test_raises_when_nothing_found(self):
+        with self.assertRaises(RuntimeError):
+            track_1g.find_all_stamp_dates(
+                "<html><body><p>No dates here.</p></body></html>")
+
+    def test_normalize_category(self):
+        self.assertEqual(track_1g.normalize_category("  Stamp 1G "), "1G")
+        self.assertEqual(track_1g.normalize_category("All other categories"), "Other")
+
+
 class HistoryTests(unittest.TestCase):
-    def test_append_and_dedupe_by_run_date(self):
+    def test_append_and_dedupe_by_run_date_and_category(self):
         with patch.object(track_1g, "load_history", return_value=[]), \
              patch.object(track_1g, "save_history") as save:
-            added = track_1g.append_tracking_row(date(2026, 7, 4),
-                                                 today=date(2026, 9, 9))
-            self.assertTrue(added)
-            row = save.call_args.args[0][0]
-            self.assertEqual(row["run_date"], "2026-09-09")
-            self.assertEqual(row["processing_date"], "2026-07-04")
-            self.assertEqual(row["lag_days"], 67)
-            self.assertAlmostEqual(row["lag_weeks"], 9.57)
+            added = track_1g.append_tracking_rows(
+                {"1G": date(2026, 7, 4), "4": date(2026, 7, 13)},
+                today=date(2026, 9, 9))
+            self.assertEqual(added, 2)
+            rows = save.call_args.args[0]
+            by_cat = {r["category"]: r for r in rows}
+            self.assertEqual(by_cat["1G"]["lag_days"], 67)
+            self.assertAlmostEqual(by_cat["1G"]["lag_weeks"], 9.57)
+            self.assertEqual(by_cat["4"]["processing_date"], "2026-07-13")
 
-    def test_same_run_date_skipped(self):
-        existing = [{"run_date": "2026-09-09", "processing_date": "2026-07-04",
+    def test_same_run_date_and_category_skipped(self):
+        existing = [{"run_date": "2026-09-09", "category": "1G",
+                     "processing_date": "2026-07-04",
                      "lag_days": 67, "lag_weeks": 9.57}]
         with patch.object(track_1g, "load_history", return_value=existing), \
              patch.object(track_1g, "save_history") as save:
-            added = track_1g.append_tracking_row(date(2026, 7, 5),
-                                                 today=date(2026, 9, 9))
-            self.assertFalse(added)
+            added = track_1g.append_tracking_rows(
+                {"1G": date(2026, 7, 5), "4": date(2026, 7, 13)},
+                today=date(2026, 9, 9))
+            self.assertEqual(added, 1)  # only the new category appends
+            self.assertEqual(len(save.call_args.args[0]), 2)
+            self.assertEqual(save.call_args.args[0][-1]["category"], "4")
+
+    def test_legacy_rows_without_category_count_as_1g(self):
+        existing = [{"run_date": "2026-09-09",
+                     "processing_date": "2026-07-04",
+                     "lag_days": 67, "lag_weeks": 9.57}]
+        with patch.object(track_1g, "load_history", return_value=existing), \
+             patch.object(track_1g, "save_history") as save:
+            added = track_1g.append_tracking_rows(
+                {"1G": date(2026, 7, 4)}, today=date(2026, 9, 9))
+            self.assertEqual(added, 0)
             save.assert_not_called()
 
     def test_stalled_processing_date_still_recorded_next_day(self):
         # Flat stretches matter for projections — a new run date always appends.
-        existing = [{"run_date": "2026-09-08", "processing_date": "2026-07-04",
+        existing = [{"run_date": "2026-09-08", "category": "1G",
+                     "processing_date": "2026-07-04",
                      "lag_days": 66, "lag_weeks": 9.43}]
         with patch.object(track_1g, "load_history", return_value=list(existing)), \
              patch.object(track_1g, "save_history") as save:
-            added = track_1g.append_tracking_row(date(2026, 7, 4),
-                                                 today=date(2026, 9, 9))
-            self.assertTrue(added)
+            added = track_1g.append_tracking_rows(
+                {"1G": date(2026, 7, 4)}, today=date(2026, 9, 9))
+            self.assertEqual(added, 1)
             self.assertEqual(len(save.call_args.args[0]), 2)
 
     def test_save_sorts_by_run_date(self):

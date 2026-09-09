@@ -1,0 +1,40 @@
+name: Track Employment Permit Dates
+
+# Daily snapshot of DETE employment-permit processing dates into
+# data/work_permits.json (same schema as data/stamp_1g.json, so the
+# dashboard reuses its rendering + projection code).
+
+on:
+  workflow_dispatch: {}   # manual "Run workflow" button — still available for on-demand runs
+  schedule:
+    # Daily 08:35 IST (03:05 UTC) — right after the 1G run. The script skips
+    # when the run date is already recorded, so re-runs and overlap are safe.
+    - cron: '5 3 * * *'
+
+jobs:
+  track-permits:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # needed to commit data/work_permits.json back to the repo
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install requests beautifulsoup4
+
+      - name: Run permits tracker
+        run: python track_permits.py
+
+      - name: Commit updated history
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/work_permits.json
+          git diff --staged --quiet || git commit -m "permits: record $(date -u +%F) processing dates"
+          git push

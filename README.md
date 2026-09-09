@@ -58,6 +58,14 @@ Older versions of this project stored data in a Google Sheet behind an Apps Scri
 
 One-time note: if you're migrating an existing Sheet-backed install, run the **Migrate Sheet to JSON** workflow once (Actions tab → Run workflow, needs the old `WEB_APP_URL` secret); it exports the full history into `data/` and the normal scraper takes over from there.
 
+## Optional: Telegram digest
+
+A daily 12:30 IST job (`digest.yml`) posts the morning numbers to Telegram. Without setup it silently skips. To enable: message [@BotFather](https://t.me/BotFather) → `/newbot` → copy the token; add the bot to your channel as admin; get the chat id from `https://api.telegram.org/bot<TOKEN>/getUpdates`; add `TELEGRAM_BOT_TOKEN` + `TELEGRAM_CHAT_ID` as repo secrets.
+
+## Optional: community timelines
+
+Visitors can share applied → decided dates (Suggestions tab → Share your timeline). A nightly job (`timelines.yml`) pulls the Netlify form submissions into `data/community_timelines.json`, which powers the "Community waits" panels. Needs `NETLIFY_TOKEN` (Netlify User settings → Applications → New access token) + `NETLIFY_SITE_ID` (Site settings → General → API ID) as repo secrets. Without them the job skips and the panels invite the first report.
+
 ---
 
 *A personal project made to make life a little easier for people tracking their applications.*

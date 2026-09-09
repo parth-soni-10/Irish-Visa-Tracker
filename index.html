@@ -35,6 +35,24 @@
         </p>
         <input type="text" name="bot-field" tabindex="-1" autocomplete="off" />
     </form>
+    <!-- Same trick for the community-timelines form: static copy so Netlify
+         registers it at deploy time; the live form is JS-rendered above. -->
+    <form name="timelines" netlify netlify-honeypot="bot-field" style="position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden;" aria-hidden="true" tabindex="-1">
+        <input type="hidden" name="form-name" value="timelines" />
+        <p>
+            <label>Tracker <select name="tracker" tabindex="-1"><option value="visa">Embassy visa</option><option value="1g">Stamp 1G</option></select></label>
+        </p>
+        <p>
+            <label>Applied on <input type="date" name="applied" tabindex="-1" /></label>
+        </p>
+        <p>
+            <label>Decided on <input type="date" name="decided" tabindex="-1" /></label>
+        </p>
+        <p>
+            <label>Outcome <select name="outcome" tabindex="-1"><option value="granted">Granted</option><option value="refused">Refused</option></select></label>
+        </p>
+        <input type="text" name="bot-field" tabindex="-1" autocomplete="off" />
+    </form>
     <style>
 
         /* Self-hosted Geist (variable), the brand font. No Google Fonts
@@ -1032,9 +1050,9 @@
         }
         #visa-dash .tracker-grid {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: repeat(3, 1fr);
             gap: 16px;
-            max-width: 880px;
+            max-width: 1080px;
             margin: 20px auto 24px;
         }
         /* Landing fills the viewport height; the header stays at the top
@@ -1071,6 +1089,10 @@
             box-shadow: 0 12px 32px -12px rgba(0, 119, 230, 0.4);
             border-color: #0077E6;
         }
+        #visa-dash .tracker-card.permits:hover {
+            box-shadow: 0 12px 32px -12px rgba(124, 58, 237, 0.4);
+            border-color: #7c3aed;
+        }
         #visa-dash .tracker-chip {
             width: 44px;
             height: 44px;
@@ -1088,6 +1110,14 @@
         #visa-dash[data-theme="dark"] .tracker-card.g1 .tracker-chip {
             background: rgba(0, 119, 230, 0.18);
             color: #7db9f8;
+        }
+        #visa-dash .tracker-card.permits .tracker-chip {
+            background: #ede9fe;
+            color: #6d28d9;
+        }
+        #visa-dash[data-theme="dark"] .tracker-card.permits .tracker-chip {
+            background: rgba(124, 58, 237, 0.18);
+            color: #c4b5fd;
         }
         #visa-dash .tracker-card h3 {
             margin: 4px 0 0;
@@ -1110,6 +1140,8 @@
         }
         #visa-dash .tracker-card.g1 .tracker-meta { color: #0077E6; }
         #visa-dash[data-theme="dark"] .tracker-card.g1 .tracker-meta { color: #7db9f8; }
+        #visa-dash .tracker-card.permits .tracker-meta { color: #6d28d9; }
+        #visa-dash[data-theme="dark"] .tracker-card.permits .tracker-meta { color: #c4b5fd; }
         #visa-dash .tracker-cta {
             margin-top: 4px;
             font-size: 13px;
@@ -1146,6 +1178,8 @@
         }
         #visa-dash .tracker-card.g1 .tracker-cta { color: #0077E6; }
         #visa-dash[data-theme="dark"] .tracker-card.g1 .tracker-cta { color: #7db9f8; }
+        #visa-dash .tracker-card.permits .tracker-cta { color: #7c3aed; }
+        #visa-dash[data-theme="dark"] .tracker-card.permits .tracker-cta { color: #c4b5fd; }
         @media (max-width: 760px) {
             #visa-dash .tracker-grid { grid-template-columns: 1fr; }
         }
@@ -1153,6 +1187,10 @@
            trackers are distinguishable at a glance. */
         #visa-dash .hero[data-id="g1"] {
             background: linear-gradient(135deg, #075985, #0284c7);
+        }
+        /* Permits hero: violet, same shape. */
+        #visa-dash .hero[data-id="permits"] {
+            background: linear-gradient(135deg, #5b21b6, #8b5cf6);
         }
         /* 1G projection chart + table */
         #visa-dash .g1-chart {
@@ -1193,6 +1231,11 @@
         #visa-dash .mode-chip.active:hover {
             background: #0077E6;
             color: #fff;
+        }
+        #visa-dash #permits-cats .mode-chip.active,
+        #visa-dash #permits-cats .mode-chip.active:hover {
+            background: #7c3aed;
+            border-color: #7c3aed;
         }
         #visa-dash .g1-estimate {
             margin-top: 12px;
@@ -1549,7 +1592,7 @@
             // tracker cards, 'visa' the embassy-decisions tracker, '1g' the
             // Stamp 1G processing-date tracker. Old shared links carry only
             // ?tab=… — those resolve to 'visa' so nothing breaks.
-            const KNOWN_TRACKERS = ['home', 'visa', '1g'];
+            const KNOWN_TRACKERS = ['home', 'visa', '1g', 'permits'];
             function readUrlState() {
                 const p = new URLSearchParams(location.search);
                 const tab = p.get('tab');
@@ -1573,6 +1616,8 @@
                     if (pastDateFilter) p.set('date', pastDateFilter);
                 } else if (activeTracker === '1g') {
                     p.set('tracker', '1g');
+                } else if (activeTracker === 'permits') {
+                    p.set('tracker', 'permits');
                 }
                 // Landing ('home') keeps a clean URL with no params.
                 const qs = p.toString();
@@ -2139,6 +2184,11 @@
                     e.preventDefault();
                     submitSuggestion();
                 });
+                var timeForm = document.getElementById('time-form');
+                if (timeForm) timeForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    submitTimeline();
+                });
                 // Recent-search chips re-run the search they were saved from.
                 var recentRow = document.getElementById('recent-searches');
                 if (recentRow) recentRow.onclick = function(e) {
@@ -2149,6 +2199,23 @@
                     if (input) input.value = homeSearchTerm;
                     paintHomeRows();
                     syncUrl('replace');
+                };
+                // Watchlist add/remove (delegated — #watch-area is repainted
+                // by paintWatch on every keystroke).
+                var watchArea = document.getElementById('watch-area');
+                if (watchArea) watchArea.onclick = function(e) {
+                    var add = e.target && e.target.closest ? e.target.closest('[data-watch-add]') : null;
+                    var del = e.target && e.target.closest ? e.target.closest('[data-watch-del]') : null;
+                    if (add) {
+                        var list = getWatchlist();
+                        var t = add.getAttribute('data-watch-add');
+                        if (t && list.indexOf(t) === -1) { list.unshift(t); saveWatchlist(list); }
+                        paintWatch();
+                    } else if (del) {
+                        var gone = del.getAttribute('data-watch-del');
+                        saveWatchlist(getWatchlist().filter(function(t) { return t !== gone; }));
+                        paintWatch();
+                    }
                 };
                 // CSV export: Home exports the current search (or everything),
                 // Past exports the filtered day (or everything).
@@ -2291,6 +2358,7 @@
                     '<div id="recent-searches">' + recentSearchesHTML() + '</div>' +
                     '<button type="button" class="export-btn" id="home-export" title="Download the current results as CSV">Export CSV</button>' +
                     '</div>' +
+                    '<div id="watch-area"></div>' +
                     '<div class="cards">' +
                     '<div class="card"><div class="label"><i data-lucide="trending-up"></i>Day-on-day change</div><div class="value ' + (latestPlaceholder ? '' : (dayDiff >= 0 ? 'green' : 'red')) + '">' +
                     (latestPlaceholder ? '-' : ((dayDiff >= 0 ? '+' : '') + dayDiff)) + '</div></div>' +
@@ -2298,6 +2366,7 @@
                     '<div class="card"><div class="label"><i data-lucide="check-circle"></i>Acceptance rate</div><div class="value green">' + fmtPct(accepted / total) + '</div></div>' +
                     '<div class="card"><div class="label"><i data-lucide="x-circle"></i>Rejection rate</div><div class="value red">' + fmtPct(rejected / total) + '</div></div>' +
                     '</div>' +
+                    '<div id="community-box"></div>' +
                     '<div class="note" id="home-results-count" aria-live="polite" style="margin-bottom:8px;margin-top:0;"></div>' +
                     '<div class="table-wrap"><table class="results-table"><thead><tr><th>Date</th><th>Application No.</th><th>Decision</th></tr></thead>' +
                     '<tbody id="home-rows"></tbody></table></div>';
@@ -2366,6 +2435,79 @@
                     }
                     suggEl.innerHTML = opts.join('');
                 }
+                paintWatch();
+                paintCommunityBox();
+            }
+
+            // Watched numbers (item 5): "Watch" button for the current search,
+            // removable chips for saved ones, and a heads-up banner the moment
+            // a watched number appears in the data.
+            var _watchMemo = { rows: null, list: '', hits: [] };
+            function paintWatch() {
+                var box = document.getElementById('watch-area');
+                if (!box) return;
+                var list = getWatchlist();
+                // Memoize: same data + same list = same hits. Without this,
+                // every debounced keystroke would re-scan 33k rows per term.
+                var rows = cache || [];
+                var key = list.join(',');
+                var hits;
+                if (_watchMemo.rows === rows && _watchMemo.list === key) {
+                    hits = _watchMemo.hits;
+                } else {
+                    hits = list.length ? checkWatchlist(rows, list) : [];
+                    _watchMemo = { rows: rows, list: key, hits: hits };
+                }
+                var html = '';
+                hits.forEach(function(h) {
+                    html += '<div class="status-line pub-live" role="status">Heads up: <strong>' +
+                        escapeHtml(h.term) + '</strong> was ' + escapeHtml(h.row.decision || '-') +
+                        ' on ' + escapeHtml(h.row.date) + '.</div>';
+                });
+                var term = normalizeIRL(homeSearchTerm);
+                if (term && list.indexOf(term) === -1) {
+                    html += '<div style="margin:8px 0;"><button type="button" class="export-btn" data-watch-add="' +
+                        escapeHtml(term) + '" title="Get notified here when this number appears">Watch ' +
+                        escapeHtml(homeSearchTerm.trim()) + '</button></div>';
+                }
+                if (list.length) {
+                    html += '<div class="recent-row"><span class="recent-label">Watched:</span>' +
+                        list.map(function(t) {
+                            var hit = hits.some(function(h) { return h.term === t; });
+                            return '<button type="button" class="recent-chip" data-watch-del="' + escapeHtml(t) +
+                                '" title="Stop watching ' + escapeHtml(t) + '">' + escapeHtml(t) +
+                                (hit ? ' \u25cf' : '') + ' \u00d7</button>';
+                        }).join('') + '</div>';
+                }
+                box.innerHTML = html;
+            }
+
+            // Community-reported waits panel (item 6). Filled once per layout
+            // render (guarded by dataset.done); the JSON is cached after first
+            // load so repeat visits cost nothing.
+            function communityBoxHTML(stats, tracker) {
+                var where = tracker === '1g' ? 'Stamp 1G renewals' : 'embassy visas';
+                var link = '<a href="?tracker=visa&tab=suggest">Share your timeline</a>';
+                var head = '<div class="g1-chart"><h3><i data-lucide="users" style="width:15px;height:15px;vertical-align:-2px;"></i> Community waits</h3>';
+                if (!stats) {
+                    return head + '<div class="note2">No community timelines for ' + where +
+                        ' yet — ' + link + ' and help others plan.</div></div>';
+                }
+                var med = Math.round(stats.median * 10) / 10;
+                return head + '<div class="note2">Median <strong>' + med + (med === 1 ? ' day' : ' days') +
+                    '</strong> from apply to decision across <strong>' + stats.n + '</strong> community report' +
+                    (stats.n === 1 ? '' : 's') + ' for ' + where + '. ' + link + '.</div></div>';
+            }
+
+            function paintCommunityBox(tracker) {
+                tracker = tracker || 'visa';
+                var box = document.getElementById('community-box');
+                if (!box || box.dataset.done) return;
+                box.dataset.done = '1';
+                loadCommunity().then(function(rows) {
+                    if (!document.getElementById('community-box')) return;
+                    box.innerHTML = communityBoxHTML(communityStats(rows, tracker), tracker);
+                });
             }
 
             // Append a list of rows to a tbody progressively: render first CHUNK
@@ -2638,7 +2780,81 @@
                                 SUGG_FORM_HTML +
                             '</form>' +
                         '</div>' +
+                        '<div class="form-col" style="max-width:560px;">' +
+                            '<form class="card" id="time-form" name="timelines" netlify netlify-honeypot="bot-field" novalidate style="max-width:100%;">' +
+                                TIMELINES_FORM_HTML +
+                            '</form>' +
+                        '</div>' +
                     '</div>';
+            }
+
+            // Community timeline submissions (item 6): applied -> decided
+            // dates per tracker, synced nightly into data/community_timelines.json.
+            const TIMELINES_FORM_HTML =
+                '<input type="hidden" name="form-name" value="timelines" />' +
+                '<h3 class="readme-title" style="margin-top:0;">Share your timeline</h3>' +
+                '<p class="note2">Help others plan: when did you apply, and when was it decided? Published anonymously in aggregate.</p>' +
+                '<p><label>Tracker <select id="time-tracker" name="tracker"><option value="visa">Embassy visa</option><option value="1g">Stamp 1G</option></select></label></p>' +
+                '<p><label>Applied on <input type="date" id="time-applied" name="applied" /></label></p>' +
+                '<p><label>Decided on <input type="date" id="time-decided" name="decided" /></label></p>' +
+                '<p><label>Outcome <select id="time-outcome" name="outcome"><option value="granted">Granted</option><option value="refused">Refused</option></select></label></p>' +
+                '<button class="btn" type="submit" id="time-submit">Share Timeline</button>' +
+                '<div class="note" id="time-status" aria-live="polite"></div>';
+
+            async function submitTimeline() {
+                const trackerEl = document.getElementById('time-tracker');
+                const appliedEl = document.getElementById('time-applied');
+                const decidedEl = document.getElementById('time-decided');
+                const outcomeEl = document.getElementById('time-outcome');
+                const status = document.getElementById('time-status');
+                const btn = document.getElementById('time-submit');
+                const applied = appliedEl.value, decided = decidedEl.value;
+                const today = new Date().toISOString().slice(0, 10);
+                if (!applied || !decided) {
+                    status.textContent = 'Please fill in both dates.';
+                    (applied ? decidedEl : appliedEl).focus();
+                    return;
+                }
+                if (applied > decided || decided > today || applied < '2020-01-01') {
+                    status.textContent = 'Those dates don\u2019t look right — applied must come first and decided can\u2019t be in the future.';
+                    return;
+                }
+                btn.disabled = true;
+                status.textContent = 'Submitting\u2026';
+                const startedAt = Date.now();
+                try {
+                    const body = new URLSearchParams({
+                        'form-name': 'timelines',
+                        'bot-field': '',
+                        tracker: trackerEl.value,
+                        applied: applied,
+                        decided: decided,
+                        outcome: outcomeEl.value
+                    });
+                    const res = await fetch(window.location.pathname, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                        body: body.toString()
+                    });
+                    if (!res.ok) throw new Error('HTTP ' + res.status);
+                    const remaining = MIN_SUBMIT_MS - (Date.now() - startedAt);
+                    if (remaining > 0) await new Promise(r => setTimeout(r, remaining));
+                    const form = document.getElementById('time-form');
+                    if (form) form.innerHTML =
+                        '<div class="sugg-success" role="status">' +
+                        '<div class="sugg-success-title">Thanks — timeline shared!</div>' +
+                        '<div class="sugg-success-text">It appears in the community stats after the nightly sync.</div>' +
+                        '<button class="btn" type="button" id="time-again">Share another</button></div>';
+                    const again = document.getElementById('time-again');
+                    if (again) again.addEventListener('click', function() {
+                        form.innerHTML = TIMELINES_FORM_HTML;
+                        form.addEventListener('submit', function(e) { e.preventDefault(); submitTimeline(); });
+                    });
+                } catch (err) {
+                    status.textContent = 'Could not submit. Try again.';
+                } finally {
+                    btn.disabled = false;
+                }
             }
 
             function showSuggestionSuccess(name) {
@@ -2773,6 +2989,7 @@
 
             // ---- Stamp 1G data + projections ----
             let g1Cache = null;
+            let g1ActiveRows = [];
             let g1FetchedAt = null;
 
             async function loadG1Data() {
@@ -2789,6 +3006,7 @@
                             return {
                                 run_date: String(r.run_date).slice(0, 10),
                                 run_time: String(r.run_time || ''),
+                                category: String(r.category || '1G'),
                                 processing_date: String(r.processing_date).slice(0, 10),
                                 lag_days: +r.lag_days || 0,
                                 lag_weeks: +r.lag_weeks || 0
@@ -2803,13 +3021,139 @@
                 return g1Cache;
             }
 
+            // Employment permits + community timelines share the 1G row shape
+            // ({run_date, category, processing_date, lag_days}), so the same
+            // projection/chart code renders all three trackers.
+            let permitsCache = null;
+            async function loadPermitsData() {
+                if (permitsCache) return permitsCache;
+                try {
+                    const res = await fetch('data/work_permits.json', { cache: 'no-store' });
+                    if (!res.ok) throw new Error('HTTP ' + res.status);
+                    const raw = await res.json();
+                    permitsCache = (Array.isArray(raw) ? raw : [])
+                        .filter(function(r) { return r && r.run_date && r.processing_date; })
+                        .map(function(r) {
+                            return {
+                                run_date: String(r.run_date).slice(0, 10),
+                                run_time: String(r.run_time || ''),
+                                category: String(r.category || 'Unknown'),
+                                processing_date: String(r.processing_date).slice(0, 10),
+                                lag_days: +r.lag_days || 0,
+                                lag_weeks: +r.lag_weeks || 0
+                            };
+                        })
+                        .sort(function(a, b) { return a.run_date.localeCompare(b.run_date); });
+                } catch (e) {
+                    console.warn('loadPermitsData failed:', e);
+                    if (permitsCache === null) permitsCache = [];
+                }
+                return permitsCache;
+            }
+
+            let communityCache = null;
+            async function loadCommunity() {
+                if (communityCache) return communityCache;
+                try {
+                    const res = await fetch('data/community_timelines.json', { cache: 'no-store' });
+                    if (!res.ok) throw new Error('HTTP ' + res.status);
+                    const raw = await res.json();
+                    communityCache = Array.isArray(raw) ? raw : [];
+                } catch (e) {
+                    if (communityCache === null) communityCache = [];
+                }
+                return communityCache;
+            }
+
+            function communityStats(rows, tracker) {
+                var waits = (rows || []).map(function(r) {
+                    if (!r || r.tracker !== tracker) return null;
+                    var a = Date.parse(r.applied), b = Date.parse(r.decided);
+                    return (isFinite(a) && isFinite(b) && b >= a) ? (b - a) / 86400000 : null;
+                }).filter(function(v) { return v !== null; }).sort(function(a, b) { return a - b; });
+                if (!waits.length) return null;
+                var mid = Math.floor(waits.length / 2);
+                return {
+                    n: waits.length,
+                    median: waits.length % 2 ? waits[mid] : (waits[mid - 1] + waits[mid]) / 2
+                };
+            }
+
+            // Distinct stamp/permit categories in first-seen order.
+            function g1Categories(rows) {
+                var seen = {}, out = [];
+                (rows || []).forEach(function(r) {
+                    var c = r.category || '1G';
+                    if (!seen[c]) { seen[c] = 1; out.push(c); }
+                });
+                return out;
+            }
+
+            function g1RowsFor(rows, cat) {
+                return (rows || []).filter(function(r) { return (r.category || '1G') === cat; });
+            }
+
+            function g1StoredCategory(rows) {
+                var cats = g1Categories(rows);
+                if (!cats.length) return '1G';
+                try {
+                    var saved = localStorage.getItem('stamp1g-category') || '';
+                    if (saved && cats.indexOf(saved) !== -1) return saved;
+                } catch (e) { /* private mode */ }
+                return cats.indexOf('1G') !== -1 ? '1G' : cats[0];
+            }
+
+            // ---- watched application numbers (item 5) ----
+            // localStorage list of normalized IRL queries; checked against
+            // fresh data on every home paint so a watched decision surfaces
+            // as a banner the moment it lands.
+            function getWatchlist() {
+                try {
+                    var raw = JSON.parse(localStorage.getItem('visa-watchlist') || '[]');
+                    return Array.isArray(raw) ? raw.filter(function(x) {
+                        return typeof x === 'string' && x;
+                    }).slice(0, 10) : [];
+                } catch (e) { return []; }
+            }
+            function saveWatchlist(list) {
+                try { localStorage.setItem('visa-watchlist', JSON.stringify(list.slice(0, 10))); }
+                catch (e) { /* private mode */ }
+            }
+            function checkWatchlist(rows, list) {
+                var hits = [];
+                (list || []).forEach(function(term) {
+                    var match = (rows || []).find(function(r) {
+                        return !r._placeholder && normalizeIRL(r.irl).indexOf(term) !== -1;
+                    });
+                    if (match) hits.push({ term: term, row: match });
+                });
+                return hits;
+            }
+
+            // ---- IRP expiry countdown (item 2) ----
+            // Renewal window opens 12 weeks (84 days) before expiry.
+            function irpWindowHTML(expiryISO, todayISO) {
+                if (!expiryISO) return '';
+                var ms = Date.parse(expiryISO + 'T00:00:00') - Date.parse(todayISO + 'T00:00:00');
+                if (!isFinite(ms)) return '';
+                var left = Math.round(ms / 86400000);
+                if (left < 0) {
+                    return 'Expired ' + Math.abs(left) + ' days ago — renew now if you haven\u2019t.';
+                }
+                if (left <= 84) {
+                    return '12-week window is <strong>OPEN</strong> — apply now (' + left + ' days left).';
+                }
+                var opens = new Date(Date.parse(expiryISO + 'T00:00:00') - 84 * 86400000);
+                var label = opens.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+                return '12-week window opens <strong>' + label + '</strong> (' + left + ' days left).';
+            }
+
             // Lightweight visa total for the landing card: ?action=count reads
             // no row data server-side, so this stays fast at tens of thousands
             // of rows. Falls back to the full fetch (older backend, or the
             // local mock which serves the same file for every action).
             let visaCountCache = null;
-            async function loadVisaCount() {
-                if (visaCountCache !== null) return visaCountCache;
+            async function loadVisaCount() {                if (visaCountCache !== null) return visaCountCache;
                 try {
                     const res = await fetch(VISA_META_URL, { cache: 'no-store' });
                     if (!res.ok) throw new Error('HTTP ' + res.status);
@@ -2961,7 +3305,7 @@
                 if (!box) return;
                 var input = document.getElementById('g1-apply-date');
                 var entered = input ? input.value : '';
-                var rows = g1Cache || [];
+                var rows = g1ActiveRows.length ? g1ActiveRows : (g1Cache || []);
                 if (!rows.length) {
                     box.innerHTML = '<span class="note2">Estimates appear once the cron records its first observation.</span>';
                     return;
@@ -2985,6 +3329,24 @@
                     ' \u2192 tentative outcome around <strong>' + fmtG1Date(tentative) + '</strong> (in ~' + inDays + ' days)' +
                     ' <span class="pill blue">current lag ' + latest.lag_days + 'd (~' + fmtLagMonths(latest.lag_days) + ' mo)</span></div>' +
                     '<div class="note2" style="margin-top:6px;">Your date + the current lag, recalculated automatically when new observations arrive.</div>';
+            }
+
+            function g1StoredExpiry() {
+                try { return (localStorage.getItem('stamp1g-expiry') || '').slice(0, 10); }
+                catch (e) { return ''; }
+            }
+
+            function paintG1Expiry() {
+                var box = document.getElementById('g1-expiry');
+                if (!box) return;
+                var input = document.getElementById('g1-expiry-date');
+                var expiry = input ? input.value : '';
+                if (!expiry) {
+                    box.innerHTML = '<span class="note2">Add your IRP expiry above for a renewal countdown.</span>';
+                    return;
+                }
+                var today = new Date().toISOString().slice(0, 10);
+                box.innerHTML = '<div class="g1-estimate">' + irpWindowHTML(expiry, today) + '</div>';
             }
 
             // Processing-date advancement line: x = observation date,
@@ -3082,16 +3444,25 @@
                     grid + bars + avgLine + regLine + marker + xlabels + '</svg>';
             }
 
-            function renderG1Layout(rows) {
+            function renderG1Layout(rows, cats, activeCat) {
+                cats = cats && cats.length ? cats : ['1G'];
+                activeCat = activeCat || '1G';
                 var head = BACK_BTN_HTML +
                     '<div class="eyebrow">Ireland \u00b7 Immigration Service Delivery</div>' +
-                    '<div class="titlerow"><h1>Stamp 1G Tracker</h1>' +
+                    '<div class="titlerow"><h1>Stamp ' + escapeHtml(activeCat) + ' Tracker</h1>' +
                     '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">' + THEME_BTN_HTML + '</div></div>' +
                     '<div class="sub">' + (rows.length ? rows.length + ' observation' + (rows.length === 1 ? '' : 's') + ' on record' : 'Awaiting data') + '</div>';
                 if (!rows.length) {
                     return head +
                         '<div class="empty">No observations recorded yet. The daily job writes to <code>data/stamp_1g.json</code> — check back after its first run.</div>';
                 }
+                var catPills = cats.length > 1
+                    ? '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;" id="g1-cats" role="group" aria-label="Stamp category">' +
+                      cats.map(function(c) {
+                          return '<button type="button" class="recent-chip mode-chip' + (c === activeCat ? ' active' : '') +
+                              '" data-cat="' + escapeHtml(c) + '" aria-pressed="' + (c === activeCat) + '">' + escapeHtml(c) + '</button>';
+                      }).join('') + '</div>'
+                    : '';
                 var proj = computeG1Projections(rows);
                 var latest = rows[rows.length - 1];
                 var heroTitle = 'Processing ' + fmtG1Date(latest.processing_date) + '.';
@@ -3144,10 +3515,11 @@
                 var hist = '<div class="table-wrap"><table class="results-table"><thead><tr><th>Observed</th><th>ISD processing date</th><th>Lag (days)</th><th>Lag (weeks)</th></tr></thead>' +
                     '<tbody>' + histRows + '</tbody></table></div>';
                 var note = '<div class="readme"><h3 class="readme-title">How this tracker works</h3>' +
-                    '<p>Every day, an automated job reads the ISD renewal page, finds the Stamp 1G processing date, and appends one row to ' +
+                    '<p>Every day, an automated job reads the ISD renewal page, finds each stamp category\u2019s processing date, and appends one row per category to ' +
                     '<a href="data/stamp_1g.json"><code>data/stamp_1g.json</code></a> in this repo. The rate and ETA above are a straight-line fit through that history — not a promise.</p></div>';
                 var storedDate = g1StoredDate();
                 var storedMode = g1StoredMode();
+                var storedExpiry = g1StoredExpiry();
                 var estimatorHtml = '<div class="g1-chart"><h3>Your application</h3>' +
                     '<div class="note2">When did you apply — or when do you plan to? Your tentative outcome date updates itself as the lag moves.</div>' +
                     '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:12px;">' +
@@ -3157,8 +3529,15 @@
                     '<input type="date" id="g1-apply-date" autocomplete="off" aria-label="Your application date" value="' + escapeHtml(storedDate) + '">' +
                     '<button type="button" class="clear-btn" id="g1-apply-clear" aria-label="Clear application date" title="Clear application date">\u00d7</button>' +
                     '</div></div>' +
-                    '<div id="g1-estimate" aria-live="polite"></div></div>';
-                return head + hero + cards + estimatorHtml + projHtml + chart + hist + note;
+                    '<div id="g1-estimate" aria-live="polite"></div>' +
+                    '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:10px;">' +
+                    '<label for="g1-expiry-date" style="font-size:12px;color:var(--ink-muted);">IRP expiry (optional)</label>' +
+                    '<div class="datefilter"><label class="visually-hidden" for="g1-expiry-date">IRP expiry date</label>' +
+                    '<input type="date" id="g1-expiry-date" autocomplete="off" aria-label="Your IRP expiry date" value="' + escapeHtml(storedExpiry) + '">' +
+                    '<button type="button" class="clear-btn" id="g1-expiry-clear" aria-label="Clear expiry date" title="Clear expiry date">\u00d7</button>' +
+                    '</div></div>' +
+                    '<div id="g1-expiry" aria-live="polite"></div></div>';
+                return head + catPills + hero + cards + estimatorHtml + projHtml + chart + hist + '<div id="community-box"></div>' + note;
             }
 
             async function renderG1Page() {
@@ -3179,8 +3558,18 @@
                 await loadG1Data();
                 // A visa-tab switch may have rendered while we fetched.
                 if (activeTracker !== '1g') return;
-                root.innerHTML = renderG1Layout(g1Cache || []);
+                var allRows = g1Cache || [];
+                var cat = g1StoredCategory(allRows);
+                g1ActiveRows = g1RowsFor(allRows, cat);
+                root.innerHTML = renderG1Layout(g1ActiveRows, g1Categories(allRows), cat);
                 wireChrome();
+                var catRow = document.getElementById('g1-cats');
+                if (catRow) catRow.addEventListener('click', function(e) {
+                    var chip = e.target && e.target.closest ? e.target.closest('[data-cat]') : null;
+                    if (!chip) return;
+                    try { localStorage.setItem('stamp1g-category', chip.getAttribute('data-cat')); } catch (err) { /* private mode */ }
+                    renderG1Page();
+                });
                 var g1DateEl = document.getElementById('g1-apply-date');
                 if (g1DateEl) g1DateEl.addEventListener('change', function() {
                     applyG1DateBounds();
@@ -3209,11 +3598,122 @@
                 }
                 applyG1DateBounds();
                 paintG1Estimate();
+                var g1ExpEl = document.getElementById('g1-expiry-date');
+                if (g1ExpEl) g1ExpEl.addEventListener('change', function() {
+                    try {
+                        if (g1ExpEl.value) localStorage.setItem('stamp1g-expiry', g1ExpEl.value);
+                        else localStorage.removeItem('stamp1g-expiry');
+                    } catch (err) { /* private mode */ }
+                    paintG1Expiry();
+                });
+                var g1ExpClear = document.getElementById('g1-expiry-clear');
+                if (g1ExpClear) g1ExpClear.addEventListener('click', function() {
+                    if (g1ExpEl) g1ExpEl.value = '';
+                    try { localStorage.removeItem('stamp1g-expiry'); } catch (err) { /* private mode */ }
+                    paintG1Expiry();
+                    if (g1ExpEl) g1ExpEl.focus();
+                });
+                paintG1Expiry();
+                paintCommunityBox('1g');
                 showHero();
             }
 
-            function trackerCardHTML(id, icon, title, desc, meta, metaId) {
-                return '<button type="button" class="tracker-card' + (id === '1g' ? ' g1' : '') + '" data-tracker="' + id + '">' +
+            // ====== PERMITS TRACKER (item 7) ======
+            // Same visual language as the 1G page (hero, cards, history) over
+            // data/work_permits.json, with per-category pills. Lighter than
+            // 1G: no estimator or projections panel (yet).
+            function permitsStoredCategory(rows) {
+                var cats = g1Categories(rows);
+                if (!cats.length) return '';
+                try {
+                    var saved = localStorage.getItem('permits-category') || '';
+                    if (saved && cats.indexOf(saved) !== -1) return saved;
+                } catch (e) { /* private mode */ }
+                return cats[0];
+            }
+
+            function renderPermitsLayout(rows, cats, activeCat) {
+                cats = cats && cats.length ? cats : [];
+                var head = BACK_BTN_HTML +
+                    '<div class="eyebrow">Ireland \u00b7 Dept. of Enterprise (DETE)</div>' +
+                    '<div class="titlerow"><h1>Employment Permit Tracker</h1>' +
+                    '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">' + THEME_BTN_HTML + '</div></div>' +
+                    '<div class="sub">' + (rows.length ? rows.length + ' observation' + (rows.length === 1 ? '' : 's') + ' on record' : 'Awaiting data') + '</div>';
+                if (!rows.length) {
+                    return head +
+                        '<div class="empty">No observations recorded yet. The daily job writes to <code>data/work_permits.json</code> — check back after its first run.</div>';
+                }
+                var catPills = cats.length > 1
+                    ? '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;" id="permits-cats" role="group" aria-label="Permit category">' +
+                      cats.map(function(c) {
+                          return '<button type="button" class="recent-chip mode-chip' + (c === activeCat ? ' active' : '') +
+                              '" data-cat="' + escapeHtml(c) + '" aria-pressed="' + (c === activeCat) + '">' + escapeHtml(c) + '</button>';
+                      }).join('') + '</div>'
+                    : '';
+                var proj = computeG1Projections(rows);
+                var latest = rows[rows.length - 1];
+                var hero = '<div class="hero" id="hero" data-id="permits" style="opacity:0">' +
+                    '<div class="hero-body"><div>' +
+                    '<h2 class="hero-title">Processing ' + fmtG1Date(latest.processing_date) + '.</h2>' +
+                    '<div class="hero-sub">' + latest.lag_days + ' days (~' + fmtLagMonths(latest.lag_days) + ' mo) behind today' +
+                    (proj.ok && proj.recentWeek !== null ? ', advancing ~' + proj.recentWeek.toFixed(1) + ' days/week.' : '.') + '</div>' +
+                    '</div><div class="visual">' +
+                    '<div class="ring"></div><div class="ring"></div><div class="ring"></div>' +
+                    '<div class="ring-core">' + latest.lag_days + '</div>' +
+                    '</div></div></div>';
+                var cards = '<div class="cards">' +
+                    '<div class="card"><div class="label"><i data-lucide="calendar-check"></i>Permit date</div><div class="value">' + fmtG1Date(latest.processing_date) + '</div></div>' +
+                    '<div class="card"><div class="label"><i data-lucide="hourglass"></i>Current lag</div><div class="value">' + latest.lag_days + ' days <span style="font-size:13px;font-weight:600;">(~' + fmtLagMonths(latest.lag_days) + ' mo)</span></div></div>' +
+                    '<div class="card"><div class="label"><i data-lucide="trending-up"></i>Advancement rate</div><div class="value">' +
+                    (proj.ok ? proj.recentWeek.toFixed(1) + ' <span style="font-size:13px;font-weight:600;">days/week</span>' : '-') + '</div></div>' +
+                    '<div class="card"><div class="label"><i data-lucide="flag"></i>ETA to today</div><div class="value">' +
+                    (proj.ok && proj.etaDate ? fmtG1Date(proj.etaDate) + ' <span style="font-size:13px;font-weight:600;">(in ~' + proj.etaDays + 'd)</span>' : (proj.ok ? 'Stalled' : '-')) + '</div></div>' +
+                    '</div>';
+                var histRows = rows.slice().reverse().map(function(r) {
+                    return '<tr><td class="mono">' + r.run_date + '</td><td>' + escapeHtml(r.category || '') +
+                        '</td><td class="mono">' + r.processing_date + '</td><td>' + r.lag_days + '</td></tr>';
+                }).join('');
+                var hist = '<div class="table-wrap"><table class="results-table"><thead><tr><th>Observed</th><th>Category</th><th>Permit date</th><th>Lag (days)</th></tr></thead>' +
+                    '<tbody>' + histRows + '</tbody></table></div>';
+                var note = '<div class="readme"><h3 class="readme-title">How this tracker works</h3>' +
+                    '<p>Every day, an automated job reads DETE\u2019s current processing dates and appends one row per permit category to ' +
+                    '<a href="data/work_permits.json"><code>data/work_permits.json</code></a> in this repo.</p></div>';
+                return head + catPills + hero + cards + hist + note;
+            }
+
+            async function renderPermitsPage() {
+                document.title = 'Employment Permit Tracker';
+                if (!permitsCache) {
+                    root.innerHTML = BACK_BTN_HTML +
+                        '<div class="eyebrow">Ireland \u00b7 Dept. of Enterprise (DETE)</div>' +
+                        '<div class="titlerow"><h1>Employment Permit Tracker</h1>' +
+                        '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">' + THEME_BTN_HTML + '</div></div>' +
+                        '<div class="cards">' +
+                        '<div class="skel skel-card" style="animation-delay:0.02s"></div>' +
+                        '<div class="skel skel-card" style="animation-delay:0.07s"></div>' +
+                        '<div class="skel skel-card" style="animation-delay:0.12s"></div>' +
+                        '<div class="skel skel-card" style="animation-delay:0.17s"></div>' +
+                        '</div>';
+                    wireChrome();
+                }
+                await loadPermitsData();
+                if (activeTracker !== 'permits') return;
+                var allRows = permitsCache || [];
+                var cat = permitsStoredCategory(allRows);
+                root.innerHTML = renderPermitsLayout(g1RowsFor(allRows, cat), g1Categories(allRows), cat);
+                wireChrome();
+                var catRow = document.getElementById('permits-cats');
+                if (catRow) catRow.addEventListener('click', function(e) {
+                    var chip = e.target && e.target.closest ? e.target.closest('[data-cat]') : null;
+                    if (!chip) return;
+                    try { localStorage.setItem('permits-category', chip.getAttribute('data-cat')); } catch (err) { /* private mode */ }
+                    renderPermitsPage();
+                });
+                showHero();
+            }
+
+            function trackerCardHTML(id, icon, title, desc, meta, metaId, accent) {
+                return '<button type="button" class="tracker-card' + (accent ? ' ' + accent : '') + '" data-tracker="' + id + '">' +
                     '<span class="tracker-chip"><i data-lucide="' + icon + '"></i></span>' +
                     '<h3>' + title + '</h3><p>' + desc + '</p>' +
                     '<span class="tracker-meta" id="' + metaId + '" aria-live="polite">' + meta + '</span>' +
@@ -3226,6 +3726,9 @@
             // no user-controlled strings — no escaping needed.
             function landingStatusHTML(meta, g1Rows, todayIST) {
                 var parts = [];
+                // Ticker tracks the headline 1G series even once other stamp
+                // categories share the file.
+                g1Rows = g1RowsFor(g1Rows, '1G');
                 var wd = new Date(todayIST + 'T00:00:00').getDay();
                 if (wd === 0 || wd === 6) {
                     parts.push('Embassy closed today — back Monday');
@@ -3240,7 +3743,19 @@
                     parts.push('Visa decisions updated daily');
                 }
                 if (g1Rows && g1Rows.length) {
-                    parts.push('Stamp 1G lag <strong>' + g1Rows[g1Rows.length - 1].lag_days + ' days</strong>');
+                    var lagNow = g1Rows[g1Rows.length - 1].lag_days;
+                    // Weekly movement: compare against the closest observation
+                    // at least 7 days older (archive gaps make "exactly 7" rare).
+                    var move = '';
+                    var cutoff = g1ToDay(g1Rows[g1Rows.length - 1].run_date) - 7;
+                    for (var i = g1Rows.length - 2; i >= 0; i--) {
+                        if (g1ToDay(g1Rows[i].run_date) <= cutoff) {
+                            var d = lagNow - g1Rows[i].lag_days;
+                            if (d !== 0) move = ' (' + (d > 0 ? '\u2191' : '\u2193') + Math.abs(d) + ' this week)';
+                            break;
+                        }
+                    }
+                    parts.push('Stamp 1G lag <strong>' + lagNow + ' days</strong>' + move);
                 }
                 return parts.join(' <span aria-hidden="true">\u00b7</span> ');
             }
@@ -3257,7 +3772,7 @@
                     '<div class="eyebrow">Ireland \u00b7 Live trackers</div>' +
                     '<div class="titlerow"><h1>Choose your tracker</h1>' +
                     '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">' + THEME_BTN_HTML + '</div></div>' +
-                    '<div class="sub">Two daily trackers, one dashboard.</div>' +
+                    '<div class="sub">Three daily trackers, one dashboard.</div>' +
                     '<div class="landing-status" id="landing-status" aria-live="polite"><span class="note2">Checking today\u2019s updates\u2026</span></div>' +
                     '<form class="landing-search" id="landing-search" role="search">' +
                     '<div class="searchbar">' + searchIcon() +
@@ -3265,11 +3780,13 @@
                     '<button class="btn" type="submit">Track</button></form>' +
                     '<div class="tracker-grid">' +
                     trackerCardHTML('visa', 'plane', 'Embassy Visa Decisions',
-                        'Daily decisions published by the Embassy of Ireland in New Delhi — searchable by application number, with trends and summaries.', 'Loading\u2026', 'visa-meta') +
+                        'Daily decisions published by the Embassy of Ireland in New Delhi — searchable by application number, with trends and summaries.', 'Loading\u2026', 'visa-meta', '') +
                     trackerCardHTML('1g', 'stamp', 'Stamp 1G Processing',
-                        'ISD renewal queue: which application date is being processed now, how far behind it is, and when it may catch up.', 'Loading\u2026', 'g1-meta') +
+                        'ISD renewal queue: which application date is being processed now, how far behind it is, and when it may catch up.', 'Loading\u2026', 'g1-meta', 'g1') +
+                    trackerCardHTML('permits', 'briefcase', 'Employment Permits',
+                        'DETE queue: which application dates each permit type has reached, with lags and trends.', 'Loading\u2026', 'permits-meta', 'permits') +
                     '</div>' +
-                    '<div class="landing-foot">Data: Embassy of Ireland, New Delhi \u00b7 ISD \u00b7 Updated daily ~11:15 IST \u00b7 Unofficial tracker, not affiliated with the Irish government.</div></div>';
+                    '<div class="landing-foot">Data: Embassy of Ireland, New Delhi \u00b7 ISD \u00b7 DETE \u00b7 Updated daily ~11:15 IST \u00b7 Unofficial tracker, not affiliated with the Irish government.</div></div>';
                 wireChrome();
                 var cards = root.querySelectorAll('.tracker-card');
                 for (var i = 0; i < cards.length; i++) {
@@ -3290,10 +3807,11 @@
                 Promise.all([
                     loadVisaCount(),
                     loadG1Data(),
+                    loadPermitsData(),
                     fetch(VISA_META_URL).then(function(r) { return r.ok ? r.json() : null; }).catch(function() { return null; })
                 ]).then(function(res) {
                     if (activeTracker !== 'home') return;
-                    var n = res[0], grows = res[1] || [], meta = res[2];
+                    var n = res[0], grows = res[1] || [], prows = res[2] || [], meta = res[3];
                     var el = document.getElementById('visa-meta');
                     if (el) el.textContent = n
                         ? n.toLocaleString() + ' decisions on record'
@@ -3303,6 +3821,19 @@
                         ? 'Processing ' + fmtG1Date(grows[grows.length - 1].processing_date) +
                           ' \u00b7 ' + grows[grows.length - 1].lag_days + 'd lag (~' + fmtLagMonths(grows[grows.length - 1].lag_days) + ' mo) \u00b7 ' + grows.length + ' observations'
                         : 'Awaiting first observation';
+                    var pm = document.getElementById('permits-meta');
+                    if (pm) {
+                        // Slowest queue among the latest observation day.
+                        var plast = null;
+                        for (var pi = prows.length - 1; pi >= 0; pi--) {
+                            if (pi < prows.length - 1 && prows[pi].run_date !== prows[prows.length - 1].run_date) break;
+                            if (!plast || prows[pi].lag_days > plast.lag_days) plast = prows[pi];
+                        }
+                        pm.textContent = plast
+                            ? 'Slowest queue: ' + plast.category + ' at ' + fmtG1Date(plast.processing_date) +
+                              ' (' + plast.lag_days + 'd lag)'
+                            : 'Awaiting first observation';
+                    }
                     var strip = document.getElementById('landing-status');
                     if (strip) {
                         try {
@@ -3317,10 +3848,11 @@
             // delegate all tab-content rendering to switchTab() so the layout/rows
             // split is the single source of truth.
             async function render() {
-                // Landing + 1G own their skeleton/load/paint cycle and return
-                // early — everything below is the visa tracker, unchanged.
+                // Landing + trackers own their skeleton/load/paint cycle and
+                // return early — everything below is the visa tracker.
                 if (activeTracker === 'home') { await renderLandingPage(); return; }
                 if (activeTracker === '1g') { await renderG1Page(); return; }
+                if (activeTracker === 'permits') { await renderPermitsPage(); return; }
                 document.title = 'Irish Visa Decision Tracker';
                 if (!cache) {
                     root.innerHTML = '<div class="eyebrow">Ireland \u00b7 New Delhi Visa Section</div>' +
