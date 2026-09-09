@@ -974,6 +974,143 @@
             }
         }
 
+        /* ===== tracker landing + Stamp 1G =====
+           Homescreen with two tracker cards, the 1G hero variant, and the
+           projection panel. Reuses .cards/.card/.table-wrap everywhere so
+           both trackers share one visual language. */
+        #visa-dash .back-btn {
+            background: var(--surface-raised);
+            border: 1px solid var(--border);
+            color: var(--ink-soft);
+            font-family: inherit;
+            font-size: 12px;
+            font-weight: 600;
+            padding: 7px 14px;
+            border-radius: 100px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 14px;
+            transition: background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1), color 0.2s cubic-bezier(0.4, 0, 0.2, 1), transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        #visa-dash .back-btn:hover {
+            background: var(--surface-hover);
+            color: var(--ink);
+            transform: translateY(-1px);
+        }
+        #visa-dash .tracker-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin: 20px 0 24px;
+        }
+        #visa-dash .tracker-card {
+            font-family: inherit;
+            text-align: left;
+            background: var(--surface-raised);
+            border: 1px solid var(--border);
+            border-radius: var(--r-container);
+            padding: 22px;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        #visa-dash .tracker-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 32px -12px rgba(4, 120, 87, 0.35);
+            border-color: var(--green);
+        }
+        #visa-dash .tracker-card.g1:hover {
+            box-shadow: 0 12px 32px -12px rgba(0, 119, 230, 0.4);
+            border-color: #0077E6;
+        }
+        #visa-dash .tracker-chip {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--green-soft);
+            color: var(--green-text);
+        }
+        #visa-dash .tracker-card.g1 .tracker-chip {
+            background: #e3f0fd;
+            color: #0077E6;
+        }
+        #visa-dash[data-theme="dark"] .tracker-card.g1 .tracker-chip {
+            background: rgba(0, 119, 230, 0.18);
+            color: #7db9f8;
+        }
+        #visa-dash .tracker-card h3 {
+            margin: 4px 0 0;
+            font-size: 17px;
+            font-weight: 700;
+            letter-spacing: -0.01em;
+            color: var(--ink);
+        }
+        #visa-dash .tracker-card p {
+            margin: 0;
+            font-size: 13px;
+            line-height: 1.55;
+            color: var(--ink-muted);
+        }
+        #visa-dash .tracker-meta {
+            margin-top: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--green-text);
+        }
+        #visa-dash .tracker-card.g1 .tracker-meta { color: #0077E6; }
+        #visa-dash[data-theme="dark"] .tracker-card.g1 .tracker-meta { color: #7db9f8; }
+        #visa-dash .tracker-cta {
+            margin-top: 4px;
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--green);
+        }
+        #visa-dash .tracker-card.g1 .tracker-cta { color: #0077E6; }
+        #visa-dash[data-theme="dark"] .tracker-card.g1 .tracker-cta { color: #7db9f8; }
+        @media (max-width: 760px) {
+            #visa-dash .tracker-grid { grid-template-columns: 1fr; }
+        }
+        /* 1G hero: same shape as the visa hero, teal gradient so the two
+           trackers are distinguishable at a glance. */
+        #visa-dash .hero[data-id="g1"] {
+            background: linear-gradient(135deg, #075985, #0284c7);
+        }
+        /* 1G projection chart + table */
+        #visa-dash .g1-chart {
+            background: var(--surface-raised);
+            border: 1px solid var(--border);
+            border-radius: var(--r-container);
+            padding: 18px;
+            margin-bottom: 20px;
+        }
+        #visa-dash .g1-chart h3 {
+            margin: 0 0 4px;
+            font-size: 14px;
+            font-weight: 700;
+        }
+        #visa-dash .g1-chart .note2 {
+            font-size: 12px;
+            color: var(--ink-muted);
+        }
+        #visa-dash .g1-chart svg {
+            width: 100%;
+            height: auto;
+            display: block;
+            margin-top: 12px;
+        }
+        #visa-dash .pill.blue { background: #e3f0fd; color: #075985; }
+        #visa-dash[data-theme="dark"] .pill.blue {
+            background: rgba(0, 119, 230, 0.18);
+            color: #7db9f8;
+        }
+
         /* ===== hero =====
            One gradient for every tab (single-accent lock). The ::before is a
            static light sheen, not an animated blob - no infinite decoration. */
@@ -1292,10 +1429,20 @@
             // reloads. Tab switches push history entries; search/date updates
             // replace the current one (no per-keystroke history spam).
             const KNOWN_TABS = ['home', 'daily', 'past', 'suggest'];
+            // Top-level tracker: 'home' is the landing screen with the two
+            // tracker cards, 'visa' the embassy-decisions tracker, '1g' the
+            // Stamp 1G processing-date tracker. Old shared links carry only
+            // ?tab=… — those resolve to 'visa' so nothing breaks.
+            const KNOWN_TRACKERS = ['home', 'visa', '1g'];
             function readUrlState() {
                 const p = new URLSearchParams(location.search);
                 const tab = p.get('tab');
+                const tracker = p.get('tracker');
+                let resolved = 'home';
+                if (tracker && KNOWN_TRACKERS.indexOf(tracker) !== -1) resolved = tracker;
+                else if (tab && KNOWN_TABS.indexOf(tab) !== -1) resolved = 'visa';
                 return {
+                    tracker: resolved,
                     tab: KNOWN_TABS.indexOf(tab) !== -1 ? tab : 'home',
                     q: (p.get('q') || '').slice(0, 200),
                     date: (p.get('date') || '').slice(0, 10)
@@ -1303,13 +1450,20 @@
             }
             function syncUrl(mode) {
                 const p = new URLSearchParams();
-                p.set('tab', activeTab);
-                if (homeSearchTerm) p.set('q', homeSearchTerm);
-                if (pastDateFilter) p.set('date', pastDateFilter);
+                if (activeTracker === 'visa') {
+                    p.set('tracker', 'visa');
+                    p.set('tab', activeTab);
+                    if (homeSearchTerm) p.set('q', homeSearchTerm);
+                    if (pastDateFilter) p.set('date', pastDateFilter);
+                } else if (activeTracker === '1g') {
+                    p.set('tracker', '1g');
+                }
+                // Landing ('home') keeps a clean URL with no params.
                 const qs = p.toString();
                 history[mode === 'push' ? 'pushState' : 'replaceState'](null, '', location.pathname + (qs ? '?' + qs : ''));
             }
             const urlState = readUrlState();
+            let activeTracker = urlState.tracker;
             let activeTab = urlState.tab;
             let homeSearchTerm = urlState.q;
             let pastDateFilter = urlState.date;
@@ -2470,10 +2624,312 @@
                 // Theme switch is instant via CSS variables; the sun/moon SVG
                 // icon swaps via CSS on [data-theme], so no JS or DOM rebuild.
                 applyChrome();
-            }            // Initial mount: build the chrome (eyebrow, title, navpills, hero) and
+            }
+
+            // ===== tracker landing + Stamp 1G =====
+            // Top-level view switcher. 'home' is the landing screen with two
+            // tracker cards; 'visa' is the existing embassy-decisions tracker
+            // (untouched below); '1g' is the Stamp 1G processing-date tracker
+            // fed by data/stamp_1g.json (written daily by track_1g.py).
+            const THEME_BTN_HTML = '<button class="theme-toggle" id="theme-toggle" aria-label="Toggle dark mode" title="Toggle dark mode">' +
+                '<svg class="icon-sun" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8"/></svg>' +
+                '<svg class="icon-moon" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5a8.5 8.5 0 1 0 11 11z"/></svg></button>';
+            const BACK_BTN_HTML = '<button type="button" class="back-btn" id="back-btn"><i data-lucide="arrow-left"></i> All trackers</button>';
+
+            function setTracker(id, opts) {
+                activeTracker = id;
+                if (!(opts && opts.noUrl)) syncUrl('push');
+                render();
+            }
+
+            function wireChrome() {
+                const themeToggle = document.getElementById('theme-toggle');
+                if (themeToggle) themeToggle.addEventListener('click', toggleTheme);
+                const backBtn = document.getElementById('back-btn');
+                if (backBtn) backBtn.addEventListener('click', function() { setTracker('home'); });
+            }
+
+            // First-paint hero reveal shared by landing/1G pages. The visa
+            // path owns morphHero()'s once-per-load guard, so when these pages
+            // render after it the hero must be shown directly instead.
+            function showHero() {
+                var hero = document.getElementById('hero');
+                if (!hero) return;
+                if (window._heroHasRendered) hero.style.opacity = '1';
+                else morphHero();
+            }
+
+            // ---- Stamp 1G data + projections ----
+            let g1Cache = null;
+            let g1FetchedAt = null;
+
+            async function loadG1Data() {
+                if (g1Cache) return g1Cache;
+                try {
+                    // no-store so the daily cron's new observation shows up
+                    // without waiting for CDN/browser cache to expire.
+                    const res = await fetch('data/stamp_1g.json', { cache: 'no-store' });
+                    if (!res.ok) throw new Error('HTTP ' + res.status);
+                    const raw = await res.json();
+                    g1Cache = (Array.isArray(raw) ? raw : [])
+                        .filter(function(r) { return r && r.run_date && r.processing_date; })
+                        .map(function(r) {
+                            return {
+                                run_date: String(r.run_date).slice(0, 10),
+                                run_time: String(r.run_time || ''),
+                                processing_date: String(r.processing_date).slice(0, 10),
+                                lag_days: +r.lag_days || 0,
+                                lag_weeks: +r.lag_weeks || 0
+                            };
+                        })
+                        .sort(function(a, b) { return a.run_date.localeCompare(b.run_date); });
+                    g1FetchedAt = Date.now();
+                } catch (e) {
+                    console.warn('loadG1Data failed:', e);
+                    if (g1Cache === null) g1Cache = [];
+                }
+                return g1Cache;
+            }
+
+            function g1ToDay(iso) {
+                var p = String(iso).split('-');
+                return Date.UTC(+p[0], +p[1] - 1, +p[2]) / 86400000;
+            }
+            function g1FromDay(n) {
+                return new Date(Math.round(n) * 86400000).toISOString().slice(0, 10);
+            }
+            function g1LinReg(pts) {
+                var n = pts.length, i, sx = 0, sy = 0;
+                for (i = 0; i < n; i++) { sx += pts[i].x; sy += pts[i].y; }
+                var mx = sx / n, my = sy / n, sxx = 0, sxy = 0;
+                for (i = 0; i < n; i++) { sxx += (pts[i].x - mx) * (pts[i].x - mx); sxy += (pts[i].x - mx) * (pts[i].y - my); }
+                if (!sxx) return null;
+                var slope = sxy / sxx;
+                return { slope: slope, intercept: my - slope * mx };
+            }
+
+            // Advancement-rate + ETA projections from the JSON history.
+            // Model: ordinary least-squares fit of processing_date over
+            // run_date (slope = ISD days advanced per calendar day). Overall
+            // fit uses every observation; recent fit uses the last 10.
+            function computeG1Projections(rows) {
+                if (!rows || rows.length < 2) return { ok: false, count: rows ? rows.length : 0 };
+                var pts = rows.map(function(r) { return { x: g1ToDay(r.run_date), y: g1ToDay(r.processing_date) }; });
+                var all = g1LinReg(pts);
+                if (!all) return { ok: false, count: rows.length };
+                var recentPts = pts.slice(-Math.min(10, pts.length));
+                var recent = g1LinReg(recentPts) || all;
+                var latest = rows[rows.length - 1];
+                var first = rows[0];
+                var todayStr = new Date().toISOString().slice(0, 10);
+                var remaining = g1ToDay(todayStr) - g1ToDay(latest.processing_date);
+                var slope = recent.slope;
+                // Slope <= ~0 means stalled (or regressing) — no finite ETA.
+                var etaDays = slope > 0.005 ? Math.max(0, Math.ceil(remaining / slope)) : null;
+                var ahead = [14, 28, 56, 84].map(function(d) {
+                    return { days: d, proc: g1FromDay(g1ToDay(latest.processing_date) + slope * d) };
+                });
+                return {
+                    ok: true,
+                    count: rows.length,
+                    first: first,
+                    latest: latest,
+                    todayStr: todayStr,
+                    rateWeek: all.slope * 7,
+                    recentWeek: slope * 7,
+                    remaining: remaining,
+                    etaDays: etaDays,
+                    etaDate: etaDays === null ? null : g1FromDay(g1ToDay(todayStr) + etaDays),
+                    ahead: ahead,
+                    lagDelta: latest.lag_days - first.lag_days
+                };
+            }
+
+            function fmtG1Date(iso) {
+                var p = String(iso).split('-');
+                var d = new Date(Date.UTC(+p[0], +p[1] - 1, +p[2]));
+                return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
+            }
+
+            // Processing-date advancement line: x = observation date,
+            // y = ISD processing date. Dots + first/last labels, no deps.
+            function g1TrendSVG(rows) {
+                var W = 560, H = 190, PL = 8, PR = 8, PT = 14, PB = 26;
+                var xs = rows.map(function(r) { return g1ToDay(r.run_date); });
+                var ys = rows.map(function(r) { return g1ToDay(r.processing_date); });
+                var x0 = Math.min.apply(null, xs), x1 = Math.max.apply(null, xs);
+                var y0 = Math.min.apply(null, ys), y1 = Math.max.apply(null, ys);
+                if (x1 === x0) x1 = x0 + 1;
+                if (y1 === y0) y1 = y0 + 1;
+                function X(v) { return PL + (v - x0) / (x1 - x0) * (W - PL - PR); }
+                function Y(v) { return PT + (1 - (v - y0) / (y1 - y0)) * (H - PT - PB); }
+                var line = rows.map(function(r, i) {
+                    return (i ? 'L' : 'M') + X(g1ToDay(r.run_date)).toFixed(1) + ' ' + Y(g1ToDay(r.processing_date)).toFixed(1);
+                }).join(' ');
+                var dots = rows.map(function(r) {
+                    return '<circle cx="' + X(g1ToDay(r.run_date)).toFixed(1) + '" cy="' + Y(g1ToDay(r.processing_date)).toFixed(1) +
+                        '" r="3.2" fill="#0284c7"><title>' + r.run_date + ': processing ' + r.processing_date + ' (' + r.lag_days + 'd lag)</title></circle>';
+                }).join('');
+                return '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Stamp 1G processing date over time, ' + rows.length + ' observations">' +
+                    '<path d="' + line + '" fill="none" stroke="#0284c7" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>' + dots +
+                    '<text x="' + PL + '" y="' + (H - 8) + '" font-size="11" fill="currentColor" opacity="0.65">' + rows[0].run_date + '</text>' +
+                    '<text x="' + (W - PR) + '" y="' + (H - 8) + '" font-size="11" fill="currentColor" opacity="0.65" text-anchor="end">' + rows[rows.length - 1].run_date + '</text>' +
+                    '<text x="' + PL + '" y="11" font-size="11" font-weight="700" fill="currentColor">Processing ' + rows[rows.length - 1].processing_date + '</text>' +
+                    '</svg>';
+            }
+
+            function renderG1Layout(rows) {
+                var head = BACK_BTN_HTML +
+                    '<div class="eyebrow">Ireland \u00b7 Immigration Service Delivery</div>' +
+                    '<div class="titlerow"><h1>Stamp 1G Tracker</h1>' +
+                    '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">' + THEME_BTN_HTML + '</div></div>' +
+                    '<div class="sub">' + (rows.length ? rows.length + ' daily observation' + (rows.length === 1 ? '' : 's') + ' on record' : 'Awaiting data') + '</div>';
+                if (!rows.length) {
+                    return head +
+                        '<div class="empty">No observations recorded yet. The daily job writes to <code>data/stamp_1g.json</code> — check back after its first run.</div>';
+                }
+                var proj = computeG1Projections(rows);
+                var latest = rows[rows.length - 1];
+                var heroTitle = 'Processing ' + fmtG1Date(latest.processing_date) + '.';
+                var heroSub = latest.lag_days + ' days behind today' +
+                    (proj.ok && proj.recentWeek !== null ? ', advancing ~' + proj.recentWeek.toFixed(1) + ' days/week.' : '.');
+                var hero = '<div class="hero" id="hero" data-id="g1" style="opacity:0">' +
+                    '<div class="hero-body"><div>' +
+                    '<h2 class="hero-title">' + heroTitle + '</h2>' +
+                    '<div class="hero-sub">' + heroSub + '</div>' +
+                    '</div><div class="visual">' +
+                    '<div class="ring"></div><div class="ring"></div><div class="ring"></div>' +
+                    '<div class="ring-core">' + latest.lag_days + '</div>' +
+                    '</div></div></div>';
+                var cards = '<div class="cards">' +
+                    '<div class="card"><div class="label"><i data-lucide="calendar-check"></i>ISD processing date</div><div class="value">' + fmtG1Date(latest.processing_date) + '</div></div>' +
+                    '<div class="card"><div class="label"><i data-lucide="hourglass"></i>Current lag</div><div class="value">' + latest.lag_days + ' days</div></div>' +
+                    '<div class="card"><div class="label"><i data-lucide="trending-up"></i>Advancement rate</div><div class="value">' +
+                    (proj.ok ? proj.recentWeek.toFixed(1) + ' <span style="font-size:13px;font-weight:600;">days/week</span>' : '-') + '</div></div>' +
+                    '<div class="card"><div class="label"><i data-lucide="flag"></i>ETA to today</div><div class="value">' +
+                    (proj.ok && proj.etaDate ? fmtG1Date(proj.etaDate) : (proj.ok ? 'Stalled' : '-')) + '</div></div>' +
+                    '</div>';
+                var projHtml;
+                if (!proj.ok) {
+                    projHtml = '<div class="note">Projections need at least 2 daily observations — check back after the cron has run twice.</div>';
+                } else {
+                    var pace = proj.recentWeek >= 6.5 ? 'On pace — the queue is roughly keeping up with new applications.' :
+                        proj.recentWeek > 0.5 ? 'Moving, but slower than real time — the backlog is growing.' :
+                        'Stalled — the processing date is barely moving.';
+                    projHtml = '<div class="g1-chart"><h3><i data-lucide="chart-line" style="width:15px;height:15px;vertical-align:-2px;"></i> Projections</h3>' +
+                        '<div class="note2">Linear fit of processing-date advancement. Overall: <strong>' + proj.rateWeek.toFixed(1) +
+                        ' days/week</strong> · Recent (last ' + Math.min(10, proj.count) + '): <strong>' + proj.recentWeek.toFixed(1) +
+                        ' days/week</strong>. ' + pace + '</div>' +
+                        '<div class="table-wrap" style="margin-top:12px;"><table class="results-table"><thead><tr><th>Milestone</th><th>Projected processing date</th></tr></thead><tbody>' +
+                        '<tr><td>Today (' + proj.todayStr + ')</td><td><span class="pill blue">' + proj.remaining + ' days to clear</span></td></tr>' +
+                        (proj.etaDate
+                            ? '<tr><td>Reaches today in ~' + proj.etaDays + ' days</td><td><strong>' + fmtG1Date(proj.etaDate) + '</strong></td></tr>'
+                            : '<tr><td>Catch-up ETA</td><td>Stalled at current pace</td></tr>') +
+                        proj.ahead.map(function(a) {
+                            return '<tr><td class="mono">+' + a.days + ' days</td><td class="mono">' + fmtG1Date(a.proc) + '</td></tr>';
+                        }).join('') +
+                        '</tbody></table></div></div>';
+                }
+                var chart = '<div class="g1-chart"><h3>Processing date over time</h3>' +
+                    '<div class="note2">Each dot is one daily cron observation. Lag ' +
+                    (proj.ok && proj.lagDelta !== 0 ? (proj.lagDelta > 0 ? 'grew' : 'shrank') + ' by ' + Math.abs(proj.lagDelta) + ' days across this history.' : 'is flat across this history.') + '</div>' +
+                    g1TrendSVG(rows) + '</div>';
+                var histRows = rows.slice().reverse().map(function(r) {
+                    return '<tr><td class="mono">' + r.run_date + '</td><td class="mono">' + r.processing_date +
+                        '</td><td>' + r.lag_days + '</td><td>' + r.lag_weeks.toFixed(2) + '</td></tr>';
+                }).join('');
+                var hist = '<div class="table-wrap"><table class="results-table"><thead><tr><th>Observed</th><th>ISD processing date</th><th>Lag (days)</th><th>Lag (weeks)</th></tr></thead>' +
+                    '<tbody>' + histRows + '</tbody></table></div>';
+                var note = '<div class="readme"><h3 class="readme-title">How this tracker works</h3>' +
+                    '<p>Every day, an automated job reads the ISD renewal page, finds the Stamp 1G processing date, and appends one row to ' +
+                    '<a href="data/stamp_1g.json"><code>data/stamp_1g.json</code></a> in this repo. The rate and ETA above are a straight-line fit through that history — not a promise.</p></div>';
+                return head + hero + cards + projHtml + chart + hist + note;
+            }
+
+            async function renderG1Page() {
+                document.title = 'Stamp 1G Tracker';
+                if (!g1Cache) {
+                    root.innerHTML = BACK_BTN_HTML +
+                        '<div class="eyebrow">Ireland \u00b7 Immigration Service Delivery</div>' +
+                        '<div class="titlerow"><h1>Stamp 1G Tracker</h1>' +
+                        '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">' + THEME_BTN_HTML + '</div></div>' +
+                        '<div class="cards">' +
+                        '<div class="skel skel-card" style="animation-delay:0.02s"></div>' +
+                        '<div class="skel skel-card" style="animation-delay:0.07s"></div>' +
+                        '<div class="skel skel-card" style="animation-delay:0.12s"></div>' +
+                        '<div class="skel skel-card" style="animation-delay:0.17s"></div>' +
+                        '</div>';
+                    wireChrome();
+                }
+                await loadG1Data();
+                // A visa-tab switch may have rendered while we fetched.
+                if (activeTracker !== '1g') return;
+                root.innerHTML = renderG1Layout(g1Cache || []);
+                wireChrome();
+                showHero();
+            }
+
+            function trackerCardHTML(id, icon, title, desc, meta) {
+                return '<button type="button" class="tracker-card' + (id === '1g' ? ' g1' : '') + '" data-tracker="' + id + '">' +
+                    '<span class="tracker-chip"><i data-lucide="' + icon + '"></i></span>' +
+                    '<h3>' + title + '</h3><p>' + desc + '</p>' +
+                    '<span class="tracker-meta">' + meta + '</span>' +
+                    '<span class="tracker-cta">Open tracker \u2192</span></button>';
+            }
+
+            async function renderLandingPage() {
+                document.title = 'Ireland Trackers';
+                root.innerHTML =
+                    '<div class="eyebrow">Ireland \u00b7 Live trackers</div>' +
+                    '<div class="titlerow"><h1>Choose your tracker</h1>' +
+                    '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">' + THEME_BTN_HTML + '</div></div>' +
+                    '<div class="sub">Two daily trackers, one dashboard.</div>' +
+                    '<div class="tracker-grid">' +
+                    '<div class="skel skel-card" style="min-height:180px"></div>' +
+                    '<div class="skel skel-card" style="min-height:180px;animation-delay:0.07s"></div>' +
+                    '</div>';
+                wireChrome();
+                var results = await Promise.all([loadData(), loadG1Data()]);
+                // User may have navigated away while we fetched.
+                if (activeTracker !== 'home') return;
+                var visaRows = results[0] || [];
+                var g1Rows = results[1] || [];
+                var visaMeta = visaRows.length
+                    ? visaRows.length.toLocaleString() + ' decisions on record'
+                    : 'Awaiting data';
+                var g1Meta = g1Rows.length
+                    ? 'Processing ' + fmtG1Date(g1Rows[g1Rows.length - 1].processing_date) +
+                      ' · ' + g1Rows[g1Rows.length - 1].lag_days + 'd lag · ' + g1Rows.length + ' observations'
+                    : 'Awaiting first observation';
+                root.innerHTML =
+                    '<div class="eyebrow">Ireland \u00b7 Live trackers</div>' +
+                    '<div class="titlerow"><h1>Choose your tracker</h1>' +
+                    '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">' + THEME_BTN_HTML + '</div></div>' +
+                    '<div class="sub">Two daily trackers, one dashboard.</div>' +
+                    '<div class="tracker-grid">' +
+                    trackerCardHTML('visa', 'plane', 'Embassy Visa Decisions',
+                        'Daily decisions published by the Embassy of Ireland in New Delhi — searchable by application number, with trends and summaries.', visaMeta) +
+                    trackerCardHTML('1g', 'stamp', 'Stamp 1G Processing',
+                        'ISD renewal queue: which application date is being processed now, how far behind it is, and when it may catch up.', g1Meta) +
+                    '</div>' +
+                    '<div class="note">Bookmark a tracker directly: <code>?tracker=visa</code> or <code>?tracker=1g</code>.</div>';
+                wireChrome();
+                var cards = root.querySelectorAll('.tracker-card');
+                for (var i = 0; i < cards.length; i++) {
+                    cards[i].addEventListener('click', function() {
+                        setTracker(this.getAttribute('data-tracker'));
+                    });
+                }
+            }
+            // Initial mount: build the chrome (eyebrow, title, navpills, hero) and
             // delegate all tab-content rendering to switchTab() so the layout/rows
             // split is the single source of truth.
             async function render() {
+                // Landing + 1G own their skeleton/load/paint cycle and return
+                // early — everything below is the visa tracker, unchanged.
+                if (activeTracker === 'home') { await renderLandingPage(); return; }
+                if (activeTracker === '1g') { await renderG1Page(); return; }
+                document.title = 'Irish Visa Decision Tracker';
                 if (!cache) {
                     root.innerHTML = '<div class="eyebrow">Ireland \u00b7 New Delhi Visa Section</div>' +
                         '<div class="titlerow"><h1>Visa Decision Tracker</h1>' +
@@ -2512,6 +2968,7 @@
 
                 root.innerHTML =
                     '<a class="skip-link" href="#tab-body" target="_self">Skip to content</a>' +
+                    BACK_BTN_HTML +
                     '<div class="eyebrow">Ireland \u00b7 New Delhi Visa Section</div>' +
                     '<div class="titlerow"><h1>Visa Decision Tracker</h1>' +
                     '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">' +
@@ -2544,6 +3001,8 @@
                 });
                 const themeToggle = document.getElementById('theme-toggle');
                 if (themeToggle) themeToggle.addEventListener('click', toggleTheme);
+                const backBtn = document.getElementById('back-btn');
+                if (backBtn) backBtn.addEventListener('click', function() { setTracker('home'); });
                 morphHero();
                 // Initial body paint: populate the active tab's content DIRECTLY
                 // without the hero cross-fade dip. morphHero already faded the
@@ -2576,9 +3035,19 @@
             root.setAttribute('data-theme', theme);
             applyChrome();
 
-            // Browser back/forward restores the tab and filters from the URL.
+            // Browser back/forward restores the tracker, tab and filters from
+            // the URL. A tracker change needs a full render (different page),
+            // a tab/filter change reuses the in-place switchTab().
             window.addEventListener('popstate', function() {
                 const s = readUrlState();
+                if (s.tracker !== activeTracker) {
+                    activeTracker = s.tracker;
+                    activeTab = s.tab;
+                    homeSearchTerm = s.q;
+                    pastDateFilter = s.date;
+                    render();
+                    return;
+                }
                 if (s.tab === activeTab && s.q === homeSearchTerm && s.date === pastDateFilter) return;
                 activeTab = s.tab;
                 homeSearchTerm = s.q;
