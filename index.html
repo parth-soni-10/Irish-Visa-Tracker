@@ -2872,7 +2872,7 @@
             // Processing-date advancement line: x = observation date,
             // y = ISD processing date. Dots + first/last labels, no deps.
             function g1TrendSVG(rows) {
-                var W = 560, H = 190, PL = 8, PR = 8, PT = 14, PB = 26;
+                var W = 620, H = 280, PL = 58, PR = 16, PT = 16, PB = 34;
                 var xs = rows.map(function(r) { return g1ToDay(r.run_date); });
                 var ys = rows.map(function(r) { return g1ToDay(r.processing_date); });
                 var x0 = Math.min.apply(null, xs), x1 = Math.max.apply(null, xs);
@@ -2881,19 +2881,49 @@
                 if (y1 === y0) y1 = y0 + 1;
                 function X(v) { return PL + (v - x0) / (x1 - x0) * (W - PL - PR); }
                 function Y(v) { return PT + (1 - (v - y0) / (y1 - y0)) * (H - PT - PB); }
+                function shortDay(iso) {
+                    var p = String(iso).split('-');
+                    return (+p[2]) + ' ' + ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][+p[1] - 1];
+                }
+                function shortMonth(dayNum) {
+                    var d = new Date(Math.round(dayNum) * 86400000);
+                    return ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][d.getUTCMonth()] +
+                        ' \u2019' + String(d.getUTCFullYear()).slice(2);
+                }
+                // 4 evenly spaced gridlines with processing-date labels.
+                var grid = '';
+                for (var gi = 0; gi < 4; gi++) {
+                    var gv = y0 + (y1 - y0) * gi / 3;
+                    var gy = Y(gv).toFixed(1);
+                    grid += '<line x1="' + PL + '" y1="' + gy + '" x2="' + (W - PR) + '" y2="' + gy +
+                        '" stroke="currentColor" stroke-width="1" opacity="0.14"/>' +
+                        '<text x="' + (PL - 8) + '" y="' + (+gy + 4) + '" font-size="11" fill="currentColor" opacity="0.7" text-anchor="end">' +
+                        shortMonth(gv) + '</text>';
+                }
+                // First / middle / last observation dates along the bottom.
+                var mid = rows[Math.floor((rows.length - 1) / 2)];
+                var xlabels = [[rows[0], 'start'], [mid, 'middle'], [rows[rows.length - 1], 'end']].map(function(e) {
+                    var anchor = e[1] === 'start' ? 'start' : e[1] === 'end' ? 'end' : 'middle';
+                    var xx = e[1] === 'start' ? PL : e[1] === 'end' ? (W - PR) : X(g1ToDay(e[0].run_date)).toFixed(1);
+                    return '<text x="' + xx + '" y="' + (H - 10) + '" font-size="11" fill="currentColor" opacity="0.7" text-anchor="' + anchor + '">' +
+                        shortDay(e[0].run_date) + '</text>';
+                }).join('');
                 var line = rows.map(function(r, i) {
                     return (i ? 'L' : 'M') + X(g1ToDay(r.run_date)).toFixed(1) + ' ' + Y(g1ToDay(r.processing_date)).toFixed(1);
                 }).join(' ');
-                var dots = rows.map(function(r) {
+                var firstPt = 'M' + X(g1ToDay(rows[0].run_date)).toFixed(1) + ' ' + Y(g1ToDay(rows[0].processing_date)).toFixed(1);
+                var area = line + ' L' + X(g1ToDay(rows[rows.length - 1].run_date)).toFixed(1) + ' ' + (H - PB) +
+                    ' L' + X(g1ToDay(rows[0].run_date)).toFixed(1) + ' ' + (H - PB) + ' Z';
+                var dots = rows.map(function(r, i) {
+                    var last = i === rows.length - 1;
                     return '<circle cx="' + X(g1ToDay(r.run_date)).toFixed(1) + '" cy="' + Y(g1ToDay(r.processing_date)).toFixed(1) +
-                        '" r="3.2" fill="#0284c7"><title>' + r.run_date + ': processing ' + r.processing_date + ' (' + r.lag_days + 'd lag)</title></circle>';
+                        '" r="' + (last ? 4.5 : 2.2) + '" fill="#0284c7"' + (last ? ' stroke="#fff" stroke-width="1.5"' : '') +
+                        '><title>' + r.run_date + ': processing ' + r.processing_date + ' (' + r.lag_days + 'd lag)</title></circle>';
                 }).join('');
                 return '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Stamp 1G processing date over time, ' + rows.length + ' observations">' +
-                    '<path d="' + line + '" fill="none" stroke="#0284c7" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>' + dots +
-                    '<text x="' + PL + '" y="' + (H - 8) + '" font-size="11" fill="currentColor" opacity="0.65">' + rows[0].run_date + '</text>' +
-                    '<text x="' + (W - PR) + '" y="' + (H - 8) + '" font-size="11" fill="currentColor" opacity="0.65" text-anchor="end">' + rows[rows.length - 1].run_date + '</text>' +
-                    '<text x="' + PL + '" y="11" font-size="11" font-weight="700" fill="currentColor">Processing ' + rows[rows.length - 1].processing_date + '</text>' +
-                    '</svg>';
+                    grid + '<path d="' + area + '" fill="#0284c7" opacity="0.10"/>' +
+                    '<path d="' + line + '" fill="none" stroke="#0284c7" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>' +
+                    dots + xlabels + '</svg>';
             }
 
             function renderG1Layout(rows) {
@@ -2949,7 +2979,7 @@
                         '</tbody></table></div></div>';
                 }
                 var chart = '<div class="g1-chart"><h3>Processing date over time</h3>' +
-                    '<div class="note2">Each dot is one daily cron observation. Lag ' +
+                    '<div class="note2">Each dot is one observation — daily cron runs plus archived snapshots. Lag ' +
                     (proj.ok && proj.lagDelta !== 0 ? (proj.lagDelta > 0 ? 'grew' : 'shrank') + ' by ' + Math.abs(proj.lagDelta) + ' days across this history.' : 'is flat across this history.') + '</div>' +
                     g1TrendSVG(rows) + '</div>';
                 var histRows = rows.slice().reverse().map(function(r) {
