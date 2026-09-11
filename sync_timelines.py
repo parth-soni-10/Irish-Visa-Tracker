@@ -2,15 +2,21 @@
 """
 Community timelines sync — GitHub Actions cron job (nightly).
 
-Pulls "timelines" Netlify Form submissions (visitors reporting their own
-applied -> decided dates), validates + dedupes them, and merges them into
-data/community_timelines.json, which the dashboard aggregates into
-"community-reported wait" panels. Nothing is ever deleted here; bad rows
-are just skipped (and logged) so a spam wave can't poison the file.
+Pulls community-timeline Netlify Form submissions (visitors reporting
+their own applied -> decided dates), validates + dedupes them, and merges
+them into data/community_timelines.json, which the dashboard aggregates
+into "community-reported wait" panels. Nothing is ever deleted here; bad
+rows are just skipped (and logged) so a spam wave can't poison the file.
+
+Two separate forms (one per tracker, matching the site's split UI):
+  - "timelines-visa" — embassy-visa form on the Suggestions tab
+  - "timelines-1g"   — Stamp 1G form on the 1G page
+The legacy single "timelines" form (with a tracker dropdown) is still
+read when present, so old submissions keep flowing after the split.
 
 Setup (once):
-1. Deploy the site (the form markup with name="timelines" must be live —
-   Netlify only registers forms it sees at deploy time).
+1. Deploy the site (both form markups must be live — Netlify only
+   registers forms it sees at deploy time).
 2. Netlify dashboard -> User settings -> Applications -> New access token.
 3. Site settings -> General -> Site details -> copy the Site ID
    (API ID field).
@@ -39,7 +45,12 @@ REPO_DIR = Path(__file__).resolve().parent
 DATA_DIR = REPO_DIR / "data"
 DATA_FILE = DATA_DIR / "community_timelines.json"
 
-FORM_NAME = "timelines"
+FORM_NAMES = ("timelines-visa", "timelines-1g", "timelines")
+FORM_TRACKER_DEFAULT = {
+    "timelines-visa": "visa",
+    "timelines-1g": "1g",
+    "timelines": "",
+}
 MAX_ROWS = 2000
 TRACKERS = ("visa", "1g")
 OUTCOMES = ("granted", "refused")
@@ -109,27 +120,36 @@ def community_stats(rows, tracker):
 
 
 def fetch_submissions(token, site_id):
-    """All 'timelines'-form submissions via the Netlify API."""
+    """All timeline-form submissions via the Netlify API.
+
+    Reads every registered form in FORM_NAMES (the two split forms plus
+    the legacy combined one), tags rows with the form's default tracker
+    when the submission itself carries none, and returns them combined.
+    """
     headers = {"Authorization": f"Bearer {token}"}
     forms = requests.get(
         f"https://api.netlify.com/api/v1/sites/{site_id}/forms",
         headers=headers, timeout=30)
     forms.raise_for_status()
-    form_id = next((f.get("id") for f in forms.json()
-                    if f.get("name") == FORM_NAME), None)
-    if not form_id:
-        print(f'No "{FORM_NAME}" form registered on this site yet — '
-              f"deploy first, then re-run.")
+    wanted = [f for f in forms.json()
+              if f.get("name") in FORM_NAMES and f.get("id")]
+    if not wanted:
+        print("No timeline forms (timelines-visa / timelines-1g) registered "
+              "on this site yet — deploy first, then re-run.")
         return []
-    subs = requests.get(
-        f"https://api.netlify.com/api/v1/forms/{form_id}/submissions",
-        headers=headers, timeout=30)
-    subs.raise_for_status()
     out = []
-    for s in subs.json():
-        data = dict(s.get("data", {}) or {})
-        data["submitted_at"] = s.get("created_at", "")
-        out.append(data)
+    for form in wanted:
+        default_tracker = FORM_TRACKER_DEFAULT.get(form.get("name"), "")
+        subs = requests.get(
+            f"https://api.netlify.com/api/v1/forms/{form['id']}/submissions",
+            headers=headers, timeout=30)
+        subs.raise_for_status()
+        for s in subs.json():
+            data = dict(s.get("data", {}) or {})
+            if not str(data.get("tracker", "")).strip() and default_tracker:
+                data["tracker"] = default_tracker
+            data["submitted_at"] = s.get("created_at", "")
+            out.append(data)
     return out
 
 

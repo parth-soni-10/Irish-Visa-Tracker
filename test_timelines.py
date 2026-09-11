@@ -124,6 +124,33 @@ class FetchTests(unittest.TestCase):
         self.assertEqual(out[0]["tracker"], "visa")
         self.assertEqual(out[0]["submitted_at"], "2026-09-01")
 
+    def test_split_forms_combined_with_defaults(self):
+        class R:
+            def __init__(self, payload):
+                self._p = payload
+            def raise_for_status(self):
+                pass
+            def json(self):
+                return self._p
+
+        def fake_get(url, headers=None, timeout=None):
+            if url.endswith("/forms"):
+                return R([
+                    {"id": "fv", "name": "timelines-visa"},
+                    {"id": "fg", "name": "timelines-1g"},
+                    {"id": "fs", "name": "suggestions"},
+                ])
+            if "/forms/fv/" in url:
+                return R([{"data": {}, "created_at": "2026-09-01"}])
+            return R([{"data": {}, "created_at": "2026-09-02"}])
+
+        with patch("sync_timelines.requests.get", side_effect=fake_get):
+            out = sync_timelines.fetch_submissions("tok", "site")
+        self.assertEqual(len(out), 2)
+        by_submitted = {r["submitted_at"]: r["tracker"] for r in out}
+        self.assertEqual(by_submitted,
+                         {"2026-09-01": "visa", "2026-09-02": "1g"})
+
 
 if __name__ == "__main__":
     unittest.main()

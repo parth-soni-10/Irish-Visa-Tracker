@@ -1,9 +1,9 @@
 name: Sync Community Timelines
 
-# Nightly pull of "timelines" Netlify Form submissions into
-# data/community_timelines.json. Needs NETLIFY_TOKEN + NETLIFY_SITE_ID
-# repo secrets — see the setup steps in sync_timelines.py. Without them
-# the job prints SKIP and exits 0.
+# Nightly pull of the "timelines-visa" + "timelines-1g" Netlify Form
+# submissions into data/community_timelines.json. Needs NETLIFY_TOKEN +
+# NETLIFY_SITE_ID repo secrets — see the setup steps in sync_timelines.py.
+# Without them the job prints SKIP and exits 0.
 
 on:
   workflow_dispatch: {}   # manual "Run workflow" button — still available for on-demand runs

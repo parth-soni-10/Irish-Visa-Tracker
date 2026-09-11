@@ -35,13 +35,28 @@
         </p>
         <input type="text" name="bot-field" tabindex="-1" autocomplete="off" />
     </form>
-    <!-- Same trick for the community-timelines form: static copy so Netlify
-         registers it at deploy time; the live form is JS-rendered above. -->
-    <form name="timelines" netlify netlify-honeypot="bot-field" style="position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden;" aria-hidden="true" tabindex="-1">
-        <input type="hidden" name="form-name" value="timelines" />
+    <!-- Same trick for the embassy-visa timeline form: static copy so Netlify
+         registers it at deploy time; the live form is JS-rendered on the
+         Suggestions tab. -->
+    <form name="timelines-visa" netlify netlify-honeypot="bot-field" style="position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden;" aria-hidden="true" tabindex="-1">
+        <input type="hidden" name="form-name" value="timelines-visa" />
+        <input type="hidden" name="tracker" value="visa" />
         <p>
-            <label>Tracker <select name="tracker" tabindex="-1"><option value="visa">Embassy visa</option><option value="1g">Stamp 1G</option></select></label>
+            <label>Applied on <input type="date" name="applied" tabindex="-1" /></label>
         </p>
+        <p>
+            <label>Decided on <input type="date" name="decided" tabindex="-1" /></label>
+        </p>
+        <p>
+            <label>Outcome <select name="outcome" tabindex="-1"><option value="granted">Granted</option><option value="refused">Refused</option></select></label>
+        </p>
+        <input type="text" name="bot-field" tabindex="-1" autocomplete="off" />
+    </form>
+    <!-- 1G-specific timeline form for Netlify registration (live copy is
+         JS-rendered on the Stamp 1G page). -->
+    <form name="timelines-1g" netlify netlify-honeypot="bot-field" style="position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden;" aria-hidden="true" tabindex="-1">
+        <input type="hidden" name="form-name" value="timelines-1g" />
+        <input type="hidden" name="tracker" value="1g" />
         <p>
             <label>Applied on <input type="date" name="applied" tabindex="-1" /></label>
         </p>
@@ -2187,7 +2202,7 @@
                 var timeForm = document.getElementById('time-form');
                 if (timeForm) timeForm.addEventListener('submit', function(e) {
                     e.preventDefault();
-                    submitTimeline();
+                    submitTimeline(false);
                 });
                 // Recent-search chips re-run the search they were saved from.
                 var recentRow = document.getElementById('recent-searches');
@@ -2487,7 +2502,9 @@
             // load so repeat visits cost nothing.
             function communityBoxHTML(stats, tracker) {
                 var where = tracker === '1g' ? 'Stamp 1G renewals' : 'embassy visas';
-                var link = '<a href="?tracker=visa&tab=suggest">Share your timeline</a>';
+                var link = tracker === '1g'
+                    ? '<a href="?tracker=1g">Share your timeline</a>'
+                    : '<a href="?tracker=visa&tab=suggest">Share your timeline</a>';
                 var head = '<div class="g1-chart"><h3><i data-lucide="users" style="width:15px;height:15px;vertical-align:-2px;"></i> Community waits</h3>';
                 if (!stats) {
                     return head + '<div class="note2">No community timelines for ' + where +
@@ -2781,33 +2798,62 @@
                             '</form>' +
                         '</div>' +
                         '<div class="form-col" style="max-width:560px;">' +
-                            '<form class="card" id="time-form" name="timelines" netlify netlify-honeypot="bot-field" novalidate style="max-width:100%;">' +
+                            '<form class="card" id="time-form" name="timelines-visa" netlify netlify-honeypot="bot-field" novalidate style="max-width:100%;">' +
                                 TIMELINES_FORM_HTML +
                             '</form>' +
                         '</div>' +
                     '</div>';
             }
 
+            // 1G page timeline form (separate from the embassy-visa one).
+            function renderG1TimelineForm() {
+                return '<form class="card" id="time-form-1g" name="timelines-1g" netlify netlify-honeypot="bot-field" novalidate style="max-width:100%;">' +
+                    TIMELINES_1G_FORM_HTML +
+                '</form>';
+            }
+
             // Community timeline submissions (item 6): applied -> decided
             // dates per tracker, synced nightly into data/community_timelines.json.
             const TIMELINES_FORM_HTML =
-                '<input type="hidden" name="form-name" value="timelines" />' +
-                '<h3 class="readme-title" style="margin-top:0;">Share your timeline</h3>' +
-                '<p class="note2">Help others plan: when did you apply, and when was it decided? Published anonymously in aggregate.</p>' +
-                '<p><label>Tracker <select id="time-tracker" name="tracker"><option value="visa">Embassy visa</option><option value="1g">Stamp 1G</option></select></label></p>' +
-                '<p><label>Applied on <input type="date" id="time-applied" name="applied" /></label></p>' +
-                '<p><label>Decided on <input type="date" id="time-decided" name="decided" /></label></p>' +
-                '<p><label>Outcome <select id="time-outcome" name="outcome"><option value="granted">Granted</option><option value="refused">Refused</option></select></label></p>' +
-                '<button class="btn" type="submit" id="time-submit">Share Timeline</button>' +
-                '<div class="note" id="time-status" aria-live="polite"></div>';
+            '<input type="hidden" name="form-name" value="timelines-visa" />' +
+            '<h3 class="readme-title" style="margin-top:0;">Share your timeline</h3>' +
+            '<p class="note2">Embassy visa only — applied and decided dates from the New Delhi list. Published anonymously in aggregate.</p>' +
+            '<input type="hidden" name="tracker" value="visa" />' +
+            '<p><label>Applied on <input type="date" id="time-applied" name="applied" /></label></p>' +
+            '<p><label>Decided on <input type="date" id="time-decided" name="decided" /></label></p>' +
+            '<p><label>Outcome <select id="time-outcome" name="outcome"><option value="granted">Granted</option><option value="refused">Refused</option></select></label></p>' +
+            '<button class="btn" type="submit" id="time-submit">Share Timeline</button>' +
+            '<div class="note" id="time-status" aria-live="polite"></div>';
 
-            async function submitTimeline() {
-                const trackerEl = document.getElementById('time-tracker');
-                const appliedEl = document.getElementById('time-applied');
-                const decidedEl = document.getElementById('time-decided');
-                const outcomeEl = document.getElementById('time-outcome');
-                const status = document.getElementById('time-status');
-                const btn = document.getElementById('time-submit');
+            // 1G-specific timeline form (for the 1G page).
+            const TIMELINES_1G_FORM_HTML =
+                '<input type="hidden" name="form-name" value="timelines-1g" />' +
+                '<h3 class="readme-title" style="margin-top:0;">Share your 1G timeline</h3>' +
+                '<p class="note2">Stamp 1G renewals only — when did you apply, and when was it decided? Published anonymously in aggregate.</p>' +
+                '<input type="hidden" name="tracker" value="1g" />' +
+                '<p><label>Applied on <input type="date" id="time-applied-1g" name="applied" /></label></p>' +
+                '<p><label>Decided on <input type="date" id="time-decided-1g" name="decided" /></label></p>' +
+                '<p><label>Outcome <select id="time-outcome-1g" name="outcome"><option value="granted">Granted</option><option value="refused">Refused</option></select></label></p>' +
+                '<button class="btn" type="submit" id="time-submit-1g">Share Timeline</button>' +
+                '<div class="note" id="time-status-1g" aria-live="polite"></div>';
+
+            async function submitTimeline(is1G) {
+                // Explicit flag from the submit listener: true for the 1G
+                // page form, false for the embassy-visa form on Suggestions.
+                // Falls back to DOM detection so older in-flight handlers
+                // still resolve to the visa form.
+                if (typeof is1G === 'undefined' || is1G === null) {
+                    is1G = document.getElementById('time-applied-1g') !== null;
+                }
+                is1G = !!is1G;
+                const appliedEl = document.getElementById(is1G ? 'time-applied-1g' : 'time-applied');
+                const decidedEl = document.getElementById(is1G ? 'time-decided-1g' : 'time-decided');
+                const outcomeEl = document.getElementById(is1G ? 'time-outcome-1g' : 'time-outcome');
+                const status = document.getElementById(is1G ? 'time-status-1g' : 'time-status');
+                const btn = document.getElementById(is1G ? 'time-submit-1g' : 'time-submit');
+                const formId = is1G ? 'time-form-1g' : 'time-form';
+                if (!appliedEl || !decidedEl || !outcomeEl || !status || !btn) return;
+
                 const applied = appliedEl.value, decided = decidedEl.value;
                 const today = new Date().toISOString().slice(0, 10);
                 if (!applied || !decided) {
@@ -2824,9 +2870,9 @@
                 const startedAt = Date.now();
                 try {
                     const body = new URLSearchParams({
-                        'form-name': 'timelines',
+                        'form-name': is1G ? 'timelines-1g' : 'timelines-visa',
                         'bot-field': '',
-                        tracker: trackerEl.value,
+                        tracker: is1G ? '1g' : 'visa',
                         applied: applied,
                         decided: decided,
                         outcome: outcomeEl.value
@@ -2839,16 +2885,18 @@
                     if (!res.ok) throw new Error('HTTP ' + res.status);
                     const remaining = MIN_SUBMIT_MS - (Date.now() - startedAt);
                     if (remaining > 0) await new Promise(r => setTimeout(r, remaining));
-                    const form = document.getElementById('time-form');
+                    const form = document.getElementById(formId);
                     if (form) form.innerHTML =
                         '<div class="sugg-success" role="status">' +
                         '<div class="sugg-success-title">Thanks — timeline shared!</div>' +
                         '<div class="sugg-success-text">It appears in the community stats after the nightly sync.</div>' +
-                        '<button class="btn" type="button" id="time-again">Share another</button></div>';
-                    const again = document.getElementById('time-again');
+                        '<button class="btn" type="button" id="' + (is1G ? 'time-again-1g' : 'time-again') + '">Share another</button></div>';
+                    const again = document.getElementById(is1G ? 'time-again-1g' : 'time-again');
                     if (again) again.addEventListener('click', function() {
-                        form.innerHTML = TIMELINES_FORM_HTML;
-                        form.addEventListener('submit', function(e) { e.preventDefault(); submitTimeline(); });
+                        const f = document.getElementById(formId);
+                        if (!f) return;
+                        f.innerHTML = is1G ? TIMELINES_1G_FORM_HTML : TIMELINES_FORM_HTML;
+                        f.addEventListener('submit', function(e) { e.preventDefault(); submitTimeline(is1G); });
                     });
                 } catch (err) {
                     status.textContent = 'Could not submit. Try again.';
@@ -3440,8 +3488,8 @@
                         }
                     }
                 }
-                return '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Average Stamp 1G lag per week with trend, ' + weeks.length + ' weeks">' +
-                    grid + bars + avgLine + regLine + marker + xlabels + '</svg>';
+                return '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Average Stamp 1G lag per week, ' + weeks.length + ' weeks">' +
+                    grid + bars + avgLine + xlabels + '</svg>';
             }
 
             function renderG1Layout(rows, cats, activeCat) {
@@ -3536,7 +3584,8 @@
                     '<input type="date" id="g1-expiry-date" autocomplete="off" aria-label="Your IRP expiry date" value="' + escapeHtml(storedExpiry) + '">' +
                     '<button type="button" class="clear-btn" id="g1-expiry-clear" aria-label="Clear expiry date" title="Clear expiry date">\u00d7</button>' +
                     '</div></div>' +
-                    '<div id="g1-expiry" aria-live="polite"></div></div>';
+                    '<div id="g1-expiry" aria-live="polite"></div></div>' +
+                    '<div id="g1-timeline-form" style="margin-top:24px;"></div>';
                 return head + catPills + hero + cards + estimatorHtml + projHtml + chart + hist + '<div id="community-box"></div>' + note;
             }
 
@@ -3615,6 +3664,16 @@
                 });
                 paintG1Expiry();
                 paintCommunityBox('1g');
+                // 1G timeline form (separate from the embassy-visa one).
+                var g1TimelineForm = document.getElementById('g1-timeline-form');
+                if (g1TimelineForm) {
+                    g1TimelineForm.innerHTML = renderG1TimelineForm();
+                    var timeForm1g = document.getElementById('time-form-1g');
+                    if (timeForm1g) timeForm1g.addEventListener('submit', function(e) {
+                        e.preventDefault();
+                        submitTimeline(true);
+                    });
+                }
                 showHero();
             }
 
@@ -3981,8 +4040,6 @@
 
             render();
         })();
-    
-    
     </script>
 </body>
 </html>

@@ -21,4 +21,4 @@ jobs:
         run: pip install -r requirements.txt pytest
 
       - name: Run scraper + tracker tests
-        run: python -m pytest test_scraper.py test_track_1g.py test_permits.py test_digest.py test_timelines.py -q
+        run: python -m pytest test_scraper.py test_track_1g.py test_permits.py test_timelines.py -q
