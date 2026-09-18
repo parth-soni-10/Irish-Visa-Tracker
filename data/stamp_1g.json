@@ -846,5 +846,45 @@
     "processing_date": "2026-08-11",
     "lag_days": 37,
     "lag_weeks": 5.29
+  },
+  {
+    "run_date": "2026-09-18",
+    "run_time": "08:01:11",
+    "category": "1, 1H",
+    "processing_date": "2026-08-03",
+    "lag_days": 46,
+    "lag_weeks": 6.57
+  },
+  {
+    "run_date": "2026-09-18",
+    "run_time": "08:01:11",
+    "category": "1G",
+    "processing_date": "2026-07-13",
+    "lag_days": 67,
+    "lag_weeks": 9.57
+  },
+  {
+    "run_date": "2026-09-18",
+    "run_time": "08:01:11",
+    "category": "2, 2A, 1A",
+    "processing_date": "2026-07-08",
+    "lag_days": 72,
+    "lag_weeks": 10.29
+  },
+  {
+    "run_date": "2026-09-18",
+    "run_time": "08:01:11",
+    "category": "4",
+    "processing_date": "2026-08-05",
+    "lag_days": 44,
+    "lag_weeks": 6.29
+  },
+  {
+    "run_date": "2026-09-18",
+    "run_time": "08:01:11",
+    "category": "Other",
+    "processing_date": "2026-08-11",
+    "lag_days": 38,
+    "lag_weeks": 5.43
   }
 ]
