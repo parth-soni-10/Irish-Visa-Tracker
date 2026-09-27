@@ -1134,7 +1134,7 @@
             background: rgba(124, 58, 237, 0.18);
             color: #c4b5fd;
         }
-        #visa-dash .tracker-card h3 {
+        #visa-dash .tracker-card h2 {
             margin: 4px 0 0;
             font-size: 17px;
             font-weight: 700;
@@ -3774,7 +3774,7 @@
             function trackerCardHTML(id, icon, title, desc, meta, metaId, accent) {
                 return '<button type="button" class="tracker-card' + (accent ? ' ' + accent : '') + '" data-tracker="' + id + '">' +
                     '<span class="tracker-chip"><i data-lucide="' + icon + '"></i></span>' +
-                    '<h3>' + title + '</h3><p>' + desc + '</p>' +
+                    '<h2>' + title + '</h2><p>' + desc + '</p>' +
                     '<span class="tracker-meta" id="' + metaId + '" aria-live="polite">' + meta + '</span>' +
                     '<span class="tracker-cta">Open tracker \u2192</span></button>';
             }

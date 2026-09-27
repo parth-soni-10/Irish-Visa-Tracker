@@ -35,7 +35,6 @@ from __future__ import annotations
 
 import json
 import os
-import sys
 from datetime import date
 from pathlib import Path
 
