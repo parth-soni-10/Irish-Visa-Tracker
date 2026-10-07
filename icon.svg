@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Irish Visa Decision Tracker">
+  <!-- The app's own "approved" mark: the single green accent the page already
+       uses for a granted decision, inside a stamp ring. Deliberately not the
+       initials-on-a-tinted-square that every generated project reaches for —
+       a check reads as a visa outcome at 16px, where "IV" would not.
+
+       The tile is a deep slate-green rather than white so one file works on
+       light and dark browser chrome alike, which is why there is no
+       prefers-color-scheme variant here.
+
+       apple-touch-icon.png is this same mark rendered full-bleed at 180x180,
+       with no rounded corners: iOS applies its own mask, so pre-rounding would
+       show a rounded square sitting inside it. -->
+  <rect width="64" height="64" rx="14" fill="#0f2a24"/>
+  <circle cx="32" cy="32" r="21" fill="none" stroke="#059669" stroke-width="2.5"/>
+  <path d="M21 33 L28 40 L43 23" fill="none" stroke="#10b981" stroke-width="7"
+        stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
