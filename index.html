@@ -4,17 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Irish Visa Decision Tracker</title>
-<base target="_blank">
 <meta name="theme-color" content="#ffffff">
 <meta name="description" content="Track Irish embassy visa decisions from New Delhi and Stamp 1G processing dates — searchable history, trends and projections.">
 <meta property="og:title" content="Irish Visa Decision Tracker">
 <meta property="og:description" content="Daily Irish visa decisions + Stamp 1G processing tracker with trends and projections.">
 <meta property="og:type" content="website">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" as="style">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
-<noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"></noscript>
+<link rel="preload" href="fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="fonts/geist-sans.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="fonts/geist-mono.woff2" as="font" type="font/woff2" crossorigin>
 </head>
@@ -70,10 +65,18 @@
     </form>
     <style>
 
-        /* Self-hosted Geist (variable), the brand font. No Google Fonts
-           request at runtime - fonts ship with the site. */
+        /* Both faces are self-hosted variable fonts, so nothing in this file
+           reaches a third party at runtime and the CSP needs no font origin. */
         @font-face { font-family: 'Geist'; src: url('fonts/geist-sans.woff2') format('woff2'); font-weight: 100 900; font-display: swap; font-style: normal; }
         @font-face { font-family: 'Geist Mono'; src: url('fonts/geist-mono.woff2') format('woff2'); font-weight: 100 900; font-display: swap; font-style: normal; }
+        /* Inter, self-hosted. One variable file covers 400-800; it is split
+           into the two subsets this site can use, and the unicode-range values
+           are the ones Google served — keeping them means a glyph outside them
+           falls through to the system stack instead of rendering .notdef. */
+        @font-face { font-family: 'Inter'; src: url('fonts/inter-latin.woff2') format('woff2'); font-weight: 400 800; font-display: swap; font-style: normal;
+            unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+        @font-face { font-family: 'Inter'; src: url('fonts/inter-latin-ext.woff2') format('woff2'); font-weight: 400 800; font-display: swap; font-style: normal;
+            unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF; }
         #visa-dash * { box-sizing: border-box; }
         #visa-dash {
             /* Single green accent (the brand "approved" color) on slate
@@ -3564,7 +3567,7 @@
                     '<tbody>' + histRows + '</tbody></table></div>';
                 var note = '<div class="readme"><h3 class="readme-title">How this tracker works</h3>' +
                     '<p>Every day, an automated job reads the ISD renewal page, finds each stamp category\u2019s processing date, and appends one row per category to ' +
-                    '<a href="data/stamp_1g.json"><code>data/stamp_1g.json</code></a> in this repo. The rate and ETA above are a straight-line fit through that history — not a promise.</p></div>';
+                    '<a href="data/stamp_1g.json" target="_blank" rel="noopener"><code>data/stamp_1g.json</code></a> in this repo. The rate and ETA above are a straight-line fit through that history — not a promise.</p></div>';
                 var storedDate = g1StoredDate();
                 var storedMode = g1StoredMode();
                 var storedExpiry = g1StoredExpiry();
@@ -3736,7 +3739,7 @@
                     '<tbody>' + histRows + '</tbody></table></div>';
                 var note = '<div class="readme"><h3 class="readme-title">How this tracker works</h3>' +
                     '<p>Every day, an automated job reads DETE\u2019s current processing dates and appends one row per permit category to ' +
-                    '<a href="data/work_permits.json"><code>data/work_permits.json</code></a> in this repo.</p></div>';
+                    '<a href="data/work_permits.json" target="_blank" rel="noopener"><code>data/work_permits.json</code></a> in this repo.</p></div>';
                 return head + catPills + hero + cards + hist + note;
             }
 
@@ -3917,7 +3920,7 @@
                     root.innerHTML = '<div class="eyebrow">Ireland \u00b7 New Delhi Visa Section</div>' +
                         '<div class="titlerow"><h1>Visa Decision Tracker</h1>' +
                         '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">' +
-                        '<button class="theme-toggle" id="theme-toggle" aria-label="Toggle dark mode" title="Toggle dark mode"><svg class="icon-sun" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8"/></svg><svg class="icon-moon" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5a8.5 8.5 0 1 0 11 11z"/></svg></button>' +
+                        THEME_BTN_HTML +
                         '<div class="stutter-badge"><i>\u24D8</i> Switching tabs may briefly stutter while data loads.</div></div></div>' +
                         '<div class="topbar"><div class="topbar-fill"></div></div>' +
                         '<div class="navpills">' +
@@ -3955,7 +3958,7 @@
                     '<div class="eyebrow">Ireland \u00b7 New Delhi Visa Section</div>' +
                     '<div class="titlerow"><h1>Visa Decision Tracker</h1>' +
                     '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">' +
-                    '<button class="theme-toggle" id="theme-toggle" aria-label="Toggle dark mode" title="Toggle dark mode"><svg class="icon-sun" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8"/></svg><svg class="icon-moon" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5a8.5 8.5 0 1 0 11 11z"/></svg></button>' +
+                    THEME_BTN_HTML +
                     '<div class="stutter-badge"><i>\u24D8</i> Switching tabs may briefly stutter while data loads.</div></div>' +
                     '</div>' +
                     '<div class="sub">' + (cache && cache.length ? cache.length + ' decisions on record' :
