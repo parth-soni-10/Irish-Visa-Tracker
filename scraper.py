@@ -762,13 +762,29 @@ def _run(existing_rows):
         if latest_file_date:
             stale_days = _count_stale_business_days(latest_file_date, today_dt, closure_dates)
             if stale_days >= GAP_ALERT_BUSINESS_DAYS:
+                # Say what this run actually observed: if we reached the page and
+                # downloaded its newest .ods fine, the diagnosis is a late upload,
+                # not a broken scraper — don't send the maintainer hunting for a
+                # markup change that isn't there (embassy late upload, 2026-10-08).
+                if fetch_date is not None and not scrape_failed:
+                    diagnosis = (
+                        f"The embassy page was reachable this run and its latest "
+                        f".ods file downloaded fine — the office simply hasn't "
+                        f"published a newer file since. A late upload usually "
+                        f"resolves itself; if this persists, check the visa-"
+                        f"decisions page manually."
+                    )
+                else:
+                    diagnosis = (
+                        "This usually means the embassy page markup changed or "
+                        "the site is unreachable. Verify the .ods link pattern in "
+                        "find_ods_link() and the live page."
+                    )
                 message = (
                     f"ALERT: no new visa-decisions file has appeared for {stale_days} "
                     f"consecutive business days (latest file dated {latest_file_date}; "
-                    f"today is {today_ist}). This usually means the embassy page markup "
-                    f"changed or the site is unreachable. Verify the .ods link pattern in "
-                    f"find_ods_link() and the live page. (Set GAP_ALERT_BUSINESS_DAYS=0 to "
-                    f"disable this check.)"
+                    f"today is {today_ist}). {diagnosis} (Set "
+                    f"GAP_ALERT_BUSINESS_DAYS=0 to disable this check.)"
                 )
                 print(message)
                 if os.environ.get("GITHUB_ACTIONS") == "true":
