@@ -2,6 +2,11 @@ name: Tests
 
 on:
   push:
+    # The scraper commits data/*.json every ~30 min; pushes that touch ONLY
+    # those generated files can't break the code, so don't burn a runner on them.
+    # (paths-ignore skips only when every changed file matches.)
+    paths-ignore:
+      - 'data/**'
   pull_request:
   workflow_dispatch: {}
 
@@ -22,3 +27,8 @@ jobs:
 
       - name: Run scraper + tracker tests
         run: python -m pytest test_scraper.py test_track_1g.py test_permits.py test_timelines.py -q
+
+      - name: Syntax-check index.html inline scripts
+        # The dashboard is one 4000-line single file; a stray brace or quote in
+        # any inline block would only surface at Netlify otherwise.
+        run: python tools/check_html_scripts.py

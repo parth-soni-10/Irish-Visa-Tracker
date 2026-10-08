@@ -1783,13 +1783,58 @@
             // ---- last-known-good cache: survive backend hiccups ----
             // The latest successful fetch is snapshotted to localStorage so a
             // failed refresh shows real (stale) data with a banner instead of an
-            // empty page. ~1.3MB for the full history — within the 5MB quota.
-            function persistSnapshot(raw) {
-                try { localStorage.setItem('visa-cache', JSON.stringify({ fetchedAt: Date.now(), rows: raw })); } catch (e) { /* quota/private mode */ }
+            // empty page. The history JSON is ~2.1MB and grows daily: stored
+            // plain it would brush the ~5MB localStorage quota within months,
+            // after which the write would throw and fail SILENTLY forever — the
+            // fallback would quietly die. So the snapshot is gzipped with the
+            // native CompressionStream (~10x smaller, ~200KB today) and base64'd
+            // before storing. Browsers without CompressionStream fall back to
+            // the plain legacy key, which restoreSnapshot still reads.
+            const SNAPSHOT_GZ_KEY = 'visa-cache-gz';
+            const SNAPSHOT_PLAIN_KEY = 'visa-cache';
+            function bytesToBase64(bytes) {
+                let bin = '';
+                for (let i = 0; i < bytes.length; i += 0x8000) {
+                    bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+                }
+                return btoa(bin);
             }
-            function restoreSnapshot() {
+            function base64ToBytes(b64) {
+                const bin = atob(b64);
+                const bytes = new Uint8Array(bin.length);
+                for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+                return bytes;
+            }
+            async function persistSnapshot(raw) {
+                const json = JSON.stringify({ fetchedAt: Date.now(), rows: raw });
                 try {
-                    const snap = JSON.parse(localStorage.getItem('visa-cache') || 'null');
+                    if (typeof CompressionStream !== 'undefined') {
+                        const buf = await new Response(new Blob([json]).stream()
+                            .pipeThrough(new CompressionStream('gzip'))).arrayBuffer();
+                        localStorage.setItem(SNAPSHOT_GZ_KEY, bytesToBase64(new Uint8Array(buf)));
+                        // Legacy plain copy (bigger, older shape) is redundant now.
+                        localStorage.removeItem(SNAPSHOT_PLAIN_KEY);
+                    } else {
+                        localStorage.setItem(SNAPSHOT_PLAIN_KEY, json);
+                    }
+                } catch (e) {
+                    // Quota / private mode: keep the previous snapshot and make
+                    // the failure visible instead of swallowing it.
+                    console.warn('persistSnapshot failed — keeping previous snapshot:', e);
+                }
+            }
+            async function restoreSnapshot() {
+                try {
+                    const gz = localStorage.getItem(SNAPSHOT_GZ_KEY);
+                    if (gz) {
+                        const text = await new Response(new Blob([base64ToBytes(gz)]).stream()
+                            .pipeThrough(new DecompressionStream('gzip'))).text();
+                        const snap = JSON.parse(text);
+                        if (snap && Array.isArray(snap.rows) && snap.rows.length) return snap;
+                    }
+                } catch (e) { /* corrupted/unsupported — fall through to legacy key */ }
+                try {
+                    const snap = JSON.parse(localStorage.getItem(SNAPSHOT_PLAIN_KEY) || 'null');
                     if (snap && Array.isArray(snap.rows) && snap.rows.length) return snap;
                 } catch (e) { /* corrupted */ }
                 return null;
@@ -1918,7 +1963,7 @@
                         cacheFetchedAt = Date.now();
                     } catch (e) {
                         console.warn('loadData failed:', e);
-                        const snap = restoreSnapshot();
+                        const snap = await restoreSnapshot();
                         if (snap) {
                             cache = snap.rows.map(r => preloadRow(Array.isArray(r) ? { date: r[0], irl: r[1], decision: r[2] } : r));
                             cache.sort((a, b) => b.date.localeCompare(a.date));

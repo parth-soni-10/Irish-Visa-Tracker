@@ -2,12 +2,6 @@
 
 A personal tool that keeps an eye on the daily visa-decision list published by the **Embassy of Ireland in New Delhi**, and turns it into a clean, searchable dashboard.
 
-## Watch it
-
-A 30-second trailer — click the poster to play:
-
-[![Play the Irish Visa trailer](brag-output/brag.jpg)](brag-output/brag.mp4)
-
 ## Why it exists
 
 Every business day the embassy posts a spreadsheet of visa decisions. It's a single flat file — **no history, no search, no trends**. If you were applying, checking your decision meant opening that day's file and hunting.
@@ -39,13 +33,13 @@ No build tools needed. Open `index.html` in a browser, or serve the folder with 
 python -m http.server
 ```
 
-The live sections read from the Google Sheet, so they need an internet connection.
+The dashboard reads the static JSON in `data/`, so serve the folder over HTTP as shown above — browsers block `fetch()` of local files when a page is opened via `file://`.
 
 ### Run the scraper tests
 
 ```
 python -m pip install -r requirements.txt
-python -m pytest test_scraper.py test_track_1g.py
+python -m pytest
 ```
 
 ## Built with
@@ -56,11 +50,13 @@ Plain **HTML / CSS / JavaScript** for the dashboard and a little **Python** for 
 
 Older versions of this project stored data in a Google Sheet behind an Apps Script web app (see git history for `Code.gs`). That whole layer is gone: the scraper commits its results straight into `data/` and the dashboard reads them as static files. Fork the repo, enable Actions, deploy on Netlify — nothing to paste anywhere.
 
-One-time note: if you're migrating an existing Sheet-backed install, run the **Migrate Sheet to JSON** workflow once (Actions tab → Run workflow, needs the old `WEB_APP_URL` secret); it exports the full history into `data/` and the normal scraper takes over from there.
-
 ## Optional: community timelines
 
 Visitors can share applied → decided dates via two separate forms: embassy visas on the Suggestions tab (`timelines-visa`) and Stamp 1G renewals on the 1G page (`timelines-1g`). A nightly job (`timelines.yml`) pulls both Netlify forms' submissions into `data/community_timelines.json`, which powers the "Community waits" panels. Needs `NETLIFY_TOKEN` (Netlify User settings → Applications → New access token) + `NETLIFY_SITE_ID` (Site settings → General → API ID) as repo secrets. Without them the job skips and the panels invite the first report.
+
+## Optional: outage alerts
+
+If the scraper goes 3+ business days without seeing a new visa-decisions file, it fails the run loudly (a red X in Actions). To also get that pushed somewhere you actually watch, add an **`ALERT_WEBHOOK_URL`** repo secret — a Slack incoming webhook, a Discord webhook, or any generic endpoint that accepts a JSON POST. `scrape.yml` passes it to the scraper, which sends the alert there as well. Leave it unset and nothing changes: the red X still happens.
 
 ---
 

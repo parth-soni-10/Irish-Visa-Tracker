@@ -34,6 +34,12 @@ jobs:
 
       - name: Run scraper
         run: python scraper.py
+        env:
+          # Optional out-of-band alert for the gap alert (Slack/Discord/generic
+          # webhook — see ALERT_WEBHOOK_URL in scraper.py). If the secret is not
+          # set this expands to an empty string, which the scraper treats as
+          # disabled, so the workflow needs no secret to run.
+          ALERT_WEBHOOK_URL: ${{ secrets.ALERT_WEBHOOK_URL }}
 
       - name: Commit updated data
         run: |
