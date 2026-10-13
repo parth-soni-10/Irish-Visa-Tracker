@@ -3,4 +3,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://irishvisaupdatetracker.netlify.app/sitemap.xml
+Sitemap: https://irish-visa-tracker.parth10.workers.dev/sitemap.xml
