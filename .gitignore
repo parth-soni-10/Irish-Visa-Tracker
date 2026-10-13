@@ -1,3 +1,6 @@
 .freebuff/
 __pycache__/
 brag-output/
+
+# Cloudflare Wrangler local state (not committed)
+.wrangler/

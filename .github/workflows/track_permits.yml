@@ -7,9 +7,16 @@ name: Track Employment Permit Dates
 on:
   workflow_dispatch: {}   # manual "Run workflow" button — still available for on-demand runs
   schedule:
-    # Daily 08:35 IST (03:05 UTC) — right after the 1G run. The script skips
-    # when the run date is already recorded, so re-runs and overlap are safe.
-    - cron: '5 3 * * *'
+    # One observation per day, right after the 1G run. The script skips when
+    # the run date is already recorded, so re-runs and overlap are safe.
+    #
+    # Same four-attempts-off-the-hour spread as track_1g.yml: GitHub's scheduled
+    # runs on this repo have been landing 6-9 hours late, and track_permits.py
+    # can only ever write its own run date, so a dropped day is lost for good.
+    - cron: '22 2 * * *'
+    - cron: '5 3 * * *'   # the original 08:35 IST slot, kept as the nominal one
+    - cron: '28 5 * * *'
+    - cron: '46 7 * * *'
 
 jobs:
   track-permits:
@@ -37,4 +44,15 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add data/work_permits.json
           git diff --staged --quiet || git commit -m "permits: record $(date -u +%F) processing dates"
-          git push
+          # Retry on top of a rebase: a push rejected by a concurrent scrape
+          # commit would otherwise fail the job and drop the day's snapshot.
+          for attempt in 1 2 3 4 5; do
+            if git push; then
+              echo "pushed on attempt $attempt"
+              exit 0
+            fi
+            git pull --rebase --autostash origin "${GITHUB_REF_NAME:-main}"
+            sleep 5
+          done
+          echo "::error::could not push data/work_permits.json after 5 attempts"
+          exit 1

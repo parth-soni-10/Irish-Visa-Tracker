@@ -1,0 +1,26 @@
+# Cloudflare Workers config for the Irish Visa Tracker.
+#
+# The site is served from the repository root (same as the Netlify
+# configuration did), but every request now passes through worker.js first:
+# that Worker replaces Netlify Forms for the three forms on the page and then
+# falls through to the static assets for everything else.
+#
+#   npx wrangler dev      → local test on http://localhost:8787
+#   npx wrangler deploy   → publish to <name>.<your-subdomain>.workers.dev
+#
+# Response headers live in `_headers` (the assets layer reads it); the old
+# netlify.toml is kept only as the record of what Netlify used to do.
+
+name = "irish-visa-tracker"
+main = "worker.js"
+compatibility_date = "2026-10-01"
+
+[assets]
+directory = "."
+binding = "ASSETS"
+run_worker_first = true
+
+[[d1_databases]]
+binding = "DB"
+database_name = "irish-visa-tracker-submissions"
+database_id = "d7dc618b-1d18-463c-80d0-c9f4d0b9e6ab"

@@ -1,0 +1,17 @@
+# Response headers for the Cloudflare deployment.
+#
+# These are the same directives the site carried in netlify.toml, moved to the
+# `_headers` convention the static-assets layer reads. netlify.toml is
+# Netlify-only and is ignored by Cloudflare, so while both files exist this
+# one is the one actually served; keep them in step until netlify.toml is
+# retired.
+#
+# Single-file app: inline scripts/styles are intrinsic, so lock down
+# everything else (objects, frames, base-uri, form-action). Data files
+# ship with the site itself, so connect-src is self-only.
+/*
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: geolocation=(), microphone=(), camera=(), payment=()
+  Content-Security-Policy: default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data:; connect-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'

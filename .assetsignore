@@ -1,0 +1,25 @@
+# Files in this repo that are NOT part of the published site.
+# The assets directory is the repository root (same as the Netlify publish
+# directory), so everything not listed here would be served. Dot-directories
+# (.git/.github/.freebuff) are excluded by the assets layer itself.
+CLAUDE.md
+LICENSE
+README.md
+netlify.toml
+requirements.txt
+scraper.py
+sync_timelines.py
+track_1g.py
+track_permits.py
+test_permits.py
+test_scraper.py
+test_timelines.py
+test_track_1g.py
+tools/
+__pycache__/
+.pytest_cache/
+wrangler.toml
+worker.js
+schema.sql
+.gitignore
+_headers
