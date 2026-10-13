@@ -60,4 +60,4 @@ netlify.toml        → the retired Netlify config, kept as a record
 
 ## Build & Run
 - Scraper: `pip install -r requirements.txt`; runs in GitHub Actions (no required secrets — `ALERT_WEBHOOK_URL` is optional for the gap-alert webhook); commits `data/*.json` back itself.
-- Deploy: Netlify, publish = `.`; no build step.
+- Deploy: a push to `main` deploys it — the repo is connected to the Worker (`irish-visa-tracker`) in **Cloudflare Workers Builds** (production branch `main`, deploy command `npx wrangler deploy`, preview builds off, no build command) — with `data/*` excluded from build watch paths, because the Worker proxies `data/` from the repository on every request and a pipeline commit must not spend a build on a file nobody deploys. `npx wrangler deploy` locally publishes the same thing.
