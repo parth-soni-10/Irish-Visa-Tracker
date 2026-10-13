@@ -31,18 +31,28 @@ const MAX_BODY = 16 * 1024;
 // deploy time, so serving them directly froze the site on the last deploy: the
 // pipeline kept committing while the dashboard stayed days behind.
 //
-// Serve them from the repository instead, with a short edge cache (GitHub's
-// copy is what the last pipeline run committed). A failed fetch falls back to
-// the bundled asset, so the site still renders if GitHub is unreachable.
+// Serve them from the repository instead, with a short cache (GitHub's copy is
+// what the last pipeline run committed). A failed fetch falls back to the
+// bundled asset, so the site still renders if GitHub is unreachable.
 const REPO_RAW =
   "https://raw.githubusercontent.com/parth-soni-10/Irish-Visa-Tracker/main";
 const DATA_RE = /^\/data\/(visa_decisions|visa_meta|stamp_1g|work_permits|community_timelines)\.json$/;
 const DATA_CACHE_SECONDS = 300;
 
+// GitHub's raw host caches every URL for minutes and, on 2026-10-13, kept
+// serving the copy it took before the pipeline's last commit — a plain fetch
+// returned 2026-10-12 rows from a file that already held 2026-10-13, long
+// after the push. Each cache window gets its own URL instead, so the first
+// request in a window reaches GitHub and the rest share what it returns.
+function repoUrl(pathname) {
+  const window = Math.floor(Date.now() / (DATA_CACHE_SECONDS * 1000));
+  return `${REPO_RAW}${pathname}?cb=${window}`;
+}
+
 async function serveData(request, env, url) {
   try {
-    const upstream = await fetch(`${REPO_RAW}${url.pathname}`, {
-      cf: { cacheTtl: DATA_CACHE_SECONDS, cacheEverything: true },
+    const upstream = await fetch(repoUrl(url.pathname), {
+      headers: { Accept: "application/json" },
     });
     if (!upstream.ok) throw new Error(`upstream ${upstream.status}`);
     return new Response(request.method === "HEAD" ? null : upstream.body, {

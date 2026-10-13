@@ -1,7 +1,19 @@
 # Files in this repo that are NOT part of the published site.
 # The assets directory is the repository root (same as the Netlify publish
-# directory), so everything not listed here would be served. Dot-directories
-# (.git/.github/.freebuff) are excluded by the assets layer itself.
+# directory), so everything not listed here would be served.
+#
+# Dot-paths are NOT excluded for you: the live site served /.git/config,
+# /.git/logs/HEAD and /.freebuff/desktop.db (7.4 MB of local app state) until
+# these lines were added — so name every one of them explicitly.
+.git/
+.github/
+.freebuff/
+.wrangler/
+.vscode/
+.idea/
+.env
+.assetsignore
+brag-output/
 CLAUDE.md
 LICENSE
 README.md
