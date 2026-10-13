@@ -60,7 +60,7 @@ MAX_ROWS = 2000
 TRACKERS = ("visa", "1g")
 OUTCOMES = ("granted", "refused")
 
-DEFAULT_SITE_URL = "https://irish-visa-tracker.soni-soni-parth.workers.dev"
+DEFAULT_SITE_URL = "https://irish-visa-tracker.parth10.workers.dev"
 SUBMISSIONS_PATH = "/api/community-submissions"
 
 
