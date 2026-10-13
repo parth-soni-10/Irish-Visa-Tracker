@@ -16,27 +16,23 @@ read when present, so old submissions keep flowing after the split.
 
 Where the submissions live: the forms used to be Netlify Forms, and the
 Worker that replaced them (worker.js) writes every POST into the `submissions`
-table of D1 (form, fields, created_at). This reads that table over the D1
-query API — one call, all three form names — so the nightly job follows the
-site instead of looking at a service the site no longer posts to.
+table of D1 (form, fields, created_at). It also serves those rows back at
+GET /api/community-submissions — the three timeline form names only, never the
+`suggestions` form — and this reads that endpoint. No Cloudflare API token, no
+repo secret, nothing to configure: the job runs on a fresh fork unchanged, and
+an empty answer means nobody has reported a timeline yet.
 
-Setup (once):
-1. Cloudflare dashboard -> My Profile -> API Tokens -> Create Token ->
-   "D1 Edit" (read is enough today, but Edit lets the same token be reused
-   for a repair) scoped to the account.
-2. Repo Settings -> Secrets and variables -> Actions -> add the token as
-   CLOUDFLARE_API_TOKEN.
-3. The account id and D1 database id ride along as plain values in
-   timelines.yml: they are identifiers, not credentials, and the database id
-   is already published in wrangler.toml.
+(It used to query D1's API directly, which needed a CLOUDFLARE_API_TOKEN repo
+secret. A missing secret did not fail the job — it printed SKIP and exited 0 —
+so the panels stayed empty with nothing on screen saying why.)
 
 Row schema:
     {"tracker": "visa", "applied": "2026-06-01", "decided": "2026-08-20",
      "outcome": "granted", "submitted_at": "2026-09-09T10:00:00Z"}
 
 Run:
-    CLOUDFLARE_API_TOKEN=... CLOUDFLARE_ACCOUNT_ID=... \
-      CLOUDFLARE_D1_DATABASE_ID=... python sync_timelines.py
+    python sync_timelines.py
+    WEB_APP_URL=http://localhost:8787 python sync_timelines.py   # against wrangler dev
 """
 
 from __future__ import annotations
@@ -59,16 +55,17 @@ FORM_TRACKER_DEFAULT = {
     "timelines": "",
 }
 MAX_ROWS = 2000
-MAX_FETCH = 5000
+# The site's endpoint caps its own read (worker.js MAX_TIMELINE_ROWS); this is
+# the form list it serves, and test_timelines.py fails if the two drift apart.
 TRACKERS = ("visa", "1g")
 OUTCOMES = ("granted", "refused")
 
-D1_QUERY_URL = ("https://api.cloudflare.com/client/v4/accounts/{account_id}"
-                "/d1/database/{database_id}/query")
+DEFAULT_SITE_URL = "https://irish-visa-tracker.soni-soni-parth.workers.dev"
+SUBMISSIONS_PATH = "/api/community-submissions"
 
 
 def valid_entry(data, today=None):
-    """Normalize + validate one Netlify submission payload.
+    """Normalize + validate one submission payload.
 
     Returns a clean row dict, or None when the submission is unusable
     (bad dates, applied after decided, future dates, unknown enums).
@@ -145,51 +142,51 @@ def iso_utc(value):
     return text if text.endswith("Z") else text + "Z"
 
 
-def fetch_submissions(account_id, database_id, token):
-    """All timeline-form submissions from the Worker's D1 store.
+def rows_from_records(records):
+    """Turn the endpoint's rows into submission payloads.
 
-    Reads every form in FORM_NAMES (the two split forms plus the legacy
-    combined one) in one query, tags rows with the form's default tracker
-    when the submission itself carries none, and returns them combined.
+    `fields` arrives as the JSON text the Worker stored, and `created_at` as
+    D1's own datetime string; an unreadable blob is skipped and logged rather
+    than failing the run.
     """
-    placeholders = ", ".join("?" * len(FORM_NAMES))
-    resp = requests.post(
-        D1_QUERY_URL.format(account_id=account_id, database_id=database_id),
-        headers={"Authorization": f"Bearer {token}"},
-        json={
-            "sql": ("SELECT form, fields, created_at FROM submissions "
-                    f"WHERE form IN ({placeholders}) ORDER BY id LIMIT {MAX_FETCH}"),
-            "params": list(FORM_NAMES),
-        },
-        timeout=30)
+    out = []
+    for record in records:
+        if not isinstance(record, dict):
+            continue
+        data = record.get("fields")
+        if isinstance(data, str):
+            try:
+                data = json.loads(data)
+            except ValueError:
+                print("WARNING: skipping submission with unreadable fields "
+                      f"(id {record.get('id', '?')}, form {record.get('form')})")
+                continue
+        if not isinstance(data, dict):
+            continue
+        form = str(record.get("form", ""))
+        default_tracker = FORM_TRACKER_DEFAULT.get(form, "")
+        if not str(data.get("tracker", "")).strip() and default_tracker:
+            data["tracker"] = default_tracker
+        data["submitted_at"] = iso_utc(record.get("created_at", ""))
+        out.append(data)
+    return out
+
+
+def fetch_submissions(site_url):
+    """All timeline-form submissions the Worker serves (one request).
+
+    Reads the site's own endpoint — every form in FORM_NAMES (the two split
+    forms plus the legacy combined one) in one call — and returns the rows as
+    submission payloads. No credential is sent or needed.
+    """
+    resp = requests.get(site_url.rstrip("/") + SUBMISSIONS_PATH, timeout=30)
     resp.raise_for_status()
     payload = resp.json()
-    if not payload.get("success"):
-        errors = payload.get("errors") or []
-        detail = "; ".join(str(e.get("message", e)) for e in errors) or "unknown"
-        raise RuntimeError(f"D1 query failed: {detail}")
-
-    out = []
-    # One statement, so one result entry — but stay permissive about shape.
-    for result in payload.get("result") or []:
-        for record in result.get("results") or []:
-            data = record.get("fields")
-            if isinstance(data, str):
-                try:
-                    data = json.loads(data)
-                except ValueError:
-                    print("WARNING: skipping submission with unreadable fields "
-                          f"(id {record.get('id', '?')}, form {record.get('form')})")
-                    continue
-            if not isinstance(data, dict):
-                continue
-            form = str(record.get("form", ""))
-            default_tracker = FORM_TRACKER_DEFAULT.get(form, "")
-            if not str(data.get("tracker", "")).strip() and default_tracker:
-                data["tracker"] = default_tracker
-            data["submitted_at"] = iso_utc(record.get("created_at", ""))
-            out.append(data)
-    return out
+    records = payload.get("submissions") if isinstance(payload, dict) else None
+    if not isinstance(records, list):
+        raise RuntimeError("unexpected payload from the submissions endpoint: "
+                           f"{str(payload)[:200]}")
+    return rows_from_records(records)
 
 
 def load_existing():
@@ -201,17 +198,9 @@ def load_existing():
 
 
 def main():
-    token = os.environ.get("CLOUDFLARE_API_TOKEN", "").strip()
-    account_id = os.environ.get("CLOUDFLARE_ACCOUNT_ID", "").strip()
-    database_id = os.environ.get("CLOUDFLARE_D1_DATABASE_ID", "").strip()
-    if not token or not account_id or not database_id:
-        print("SKIP: CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID / "
-              "CLOUDFLARE_D1_DATABASE_ID not all set. "
-              "See sync_timelines.py header for setup.")
-        return
-
-    raw = fetch_submissions(account_id, database_id, token)
-    print(f"Fetched {len(raw)} form submissions.")
+    site_url = os.environ.get("WEB_APP_URL", "").strip() or DEFAULT_SITE_URL
+    raw = fetch_submissions(site_url)
+    print(f"Fetched {len(raw)} form submissions from {site_url}.")
     today = date.today()
     incoming, bad = [], 0
     for data in raw:

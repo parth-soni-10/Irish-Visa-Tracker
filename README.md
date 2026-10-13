@@ -52,7 +52,7 @@ Older versions of this project stored data in a Google Sheet behind an Apps Scri
 
 ## Optional: community timelines
 
-Visitors can share applied → decided dates via two separate forms: embassy visas on the Suggestions tab (`timelines-visa`) and Stamp 1G renewals on the 1G page (`timelines-1g`). The Worker stores each submission in D1, and a nightly job (`timelines.yml`) reads that table into `data/community_timelines.json`, which powers the "Community waits" panels. Needs one repo secret, `CLOUDFLARE_API_TOKEN` (Cloudflare → My Profile → API Tokens → create one with **D1** access to this account); the account and database ids ride along as plain values in the workflow. Without the token the job skips and the panels invite the first report.
+Visitors can share applied → decided dates via two separate forms: embassy visas on the Suggestions tab (`timelines-visa`) and Stamp 1G renewals on the 1G page (`timelines-1g`). The Worker stores each submission in D1 and serves the timeline rows straight back at `GET /api/community-submissions` — the three timeline forms only, never the `suggestions` form, which holds a name and free text — so the nightly job (`timelines.yml`) reads the site itself into `data/community_timelines.json`, which powers the "Community waits" panels. Nothing to configure: no secret, no token, and a fork runs it unchanged. Point it somewhere else with `WEB_APP_URL=… python sync_timelines.py`, which is how you try it against `wrangler dev`. (An earlier version read D1's API with a `CLOUDFLARE_API_TOKEN` repo secret; a secret nobody created made the job print SKIP and exit 0, so the panels sat empty with nothing anywhere saying why.)
 
 ## Optional: outage alerts
 

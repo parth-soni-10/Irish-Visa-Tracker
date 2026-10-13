@@ -1,7 +1,10 @@
 """Unit tests for sync_timelines.py — validation, merge, aggregates."""
 
+import ast
+import re
 import unittest
 from datetime import date
+from pathlib import Path
 from unittest.mock import patch
 
 import sync_timelines
@@ -83,23 +86,26 @@ class StatsTests(unittest.TestCase):
 
 
 class Response:
-    """Stand-in for requests.Response around a D1 query payload."""
+    """Stand-in for requests.Response around the site's submissions payload."""
 
-    def __init__(self, payload):
+    def __init__(self, payload, status_code=200):
         self._p = payload
+        self.status_code = status_code
 
     def raise_for_status(self):
-        pass
+        if self.status_code >= 400:
+            raise RuntimeError(f"HTTP {self.status_code}")
 
     def json(self):
         return self._p
 
 
-def d1_payload(rows):
-    return {"success": True, "errors": [], "result": [{"results": rows}]}
+def subs_payload(rows):
+    return {"submissions": rows}
 
 
 class FetchTests(unittest.TestCase):
+    SITE = "https://tracker.test"
     ROWS = [
         {"id": 1, "form": "timelines-visa",
          "fields": '{"applied": "2026-06-01", "decided": "2026-08-20", '
@@ -113,20 +119,53 @@ class FetchTests(unittest.TestCase):
          "created_at": "2026-09-03 09:00:00"},
     ]
 
-    def fetch(self, rows):
-        with patch("sync_timelines.requests.post",
-                   return_value=Response(d1_payload(rows))) as post:
-            out = sync_timelines.fetch_submissions("acct", "db", "tok")
-        return out, post
+    def fetch(self, rows, status_code=200):
+        with patch("sync_timelines.requests.get",
+                   return_value=Response(subs_payload(rows), status_code)) as get:
+            out = sync_timelines.fetch_submissions(self.SITE)
+        return out, get
 
     def test_no_submissions_returns_empty(self):
-        out, post = self.fetch([])
+        out, get = self.fetch([])
         self.assertEqual(out, [])
-        url = post.call_args.args[0]
-        self.assertIn("/accounts/acct/d1/database/db/query", url)
-        body = post.call_args.kwargs["json"]
-        self.assertEqual(body["params"], list(sync_timelines.FORM_NAMES))
-        self.assertIn("FROM submissions", body["sql"])
+        self.assertEqual(get.call_args.args[0],
+                         self.SITE + "/api/community-submissions")
+        # No credential is sent, and none is needed: the endpoint is public and
+        # narrow by design, which is the whole point of reading it here.
+        self.assertNotIn("Authorization", get.call_args.kwargs.get("headers") or {})
+
+    def test_a_trailing_slash_does_not_double_up(self):
+        with patch("sync_timelines.requests.get",
+                   return_value=Response(subs_payload([]))) as get:
+            sync_timelines.fetch_submissions(self.SITE + "/")
+        self.assertEqual(get.call_args.args[0],
+                         self.SITE + "/api/community-submissions")
+
+    def test_an_unexpected_payload_is_loud_not_silent(self):
+        # A 200 that is not the contract must fail the run, not read as "nobody
+        # has reported yet" — which is what left the panels empty before.
+        with patch("sync_timelines.requests.get",
+                   return_value=Response({"ok": True})):
+            with self.assertRaises(RuntimeError):
+                sync_timelines.fetch_submissions(self.SITE)
+
+    def test_an_error_status_propagates(self):
+        with patch("sync_timelines.requests.get",
+                   return_value=Response({}, 503)):
+            with self.assertRaises(RuntimeError):
+                sync_timelines.fetch_submissions(self.SITE)
+
+    def test_the_form_list_matches_the_worker(self):
+        """The endpoint serves worker.js's TIMELINE_FORMS; the reader's list must
+        be the same list, or the sync silently reads a subset of the forms.
+        """
+        worker = (Path(__file__).resolve().parent / "worker.js").read_text(
+            encoding="utf-8")
+        match = re.search(r"TIMELINE_FORMS = \[([^\]]*)\]", worker)
+        self.assertIsNotNone(
+            match, "worker.js declares no TIMELINE_FORMS — nothing to read")
+        self.assertEqual(tuple(ast.literal_eval("[" + match.group(1) + "]")),
+                         tuple(sync_timelines.FORM_NAMES))
 
     def test_rows_mapped_with_form_defaults_and_iso_time(self):
         out, _ = self.fetch(self.ROWS)
@@ -146,13 +185,11 @@ class FetchTests(unittest.TestCase):
         self.assertEqual([r["decided"] for r in merged],
                          ["2026-07-15", "2026-08-20"])
 
-    def test_api_error_surfaces(self):
-        payload = {"success": False,
-                   "errors": [{"message": "no such database"}]}
-        with patch("sync_timelines.requests.post",
-                   return_value=Response(payload)):
-            with self.assertRaises(RuntimeError):
-                sync_timelines.fetch_submissions("acct", "db", "tok")
+    def test_a_readable_blob_that_is_not_an_object_is_skipped(self):
+        rows = [{"id": 9, "form": "timelines-visa", "fields": "[1, 2]",
+                 "created_at": "2026-09-04 09:00:00"}]
+        out, _ = self.fetch(rows)
+        self.assertEqual(out, [])
 
 
 if __name__ == "__main__":

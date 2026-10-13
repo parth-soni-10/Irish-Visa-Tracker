@@ -24,7 +24,7 @@ push would otherwise drop that day's observation for good.
 - Icons: Lucide via vendored `lucide.min.js`. Wired with a `MutationObserver` that re-runs `lucide.createIcons()` after any render.
 - Backend/API: none — static JSON in `data/` (`visa_decisions.json` rows as `[date, irl, decision]` arrays, `visa_meta.json` run-status object).
 - Scraper: `scraper.py` (Python: requests, pandas, odfpy, python-dateutil) run by GitHub Actions cron.
-- Hosting: Cloudflare Workers — `worker.js` handles the three forms (POSTs land in D1, binding `DB`) and proxies `data/*.json` from the repo; everything else is served from the static assets at the repo root (`[assets] directory = "."`), with response headers in `_headers`. `netlify.toml` is kept only as the record of what Netlify used to do.
+- Hosting: Cloudflare Workers — `worker.js` handles the three forms (POSTs land in D1, binding `DB`), serves the timeline rows back at `GET /api/community-submissions` for the nightly sync, and proxies `data/*.json` from the repo; everything else is served from the static assets at the repo root (`[assets] directory = "."`), with response headers in `_headers`. `netlify.toml` is kept only as the record of what Netlify used to do.
 
 ## Files
 ```
@@ -32,15 +32,16 @@ index.html          → the whole SPA (chrome, nav pills, hero, tabs, suggestion
 scraper.py          → daily visa-file scraper (weekend / holiday handling, JSON persistence, gap alert)
 track_1g.py         → Stamp 1G processing-date tracker
 track_permits.py    → employment-permit processing-date tracker
-sync_timelines.py   → nightly merge of the Worker's D1 form submissions → data/community_timelines.json
-                      (needs the CLOUDFLARE_API_TOKEN repo secret; SKIPs without it)
+sync_timelines.py   → nightly merge of the Worker's timeline submissions → data/community_timelines.json
+                      (reads GET /api/community-submissions on the site itself: no secret, nothing to set up)
 test_scraper.py, test_track_1g.py, test_permits.py, test_timelines.py → pytest suites (CI runs all four)
 tools/              → make-icons.py, check_html_scripts.py (inline-script syntax check used by CI)
 .github/workflows/  → scrape, test, timelines, track_1g, track_permits
 data/               → visa_decisions.json, visa_meta.json (scraper-owned), stamp_1g.json,
                       work_permits.json, community_timelines.json
 requirements.txt
-worker.js           → Cloudflare Worker: form POSTs → D1, data/ proxied from the repo, else static assets
+worker.js           → Cloudflare Worker: form POSTs → D1, /api/community-submissions (timeline rows) for the
+                      nightly sync, data/ proxied from the repo, else static assets
 wrangler.toml       → Worker config (assets = repo root, D1 binding `DB`)
 schema.sql          → reference copy of the `submissions` table worker.js creates lazily
 _headers            → response headers (the assets layer reads this; netlify.toml is the retired twin)
