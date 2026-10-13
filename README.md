@@ -44,15 +44,15 @@ python -m pytest
 
 ## Built with
 
-Plain **HTML / CSS / JavaScript** for the dashboard and a little **Python** for the automation. Hosted on **Netlify**.
+Plain **HTML / CSS / JavaScript** for the dashboard and a little **Python** for the automation. Hosted on **Cloudflare Workers** — the Worker handles the forms (into D1) and serves the `data/` files from the repository, so a pipeline run shows up on the live site without a redeploy.
 
 ## No setup, no secrets
 
-Older versions of this project stored data in a Google Sheet behind an Apps Script web app (see git history for `Code.gs`). That whole layer is gone: the scraper commits its results straight into `data/` and the dashboard reads them as static files. Fork the repo, enable Actions, deploy on Netlify — nothing to paste anywhere.
+Older versions of this project stored data in a Google Sheet behind an Apps Script web app (see git history for `Code.gs`). That whole layer is gone: the scraper commits its results straight into `data/` and the dashboard reads them from the repository. Fork the repo, enable Actions, deploy with `npx wrangler deploy` — nothing to paste anywhere.
 
 ## Optional: community timelines
 
-Visitors can share applied → decided dates via two separate forms: embassy visas on the Suggestions tab (`timelines-visa`) and Stamp 1G renewals on the 1G page (`timelines-1g`). A nightly job (`timelines.yml`) pulls both Netlify forms' submissions into `data/community_timelines.json`, which powers the "Community waits" panels. Needs `NETLIFY_TOKEN` (Netlify User settings → Applications → New access token) + `NETLIFY_SITE_ID` (Site settings → General → API ID) as repo secrets. Without them the job skips and the panels invite the first report.
+Visitors can share applied → decided dates via two separate forms: embassy visas on the Suggestions tab (`timelines-visa`) and Stamp 1G renewals on the 1G page (`timelines-1g`). The Worker stores each submission in D1, and a nightly job (`timelines.yml`) reads that table into `data/community_timelines.json`, which powers the "Community waits" panels. Needs one repo secret, `CLOUDFLARE_API_TOKEN` (Cloudflare → My Profile → API Tokens → create one with **D1** access to this account); the account and database ids ride along as plain values in the workflow. Without the token the job skips and the panels invite the first report.
 
 ## Optional: outage alerts
 

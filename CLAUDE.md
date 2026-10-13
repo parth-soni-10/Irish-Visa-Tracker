@@ -32,9 +32,8 @@ index.html          → the whole SPA (chrome, nav pills, hero, tabs, suggestion
 scraper.py          → daily visa-file scraper (weekend / holiday handling, JSON persistence, gap alert)
 track_1g.py         → Stamp 1G processing-date tracker
 track_permits.py    → employment-permit processing-date tracker
-sync_timelines.py   → nightly form-submission merge → data/community_timelines.json (still reads the
-                      Netlify Forms API: the forms now post to D1, so this job SKIPs until it is
-                      repointed — see the note in its header)
+sync_timelines.py   → nightly merge of the Worker's D1 form submissions → data/community_timelines.json
+                      (needs the CLOUDFLARE_API_TOKEN repo secret; SKIPs without it)
 test_scraper.py, test_track_1g.py, test_permits.py, test_timelines.py → pytest suites (CI runs all four)
 tools/              → make-icons.py, check_html_scripts.py (inline-script syntax check used by CI)
 .github/workflows/  → scrape, test, timelines, track_1g, track_permits

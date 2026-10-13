@@ -1,9 +1,11 @@
 name: Sync Community Timelines
 
-# Nightly pull of the "timelines-visa" + "timelines-1g" Netlify Form
-# submissions into data/community_timelines.json. Needs NETLIFY_TOKEN +
-# NETLIFY_SITE_ID repo secrets — see the setup steps in sync_timelines.py.
-# Without them the job prints SKIP and exits 0.
+# Nightly pull of the "timelines-visa" + "timelines-1g" submissions into
+# data/community_timelines.json. Since the site moved to a Worker the forms
+# post to D1, so this reads that table over the D1 query API — it needs the
+# CLOUDFLARE_API_TOKEN repo secret (D1 read) and nothing else; the two ids
+# below are identifiers, and the database id is already public in
+# wrangler.toml. Without the token the job prints SKIP and exits 0.
 
 on:
   workflow_dispatch: {}   # manual "Run workflow" button — still available for on-demand runs
@@ -30,8 +32,9 @@ jobs:
 
       - name: Sync timelines
         env:
-          NETLIFY_TOKEN: ${{ secrets.NETLIFY_TOKEN }}
-          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: aa3d5156a2c1f5099f6c1521a54d6aec
+          CLOUDFLARE_D1_DATABASE_ID: d7dc618b-1d18-463c-80d0-c9f4d0b9e6ab
         run: python sync_timelines.py
 
       - name: Commit updated data

@@ -82,74 +82,77 @@ class StatsTests(unittest.TestCase):
         self.assertIsNone(sync_timelines.community_stats(self.ROWS, "permits"))
 
 
+class Response:
+    """Stand-in for requests.Response around a D1 query payload."""
+
+    def __init__(self, payload):
+        self._p = payload
+
+    def raise_for_status(self):
+        pass
+
+    def json(self):
+        return self._p
+
+
+def d1_payload(rows):
+    return {"success": True, "errors": [], "result": [{"results": rows}]}
+
+
 class FetchTests(unittest.TestCase):
-    def test_missing_form_returns_empty(self):
-        import requests as rq
+    ROWS = [
+        {"id": 1, "form": "timelines-visa",
+         "fields": '{"applied": "2026-06-01", "decided": "2026-08-20", '
+                   '"outcome": "granted", "form-name": "timelines-visa"}',
+         "created_at": "2026-09-01 10:00:00"},
+        {"id": 2, "form": "timelines-1g",
+         "fields": '{"applied": "2026-05-01", "decided": "2026-07-15", '
+                   '"outcome": "refused", "tracker": "1g"}',
+         "created_at": "2026-09-02 11:30:00"},
+        {"id": 3, "form": "timelines-visa", "fields": "not json",
+         "created_at": "2026-09-03 09:00:00"},
+    ]
 
-        class R:
-            def __init__(self, payload):
-                self._p = payload
-            def raise_for_status(self):
-                pass
-            def json(self):
-                return self._p
+    def fetch(self, rows):
+        with patch("sync_timelines.requests.post",
+                   return_value=Response(d1_payload(rows))) as post:
+            out = sync_timelines.fetch_submissions("acct", "db", "tok")
+        return out, post
 
-        with patch("sync_timelines.requests.get",
-                   return_value=R([{"id": "f1", "name": "suggestions"}])):
-            self.assertEqual(
-                sync_timelines.fetch_submissions("tok", "site"), [])
+    def test_no_submissions_returns_empty(self):
+        out, post = self.fetch([])
+        self.assertEqual(out, [])
+        url = post.call_args.args[0]
+        self.assertIn("/accounts/acct/d1/database/db/query", url)
+        body = post.call_args.kwargs["json"]
+        self.assertEqual(body["params"], list(sync_timelines.FORM_NAMES))
+        self.assertIn("FROM submissions", body["sql"])
 
-    def test_submissions_mapped(self):
-        import requests as rq  # noqa: F401  (keeps requests import used)
-
-        class R:
-            def __init__(self, payload):
-                self._p = payload
-            def raise_for_status(self):
-                pass
-            def json(self):
-                return self._p
-
-        calls = []
-
-        def fake_get(url, headers=None, timeout=None):
-            calls.append(url)
-            if url.endswith("/forms"):
-                return R([{"id": "f9", "name": "timelines"}])
-            return R([{"data": {"tracker": "visa"}, "created_at": "2026-09-01"}])
-
-        with patch("sync_timelines.requests.get", side_effect=fake_get):
-            out = sync_timelines.fetch_submissions("tok", "site")
-        self.assertEqual(len(calls), 2)
-        self.assertEqual(out[0]["tracker"], "visa")
-        self.assertEqual(out[0]["submitted_at"], "2026-09-01")
-
-    def test_split_forms_combined_with_defaults(self):
-        class R:
-            def __init__(self, payload):
-                self._p = payload
-            def raise_for_status(self):
-                pass
-            def json(self):
-                return self._p
-
-        def fake_get(url, headers=None, timeout=None):
-            if url.endswith("/forms"):
-                return R([
-                    {"id": "fv", "name": "timelines-visa"},
-                    {"id": "fg", "name": "timelines-1g"},
-                    {"id": "fs", "name": "suggestions"},
-                ])
-            if "/forms/fv/" in url:
-                return R([{"data": {}, "created_at": "2026-09-01"}])
-            return R([{"data": {}, "created_at": "2026-09-02"}])
-
-        with patch("sync_timelines.requests.get", side_effect=fake_get):
-            out = sync_timelines.fetch_submissions("tok", "site")
+    def test_rows_mapped_with_form_defaults_and_iso_time(self):
+        out, _ = self.fetch(self.ROWS)
+        # The unreadable blob is skipped, not fatal.
         self.assertEqual(len(out), 2)
-        by_submitted = {r["submitted_at"]: r["tracker"] for r in out}
-        self.assertEqual(by_submitted,
-                         {"2026-09-01": "visa", "2026-09-02": "1g"})
+        self.assertEqual(out[0]["tracker"], "visa")   # from the form name
+        self.assertEqual(out[0]["submitted_at"], "2026-09-01T10:00:00Z")
+        self.assertEqual(out[1]["tracker"], "1g")
+        self.assertEqual(out[1]["submitted_at"], "2026-09-02T11:30:00Z")
+
+    def test_rows_feed_validation_and_merge(self):
+        out, _ = self.fetch(self.ROWS)
+        rows = [r for r in (sync_timelines.valid_entry(d, date(2026, 9, 9))
+                            for d in out) if r]
+        self.assertEqual(len(rows), 2)
+        merged = sync_timelines.merge([], rows)
+        self.assertEqual([r["decided"] for r in merged],
+                         ["2026-07-15", "2026-08-20"])
+
+    def test_api_error_surfaces(self):
+        payload = {"success": False,
+                   "errors": [{"message": "no such database"}]}
+        with patch("sync_timelines.requests.post",
+                   return_value=Response(payload)):
+            with self.assertRaises(RuntimeError):
+                sync_timelines.fetch_submissions("acct", "db", "tok")
 
 
 if __name__ == "__main__":
