@@ -9,9 +9,29 @@
 # Single-file app: inline scripts/styles are intrinsic, so lock down
 # everything else (objects, frames, base-uri, form-action). Data files
 # ship with the site itself, so connect-src is self-only.
+#
+# script-src pins the page's two inline scripts by SHA-256 rather than allowing
+# 'unsafe-inline'. It used to allow it, which made this the one site where an
+# injected script would simply run: nothing injects into the page today (every
+# value that reaches HTML goes through escapeHtml, and the row HTML is built
+# from the scraper's whitelisted decisions file), and the two hashes are what
+# hold that line once it stops being true - a script arriving from anywhere else
+# is refused by the browser instead of executed.
+#
+# The hashes are checked rather than trusted: `python tools/check_csp_hashes.py`
+# recomputes them from index.html, fails on a missing or an orphaned hash, and
+# fails if 'unsafe-inline' returns to script-src. It runs in CI beside the
+# scraper tests, and after an edit to an inline script it prints the exact hash
+# to paste below.
+#
+# Those hashes carry a subtlety the checker documents at length: the browser
+# hashes the script's SOURCE TEXT, and HTML's input-stream preprocessing turns
+# CRLF into LF before the parser sees it. This file is CRLF, so hashing its raw
+# bytes computes a value every browser rejects — which is exactly what happened
+# on the first attempt here, and what the checker now avoids.
 /*
   X-Frame-Options: DENY
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: geolocation=(), microphone=(), camera=(), payment=()
-  Content-Security-Policy: default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data:; connect-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
+  Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-wIvDxHO2wIrh28fbnwUaWD+6iHtzKsmjEowgZ5ev4l4=' 'sha256-wIfyrmU+YQamcUy+uIxpA9KZOfaUkJczxjZZg1ejNZ4='; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data:; connect-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
