@@ -1,10 +1,10 @@
 # Response headers for the Cloudflare deployment.
 #
 # These are the same directives the site carried in netlify.toml, moved to the
-# `_headers` convention the static-assets layer reads. netlify.toml is
-# Netlify-only and is ignored by Cloudflare, so while both files exist this
-# one is the one actually served; keep them in step until netlify.toml is
-# retired.
+# `_headers` convention the static-assets layer reads. netlify.toml was
+# Netlify-only and Cloudflare ignored it, so this file was always the one
+# served - which is why the twin is gone now that every directive it carried
+# lives here. This is the only copy: what is written here is the whole policy.
 #
 # Single-file app: inline scripts/styles are intrinsic, so lock down
 # everything else (objects, frames, base-uri, form-action). Data files

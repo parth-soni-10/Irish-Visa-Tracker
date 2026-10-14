@@ -8,8 +8,9 @@
 #   npx wrangler dev      → local test on http://localhost:8787
 #   npx wrangler deploy   → publish to <name>.<your-subdomain>.workers.dev
 #
-# Response headers live in `_headers` (the assets layer reads it); the old
-# netlify.toml is kept only as the record of what Netlify used to do.
+# Response headers live in `_headers` (the assets layer reads it) - the old
+# netlify.toml is deleted, since Cloudflare ignored it and every directive it
+# carried is in there now.
 
 name = "irish-visa-tracker"
 main = "worker.js"

@@ -24,7 +24,7 @@ push would otherwise drop that day's observation for good.
 - Icons: Lucide via vendored `lucide.min.js`. Wired with a `MutationObserver` that re-runs `lucide.createIcons()` after any render.
 - Backend/API: none — static JSON in `data/` (`visa_decisions.json` rows as `[date, irl, decision]` arrays, `visa_meta.json` run-status object).
 - Scraper: `scraper.py` (Python: requests, pandas, odfpy, python-dateutil) run by GitHub Actions cron.
-- Hosting: Cloudflare Workers — `worker.js` handles the three forms (POSTs land in D1, binding `DB`), serves the timeline rows back at `GET /api/community-submissions` for the nightly sync, and proxies `data/*.json` from the repo; everything else is served from the static assets at the repo root (`[assets] directory = "."`), with response headers in `_headers`. `netlify.toml` is kept only as the record of what Netlify used to do.
+- Hosting: Cloudflare Workers — `worker.js` handles the three forms (POSTs land in D1, binding `DB`), serves the timeline rows back at `GET /api/community-submissions` for the nightly sync, and proxies `data/*.json` from the repo; everything else is served from the static assets at the repo root (`[assets] directory = "."`), with response headers in `_headers` (the only copy — the old `netlify.toml` is deleted, since Cloudflare ignored it).
 
 ## Files
 ```
@@ -44,9 +44,8 @@ worker.js           → Cloudflare Worker: form POSTs → D1, /api/community-sub
                       nightly sync, data/ proxied from the repo, else static assets
 wrangler.toml       → Worker config (assets = repo root, D1 binding `DB`)
 schema.sql          → reference copy of the `submissions` table worker.js creates lazily
-_headers            → response headers (the assets layer reads this; netlify.toml is the retired twin)
+_headers            → response headers (the assets layer reads this; the only copy, netlify.toml being deleted)
 .assetsignore       → what must never be published (scripts, docs, config, caches)
-netlify.toml        → the retired Netlify config, kept as a record
 ```
 
 ## Code Style / Conventions

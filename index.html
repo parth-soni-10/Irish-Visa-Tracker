@@ -20,54 +20,6 @@
 </head>
 <body>
     <div id="visa-dash"></div>
-    <!-- Hidden twin of the JS-rendered Suggestions form. The dashboard builds its
-         tabs dynamically, so Netlify can't crawl the real form — this static copy
-         (same name + fields) is what Netlify's form detector registers at deploy
-         time. Submissions are AJAX-posted with form-name=suggestions and land in
-         the Netlify dashboard (Forms → Submissions). -->
-    <form name="suggestions" netlify netlify-honeypot="bot-field" style="position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden;" aria-hidden="true" tabindex="-1">
-        <input type="hidden" name="form-name" value="suggestions" />
-        <p>
-            <label>Name <input type="text" name="name" tabindex="-1" autocomplete="off" /></label>
-        </p>
-        <p>
-            <label>Suggestion <textarea name="suggestion" tabindex="-1"></textarea></label>
-        </p>
-        <input type="text" name="bot-field" tabindex="-1" autocomplete="off" />
-    </form>
-    <!-- Same trick for the embassy-visa timeline form: static copy so Netlify
-         registers it at deploy time; the live form is JS-rendered on the
-         Suggestions tab. -->
-    <form name="timelines-visa" netlify netlify-honeypot="bot-field" style="position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden;" aria-hidden="true" tabindex="-1">
-        <input type="hidden" name="form-name" value="timelines-visa" />
-        <input type="hidden" name="tracker" value="visa" />
-        <p>
-            <label>Applied on <input type="date" name="applied" tabindex="-1" /></label>
-        </p>
-        <p>
-            <label>Decided on <input type="date" name="decided" tabindex="-1" /></label>
-        </p>
-        <p>
-            <label>Outcome <select name="outcome" tabindex="-1"><option value="granted">Granted</option><option value="refused">Refused</option></select></label>
-        </p>
-        <input type="text" name="bot-field" tabindex="-1" autocomplete="off" />
-    </form>
-    <!-- 1G-specific timeline form for Netlify registration (live copy is
-         JS-rendered on the Stamp 1G page). -->
-    <form name="timelines-1g" netlify netlify-honeypot="bot-field" style="position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden;" aria-hidden="true" tabindex="-1">
-        <input type="hidden" name="form-name" value="timelines-1g" />
-        <input type="hidden" name="tracker" value="1g" />
-        <p>
-            <label>Applied on <input type="date" name="applied" tabindex="-1" /></label>
-        </p>
-        <p>
-            <label>Decided on <input type="date" name="decided" tabindex="-1" /></label>
-        </p>
-        <p>
-            <label>Outcome <select name="outcome" tabindex="-1"><option value="granted">Granted</option><option value="refused">Refused</option></select></label>
-        </p>
-        <input type="text" name="bot-field" tabindex="-1" autocomplete="off" />
-    </form>
     <style>
 
         /* Both faces are self-hosted variable fonts, so nothing in this file
@@ -845,7 +797,7 @@
             align-items: flex-start;
         }
         #visa-dash .suggest-grid .form-col { flex: 1 1 280px; min-width: 0; }
-        /* Netlify-style form: fields wrapped in <p><label>…</label></p>. */
+        /* Submission form: fields wrapped in <p><label>…</label></p>. */
         #visa-dash #sugg-form p { margin: 0 0 12px; }
         #visa-dash #sugg-form label {
             display: flex;
@@ -2245,8 +2197,8 @@
                     };
                 }
                 // Real <form> — intercept the submit event (covers the button
-                // AND Enter-key submission) and POST via fetch instead of
-                // letting the browser navigate to Netlify's success page.
+                // AND Enter-key submission) and POST via fetch, so the page
+                // shows its own success card instead of navigating away.
                 var suggForm = document.getElementById('sugg-form');
                 if (suggForm) suggForm.addEventListener('submit', function(e) {
                     e.preventDefault();
@@ -2824,8 +2776,11 @@
             }
 
             // ====== SUGGEST TAB ======
-            // Single-purpose layout: the Netlify Forms submission form. Submissions
-            // are collected server-side by Netlify — nothing is read back here.
+            // Single-purpose layout: the submission form. A post carrying
+            // form-name=suggestions is stored by the Worker in D1; the Worker
+            // serves the three timeline forms back (never this one, which
+            // carries a name and free text), so a suggestion is read from the
+            // store rather than from this page.
             // The form body lives in SUGG_FORM_HTML so it can be restored after
             // the post-submit success card is shown.
             // Minimum time the "Submitting…" state stays visible — on a fast
@@ -2833,8 +2788,11 @@
             // the success card before the label was ever readable.
             const MIN_SUBMIT_MS = 800;
 
-            // Markup mirrors Netlify's official contact-form example: bare
-            // `netlify` attribute, fields wrapped in <p><label>…</label></p>.
+            // Markup mirrors the contact-form shape the site has always used:
+            // fields wrapped in <p><label>…</label></p>, a hidden `form-name`
+            // field naming the form the Worker routes on, and an empty
+            // `bot-field` the Worker reads as the honeypot. Nothing registers
+            // these forms anywhere — the Worker reads the POST itself.
             const SUGG_FORM_HTML =
                 '<input type="hidden" name="form-name" value="suggestions" />' +
                 '<p><label>Name <input type="text" id="sugg-name" name="name" placeholder="Your name\u2026" autocomplete="name" /></label></p>' +
@@ -2846,12 +2804,12 @@
                 return renderConfigWarning() +
                     '<div class="suggest-grid">' +
                         '<div class="form-col" style="max-width:560px;">' +
-                            '<form class="card" id="sugg-form" name="suggestions" netlify netlify-honeypot="bot-field" novalidate style="max-width:100%;">' +
+                            '<form class="card" id="sugg-form" name="suggestions" novalidate style="max-width:100%;">' +
                                 SUGG_FORM_HTML +
                             '</form>' +
                         '</div>' +
                         '<div class="form-col" style="max-width:560px;">' +
-                            '<form class="card" id="time-form" name="timelines-visa" netlify netlify-honeypot="bot-field" novalidate style="max-width:100%;">' +
+                            '<form class="card" id="time-form" name="timelines-visa" novalidate style="max-width:100%;">' +
                                 TIMELINES_FORM_HTML +
                             '</form>' +
                         '</div>' +
@@ -2860,7 +2818,7 @@
 
             // 1G page timeline form (separate from the embassy-visa one).
             function renderG1TimelineForm() {
-                return '<form class="card" id="time-form-1g" name="timelines-1g" netlify netlify-honeypot="bot-field" novalidate style="max-width:100%;">' +
+                return '<form class="card" id="time-form-1g" name="timelines-1g" novalidate style="max-width:100%;">' +
                     TIMELINES_1G_FORM_HTML +
                 '</form>';
             }
@@ -3010,8 +2968,8 @@
                 status.textContent = 'Submitting…';
                 const startedAt = Date.now();
                 try {
-                    // POST straight to the site itself — Netlify intercepts any
-                    // form post carrying form-name=suggestions and records it.
+                    // POST straight to the site itself — the Worker stores any
+                    // form post carrying form-name=suggestions in D1.
                     const body = new URLSearchParams({
                         'form-name': 'suggestions',
                         'bot-field': '',          // honeypot must stay empty
