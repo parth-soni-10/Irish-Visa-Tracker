@@ -17,7 +17,6 @@ brag-output/
 CLAUDE.md
 LICENSE
 README.md
-netlify.toml
 requirements.txt
 scraper.py
 sync_timelines.py
