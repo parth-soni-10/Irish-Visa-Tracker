@@ -30,6 +30,7 @@ tools/
 __pycache__/
 .pytest_cache/
 wrangler.toml
+wrangler.dev.toml
 worker.js
 schema.sql
 .gitignore

@@ -5,14 +5,17 @@
 # project name, its bindings and its vars from here, and `pages_build_output_dir`
 # names the upload that tools/deploy-pages.mjs stages.
 #
-# No [triggers] here, and that is not an omission: Pages has no cron triggers, so
-# the daily timeline scrapes stay on the `irish-visa-tracker` Worker.
+# No [triggers] here, and that is not an omission: they were never on this host
+# anyway. The scrapes and the nightly timeline merge are GitHub Actions jobs
+# (.github/workflows/), and sync_timelines.py defaults to this deployment's own
+# address.
 
 name = "irishvisaupdatetracker"
 pages_build_output_dir = "../.pages-dist"
 compatibility_date = "2026-10-01"
 
-# The same D1 database the Worker's submission endpoint writes to.
+# The D1 database the submission endpoint writes to — the only copy, now that
+# this deployment is the site's only host.
 [[d1_databases]]
 binding = "DB"
 database_name = "irish-visa-tracker-submissions"

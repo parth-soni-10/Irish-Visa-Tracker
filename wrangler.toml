@@ -1,27 +1,28 @@
-# Cloudflare Workers config for the Irish Visa Tracker.
+# Bundle input for this site's Pages build — NOT a deployment.
 #
-# The site is served from the repository root (same as the Netlify
-# configuration did), but every request now passes through worker.js first:
-# that Worker replaces Netlify Forms for the three forms on the page and then
-# falls through to the static assets for everything else.
+# The Cloudflare Pages project runs, as its build command:
 #
-#   npx wrangler dev      → local test on http://localhost:8787
-#   npx wrangler deploy   → publish to <name>.<your-subdomain>.workers.dev
+#   npx --yes wrangler@4 deploy --dry-run --outdir .pages-bundle
+#   && node tools/deploy-pages.mjs --assets . --bundle .pages-bundle --out .pages-dist
 #
-# Response headers live in `_headers` (the assets layer reads it) - the old
-# netlify.toml is deleted, since Cloudflare ignored it and every directive it
-# carried is in there now.
+# and this file is read for the first half of that only: `--dry-run` bundles
+# `main` below into the worker.js that tools/deploy-pages.mjs stages as the
+# project's `_worker.js`. Nothing is deployed from here, and nothing should be —
+# this site has one host, the Pages project. A `wrangler deploy` run in this
+# directory would publish a second copy of the same code to a workers.dev
+# hostname nobody links to, against the one production D1.
+#
+# Everything the deployed site needs lives where the deploy reads it:
+# `pages/wrangler.toml` carries the project name and its D1 binding, and
+# `_headers` carries the response headers (the old netlify.toml is gone; every
+# directive it held is in there now).
+#
+# Not published: `.assetsignore` lists this file, so it is never uploaded.
 
 name = "irish-visa-tracker"
 main = "worker.js"
 compatibility_date = "2026-10-01"
 
-[assets]
-directory = "."
-binding = "ASSETS"
-run_worker_first = true
-
-[[d1_databases]]
-binding = "DB"
-database_name = "irish-visa-tracker-submissions"
-database_id = "d7dc618b-1d18-463c-80d0-c9f4d0b9e6ab"
+# No compatibility_flags key, on purpose: nothing in this script needs a Node
+# API (fetch, D1 and the assets binding only). What the deployed runtime runs
+# with comes from the Pages project.

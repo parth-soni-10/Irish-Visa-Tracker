@@ -44,15 +44,15 @@ python -m pytest
 
 ## Built with
 
-Plain **HTML / CSS / JavaScript** for the dashboard and a little **Python** for the automation. Hosted on **Cloudflare Workers** — the Worker handles the forms (into D1) and serves the `data/` files from the repository, so a pipeline run shows up on the live site without a redeploy.
+Plain **HTML / CSS / JavaScript** for the dashboard and a little **Python** for the automation. Hosted on **Cloudflare Pages** — the deployment's bundled script handles the forms (into D1) and serves the `data/` files from the repository, so a pipeline run shows up on the live site without a redeploy.
 
 ## No setup, no secrets
 
-Older versions of this project stored data in a Google Sheet behind an Apps Script web app (see git history for `Code.gs`). That whole layer is gone: the scraper commits its results straight into `data/` and the dashboard reads them from the repository. Fork the repo, enable Actions, deploy with `npx wrangler deploy` — nothing to paste anywhere.
+Older versions of this project stored data in a Google Sheet behind an Apps Script web app (see git history for `Code.gs`). That whole layer is gone: the scraper commits its results straight into `data/` and the dashboard reads them from the repository. Fork the repo, enable Actions and connect a Cloudflare Pages project to it (build command: bundle the script, then stage the upload) — nothing to paste anywhere.
 
 ## Optional: community timelines
 
-Visitors can share applied → decided dates via two separate forms: embassy visas on the Suggestions tab (`timelines-visa`) and Stamp 1G renewals on the 1G page (`timelines-1g`). The Worker stores each submission in D1 and serves the timeline rows straight back at `GET /api/community-submissions` — the three timeline forms only, never the `suggestions` form, which holds a name and free text — so the nightly job (`timelines.yml`) reads the site itself into `data/community_timelines.json`, which powers the "Community waits" panels. Nothing to configure: no secret, no token, and a fork runs it unchanged. Point it somewhere else with `WEB_APP_URL=… python sync_timelines.py`, which is how you try it against `wrangler dev`. (An earlier version read D1's API with a `CLOUDFLARE_API_TOKEN` repo secret; a secret nobody created made the job print SKIP and exit 0, so the panels sat empty with nothing anywhere saying why.)
+Visitors can share applied → decided dates via two separate forms: embassy visas on the Suggestions tab (`timelines-visa`) and Stamp 1G renewals on the 1G page (`timelines-1g`). The Worker stores each submission in D1 and serves the timeline rows straight back at `GET /api/community-submissions` — the three timeline forms only, never the `suggestions` form, which holds a name and free text — so the nightly job (`timelines.yml`) reads the site itself into `data/community_timelines.json`, which powers the "Community waits" panels. Nothing to configure: no secret, no token, and a fork runs it unchanged. Point it somewhere else with `WEB_APP_URL=… python sync_timelines.py`, which is how you try it against `wrangler dev --config wrangler.dev.toml`. (An earlier version read D1's API with a `CLOUDFLARE_API_TOKEN` repo secret; a secret nobody created made the job print SKIP and exit 0, so the panels sat empty with nothing anywhere saying why.)
 
 ## Optional: outage alerts
 
