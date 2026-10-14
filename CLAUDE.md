@@ -6,7 +6,7 @@ Tracks daily visa decisions published by the Embassy of Ireland in New Delhi. A 
 ### Where the data on the page comes from
 `data/*.json` is written by the GitHub Actions jobs, never by hand. The Worker
 serves those five files from the repository (short edge cache, bundled asset as
-fallback — see the data-proxy block in `worker.js`), so a pipeline commit shows
+fallback — see the data-proxy block in `functions/_router.js`), so a pipeline commit shows
 up on the live site within ~5 minutes with no redeploy. A deploy freezes only
 the *fallback* copy; it is not how the dashboard gets its data.
 
@@ -24,7 +24,7 @@ push would otherwise drop that day's observation for good.
 - Icons: Lucide via vendored `lucide.min.js`. Wired with a `MutationObserver` that re-runs `lucide.createIcons()` after any render.
 - Backend/API: none — static JSON in `data/` (`visa_decisions.json` rows as `[date, irl, decision]` arrays, `visa_meta.json` run-status object).
 - Scraper: `scraper.py` (Python: requests, pandas, odfpy, python-dateutil) run by GitHub Actions cron.
-- Hosting: **Cloudflare Pages, one host** — `irishvisaupdatetracker.pages.dev`. The build bundles `worker.js` into the deployment's `_worker.js`, which handles the three forms (POSTs land in D1, binding `DB`), serves the timeline rows back at `GET /api/community-submissions` for the nightly sync, and proxies `data/*.json` from the repo; everything else comes from the static assets staged from the repository root, with response headers in `_headers` (the only copy — the old `netlify.toml` is deleted, since Cloudflare ignored it).
+- Hosting: **Cloudflare Pages, one host** — `irishvisaupdatetracker.pages.dev`. Pages compiles `functions/` as the site's function (the catch-all `functions/[[path]].js` reaches `functions/_router.js`), which handles the three forms (POSTs land in D1, binding `DB`), serves the timeline rows back at `GET /api/community-submissions` for the nightly sync, and proxies `data/*.json` from the repo; everything else comes from the static assets staged from the repository root, with response headers in `_headers` (the only copy — the old `netlify.toml` is deleted, since Cloudflare ignored it).
 
 ## Files
 ```
@@ -40,12 +40,13 @@ tools/              → make-icons.py, check_html_scripts.py (inline-script synt
 data/               → visa_decisions.json, visa_meta.json (scraper-owned), stamp_1g.json,
                       work_permits.json, community_timelines.json
 requirements.txt
-worker.js           → Cloudflare Worker: form POSTs → D1, /api/community-submissions (timeline rows) for the
+functions/[[path]].js → the catch-all Pages Function: hands every request to the router
+functions/_router.js  → form POSTs → D1, /api/community-submissions (timeline rows) for the
                       nightly sync, data/ proxied from the repo, else static assets
 wrangler.toml       → bundle input for the Pages build only (name, main, compatibility date)
 wrangler.dev.toml   → local `wrangler dev` only (assets = repo root, D1 binding `DB`)
-pages/wrangler.toml → the deploy: project name and the D1 binding it runs on
-schema.sql          → reference copy of the `submissions` table worker.js creates lazily
+wrangler.toml       → the site's one config: its Pages project, plus the D1 binding it runs on
+schema.sql          → reference copy of the `submissions` table the handler creates lazily
 _headers            → response headers (the assets layer reads this; the only copy, netlify.toml being deleted)
 .assetsignore       → what must never be published (scripts, docs, config, caches)
 ```
@@ -62,4 +63,4 @@ _headers            → response headers (the assets layer reads this; the only 
 
 ## Build & Run
 - Scraper: `pip install -r requirements.txt`; runs in GitHub Actions (no required secrets — `ALERT_WEBHOOK_URL` is optional for the gap-alert webhook); commits `data/*.json` back itself.
-- Deploy: a push to `main` deploys it — the repo is connected to the **Cloudflare Pages** project `irishvisaupdatetracker` (production branch `main`, preview builds off). Its build command bundles `worker.js` and stages the repository root through `.assetsignore` as the upload, with the D1 binding coming from the project. A `data/*` commit therefore republishes the site, which is what keeps `data/` current: the deployment serves those files from its own upload. Nothing is deployed from a shell, and local testing is `npx wrangler dev --config wrangler.dev.toml`.
+- Deploy: a push to `main` deploys it — the repo is connected to the **Cloudflare Pages** project `irishvisaupdatetracker` (production branch `main`, preview builds off). Pages compiles `functions/`, and the build command stages the repository root through `.assetsignore` as the upload (`node tools/deploy-pages.mjs --assets . --out .pages-dist`), with the D1 binding coming from `wrangler.toml`. A `data/*` commit therefore republishes the site, which is what keeps `data/` current: the deployment serves those files from its own upload. Nothing is deployed from a shell, and local testing is `npx wrangler pages dev . --d1 DB=irish-visa-tracker-submissions` — measured: `pages dev` did not pick this site's D1 binding up from `wrangler.toml`, so the flag is what makes the local run bind the store it writes to (the deployed project's binding is configured on the project, and the config is what a deploy reads it from).

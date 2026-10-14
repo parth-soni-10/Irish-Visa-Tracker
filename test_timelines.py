@@ -155,15 +155,16 @@ class FetchTests(unittest.TestCase):
             with self.assertRaises(RuntimeError):
                 sync_timelines.fetch_submissions(self.SITE)
 
-    def test_the_form_list_matches_the_worker(self):
-        """The endpoint serves worker.js's TIMELINE_FORMS; the reader's list must
-        be the same list, or the sync silently reads a subset of the forms.
+    def test_the_form_list_matches_the_function(self):
+        """The endpoint serves the Pages Function's TIMELINE_FORMS; the reader's
+        list must be the same list, or the sync silently reads a subset of the
+        forms.
         """
-        worker = (Path(__file__).resolve().parent / "worker.js").read_text(
+        worker = (Path(__file__).resolve().parent / "functions" / "_router.js").read_text(
             encoding="utf-8")
         match = re.search(r"TIMELINE_FORMS = \[([^\]]*)\]", worker)
         self.assertIsNotNone(
-            match, "worker.js declares no TIMELINE_FORMS — nothing to read")
+            match, "functions/_router.js declares no TIMELINE_FORMS — nothing to read")
         self.assertEqual(tuple(ast.literal_eval("[" + match.group(1) + "]")),
                          tuple(sync_timelines.FORM_NAMES))
 

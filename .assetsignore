@@ -30,16 +30,15 @@ tools/
 __pycache__/
 .pytest_cache/
 wrangler.toml
-wrangler.dev.toml
-worker.js
+# The function Pages compiles at deploy time. The upload is a staged copy of
+# this repository, so without this rule the handler's source — the honeypot
+# check, the size cap, the form names — would also be published as a file.
+functions/
 schema.sql
 .gitignore
 _headers
 
-# Deploy files. This repository's Pages mirror control config, the scripts that
-# deploy it, and the staging output those scripts write (`.pages-bundle/`,
-# `.pages-dist/`) are development files: the assets directory is the repository
-# root, so anything not listed here would be uploaded and served.
-pages/
-.pages-bundle/
+# Deploy files: the script that stages the upload and the staging output it
+# writes (`.pages-dist/`) are development files. The assets directory is the
+# repository root, so anything not listed here would be uploaded and served.
 .pages-dist/

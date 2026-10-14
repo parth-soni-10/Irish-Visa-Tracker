@@ -15,7 +15,7 @@ The legacy single "timelines" form (with a tracker dropdown) is still
 read when present, so old submissions keep flowing after the split.
 
 Where the submissions live: the forms used to be Netlify Forms, and the
-Worker that replaced them (worker.js) writes every POST into the `submissions`
+handler that replaced them (functions/_router.js, run by Pages) writes every POST into the `submissions`
 table of D1 (form, fields, created_at). It also serves those rows back at
 GET /api/community-submissions — the three timeline form names only, never the
 `suggestions` form — and this reads that endpoint. No Cloudflare API token, no
@@ -55,7 +55,8 @@ FORM_TRACKER_DEFAULT = {
     "timelines": "",
 }
 MAX_ROWS = 2000
-# The site's endpoint caps its own read (worker.js MAX_TIMELINE_ROWS); this is
+# The site's endpoint caps its own read (functions/_router.js
+# MAX_TIMELINE_ROWS), and this is
 # the form list it serves, and test_timelines.py fails if the two drift apart.
 TRACKERS = ("visa", "1g")
 OUTCOMES = ("granted", "refused")

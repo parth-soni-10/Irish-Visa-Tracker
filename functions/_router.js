@@ -1,5 +1,10 @@
 /**
- * Irish Visa Tracker — Cloudflare Worker.
+ * Irish Visa Tracker — the routing half of this site's Pages Function.
+ *
+ * Pages compiles this directory (see `functions/[[path]].js`, the catch-all
+ * route) and it imports this file, so the site's whole server side is here. The
+ * `_` prefix keeps it out of the routing table: the only route is the catch-all
+ * beside it, which is also why nothing here has to think about a path pattern.
  *
  * This replaces Netlify Forms. The page's three forms (`suggestions`,
  * `timelines-visa`, `timelines-1g`) already POST urlencoded bodies to their own

@@ -1,28 +1,30 @@
-# Bundle input for this site's Pages build — NOT a deployment.
+# The one config this site has: its Cloudflare Pages project.
 #
-# The Cloudflare Pages project runs, as its build command:
+#   npx wrangler pages dev .           → local test on http://localhost:8788
+#   npx wrangler pages deploy          → publish .pages-dist to the project
 #
-#   npx --yes wrangler@4 deploy --dry-run --outdir .pages-bundle
-#   && node tools/deploy-pages.mjs --assets . --bundle .pages-bundle --out .pages-dist
+# There is no Worker config and no Worker. What answers a form POST or serves
+# `data/` is a Pages Function: `functions/[[path]].js` catches every request and
+# hands it to `functions/_router.js`. Pages compiles those files as part of the
+# deploy, so nothing is bundled here, there is no `_worker.js` to stage, and
+# `wrangler deploy` is not a command this repository has any use for.
 #
-# and this file is read for the first half of that only: `--dry-run` bundles
-# `main` below into the worker.js that tools/deploy-pages.mjs stages as the
-# project's `_worker.js`. Nothing is deployed from here, and nothing should be —
-# this site has one host, the Pages project. A `wrangler deploy` run in this
-# directory would publish a second copy of the same code to a workers.dev
-# hostname nobody links to, against the one production D1.
-#
-# Everything the deployed site needs lives where the deploy reads it:
-# `pages/wrangler.toml` carries the project name and its D1 binding, and
-# `_headers` carries the response headers (the old netlify.toml is gone; every
-# directive it held is in there now).
-#
-# Not published: `.assetsignore` lists this file, so it is never uploaded.
+# `pages_build_output_dir` names the upload tools/deploy-pages.mjs stages from
+# this repository (the repository root, minus `.assetsignore`), and `_headers`
+# carries the response headers — the old netlify.toml is gone, since Cloudflare
+# ignored it and every directive it held is in there now.
 
-name = "irish-visa-tracker"
-main = "worker.js"
+name = "irishvisaupdatetracker"
+pages_build_output_dir = ".pages-dist"
 compatibility_date = "2026-10-01"
 
-# No compatibility_flags key, on purpose: nothing in this script needs a Node
-# API (fetch, D1 and the assets binding only). What the deployed runtime runs
-# with comes from the Pages project.
+# No compatibility_flags key, on purpose: nothing in the handler needs a Node
+# API (fetch, D1 and the assets binding only), so the deployment runs without
+# nodejs_compat.
+
+# The submissions store: the `submissions` table the handler creates lazily
+# (schema.sql is a reference copy).
+[[d1_databases]]
+binding = "DB"
+database_name = "irish-visa-tracker-submissions"
+database_id = "d7dc618b-1d18-463c-80d0-c9f4d0b9e6ab"
