@@ -3049,7 +3049,6 @@
             // ---- Stamp 1G data + projections ----
             let g1Cache = null;
             let g1ActiveRows = [];
-            let g1FetchedAt = null;
 
             async function loadG1Data() {
                 if (g1Cache) return g1Cache;
@@ -3072,7 +3071,6 @@
                             };
                         })
                         .sort(function(a, b) { return a.run_date.localeCompare(b.run_date); });
-                    g1FetchedAt = Date.now();
                 } catch (e) {
                     console.warn('loadG1Data failed:', e);
                     if (g1Cache === null) g1Cache = [];
@@ -3500,7 +3498,7 @@
                     }
                 }
                 return '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Average Stamp 1G lag per week, ' + weeks.length + ' weeks">' +
-                    grid + bars + avgLine + xlabels + '</svg>';
+                    grid + bars + avgLine + regLine + marker + xlabels + '</svg>';
             }
 
             function renderG1Layout(rows, cats, activeCat) {
