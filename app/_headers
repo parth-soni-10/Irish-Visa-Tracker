@@ -1,0 +1,40 @@
+# Response headers for the redesigned app.
+#
+# This file ships inside `app/` and takes over only at cutover, when the Pages
+# project's output directory becomes this folder. The repository-root `_headers`
+# stays untouched while the old single-file app is still what the project
+# serves, so the two policies never fight over one deploy.
+#
+# What changed from the old policy, and why:
+#   script-src  no hashes, no 'unsafe-inline'. The app is one external module
+#               graph, so 'self' is the whole allow-list; a script that arrives
+#               from anywhere else is refused by the browser rather than trusted
+#               by a hash pasted into a file.
+#   style-src   'self' only. The old app shipped a 1,500-line <style> block and
+#               therefore needed 'unsafe-inline'; the new one is a linked sheet
+#               plus class names, and a runtime style attribute is a CSP
+#               violation the Playwright pass fails on.
+#   connect-src 'self'  — the data files ship with the site.
+#   form-action 'self'  — the three forms POST back to this origin.
+# Nothing was loosened: default-src 'none' still governs everything not named.
+/*
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: geolocation=(), microphone=(), camera=(), payment=()
+  Content-Security-Policy: default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self' data:; img-src 'self' data:; connect-src 'self'; manifest-src 'self'; worker-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
+
+# Self-hosted webfonts. Unversioned names whose content changes only when the
+# typeface does, so they are the files a returning visitor otherwise re-requests
+# on every visit. A week plus stale-while-revalidate trades that round trip for a
+# copy that can still be replaced within a week — deliberately not `immutable`,
+# because a promise made on a stable URL cannot be revoked. The catch-all above
+# sets no Cache-Control on purpose: Cloudflare joins the Cache-Control of every
+# matching rule, so a `no-store` there would silently cancel this one.
+/fonts/*
+  Cache-Control: public, max-age=604800, stale-while-revalidate=86400
+
+# The worker itself must revalidate: a cached sw.js is a worker that never
+# updates, which would make the update prompt above theoretical.
+/sw.js
+  Cache-Control: public, max-age=0, must-revalidate
