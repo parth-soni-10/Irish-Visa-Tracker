@@ -37,6 +37,10 @@ const DECISIONS = [
   { value: 'other', label: 'Other / pending' },
 ];
 
+/* The Hairline figure's handle, so a re-render destroys the previous mount
+ * instead of leaving a second frame loop registered. */
+let runwayHandle = null;
+
 const ui = {
   limit: PAGE,
   feedback: { state: 'idle', message: '' },
@@ -98,6 +102,12 @@ function paintNav() {
 
 function afterRender() {
   animateCounters();
+  // The overview's empty state owns a Hairline figure: mount it after the
+  // markup exists, and tear the last one down so its frame loop is gone.
+  if (runwayHandle) { runwayHandle.destroy(); runwayHandle = null; }
+  if (document.getElementById('visa-runway')) {
+    runwayHandle = window.mountHairline('visa-runway', 0);
+  }
   paintFundBars();
   const stamp = document.getElementById('footer-stamp');
   if (stamp && C.data.meta?.lastRunAt) stamp.textContent = `Last scrape ${C.data.meta.lastRunAt.replace('T', ' ')} IST · data published by the offices above`;
@@ -153,6 +163,15 @@ function renderLanding() {
     ${U.animatedCounter({ id: 'c-acc', value: stats.acceptanceRate * 100, label: 'Acceptance rate', hint: 'Granted ÷ every recorded decision, all-time. Placeholder notices are excluded — they are not applications.', suffix: '%' , format: (n) => n.toFixed(1) })}
     ${U.animatedCounter({ id: 'c-avg', value: stats.avgPerDay, label: 'Average per published day', hint: 'Mean decisions per day that published a file. Days with no upload are excluded so an embassy closure does not read as a slow day.', format: (n) => n.toFixed(1) })}
   </section>
+
+  ${C.data.rows.length ? '' : `<section class="section" id="home-empty" aria-labelledby="empty-title">
+    <div class="section-head"><div><p class="eyebrow">Before the first file</p><h2 id="empty-title">Awaiting data…</h2></div></div>
+    <div class="card hairline-card">
+      <div class="hairline-figure" id="visa-runway"></div>
+      <p class="hairline-read" data-hairline-read aria-live="polite">rest</p>
+      <p class="hint">The plane stands at the threshold until the first file lands. Each gate is one tracker: <strong>embassy decisions</strong>, then <strong>Stamp 1G</strong>, then <strong>employment permits</strong>. Point at a gate to see where the plane would stand; nothing here is a prediction.</p>
+    </div>
+  </section>`}
 
   <section class="section" id="home-trackers" aria-labelledby="trackers-title">
     <div class="section-head">

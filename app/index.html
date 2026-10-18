@@ -181,6 +181,14 @@
 
     <div id="live" class="sr-only" role="status" aria-live="polite"></div>
 
+    <!-- Hairline: the engine, its mount adapter and the one figure this site
+         uses. Three external files, in this order (the adapter defines the
+         `hairline()` the figure calls, and the figure reads `HL` when it runs),
+         so nothing is injected and `script-src 'self'` holds. They are only
+         used by the empty state on the overview. -->
+    <script src="hairline/kernel.js" defer></script>
+    <script src="hairline/mount.js" defer></script>
+    <script src="hairline/runway.js" defer></script>
     <script src="app.js" type="module"></script>
   </body>
 </html>
