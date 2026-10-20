@@ -3,6 +3,13 @@
 
 Usage:
     python tools/check_csp_hashes.py
+    python tools/check_csp_hashes.py --write
+
+`--write` rewrites the hash list in `_headers` to match the inline scripts
+that are actually in `index.html`: a missing hash is added and a stale one is
+dropped. It is the same list the check reads, so the tool that tells you the
+policy is out of step is the tool that puts it back in step — an edit to
+`index.html` is one command, not a hand-copied digest.
 
 The dashboard is a single file that boots from two inline <script> blocks, and
 `_headers` pins each one by SHA-256. Two ways that pair goes wrong, and both are
@@ -126,5 +133,63 @@ def main():
     return 0
 
 
+def write_hashes():
+    """Put the policy's hash list back in step with the page.
+
+    The list is rebuilt from the inline scripts that are actually there, in the
+    order they appear, so the file reads the way the page does. Only the
+    hash list is touched: the rest of the policy, and every comment in it,
+    stays exactly as it was.
+    """
+    html = read_raw(INDEX)
+    headers = read_raw(HEADERS)
+    scripts = inline_scripts(html)
+    if not scripts:
+        print(f"error: no inline script blocks found in {INDEX.name}", file=sys.stderr)
+        return 2
+
+    csp = re.search(r"^[ \t]*Content-Security-Policy:[ \t]*(.+)$", headers, re.MULTILINE)
+    if not csp:
+        print("error: no Content-Security-Policy found in _headers", file=sys.stderr)
+        return 2
+    policy = csp.group(1)
+
+    src = re.search(r"script-src([^;]*)", policy)
+    if not src:
+        print("error: script-src is missing from the policy", file=sys.stderr)
+        return 2
+    others = re.findall(r"'sha256-[A-Za-z0-9+/=]+'", src.group(1))
+    wanted = ["'sha256-%s'" % digest for digest, _, _ in scripts]
+    section = src.group(0)
+    if others:
+        new_section = section.replace(" ".join(others), " ".join(wanted))
+    else:
+        new_section = section.rstrip() + " " + " ".join(wanted)
+    # Rebuild the WHOLE policy from the whole, and replace only the script-src
+    # SECTION inside it. Rewriting the policy from the section alone would drop
+    # every directive before it - `default-src 'none'` first of all - and a
+    # policy that lost its default is a policy that allows everything the
+    # specific directives do not name.
+    new_policy = policy[: src.start()] + new_section + policy[src.end() :]
+    updated = headers[: csp.start(1)] + new_policy + headers[csp.end(1) :]
+
+    # A rewrite that changes anything but the hash list is a bug, not a fix.
+    strip = lambda text: re.sub(r"'sha256-[A-Za-z0-9+/=]+'", "", text)
+    if strip(updated) != strip(headers):
+        print("error: the rewrite would change more than the hash list - refusing to write it",
+              file=sys.stderr)
+        return 1
+
+    if updated == headers:
+        print("OK: the policy already matches the page — nothing written")
+        return 0
+    with open(HEADERS, "w", encoding="utf-8", newline="") as fh:
+        fh.write(updated)
+    print("OK: rewrote the hash list in %s (%d script(s))" % (HEADERS.name, len(scripts)))
+    return 0
+
+
 if __name__ == "__main__":
+    if "--write" in sys.argv:
+        sys.exit(write_hashes())
     sys.exit(main())
