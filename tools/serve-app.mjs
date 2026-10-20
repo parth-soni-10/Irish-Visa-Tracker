@@ -43,7 +43,10 @@ function candidatePaths(urlPath) {
   // returns `\data\x`, and joining that to the app root escapes the root.
   const clean = normalize(decodeURIComponent(urlPath.split('?')[0]).replace(/^\/+/, '')).replace(/^(\.\.[/\\])+/, '');
   const list = [join(appRoot, clean)];
-  if (/^(data|fonts)[/\\]/.test(clean) || /^(icon\.svg|apple-touch-icon\.png|og-image\.png)$/.test(clean)) list.push(join(repo, clean));
+  // The cutover build copies these four kinds of file in beside `app/`; the local
+  // mirror must do the same or a missing crawl file would only show up after a
+  // deploy. `robots.txt`/`sitemap.xml` joined this list with the cutover commit.
+  if (/^(data|fonts)[/\\]/.test(clean) || /^(icon\.svg|apple-touch-icon\.png|og-image\.png|robots\.txt|sitemap\.xml)$/.test(clean)) list.push(join(repo, clean));
   return list;
 }
 
