@@ -142,6 +142,7 @@
     </footer>
     <link rel="stylesheet" href="glide-select.css">
     <link rel="stylesheet" href="jelly-radio.css" />
+    <link rel="stylesheet" href="rubber-segment.css" />
     <style>
 
         /* Both faces are self-hosted variable fonts, so nothing in this file
@@ -1363,6 +1364,17 @@
             background: #7c3aed;
             border-color: #7c3aed;
         }
+        /* The stamp-category row is adopted by Rubber Segment: the thumb is the
+           1G blue, so the chosen chip keeps only its ink and the thumb is
+           visible crossing the chips between two categories. */
+        #visa-dash #g1-cats { --rs-thumb: #0077E6; }
+        #visa-dash #g1-cats .recent-chip { background: transparent; }
+        #visa-dash #g1-cats .mode-chip.active,
+        #visa-dash #g1-cats .mode-chip.active:hover {
+            background: transparent;
+            border-color: transparent;
+            color: #fff;
+        }
         #visa-dash .g1-estimate {
             margin-top: 12px;
             font-size: 14px;
@@ -1688,6 +1700,7 @@
     <script src="lucide.min.js"></script>
     <script src="glide-select.js"></script>
     <script src="jelly-radio.js" defer></script>
+    <script src="rubber-segment.js" defer></script>
     <script>
     (function() {
         function go() { if (window.lucide) lucide.createIcons({ nameAttr: 'data-lucide', attrs: { 'aria-hidden': 'true' } }); }
@@ -3701,7 +3714,8 @@
                         '<div class="empty">No observations recorded yet. The daily job writes to <code>data/stamp_1g.json</code> — check back after its first run.</div>';
                 }
                 var catPills = cats.length > 1
-                    ? '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;" id="g1-cats" role="group" aria-label="Stamp category">' +
+                    ? '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;" id="g1-cats" role="group" aria-label="Stamp category"' +
+                      ' data-rubber-segment data-rs-key="g1-cats" data-rs-size="sm" data-rs-inset="0" data-rs-radius="999" data-rs-stretch="80" data-rs-squash="2">' +
                       cats.map(function(c) {
                           return '<button type="button" class="recent-chip mode-chip' + (c === activeCat ? ' active' : '') +
                               '" data-cat="' + escapeHtml(c) + '" aria-pressed="' + (c === activeCat) + '">' + escapeHtml(c) + '</button>';
