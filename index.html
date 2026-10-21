@@ -21,6 +21,7 @@
 <body>
     <div id="visa-dash"></div>
     <link rel="stylesheet" href="glide-select.css">
+    <link rel="stylesheet" href="jelly-radio.css" />
     <style>
 
         /* Both faces are self-hosted variable fonts, so nothing in this file
@@ -1537,6 +1538,7 @@
     </style>
     <script src="lucide.min.js"></script>
     <script src="glide-select.js"></script>
+    <script src="jelly-radio.js" defer></script>
     <script>
     (function() {
         function go() { if (window.lucide) lucide.createIcons({ nameAttr: 'data-lucide', attrs: { 'aria-hidden': 'true' } }); }
@@ -3616,8 +3618,10 @@
                 var estimatorHtml = '<div class="g1-chart"><h3>Your application</h3>' +
                     '<div class="note2">When did you apply — or when do you plan to? Your tentative outcome date updates itself as the lag moves.</div>' +
                     '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:12px;">' +
+                    '<span class="g1-mode" style="display:inline-flex;align-items:center;gap:8px;" data-jelly-radio data-jelly-bare data-jelly-size="sm" data-jelly-radius="999" data-jelly-swell="0.08" data-jelly-barge="2" data-jelly-shrink="0.03">' +
                     '<button type="button" class="recent-chip mode-chip' + (storedMode === 'applied' ? ' active' : '') + '" data-mode="applied" aria-pressed="' + (storedMode === 'applied') + '">I applied</button>' +
                     '<button type="button" class="recent-chip mode-chip' + (storedMode === 'plan' ? ' active' : '') + '" data-mode="plan" aria-pressed="' + (storedMode === 'plan') + '">I plan to apply</button>' +
+                    '</span>' +
                     '<div class="datefilter"><label class="visually-hidden" for="g1-apply-date">Application date</label>' +
                     '<input type="date" id="g1-apply-date" autocomplete="off" aria-label="Your application date" value="' + escapeHtml(storedDate) + '">' +
                     '<button type="button" class="clear-btn" id="g1-apply-clear" aria-label="Clear application date" title="Clear application date">\u00d7</button>' +
