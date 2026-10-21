@@ -20,6 +20,7 @@
 </head>
 <body>
     <div id="visa-dash"></div>
+    <link rel="stylesheet" href="glide-select.css">
     <style>
 
         /* Both faces are self-hosted variable fonts, so nothing in this file
@@ -1501,8 +1502,41 @@
             width: 15px; height: 15px; display: inline-block;
             vertical-align: -1px; margin-right: 7px;
         }
+
+        /* --- GlideSelect -------------------------------------------------
+           The two Outcome pickers are chips opening a gliding list. The native
+           <select> is still the value submitTimeline() reads. --------------- */
+        .glide-select {
+            --gs-surface: var(--surface);
+            --gs-highlight: var(--green-soft);
+            --gs-text: var(--ink);
+            --gs-accent: var(--green);
+            --gs-radius: 10px;
+            --gs-inner-radius: var(--r-control);
+            --gs-menu-w: 150px;
+            vertical-align: middle;
+        }
+        .glide-select .glide-select__trigger {
+            border: 1px solid var(--border);
+            background: var(--surface-raised);
+            color: var(--ink);
+            font-family: "Inter", sans-serif;
+            font-size: 12.5px;
+            font-weight: 500;
+        }
+        #visa-dash[data-theme="dark"] .glide-select .glide-select__trigger {
+            background: var(--surface-raised);
+            border-color: var(--border);
+            color: var(--ink);
+        }
+        .glide-select__menu {
+            border: 1px solid var(--border);
+            box-shadow: 0 12px 28px rgba(15, 23, 42, 0.16);
+        }
+        .glide-select__option { font-family: "Inter", sans-serif; font-size: 12.5px; }
     </style>
     <script src="lucide.min.js"></script>
+    <script src="glide-select.js"></script>
     <script>
     (function() {
         function go() { if (window.lucide) lucide.createIcons({ nameAttr: 'data-lucide', attrs: { 'aria-hidden': 'true' } }); }
@@ -2832,7 +2866,7 @@
             '<input type="hidden" name="tracker" value="visa" />' +
             '<p><label>Applied on <input type="date" id="time-applied" name="applied" /></label></p>' +
             '<p><label>Decided on <input type="date" id="time-decided" name="decided" /></label></p>' +
-            '<p><label>Outcome <select id="time-outcome" name="outcome"><option value="granted">Granted</option><option value="refused">Refused</option></select></label></p>' +
+            '<p><label>Outcome <select id="time-outcome" name="outcome" data-glide data-glide-size="sm" data-glide-menu-width="150"><option value="granted">Granted</option><option value="refused">Refused</option></select></label></p>' +
             '<button class="btn" type="submit" id="time-submit">Share Timeline</button>' +
             '<div class="note" id="time-status" aria-live="polite"></div>';
 
@@ -2844,7 +2878,7 @@
                 '<input type="hidden" name="tracker" value="1g" />' +
                 '<p><label>Applied on <input type="date" id="time-applied-1g" name="applied" /></label></p>' +
                 '<p><label>Decided on <input type="date" id="time-decided-1g" name="decided" /></label></p>' +
-                '<p><label>Outcome <select id="time-outcome-1g" name="outcome"><option value="granted">Granted</option><option value="refused">Refused</option></select></label></p>' +
+                '<p><label>Outcome <select id="time-outcome-1g" name="outcome" data-glide data-glide-size="sm" data-glide-menu-width="150"><option value="granted">Granted</option><option value="refused">Refused</option></select></label></p>' +
                 '<button class="btn" type="submit" id="time-submit-1g">Share Timeline</button>' +
                 '<div class="note" id="time-status-1g" aria-live="polite"></div>';
 
