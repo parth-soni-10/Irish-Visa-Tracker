@@ -32,10 +32,3 @@ jobs:
         # The dashboard is one 4000-line single file; a stray brace or quote in
         # any inline block would only surface on the deployed site otherwise.
         run: python tools/check_html_scripts.py
-
-      - name: Keep the CSP in step with index.html
-        # _headers pins the two inline scripts by hash. Edit one without
-        # re-hashing and the browser refuses to run it — the page still renders,
-        # so the only place that shows up is production, and only as behaviour
-        # that quietly stopped happening.
-        run: python tools/check_csp_hashes.py

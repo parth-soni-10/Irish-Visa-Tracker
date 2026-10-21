@@ -20,7 +20,6 @@
 </head>
 <body>
     <div id="visa-dash"></div>
-    <footer class="site-credit"><span>Built by <a href="https://parth-portfolio-wb.pages.dev/" target="_blank" rel="noopener">Parth</a>.</span></footer>
     <style>
 
         /* Both faces are self-hosted variable fonts, so nothing in this file
@@ -73,17 +72,6 @@
             color-scheme: light;
             -webkit-font-smoothing: antialiased;
         }
-        /* Page credit, outside the SPA root so a re-render cannot wipe it. */
-        .site-credit {
-            max-width: 1080px;
-            margin: 0 auto;
-            padding: 0 24px 28px;
-            font-family: "Inter", "Geist", -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
-            font-size: 12px;
-            color: #777777;
-        }
-        .site-credit a { color: #059669; text-decoration: none; }
-        .site-credit a:hover { text-decoration: underline; }
         #visa-dash .mono { font-family: "Geist Mono", "SF Mono", Consolas, Menlo, monospace; font-variant-numeric: tabular-nums; }
         /* Interaction polish: kill double-tap zoom delay on controls, set tap
            highlight intentionally, and give every interactive element a
@@ -3061,6 +3049,7 @@
             // ---- Stamp 1G data + projections ----
             let g1Cache = null;
             let g1ActiveRows = [];
+            let g1FetchedAt = null;
 
             async function loadG1Data() {
                 if (g1Cache) return g1Cache;
@@ -3083,6 +3072,7 @@
                             };
                         })
                         .sort(function(a, b) { return a.run_date.localeCompare(b.run_date); });
+                    g1FetchedAt = Date.now();
                 } catch (e) {
                     console.warn('loadG1Data failed:', e);
                     if (g1Cache === null) g1Cache = [];
@@ -3510,7 +3500,7 @@
                     }
                 }
                 return '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Average Stamp 1G lag per week, ' + weeks.length + ' weeks">' +
-                    grid + bars + avgLine + regLine + marker + xlabels + '</svg>';
+                    grid + bars + avgLine + xlabels + '</svg>';
             }
 
             function renderG1Layout(rows, cats, activeCat) {
