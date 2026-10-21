@@ -78,3 +78,25 @@ _headers            → response headers (the assets layer reads this; the only 
 - **CSP:** the engine's `HL.inject()` is never called; its stylesheet is copied into `app/styles.css` with the palette mapped to this site's tokens (`--hairline-*`). Three external `<script defer>` files, nothing inline.
 - **Shape:** the stage must keep a 5:4 box (`width: min(100%, 400px)`), because the kernel maps pointer coordinates against the element's rect and assumes the viewBox fills it.
 - **Rebuild note:** the figure was authored and validated with the `hairline-create` skill (`build.mjs` / `validate.mjs`), and the mounted result was checked in a browser with the real `_headers` CSP enforced. If the figure changes, rebuild it on the bench first, then copy it here.
+## The design-system component layer
+
+The site is now built on the shared design-system rather than on hand-written
+markup, and the change is visible in the source.
+
+- **The 27 components** from `design-system/` are the base for this site's
+  controls. Every integrated instance renders `data-component="<slug>"`, and
+  that attribute is what the coverage verifier reads - it is the contract, not
+  a comment.
+- **The component layer** is `components.js`, and it is idempotent: it
+  re-runs on a debounced MutationObserver after each route render, and it
+  installs each part inside its own try/catch, so a component that cannot
+  install logs once and shows up as a missing marker rather than as a broken
+  page.
+- **The tokens** are the site's own stylesheet, so a spacing, colour or
+  motion value is set in one place and read by everything. The motion
+  durations are the four tiers (`--motion-duration-micro`, `-standard`,
+  `-complex`, `-page`) and the three easing curves; a duration is never
+  written into a rule.
+- **The strict CSP is not negotiable**: no inline `<script>`, no `<style>`
+  element, no `style=""` attribute in served HTML. `tools/check-csp-inline.py`
+  (or the shared `verify-csp.ts`) fails the build if one appears.
