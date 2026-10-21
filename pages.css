@@ -1,0 +1,238 @@
+/* pages.css — the trust pages (about, contact, privacy) and the 404.
+ *
+ * A standalone sheet rather than a slice of index.html's inline CSS: the app
+ * is one self-contained document, and a legal page that imported it would
+ * carry the whole dashboard's styles for a few paragraphs. These pages use the
+ * same green-on-slate palette, the same self-hosted fonts and the same radius
+ * scale, so they still read as part of the tracker — without a build step or
+ * a second copy of the app's layout system.
+ */
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400 800;
+  font-display: swap;
+  src: url('/fonts/inter-latin.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Geist';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('/fonts/geist-sans.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Geist Mono';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('/fonts/geist-mono.woff2') format('woff2');
+}
+
+:root {
+  color-scheme: light;
+  --ink: #333333;
+  --ink-soft: #4b5563;
+  --ink-muted: #6b7280;
+  --surface: #ffffff;
+  --raised: #f8fafc;
+  --border: #e2e8f0;
+  --green: #059669;
+  --green-deep: #047857;
+  --green-deeper: #065f46;
+  --green-soft: #dcfce7;
+  --sans: 'Inter', 'Geist', -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif;
+  --mono: 'Geist Mono', 'SF Mono', Consolas, Menlo, monospace;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 16px;
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+a { color: var(--green-deep); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+a:hover { color: var(--green); }
+a:focus-visible { outline: 2px solid var(--green); outline-offset: 3px; border-radius: 3px; }
+
+.site-header {
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+.site-header-inner {
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 18px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  color: var(--ink);
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 750;
+  letter-spacing: -.01em;
+  white-space: nowrap;
+}
+.brand img { width: 22px; height: 22px; }
+.site-nav { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+.site-nav a {
+  color: var(--ink-soft);
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 7px 10px;
+  border-radius: 7px;
+}
+.site-nav a:hover { color: var(--ink); background: var(--raised); }
+.site-nav a[aria-current="page"] { color: var(--green-deep); background: var(--green-soft); }
+
+.page {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 64px 24px 32px;
+}
+.page-kicker {
+  margin: 0 0 10px;
+  font-size: 11px;
+  line-height: 16px;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: var(--green-deep);
+  font-weight: 650;
+}
+.page h1 {
+  margin: 0;
+  font-size: clamp(32px, 5vw, 46px);
+  line-height: 1.1;
+  letter-spacing: -.03em;
+  font-weight: 800;
+  text-wrap: balance;
+}
+.page-meta {
+  margin: 16px 0 0;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--border);
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--ink-muted);
+}
+.page-lede {
+  margin: 26px 0 0;
+  font-size: 19px;
+  line-height: 1.6;
+  color: var(--ink-soft);
+  text-wrap: pretty;
+}
+.page section { margin-top: 38px; }
+.page h2 {
+  margin: 0;
+  padding-top: 18px;
+  border-top: 1px solid var(--border);
+  font-size: 21px;
+  line-height: 1.3;
+  letter-spacing: -.015em;
+  font-weight: 750;
+}
+.page section p { margin: 12px 0 0; color: var(--ink-soft); }
+.page section p strong { color: var(--ink); font-weight: 650; }
+.page ul { margin: 12px 0 0 20px; padding: 0; }
+.page li { margin: 7px 0; color: var(--ink-soft); padding-left: 3px; }
+.page li::marker { color: var(--green); }
+.page code {
+  font-family: var(--mono);
+  font-size: .88em;
+  background: var(--raised);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1px 5px;
+}
+.page .callout {
+  margin-top: 22px;
+  padding: 16px 18px;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--green);
+  border-radius: 8px;
+  background: var(--raised);
+  font-size: 14px;
+  color: var(--ink-soft);
+}
+.page .callout strong { color: var(--ink); }
+.page .contact-list {
+  list-style: none;
+  margin: 16px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+.page .contact-list li {
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--raised);
+}
+.page .contact-list a { font-weight: 650; }
+.page .contact-list span { display: block; font-size: 13px; color: var(--ink-muted); }
+
+.site-footer {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 28px 24px 56px;
+  border-top: 1px solid var(--border);
+  font-size: 12px;
+  color: var(--ink-muted);
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.site-footer a { color: var(--ink-soft); text-decoration: none; }
+.site-footer a:hover { color: var(--green-deep); text-decoration: underline; }
+
+/* 404 */
+.notfound { max-width: 620px; margin: 0 auto; padding: 88px 24px 40px; text-align: left; }
+.notfound-code {
+  font-family: var(--mono);
+  font-size: 13px;
+  letter-spacing: .18em;
+  color: var(--green-deep);
+  text-transform: uppercase;
+}
+.notfound h1 { margin: 10px 0 0; font-size: clamp(34px, 6vw, 48px); line-height: 1.08; letter-spacing: -.03em; }
+.notfound p { margin: 16px 0 0; color: var(--ink-soft); font-size: 16px; }
+.notfound-links { margin-top: 28px; display: flex; flex-wrap: wrap; gap: 10px; }
+.notfound-links a {
+  display: inline-block;
+  padding: 9px 14px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--raised);
+  color: var(--green-deep);
+  font-size: 13px;
+  font-weight: 650;
+  text-decoration: none;
+}
+.notfound-links a:hover { border-color: var(--green); background: var(--green-soft); }
+
+@media (max-width: 640px) {
+  .site-header-inner { padding: 14px 18px; flex-wrap: wrap; gap: 8px; }
+  .site-nav a { padding: 6px 8px; }
+  .page { padding-top: 44px; }
+  .page-lede { font-size: 17px; }
+  .site-footer { flex-direction: column; gap: 8px; padding-top: 22px; }
+}

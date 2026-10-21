@@ -1,0 +1,97 @@
+# Irish Visa Decision Tracker
+
+> An independent, unofficial tracker for visa decisions published by the Embassy of Ireland in
+> New Delhi, plus Stamp 1G and employment-permit processing dates. It keeps a searchable history
+> of the embassy's daily decision spreadsheet, daily approved/refused summaries, and processing
+> queue observations from ISD and DETE.
+
+This is a personal project by Parth Soni, a data analyst in Dublin. It is not affiliated with
+the Embassy of Ireland, ISD, DETE or any Irish government body. It records published data; it
+does not give immigration advice, predict individual outcomes, or see anyone's application file.
+
+## When to use this
+
+Use this site when the task is one of these:
+
+- **Check a published visa decision.** Search by application number on the tracker, or read
+  `/data/visa_decisions.json` and match the application number. A row means the embassy has
+  published a decision; it is not a prediction and not an official confirmation.
+- **See recent decision volume or trends.** The Daily Summary and Past Results views show
+  approved/refused counts by published date; the JSON file is the source for custom analysis.
+- **Check the Stamp 1G processing queue.** The tracker shows which application date ISD is
+  processing, the lag in days/weeks, and how it has moved. The observations are in
+  `/data/stamp_1g.json`.
+- **Check employment-permit processing dates.** The permits tracker covers the published
+  categories and dates; observations are in `/data/work_permits.json`.
+- **Read community wait times.** `/data/community_timelines.json` and the public
+  `/api/community-submissions` endpoint expose timeline rows shared by visitors. They are
+  anecdotes, not a statistical sample.
+- **Cite the source or report a correction.** Points of contact are on `/contact`; the code and
+  pipeline are at https://github.com/parth-soni-10/Irish-Visa-Tracker.
+
+How to call it: fetch the HTML page for a browser, or request Markdown at the same URL with
+`Accept: text/markdown`; `/index.md`, `/about.md`, `/contact.md` and `/privacy.md` always return
+Markdown. The data files are plain JSON and need no JavaScript. Example:
+
+```bash
+curl -sS -H 'Accept: text/markdown' https://irishvisaupdatetracker.pages.dev/
+curl -sS https://irishvisaupdatetracker.pages.dev/data/visa_meta.json
+curl -sS https://irishvisaupdatetracker.pages.dev/data/visa_decisions.json
+```
+
+Prefer the JSON files for figures and the Markdown pages for description. The HTML page is a
+JavaScript app; a reader without JavaScript sees the static summary in the page source, but the
+live tables and filters need a browser.
+
+Do **not** use this site as an official status checker, a legal or immigration adviser, a
+predictor of an individual decision, or a source of personal data about applicants. It has no
+account lookup, no authentication and no private case data.
+
+## Data endpoints
+
+All are public, read-only and same-origin:
+
+- `GET /data/visa_decisions.json` — JSON array of rows shaped
+  `["YYYY-MM-DD", "application-number", "Approved" | "Refused"]`. The file grows as the scraper
+  commits new days.
+- `GET /data/visa_meta.json` — scraper health, for example
+  `{ "lastRunAt": "...", "sheetRows": 40435, "newRows": 0, "fileDate": null, "fileRows": null,
+  "ok": true, "closureDates": [] }`. Read `lastRunAt` and `ok` before treating the data as
+  current.
+- `GET /data/stamp_1g.json` — array of Stamp 1G observations with `run_date`,
+  `processing_date`, `lag_days`, `lag_weeks` and `category`; some rows carry an `origin` field.
+- `GET /data/work_permits.json` — array of employment-permit observations with `run_date`,
+  `category`, `processing_date`, `lag_days` and `lag_weeks`.
+- `GET /data/community_timelines.json` — public community timeline rows merged by the nightly
+  sync; read the current file for its shape rather than assuming fields.
+- `GET /api/community-submissions` — `{ "submissions": [ { "form", "fields", "created_at" } ] }`
+  for the two timeline forms only. It never returns the private `suggestions` form.
+
+The site has no per-application JSON endpoint. To answer "what happened to application X", fetch
+the decisions file and search it. The file is a few megabytes, so cache it locally within a run.
+
+## Pages
+
+- [Tracker](https://irishvisaupdatetracker.pages.dev/) — the dashboard and search.
+- [Markdown home](https://irishvisaupdatetracker.pages.dev/index.md)
+- [About](https://irishvisaupdatetracker.pages.dev/about) — what is tracked, sources, limits.
+- [Contact](https://irishvisaupdatetracker.pages.dev/contact) — corrections, bug reports, scope.
+- [Privacy](https://irishvisaupdatetracker.pages.dev/privacy) — browser storage and form data.
+- [Sitemap](https://irishvisaupdatetracker.pages.dev/sitemap.xml)
+- [GitHub repository](https://github.com/parth-soni-10/Irish-Visa-Tracker)
+
+## Freshness and limits
+
+The scraper runs on GitHub Actions and commits the data files; the site reads them, so the page
+can update without a redeploy. GitHub's scheduled runs can land late, and the embassy does not
+publish on weekends or public holidays. Always read `visa_meta.json` before saying the data is
+current. Community timelines and projections are estimates, not official processing times.
+
+## Contact
+
+- Email: soni.soni.parth@gmail.com (data corrections, privacy, general questions)
+- GitHub issues: https://github.com/parth-soni-10/Irish-Visa-Tracker/issues
+- Suggestion form: https://irishvisaupdatetracker.pages.dev/?tab=suggest
+
+For an individual immigration case, contact the Embassy of Ireland in New Delhi, ISD or a
+qualified immigration adviser. This project cannot intervene in an application.

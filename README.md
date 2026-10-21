@@ -18,6 +18,22 @@ Every business day the embassy posts a spreadsheet of visa decisions — a singl
 
 A small scheduled **scraper** checks the embassy's site every morning, notes weekends and public holidays when the office is closed, and commits anything new into JSON files in `data/`. The dashboard reads those files, so a pipeline run appears on the live site with no redeploy. Community timeline submissions and suggestions go through the deployment's own function into D1.
 
+## Agent and no-JavaScript access
+
+The dashboard is JavaScript-rendered, but the public surface is not JS-only. `index.html` ships a
+static summary (H1, what the tracker covers, sources and limits) that the app replaces on first
+render, and a persistent footer links the trust pages. `/`, `/about`, `/contact` and `/privacy`
+negotiate `Accept: text/markdown` against `text/html` (with `Vary: Accept` and a `Link` alternate);
+`/index.md`, `/about.md`, `/contact.md` and `/privacy.md` always return Markdown; an unmatched path
+returns a Markdown 404 when Markdown is requested. [`llms.txt`](llms.txt) explains when to use the
+site and the shapes of the JSON endpoints.
+
+Run the agent-surface tests with:
+
+```bash
+node --test tests/agent-docs.test.mjs
+```
+
 ## Notes
 
 - Unofficial, and no visa outcome is guaranteed; it only reflects what the embassy has published.

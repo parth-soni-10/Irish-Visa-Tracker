@@ -3,12 +3,83 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Irish Visa Decision Tracker</title>
+    <title>Irish Visa Decision Tracker — Ireland Visa Decisions &amp; Stamp 1G</title>
 <meta name="theme-color" content="#ffffff">
-<meta name="description" content="Track Irish embassy visa decisions from New Delhi and Stamp 1G processing dates — searchable history, trends and projections.">
-<meta property="og:title" content="Irish Visa Decision Tracker">
-<meta property="og:description" content="Daily Irish visa decisions + Stamp 1G processing tracker with trends and projections.">
+<meta name="description" content="Irish Visa Decision Tracker: search Embassy of Ireland New Delhi visa decisions, daily approved/refused summaries, Stamp 1G and employment-permit processing dates.">
+<link rel="canonical" href="https://irishvisaupdatetracker.pages.dev/">
+<link rel="alternate" type="text/markdown" href="/index.md" title="Markdown version">
+<link rel="describedby" href="/llms.txt" type="text/plain">
+<meta property="og:site_name" content="Irish Visa Decision Tracker">
+<meta property="og:title" content="Irish Visa Decision Tracker — Ireland Visa Decisions &amp; Stamp 1G">
+<meta property="og:description" content="Search Irish embassy visa decisions, daily summaries, Stamp 1G and employment-permit processing dates.">
 <meta property="og:type" content="website">
+<meta property="og:url" content="https://irishvisaupdatetracker.pages.dev/">
+<meta property="og:image" content="https://irishvisaupdatetracker.pages.dev/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Irish Visa Decision Tracker dashboard">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Irish Visa Decision Tracker">
+<meta name="twitter:description" content="Embassy of Ireland New Delhi visa decisions, Stamp 1G and employment-permit processing dates.">
+<meta name="twitter:image" content="https://irishvisaupdatetracker.pages.dev/og-image.png">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Organization",
+      "@id": "https://irishvisaupdatetracker.pages.dev/#organization",
+      "name": "Irish Visa Decision Tracker",
+      "alternateName": "Irish Visa Update Tracker",
+      "url": "https://irishvisaupdatetracker.pages.dev/",
+      "description": "An independent, unofficial tracker for visa decisions published by the Embassy of Ireland in New Delhi, plus Stamp 1G and employment-permit processing dates.",
+      "email": "soni.soni.parth@gmail.com",
+      "founder": { "@type": "Person", "name": "Parth Soni" },
+      "contactPoint": {
+        "@type": "ContactPoint",
+        "contactType": "customer support",
+        "email": "soni.soni.parth@gmail.com",
+        "url": "https://irishvisaupdatetracker.pages.dev/contact",
+        "availableLanguage": ["English"]
+      },
+      "address": {
+        "@type": "PostalAddress",
+        "addressLocality": "Dublin",
+        "addressCountry": "IE"
+      },
+      "sameAs": ["https://github.com/parth-soni-10/Irish-Visa-Tracker"]
+    },
+    {
+      "@type": "WebSite",
+      "@id": "https://irishvisaupdatetracker.pages.dev/#website",
+      "name": "Irish Visa Decision Tracker",
+      "url": "https://irishvisaupdatetracker.pages.dev/",
+      "inLanguage": "en",
+      "publisher": { "@id": "https://irishvisaupdatetracker.pages.dev/#organization" }
+    },
+    {
+      "@type": "SoftwareApplication",
+      "@id": "https://irishvisaupdatetracker.pages.dev/#app",
+      "name": "Irish Visa Decision Tracker",
+      "url": "https://irishvisaupdatetracker.pages.dev/",
+      "applicationCategory": "UtilitiesApplication",
+      "operatingSystem": "Any",
+      "isAccessibleForFree": true,
+      "description": "Search published Embassy of Ireland New Delhi visa decisions, read daily approved/refused summaries, and follow Stamp 1G and employment-permit processing dates.",
+      "offers": { "@type": "Offer", "price": "0", "priceCurrency": "EUR" },
+      "author": { "@type": "Person", "name": "Parth Soni" },
+      "publisher": { "@id": "https://irishvisaupdatetracker.pages.dev/#organization" },
+      "featureList": [
+        "Search visa decisions by application number",
+        "Daily approved and refused summaries",
+        "Stamp 1G processing dates and lag trends",
+        "Employment-permit processing dates by category",
+        "Community-reported timelines with public JSON endpoints"
+      ]
+    }
+  ]
+}
+</script>
 <!-- Website icons. The tab icon is the app's own "approved" mark and the
      apple-touch-icon is the same mark at 180px, full-bleed because iOS applies
      its own mask. Both are same-origin, which is all img-src 'self' needs. -->
@@ -19,7 +90,56 @@
 <link rel="preload" href="fonts/geist-mono.woff2" as="font" type="font/woff2" crossorigin>
 </head>
 <body>
-    <div id="visa-dash"></div>
+    <div id="visa-dash">
+      <!-- Static summary: what an agent or a no-JavaScript reader gets before the
+           dashboard hydrates. render() replaces this node's contents with the app,
+           so it is never shown twice; it is real content, not a noscript shim. -->
+      <article class="static-fallback">
+        <p class="static-kicker">Ireland &middot; New Delhi Visa Section</p>
+        <h1>Irish Visa Decision Tracker</h1>
+        <p class="static-lede">
+          The <strong>Irish Visa Decision Tracker</strong> (also known as the Irish Visa Update
+          Tracker) is an independent, unofficial record of visa decisions published by the
+          <strong>Embassy of Ireland in New Delhi</strong>, with
+          daily approved and refused summaries, Stamp 1G processing dates and employment-permit
+          queues. Search any published application number, follow trends over time, and read
+          community-reported wait times.
+        </p>
+        <h2>What this tracker covers</h2>
+        <ul>
+          <li><strong>Visa decisions</strong> &mdash; each application number in the embassy's daily spreadsheet, with its decision date and approved/refused outcome.</li>
+          <li><strong>Daily summaries and trends</strong> &mdash; accepted and refused counts for every published day, with the applications behind those counts available on demand.</li>
+          <li><strong>Stamp 1G and employment permits</strong> &mdash; the processing dates reached by ISD and DETE, the lag in days and weeks, and how it has moved.</li>
+          <li><strong>Community timelines</strong> &mdash; waits shared by visitors and merged nightly. They are anecdotes, not a statistical sample.</li>
+        </ul>
+        <h2>Data, sources and limits</h2>
+        <p>
+          Decision rows come from the embassy's published spreadsheet. Stamp 1G and permit figures
+          come from the processing dates published by ISD and DETE. A scheduled scraper commits new
+          rows to the public GitHub repository, and this page reads those JSON files, so a pipeline
+          run appears without a redeploy. Check <a href="/data/visa_meta.json">visa_meta.json</a>
+          for scraper health before treating the figures as current.
+        </p>
+        <p>
+          This project is not affiliated with the Embassy of Ireland, ISD, DETE or any Irish
+          government body. It does not give immigration advice, predict an individual outcome or
+          see private case data. For a decision on your own application, contact the official body
+          handling it.
+        </p>
+        <p class="static-nav">
+          <a href="/about">About the project</a> &middot;
+          <a href="/contact">Contact and corrections</a> &middot;
+          <a href="/privacy">Privacy</a> &middot;
+          <a href="/llms.txt">Agent guide (llms.txt)</a>
+        </p>
+      </article>
+    </div>
+
+    <footer class="site-foot">
+      <p><strong>Irish Visa Decision Tracker</strong> &mdash; independent, unofficial, and not affiliated with any Irish government body.</p>
+      <p><a href="/about">About</a> &middot; <a href="/contact">Contact</a> &middot; <a href="/privacy">Privacy</a> &middot; <a href="/llms.txt">llms.txt</a> &middot; <a href="https://github.com/parth-soni-10/Irish-Visa-Tracker">GitHub</a></p>
+      <p>&copy; 2026 Parth Soni &middot; Dublin, Ireland</p>
+    </footer>
     <link rel="stylesheet" href="glide-select.css">
     <link rel="stylesheet" href="jelly-radio.css" />
     <style>
@@ -75,6 +195,35 @@
             -webkit-font-smoothing: antialiased;
         }
         #visa-dash .mono { font-family: "Geist Mono", "SF Mono", Consolas, Menlo, monospace; font-variant-numeric: tabular-nums; }
+        /* Pre-hydration summary (see .static-fallback above). The dashboard
+           replaces it on first render, so these rules only matter to a reader
+           without JavaScript and in the raw HTML an agent fetches. */
+        #visa-dash .static-fallback { max-width: 760px; margin: 0 auto; padding: 8px 0 40px; }
+        #visa-dash .static-fallback .static-kicker {
+            font-size: 12px; line-height: 16px; letter-spacing: .18em;
+            text-transform: uppercase; color: var(--green); font-weight: 500;
+            margin: 0 0 6px;
+        }
+        #visa-dash .static-fallback h2 {
+            font-size: 18px; line-height: 1.3; margin: 28px 0 8px;
+            font-weight: 700; letter-spacing: -.01em;
+        }
+        #visa-dash .static-fallback p,
+        #visa-dash .static-fallback li { font-size: 14px; line-height: 1.65; color: var(--ink-soft); }
+        #visa-dash .static-fallback .static-lede { font-size: 16px; line-height: 1.6; color: var(--ink); }
+        #visa-dash .static-fallback ul { margin: 8px 0 0; padding-left: 20px; }
+        #visa-dash .static-fallback li { margin-bottom: 6px; }
+        #visa-dash .static-fallback a { color: var(--green-deep); }
+        #visa-dash .static-fallback .static-nav { margin-top: 24px; font-weight: 500; }
+        .site-foot {
+            max-width: 1040px; margin: 0 auto; padding: 24px 24px 32px;
+            border-top: 1px solid #e2e8f0; color: #6b7280; font-size: 12.5px;
+            line-height: 1.6; font-family: "Inter", -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+        }
+        .site-foot p { margin: 0 0 4px; }
+        .site-foot a { color: #047857; text-decoration-thickness: 1px; text-underline-offset: 2px; }
+        .site-foot a:hover { color: #059669; }
+        .site-foot a:focus-visible { outline: 2px solid #059669; outline-offset: 2px; }
         /* Interaction polish: kill double-tap zoom delay on controls, set tap
            highlight intentionally, and give every interactive element a
            visible keyboard focus ring. */
@@ -3639,7 +3788,7 @@
             }
 
             async function renderG1Page() {
-                document.title = 'Stamp 1G Tracker';
+                document.title = 'Stamp 1G Processing Tracker | Irish Visa Decision Tracker';
                 if (!g1Cache) {
                     root.innerHTML = BACK_BTN_HTML +
                         '<div class="eyebrow">Ireland \u00b7 Immigration Service Delivery</div>' +
@@ -3790,7 +3939,7 @@
             }
 
             async function renderPermitsPage() {
-                document.title = 'Employment Permit Tracker';
+                document.title = 'Employment Permit Tracker | Irish Visa Decision Tracker';
                 if (!permitsCache) {
                     root.innerHTML = BACK_BTN_HTML +
                         '<div class="eyebrow">Ireland \u00b7 Dept. of Enterprise (DETE)</div>' +
@@ -3869,7 +4018,7 @@
             }
 
             async function renderLandingPage() {
-                document.title = 'Ireland Trackers';
+                document.title = 'Irish Visa Decision Tracker — Ireland Visa Decisions & Stamp 1G';
                 // Paint the cards IMMEDIATELY with placeholder stats — never
                 // block on the network. Each card's meta line fills in as its
                 // own fetch resolves (both are small static files, so this is
@@ -3961,7 +4110,7 @@
                 if (activeTracker === 'home') { await renderLandingPage(); return; }
                 if (activeTracker === '1g') { await renderG1Page(); return; }
                 if (activeTracker === 'permits') { await renderPermitsPage(); return; }
-                document.title = 'Irish Visa Decision Tracker';
+                document.title = 'Embassy Visa Decisions | Irish Visa Decision Tracker';
                 if (!cache) {
                     root.innerHTML = '<div class="eyebrow">Ireland \u00b7 New Delhi Visa Section</div>' +
                         '<div class="titlerow"><h1>Visa Decision Tracker</h1>' +

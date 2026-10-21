@@ -28,7 +28,22 @@
  * dashboard keeps tracking the GitHub Actions pipeline without a redeploy, and
  * the timeline submissions are served at `/api/community-submissions` so the
  * nightly sync needs no Cloudflare credential (below).
+ *
+ * Agent surfaces are layered on top of the asset fallback: `/`, `/about`,
+ * `/contact` and `/privacy` negotiate `text/markdown` against `text/html`,
+ * their `.md` aliases always answer Markdown, and an unmatched path gets a
+ * Markdown 404 when one is requested. The bodies live in `_agent-docs.js`.
  */
+
+import {
+  DOCUMENTS,
+  MARKDOWN_ALIASES,
+  NOT_ACCEPTABLE_MARKDOWN,
+  markdownResponse,
+  mergeVary,
+  negotiate,
+  notFoundMarkdown,
+} from "./_agent-docs.js";
 
 const FORM_NAMES = new Set(["suggestions", "timelines-visa", "timelines-1g"]);
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -141,6 +156,45 @@ const json = (body, status = 200) =>
     headers: { "Content-Type": "application/json", "Cache-Control": "no-store" },
   });
 
+/** Fetch a negotiated HTML document, falling back to its .html file if the
+ *  assets layer does not resolve the clean URL itself. */
+async function fetchDocument(env, request, document) {
+  let response = await env.ASSETS.fetch(request);
+  if (response.status === 404 && document.file) {
+    const url = new URL(request.url);
+    url.pathname = document.file;
+    response = await env.ASSETS.fetch(new Request(url, request));
+  }
+  return response;
+}
+
+function withDocHeaders(response, document) {
+  const headers = new Headers(response.headers);
+  mergeVary(headers);
+  if (response.status >= 200 && response.status < 300) {
+    headers.set(
+      "Link",
+      `<${document.alternate}>; rel="alternate"; type="text/markdown", ` +
+        `</llms.txt>; rel="describedby"; type="text/plain"`
+    );
+  }
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
+  });
+}
+
+function withVary(response) {
+  const headers = new Headers(response.headers);
+  mergeVary(headers);
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
+  });
+}
+
 /** Success response shaped for either caller: the page's fetch, or a plain form submit. */
 function ack(request) {
   const wantsHtml = (request.headers.get("Accept") || "").includes("text/html");
@@ -228,6 +282,27 @@ export default {
     if (DATA_RE.test(pathname)) {
       return serveData(request, env, new URL(request.url));
     }
-    return env.ASSETS.fetch(request);
+
+    const alias = MARKDOWN_ALIASES.get(pathname);
+    if (alias) return markdownResponse(alias, 200, request.method);
+
+    const document = DOCUMENTS.get(pathname);
+    if (document) {
+      const choice = negotiate(request.headers.get("Accept"));
+      if (choice === "markdown") return markdownResponse(document.markdown, 200, request.method);
+      if (choice === "not-acceptable") {
+        return markdownResponse(NOT_ACCEPTABLE_MARKDOWN, 406, request.method);
+      }
+      return withDocHeaders(await fetchDocument(env, request, document), document);
+    }
+
+    const response = await env.ASSETS.fetch(request);
+    if (response.status === 404) {
+      if (negotiate(request.headers.get("Accept")) === "markdown") {
+        return markdownResponse(notFoundMarkdown(pathname), 404, request.method);
+      }
+      return withVary(response);
+    }
+    return response;
   },
 };

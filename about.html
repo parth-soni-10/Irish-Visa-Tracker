@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>About | Irish Visa Decision Tracker</title>
+  <meta name="description" content="About the Irish Visa Decision Tracker: an independent, unofficial record of Embassy of Ireland New Delhi visa decisions, Stamp 1G processing dates and employment permits.">
+  <link rel="canonical" href="https://irishvisaupdatetracker.pages.dev/about">
+  <link rel="alternate" type="text/markdown" href="/about.md" title="Markdown version">
+  <link rel="describedby" href="/llms.txt" type="text/plain">
+  <meta name="theme-color" content="#ffffff">
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="About | Irish Visa Decision Tracker">
+  <meta property="og:description" content="What this independent tracker records, where the data comes from, and what it is not.">
+  <meta property="og:url" content="https://irishvisaupdatetracker.pages.dev/about">
+  <meta property="og:image" content="https://irishvisaupdatetracker.pages.dev/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <link rel="icon" href="/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <link rel="stylesheet" href="/pages.css">
+</head>
+<body>
+
+  <header class="site-header">
+    <div class="site-header-inner">
+      <a class="brand" href="/"><img src="/icon.svg" alt="" width="22" height="22"> Irish Visa Decision Tracker</a>
+      <nav class="site-nav" aria-label="Site">
+        <a href="/">Tracker</a>
+        <a href="/about" aria-current="page">About</a>
+        <a href="/contact">Contact</a>
+        <a href="/privacy">Privacy</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="page">
+    <p class="page-kicker">About</p>
+    <h1>About the Irish Visa Decision Tracker</h1>
+    <p class="page-meta">Independent project by Parth Soni &bull; Dublin, Ireland &bull; Last updated 21 October 2026</p>
+
+    <p class="page-lede">
+      Every business day the Embassy of Ireland in New Delhi publishes a spreadsheet of visa
+      decisions — one flat file with no history, no search and no trends. This site keeps a
+      running, searchable record of those decisions and tracks the processing queues that
+      matter alongside them.
+    </p>
+
+    <section>
+      <h2>What it tracks</h2>
+      <ul>
+        <li><strong>Embassy visa decisions</strong> — each published application number, its decision date and whether it was approved or refused, searchable by application number.</li>
+        <li><strong>Daily summaries</strong> — accepted and refused counts for each published day, with the applications behind those counts available on demand.</li>
+        <li><strong>Stamp 1G processing</strong> — the application date ISD is currently processing, how many days behind that is, and how the lag has moved over time.</li>
+        <li><strong>Employment permits</strong> — the processing date reached for each permit category, with trends and projections.</li>
+        <li><strong>Community timelines</strong> — waits shared by visitors, merged into the public data file each night. They are anecdotes, not a statistical sample.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Where the data comes from</h2>
+      <p>
+        The visa decision rows come from the <strong>Embassy of Ireland, New Delhi</strong>'s own
+        published spreadsheet. A scheduled Python scraper fetches the file, handles weekends and
+        public holidays, and commits new rows to the public
+        <a href="https://github.com/parth-soni-10/Irish-Visa-Tracker">GitHub repository</a>. The
+        Stamp 1G and employment permit figures come from the published processing dates on
+        <strong>ISD</strong> and <strong>DETE</strong> respectively. The site reads those committed
+        JSON files, so a pipeline run appears here without a redeploy.
+      </p>
+      <p>
+        You can read the same files the page reads:
+        <a href="/data/visa_decisions.json">visa decisions</a>,
+        <a href="/data/visa_meta.json">scraper health</a>,
+        <a href="/data/stamp_1g.json">Stamp 1G observations</a>,
+        <a href="/data/work_permits.json">employment permits</a> and
+        <a href="/data/community_timelines.json">community timelines</a>.
+      </p>
+    </section>
+
+    <section>
+      <h2>Who runs it</h2>
+      <p>
+        This is a personal project by <strong>Parth Soni</strong>, a data analyst in Dublin. It
+        started as a way to answer a simple question — has my application been decided yet? —
+        without opening a different spreadsheet every morning. The code and the data pipeline are
+        public so the record can be checked and reused.
+      </p>
+      <p>
+        It is built with plain HTML, CSS and JavaScript, Python scrapers running on GitHub
+        Actions, Cloudflare Pages for hosting and a small D1 database for the forms. There is no
+        advertising, no paid tier and no account.
+      </p>
+    </section>
+
+    <section>
+      <h2>What it is not</h2>
+      <p>
+        This is an <strong>unofficial tracker</strong>. It is not affiliated with, endorsed by or
+        operated by the Embassy of Ireland, ISD, DETE or any Irish government body. It does not
+        give immigration advice, cannot speed up an application, and cannot guarantee an outcome.
+        For a decision on your own case, use the official channels; the tracker only reflects what
+        has already been published.
+      </p>
+      <p class="callout">
+        <strong>Corrections welcome.</strong> If a row is wrong or a processing date is out of
+        date, email <a href="mailto:soni.soni.parth@gmail.com">soni.soni.parth@gmail.com</a> or
+        <a href="https://github.com/parth-soni-10/Irish-Visa-Tracker/issues">open an issue</a> with
+        the date and source. Corrections are checked against the published source before a change.
+      </p>
+    </section>
+
+    <section>
+      <h2>Keep reading</h2>
+      <p>
+        See <a href="/contact">Contact</a> for corrections and data questions, or
+        <a href="/privacy">Privacy</a> for what the site stores and the requests it makes. Agents
+        can use <a href="/llms.txt">llms.txt</a> for the machine-readable summary and the data
+        endpoint shapes.
+      </p>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; 2026 Parth Soni &bull; Dublin, Ireland</p>
+    <p><a href="/">Tracker</a> &bull; <a href="/contact">Contact</a> &bull; <a href="/privacy">Privacy</a> &bull; <a href="/llms.txt">llms.txt</a></p>
+  </footer>
+
+</body>
+</html>

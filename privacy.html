@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Privacy | Irish Visa Decision Tracker</title>
+  <meta name="description" content="What the Irish Visa Decision Tracker stores in your browser, what its forms submit to D1, and how hosting and email data are handled. No accounts, no analytics.">
+  <link rel="canonical" href="https://irishvisaupdatetracker.pages.dev/privacy">
+  <link rel="alternate" type="text/markdown" href="/privacy.md" title="Markdown version">
+  <link rel="describedby" href="/llms.txt" type="text/plain">
+  <meta name="theme-color" content="#ffffff">
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="Privacy | Irish Visa Decision Tracker">
+  <meta property="og:description" content="Browser storage, form submissions, hosting logs and email: what this tracker keeps and why.">
+  <meta property="og:url" content="https://irishvisaupdatetracker.pages.dev/privacy">
+  <meta property="og:image" content="https://irishvisaupdatetracker.pages.dev/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <link rel="icon" href="/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <link rel="stylesheet" href="/pages.css">
+</head>
+<body>
+
+  <header class="site-header">
+    <div class="site-header-inner">
+      <a class="brand" href="/"><img src="/icon.svg" alt="" width="22" height="22"> Irish Visa Decision Tracker</a>
+      <nav class="site-nav" aria-label="Site">
+        <a href="/">Tracker</a>
+        <a href="/about">About</a>
+        <a href="/contact">Contact</a>
+        <a href="/privacy" aria-current="page">Privacy</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="page">
+    <p class="page-kicker">Privacy</p>
+    <h1>Privacy notice</h1>
+    <p class="page-meta">Last updated 21 October 2026 &bull; Parth Soni, Dublin, Ireland</p>
+
+    <p class="page-lede">
+      The tracker has no accounts, no sign-in, no advertising and no analytics product. This page
+      explains the small amount of data it does handle: preferences stored in your browser, the
+      two kinds of form submissions, hosting logs and email.
+    </p>
+
+    <section>
+      <h2>What is stored in your browser</h2>
+      <p>
+        The dashboard uses <code>localStorage</code> — not cookies — to remember things on your
+        own device. None of it is sent to the server unless you submit a form. The keys are:
+      </p>
+      <ul>
+        <li><code>visa-theme</code> — light or dark preference.</li>
+        <li><code>visa-last-visit</code> — when you last opened the tracker, used for the “since you last checked” line.</li>
+        <li><code>visa-snapshot-gz</code> / <code>visa-snapshot-plain</code> — a compressed copy of the last successful decision download, so the page can still show something when offline.</li>
+        <li><code>visa-recent-searches</code>, <code>visa-watchlist</code> — the application numbers you looked up or chose to watch.</li>
+        <li><code>stamp1g-category</code>, <code>stamp1g-apply-date</code>, <code>stamp1g-apply-mode</code>, <code>stamp1g-expiry</code>, <code>permits-category</code> — the filters and dates you last used in the Stamp 1G and permit estimators.</li>
+      </ul>
+      <p>
+        Clearing site data in your browser removes all of it. There is no cross-site tracker and
+        no cookie to consent to.
+      </p>
+    </section>
+
+    <section>
+      <h2>Form submissions</h2>
+      <p>
+        Two kinds of form write to the site's Cloudflare D1 database:
+      </p>
+      <ul>
+        <li>
+          <strong>Timeline submissions</strong> (<code>timelines-visa</code>, <code>timelines-1g</code>)
+          store the application date, decision date, outcome and tracker. These rows are public by
+          design: they are merged into <a href="/data/community_timelines.json">community_timelines.json</a>
+          and served, without names, at <code>GET /api/community-submissions</code> for the nightly sync.
+          Do not include personal details in a timeline — the form does not ask for a name.
+        </li>
+        <li>
+          <strong>Suggestions</strong> (<code>suggestions</code>) store the name and free text you
+          enter. They are used to improve the tracker, are not published, and are not served by the
+          public submissions endpoint.
+        </li>
+      </ul>
+      <p>
+        Rows carry a creation timestamp and are kept until they are no longer useful or you ask for
+        removal. There is no automatic expiry. Bot-field honeypot submissions are discarded.
+      </p>
+    </section>
+
+    <section>
+      <h2>Hosting and server logs</h2>
+      <p>
+        The site runs on Cloudflare Pages with a Pages Function and a D1 database. Cloudflare
+        processes the request needed to serve a page or accept a form — including IP address,
+        requested URL, user agent and timestamp — under its own privacy terms, and may keep
+        security and operational logs. Parth does not run an analytics product over those logs,
+        does not build visitor profiles and does not sell or share them.
+      </p>
+      <p>
+        The decision, Stamp 1G and permit figures are public records read from the project's
+        GitHub repository and the official publishers. The site does not collect anything about
+        the people named in those public files.
+      </p>
+    </section>
+
+    <section>
+      <h2>Email</h2>
+      <p>
+        If you email <a href="mailto:soni.soni.parth@gmail.com">soni.soni.parth@gmail.com</a>, the
+        message and your address are processed by Gmail so it can be delivered and answered. They
+        are used to reply and to keep a record of the conversation; they are not added to a
+        marketing list and are not sold. Ask for a message to be deleted and it will be, unless a
+        legal obligation requires it to be kept.
+      </p>
+    </section>
+
+    <section>
+      <h2>Your rights</h2>
+      <p>
+        Under the GDPR you can ask what personal data is held about you, request a copy, ask for
+        correction or erasure, or object to processing. Use
+        <a href="mailto:soni.soni.parth@gmail.com">soni.soni.parth@gmail.com</a>. You also have the
+        right to complain to the Irish Data Protection Commission
+        (<a href="https://www.dataprotection.ie/" rel="noopener">dataprotection.ie</a>).
+      </p>
+    </section>
+
+    <section>
+      <h2>Changes and contact</h2>
+      <p>
+        If this page changes, the date at the top changes with it. Questions about privacy can go
+        to <a href="mailto:soni.soni.parth@gmail.com">soni.soni.parth@gmail.com</a>; general
+        corrections and data questions are covered on <a href="/contact">Contact</a>.
+      </p>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; 2026 Parth Soni &bull; Dublin, Ireland</p>
+    <p><a href="/">Tracker</a> &bull; <a href="/about">About</a> &bull; <a href="/contact">Contact</a> &bull; <a href="/llms.txt">llms.txt</a></p>
+  </footer>
+
+</body>
+</html>

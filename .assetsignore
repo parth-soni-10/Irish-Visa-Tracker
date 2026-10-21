@@ -27,6 +27,7 @@ test_scraper.py
 test_timelines.py
 test_track_1g.py
 tools/
+tests/
 __pycache__/
 .pytest_cache/
 wrangler.toml

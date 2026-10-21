@@ -42,7 +42,13 @@ data/               → visa_decisions.json, visa_meta.json (scraper-owned), sta
 requirements.txt
 functions/[[path]].js → the catch-all Pages Function: hands every request to the router
 functions/_router.js  → form POSTs → D1, /api/community-submissions (timeline rows) for the
-                      nightly sync, data/ proxied from the repo, else static assets
+                      nightly sync, data/ proxied from the repo, Markdown negotiation/404s,
+                      else static assets
+functions/_agent-docs.js → the Markdown bodies, Accept negotiation, Vary/Link helpers and
+                      the 404 document; unit-tested without a Pages runtime
+tests/agent-docs.test.mjs → node:test coverage for negotiation, documents, 404s and metadata
+about.html, contact.html, privacy.html, 404.html → trust and error pages (pages.css)
+llms.txt, sitemap.xml → the agent guide and the four published URLs
 wrangler.toml       → bundle input for the Pages build only (name, main, compatibility date)
 wrangler.dev.toml   → local `wrangler dev` only (assets = repo root, D1 binding `DB`)
 wrangler.toml       → the site's one config: its Pages project, plus the D1 binding it runs on
@@ -60,6 +66,9 @@ _headers            → response headers (the assets layer reads this; the only 
 ## Testing
 - Python: `pytest` — runs all four `test_*.py` suites; the Tests workflow runs them on every push (pushes touching only `data/**` are skipped).
 - Frontend: serve the folder (geist fonts + lucide are local) and exercise all tabs; `python tools/check_html_scripts.py` syntax-checks every inline script block (`node --check`) — CI runs it on every push too.
+- Agent surfaces: `node --test tests/agent-docs.test.mjs` — covers Accept negotiation, the `.md`
+  aliases, the Markdown 404 contract, and the homepage metadata/JSON-LD. CI runs it alongside the
+  Python suites.
 
 ## Build & Run
 - Scraper: `pip install -r requirements.txt`; runs in GitHub Actions (no required secrets — `ALERT_WEBHOOK_URL` is optional for the gap-alert webhook); commits `data/*.json` back itself.

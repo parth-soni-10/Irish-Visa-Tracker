@@ -28,6 +28,16 @@ jobs:
       - name: Run scraper + tracker tests
         run: python -m pytest test_scraper.py test_track_1g.py test_permits.py test_timelines.py -q
 
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Run agent-surface tests
+        # Content negotiation, Markdown documents, the 404 contract, and the
+        # metadata/structured data in index.html.
+        run: node --test tests/agent-docs.test.mjs
+
       - name: Syntax-check index.html inline scripts
         # The dashboard is one 4000-line single file; a stray brace or quote in
         # any inline block would only surface on the deployed site otherwise.
