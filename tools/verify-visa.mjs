@@ -33,7 +33,8 @@ try {
       page.on('console', (message) => {
         if (message.type() === 'error' && /refused to|content security policy|violat/i.test(message.text())) errors.push(message.text());
       });
-      await page.goto(new URL(route, base).href, { waitUntil: 'networkidle' });
+      await page.goto(new URL(route, base).href, { waitUntil: 'domcontentloaded' });
+  await page.waitForSelector('[data-component]', { timeout: 30000 });
       await page.waitForSelector('#view h1', { timeout: 30000 });
       await page.waitForTimeout(250);
       const heading = await page.locator('#view h1').first().innerText();
@@ -64,7 +65,8 @@ try {
   const page = await context.newPage();
   const readiness = (p) => p.waitForSelector('#view h1', { timeout: 30000 });
 
-  await page.goto(new URL('/?tracker=visa&tab=past&q=48850812&date=2026-07-12', base).href, { waitUntil: 'networkidle' });
+  await page.goto(new URL('/?tracker=visa&tab=past&q=48850812&date=2026-07-12', base).href, { waitUntil: 'domcontentloaded' });
+  await page.waitForSelector('[data-component]', { timeout: 30000 });
   await readiness(page);
   out.url.loaded = await page.evaluate(() => ({
     search: document.querySelector('#past-q')?.value,
@@ -84,7 +86,8 @@ try {
   if (out.url.afterBack.tab !== 'past') throw new Error(`popstate did not restore the tab (${out.url.afterBack.tab})`);
 
   // Keyboard journey.
-  await page.goto(new URL('/?tracker=visa&tab=home', base).href, { waitUntil: 'networkidle' });
+  await page.goto(new URL('/?tracker=visa&tab=home', base).href, { waitUntil: 'domcontentloaded' });
+  await page.waitForSelector('[data-component]', { timeout: 30000 });
   await readiness(page);
   await page.locator('[role="tab"][aria-selected="true"]').focus();
   await page.keyboard.press('ArrowRight');
@@ -92,14 +95,16 @@ try {
   if (!out.keyboard.tab.selected || out.keyboard.tab.selected === 'home') throw new Error('keyboard: ArrowRight did not move the tab');
   if (out.keyboard.tab.focused !== out.keyboard.tab.selected) throw new Error('keyboard: tab focus did not follow selection');
 
-  await page.goto(new URL('/?tracker=1g', base).href, { waitUntil: 'networkidle' });
+  await page.goto(new URL('/?tracker=1g', base).href, { waitUntil: 'domcontentloaded' });
+  await page.waitForSelector('[data-component]', { timeout: 30000 });
   await readiness(page);
   await page.locator('[role="radiogroup"] [aria-checked="true"]').first().focus();
   await page.keyboard.press('ArrowRight');
   out.keyboard.segment = await page.evaluate(() => ({ focused: document.activeElement?.textContent?.trim(), checked: document.activeElement?.getAttribute('aria-checked') }));
   if (out.keyboard.segment.checked !== 'true') throw new Error('keyboard: ArrowRight did not move the segmented control');
 
-  await page.goto(new URL('/?watch=48850812', base).href, { waitUntil: 'networkidle' });
+  await page.goto(new URL('/?watch=48850812', base).href, { waitUntil: 'domcontentloaded' });
+  await page.waitForSelector('[data-component]', { timeout: 30000 });
   await readiness(page);
   await page.locator('[data-action="open-profile"]').last().focus();
   await page.keyboard.press('Enter');
