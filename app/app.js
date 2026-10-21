@@ -105,8 +105,15 @@ function afterRender() {
   // The overview's empty state owns a Hairline figure: mount it after the
   // markup exists, and tear the last one down so its frame loop is gone.
   if (runwayHandle) { runwayHandle.destroy(); runwayHandle = null; }
-  if (document.getElementById('visa-runway')) {
-    runwayHandle = window.mountHairline('visa-runway', 0);
+  const runwayHost = document.getElementById('visa-runway');
+  if (runwayHost) {
+    // The gate is the tracker the overview is currently reading, so the figure
+    // agrees with the jelly radio above it instead of always standing at gate 1.
+    const gates = ['visa', '1g', 'permits'];
+    runwayHandle = window.mountHairline('visa-runway', {
+      gate: Math.max(0, gates.indexOf(C.state.primaryTracker)),
+      labels: ['Visa decisions', 'Stamp 1G', 'Employment permits'],
+    });
   }
   paintFundBars();
   const stamp = document.getElementById('footer-stamp');
@@ -164,14 +171,16 @@ function renderLanding() {
     ${U.animatedCounter({ id: 'c-avg', value: stats.avgPerDay, label: 'Average per published day', hint: 'Mean decisions per day that published a file. Days with no upload are excluded so an embassy closure does not read as a slow day.', format: (n) => n.toFixed(1) })}
   </section>
 
-  ${C.data.rows.length ? '' : `<section class="section" id="home-empty" aria-labelledby="empty-title">
-    <div class="section-head"><div><p class="eyebrow">Before the first file</p><h2 id="empty-title">Awaiting data…</h2></div></div>
+  <section class="section" id="home-runway" aria-labelledby="runway-title">
+    <div class="section-head"><div><p class="eyebrow">${C.data.rows.length ? 'Where the plane stands' : 'Before the first file'}</p><h2 id="runway-title">${C.data.rows.length ? 'One runway, three gates' : 'Awaiting data…'}</h2></div></div>
     <div class="card hairline-card">
       <div class="hairline-figure" id="visa-runway"></div>
       <p class="hairline-read" data-hairline-read aria-live="polite">rest</p>
-      <p class="hint">The plane stands at the threshold until the first file lands. Each gate is one tracker: <strong>embassy decisions</strong>, then <strong>Stamp 1G</strong>, then <strong>employment permits</strong>. Point at a gate to see where the plane would stand; nothing here is a prediction.</p>
+      <p class="hint">${C.data.rows.length
+        ? 'The plane stands at the gate of the tracker this overview is reading; each gate is one tracker: <strong>embassy decisions</strong>, then <strong>Stamp 1G</strong>, then <strong>employment permits</strong>. Point at a gate to move it; nothing here is a prediction.'
+        : 'The plane stands at the threshold until the first file lands. Each gate is one tracker: <strong>embassy decisions</strong>, then <strong>Stamp 1G</strong>, then <strong>employment permits</strong>. Point at a gate to see where the plane would stand; nothing here is a prediction.'}</p>
     </div>
-  </section>`}
+  </section>
 
   <section class="section" id="home-trackers" aria-labelledby="trackers-title">
     <div class="section-head">
@@ -289,7 +298,7 @@ function watchRow(row) {
 }
 
 function latestRow(row) {
-  return `<div class="txn"><span class="txn-id mono">${C.esc(row.irl)}</span><span class="txn-date">${C.fmtShort(row.date)}</span>${U.statBadge(row)}</div>`;
+  return `<div class="txn"><span class="txn-id mono">${C.esc(row.irl)}</span><span class="txn-date">${C.fmtShort(row.date)}</span>${U.statBadge(row)}<button type="button" class="txn-open" data-action="open-decision" data-value="${C.esc(row.irl)}" aria-label="Open application ${C.esc(row.irl)} in the full history">Open</button></div>`;
 }
 
 function healthCard(meta) {
@@ -701,6 +710,17 @@ const markVisited = () => {
   try { localStorage.setItem('visa-last-visit', String(ui.lastVisit)); } catch (e) { /* private mode */ }
 };
 
+/* A figure opens the rows it summarises. The destination is the screen's own
+   table — never a new route — so the control adds no second navigation model. */
+function focusRows(destination) {
+  if (!destination) return;
+  const heading = destination.querySelector ? destination.querySelector('h1, h2, h3') : null;
+  const node = heading || destination;
+  if (!node.hasAttribute('tabindex')) node.setAttribute('tabindex', '-1');
+  node.focus({ preventScroll: true });
+  node.scrollIntoView({ block: 'center' });
+}
+
 function onClick(event) {
   const target = event.target.closest('[data-action]');
   const themeButton = event.target.closest('[data-action="theme"]');
@@ -777,6 +797,31 @@ function onClick(event) {
       C.syncUrl();
       renderAll({ announce: 'Filters cleared' });
       return;
+    case 'counter-drill': {
+      const id = target.dataset.counterId || '';
+      if (id.startsWith('c-')) { focusRows(document.getElementById('home-latest')); return; }
+      if (id.startsWith('g1-')) { focusRows(document.getElementById('g1-history')); return; }
+      const panel = target.closest('[role="tabpanel"], section');
+      // With no rows on screen yet (the data has not landed), the figure still
+      // has a destination: the heading of the section that will hold them.
+      focusRows(panel ? panel.querySelector('.data-table, table') || panel.querySelector('.subhead, h2') : null);
+      return;
+    }
+    case 'history-drill':
+      focusRows(document.getElementById('g1-history'));
+      return;
+    case 'open-decision':
+      C.state.tracker = 'visa';
+      C.state.q = value;
+      C.state.tab = 'past';
+      C.syncUrl('push');
+      renderAll({ announce: `Showing ${value} in the full history` });
+      return;
+    case 'focus-search': {
+      const input = document.getElementById('home-q') || document.getElementById('visa-q') || document.getElementById('past-q');
+      if (input) input.focus();
+      return;
+    }
     case 'day':
       openDay(target.dataset.date);
       return;

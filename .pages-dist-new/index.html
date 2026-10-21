@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="en" data-site="visa">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Irish Visa Decisions &amp; Processing Time Tracker | New Delhi</title>
+    <meta
+      name="description"
+      content="Search historical Irish visa decisions from New Delhi, daily application counts and Stamp 1G processing dates. Unofficial tracker; no visa outcome is guaranteed."
+    />
+    <link rel="canonical" href="https://irishvisaupdatetracker.pages.dev/" />
+    <meta name="robots" content="index,follow,max-image-preview:large" />
+    <meta name="theme-color" content="#ffffff" />
+    <meta name="color-scheme" content="light dark" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Irish Visa Decision Tracker" />
+    <meta property="og:title" content="Irish Visa Decisions &amp; Processing Time Tracker | New Delhi" />
+    <meta
+      property="og:description"
+      content="Search historical New Delhi visa decisions and daily counts; explore Stamp 1G processing observations. Unofficial tracker; outcomes are not guaranteed."
+    />
+    <meta property="og:url" content="https://irishvisaupdatetracker.pages.dev/" />
+    <meta property="og:image" content="https://irishvisaupdatetracker.pages.dev/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Irish Visa Decision Tracker: historical New Delhi decisions and processing-date trends" />
+    <meta property="og:locale" content="en_IE" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Irish Visa Decisions &amp; Processing Time Tracker | New Delhi" />
+    <meta
+      name="twitter:description"
+      content="Search historical New Delhi visa decisions and daily counts; explore Stamp 1G processing observations. Unofficial tracker; outcomes are not guaranteed."
+    />
+    <meta name="twitter:image" content="https://irishvisaupdatetracker.pages.dev/og-image.png" />
+    <meta name="twitter:image:alt" content="Irish Visa Decision Tracker: historical decisions and processing-date trends" />
+    <meta name="twitter:url" content="https://irishvisaupdatetracker.pages.dev/" />
+    <meta name="author" content="Independent project" />
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
+    <meta name="application-name" content="Irish Visa Decision Tracker" />
+    <meta name="application-url" content="https://irishvisaupdatetracker.pages.dev/" />
+    <meta name="dataset:source" content="Embassy of Ireland in New Delhi" />
+    <meta name="dataset:distribution" content="https://irishvisaupdatetracker.pages.dev/data/visa_decisions.json" />
+    <meta name="dataset:processing-source" content="https://www.irishimmigration.ie/" />
+    <meta name="dataset:permit-source" content="https://enterprise.gov.ie/" />
+    <meta name="faq:visible" content="true" />
+    <meta
+      name="legal:disclaimer"
+      content="Unofficial tracker, not affiliated with the Irish Government or Department of Justice. No visa outcome is guaranteed."
+    />
+    <meta name="format-detection" content="telephone=no" />
+    <link rel="icon" href="icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+    <link rel="preload" href="fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="fonts/geist-sans.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="fonts/geist-mono.woff2" as="font" type="font/woff2" crossorigin />
+    <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebSite",
+      "@id": "https://irishvisaupdatetracker.pages.dev/#website",
+      "url": "https://irishvisaupdatetracker.pages.dev/",
+      "name": "Irish Visa Decision Tracker",
+      "description": "An independent, unofficial historical tracker of visa decisions published by the Embassy of Ireland in New Delhi, with public processing-date observations."
+    },
+    {
+      "@type": "WebApplication",
+      "@id": "https://irishvisaupdatetracker.pages.dev/#application",
+      "url": "https://irishvisaupdatetracker.pages.dev/",
+      "name": "Irish Visa Decision Tracker",
+      "applicationCategory": "ReferenceApplication",
+      "operatingSystem": "Any",
+      "isAccessibleForFree": true,
+      "description": "Search historical public visa-decision records and explore indicative processing-date observations. Not a government service, live case-status service, or outcome predictor."
+    },
+    {
+      "@type": "Dataset",
+      "@id": "https://irishvisaupdatetracker.pages.dev/#decision-history",
+      "name": "Irish visa decisions published by the Embassy of Ireland in New Delhi",
+      "description": "Historical application-number and outcome records collected from the Embassy of Ireland in New Delhi's public decision files. This is not a live application-status dataset.",
+      "url": "https://irishvisaupdatetracker.pages.dev/",
+      "sameAs": "https://www.ireland.ie/en/india/newdelhi/services/visas/processing-times-and-decisions/",
+      "creator": { "@id": "https://irishvisaupdatetracker.pages.dev/#website" },
+      "distribution": {
+        "@type": "DataDownload",
+        "encodingFormat": "application/json",
+        "contentUrl": "https://irishvisaupdatetracker.pages.dev/data/visa_decisions.json"
+      },
+      "temporalCoverage": "2026-07-12/2026-10-15",
+      "variableMeasured": ["Dashboard record date", "Application number", "Published decision outcome"]
+    },
+    {
+      "@type": "FAQPage",
+      "@id": "https://irishvisaupdatetracker.pages.dev/#faq",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "Where does the visa decision information come from?",
+          "acceptedAnswer": { "@type": "Answer", "text": "The tracker records decisions from files published by the Embassy of Ireland in New Delhi. A scheduled scraper collects application numbers and outcomes; the accumulated history is available as JSON." }
+        },
+        {
+          "@type": "Question",
+          "name": "How should I read daily decision counts?",
+          "acceptedAnswer": { "@type": "Answer", "text": "Counts summarize application decision rows recorded for that dashboard date. Weekend, office-closure, and not-yet-published-file notices are excluded from application totals." }
+        },
+        {
+          "@type": "Question",
+          "name": "Does this show my live application status or predict my outcome?",
+          "acceptedAnswer": { "@type": "Answer", "text": "No. A matching number only means it appears in a published decision file. Processing estimates are indicative observations, not guarantees. Use official Irish immigration or embassy channels for authoritative case information." }
+        },
+        {
+          "@type": "Question",
+          "name": "What does the Stamp 1G processing date mean?",
+          "acceptedAnswer": { "@type": "Answer", "text": "It is the application date observed on the public ISD renewal page for the selected category. Lag and catch-up estimates use recorded observations and are not service commitments." }
+        },
+        {
+          "@type": "Question",
+          "name": "Is this tracker affiliated with the Irish Government?",
+          "acceptedAnswer": { "@type": "Answer", "text": "No. This independent project is not affiliated with the Irish Government, the Department of Justice, the Embassy of Ireland, Immigration Service Delivery, or the Department of Enterprise." }
+        }
+      ]
+    }
+  ]
+}
+</script>
+    <!-- Theme before first paint: no flash, and the toggle owns the choice. -->
+    <script src="theme-init.js"></script>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+
+    <header class="site-header">
+      <div class="shell header-inner">
+        <a class="brand" href="./" data-action="landing">
+          <span class="brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v9a8 8 0 0 1-16 0z"/><path d="M8 11l3 3 5-6"/></svg>
+          </span>
+          <span class="brand-text">
+            <span class="brand-name">Visa decisions</span>
+            <span class="brand-sub">New Delhi · unofficial</span>
+          </span>
+        </a>
+
+        <nav id="tracker-nav" class="gooey-nav" aria-label="Trackers">
+          <span class="gooey-indicator" aria-hidden="true"></span>
+        </nav>
+
+        <div class="header-actions">
+          <span id="admin-chip" class="state-chip state-chip-soft" hidden>Preview · admin</span>
+          <div id="theme-switch" class="theme-switch"></div>
+        </div>
+      </div>
+    </header>
+
+    <main id="main" tabindex="-1">
+      <div id="view" class="shell view" aria-live="off"></div>
+    </main>
+
+    <footer class="site-footer">
+      <div class="shell footer-inner">
+        <p>
+          An independent tracker of the Embassy of Ireland's published New Delhi decision sheets and official
+          processing-date pages. Not affiliated with the Irish Government, the Department of Justice, the
+          Embassy of Ireland, ISD or the Department of Enterprise.
+        </p>
+        <p class="footer-meta">
+          <span id="footer-stamp" class="mono">Data is published by those offices; no visa outcome is guaranteed.</span>
+          <a href="https://www.ireland.ie/en/india/newdelhi/services/visas/processing-times-and-decisions/" target="_blank" rel="noopener">Official decisions page</a>
+        </p>
+      </div>
+    </footer>
+
+    <div id="sw-update-banner" class="sw-update-banner" role="status" aria-live="polite" hidden>
+      <span>A newer version is ready.</span>
+      <button id="sw-update-reload" class="btn btn-primary dynamic-button touch-target" type="button">
+        <span class="dynamic-label">Update available → Reload</span>
+      </button>
+    </div>
+
+    <div id="live" class="sr-only" role="status" aria-live="polite"></div>
+
+    <!-- Hairline: the engine, its mount adapter and the one figure this site
+         uses. Three external files, in this order (the adapter defines the
+         `hairline()` the figure calls, and the figure reads `HL` when it runs),
+         so nothing is injected and `script-src 'self'` holds. They are only
+         used by the empty state on the overview. -->
+    <script src="hairline/kernel.js" defer></script>
+    <script src="hairline/mount.js" defer></script>
+    <script src="hairline/runway.js" defer></script>
+    <script src="app.js" type="module"></script>
+  </body>
+</html>

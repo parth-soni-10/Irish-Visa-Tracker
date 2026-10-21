@@ -76,10 +76,12 @@ export function scrollIsland(id, items, label = 'On this page') {
 
 /* ------------------------------------------------------------- measurement -- */
 
-/** Animated Counter — display-only; the DOM value is always the final one. */
+/** Animated Counter — the DOM value is always the final one, and the value is
+ *  the control: it opens the rows on this screen that the figure summarises. */
 export function animatedCounter({ id, value, label, hint, format = fmtNum, tone = '', suffix = '' }) {
+  const shown = `${esc(format(value))}${esc(suffix)}`;
   return `<div class="counter${tone ? ` is-${tone}` : ''}" data-component="animated-counter">
-    <span class="counter-value tabular" id="${id}" data-counter="${value}" data-target="${value}">${esc(format(value))}${esc(suffix)}</span>
+    <button type="button" class="counter-value counter-figure tabular" id="${id}" data-counter="${value}" data-target="${value}" data-action="counter-drill" data-counter-id="${id}" aria-label="${shown} — open the rows behind this figure">${shown}</button>
     <span class="counter-label">${esc(label)}${hint ? warmTooltip(`tip-${id}`, hint) : ''}</span>
   </div>`;
 }
@@ -235,6 +237,7 @@ export function skiper68({ id, label, value = '', placeholder = '', digits = 6, 
 export function skiper74(id, items) {
   return `<div class="timeline" data-component="skiper74" id="${id}">
     <div class="timeline-sticky"><span data-timeline-month>${items.length ? fmtDate(items[0].date, { month: 'long', year: 'numeric' }) : 'Awaiting data…'}</span><span class="mono" data-timeline-count>${items.length} milestones</span></div>
+    <button type="button" class="timeline-open" data-action="history-drill" aria-label="Open every observation behind this timeline">Open every observation ↓</button>
     <ol class="timeline-list">
       ${items
         .map(
@@ -297,14 +300,14 @@ export function swipeRow(id, content, actions) {
     <div class="swipe-actions" id="swipe-${esc(id)}" hidden>
       ${actions.map((a) => `<button type="button" class="btn btn-quiet touch-target" data-action="${a.action}" data-value="${esc(a.value)}">${a.label}</button>`).join('')}
     </div>
-    <button type="button" class="swipe-toggle" aria-expanded="false" aria-controls="swipe-${esc(id)}" data-action="swipe-toggle" data-value="${esc(id)}" aria-label="Row actions">${icon.dots}</button>
+      <button type="button" class="swipe-toggle" aria-expanded="false" aria-controls="swipe-${esc(id)}" data-action="swipe-toggle" data-value="${esc(id)}" aria-label="Row actions for ${esc(id)}">${icon.dots}</button>
   </div>`;
 }
 
 /** Transaction List — compact rows: a label, a detail and a state badge. */
 export function transactionList(id, rows, emptyLabel) {
   return `<div class="transactions" data-component="transaction-list" id="${id}">
-    ${rows.length ? rows.join('') : `<p class="empty">${esc(emptyLabel)}</p>`}
+    ${rows.length ? rows.join('') : `<p class="empty">${esc(emptyLabel)}</p><button type="button" class="txn-open" data-action="focus-search" aria-label="Search an application by application number">Search an application →</button>`}
   </div>`;
 }
 

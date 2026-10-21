@@ -39,6 +39,13 @@ function taper(parent, P, foot, top, inner, z0, z1, front) {
 
 function mount({ stage, svg, read }, value) {
   const bag = disposer();
+  // A bare number is the gate to stand at; an object can also name the gates,
+  // so the read-out says "Gate 2 · Stamp 1G" instead of "gate 2" on a page
+  // whose reader has never been told what a gate is.
+  const config = value && typeof value === "object" ? value : { gate: value };
+  const labels = Array.isArray(config.labels) ? config.labels.slice() : [];
+  const gateOf = (v) => (v >= 3 ? 2 : v >= 1 ? 1 : 0);
+  const label = (i) => (labels[i] ? "Gate " + (i + 1) + " · " + labels[i] : "Gate " + (i + 1));
 
   // The camera is fitted to the plane at the last gate with its wings and tail
   // standing, so the most extreme pose is inside the 400 × 320 frame.
@@ -145,7 +152,7 @@ function mount({ stage, svg, read }, value) {
 
   function setGate(i, announce) {
     const changed = i !== target;
-    if (announce !== false) read.textContent = i < 0 ? "rest" : "gate " + (i + 1);
+    if (announce !== false) read.textContent = i < 0 ? "rest" : label(i);
     if (!changed) return;
     target = i;
     fuselage.sil.setAttribute("class", i < 0 ? "sil hi" : "sil");
@@ -161,9 +168,17 @@ function mount({ stage, svg, read }, value) {
   bag.add(pointer(stage, { move: (p) => setGate(pick(p)), down: (p) => setGate(pick(p)), leave: () => setGate(-1) }));
   bag.add(() => svg.replaceChildren());
 
-  setGate(value >= 3 ? 2 : value >= 1 ? 1 : 0, false);
-  read.textContent = "rest";
-  return { set: (v) => setGate(v >= 3 ? 2 : v >= 1 ? 1 : 0), destroy: bag.dispose };
+  // Announce the gate the plane starts at: the card is a statement about the
+  // current tracker, not a decorative frame waiting for a pointer.
+  setGate(gateOf(config.gate || 0));
+  return {
+    set: (v) => {
+      const next = v && typeof v === "object" ? v : { gate: v };
+      if (Array.isArray(next.labels)) { labels.length = 0; labels.push(...next.labels); }
+      setGate(gateOf(next.gate || 0));
+    },
+    destroy: bag.dispose,
+  };
 }
 
 hairline({
