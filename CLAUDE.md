@@ -63,40 +63,5 @@ _headers            → response headers (the assets layer reads this; the only 
 
 ## Build & Run
 - Scraper: `pip install -r requirements.txt`; runs in GitHub Actions (no required secrets — `ALERT_WEBHOOK_URL` is optional for the gap-alert webhook); commits `data/*.json` back itself.
-- Deploy: a push to `main` deploys it — the repo is connected to the **Cloudflare Pages** project `irishvisaupdatetracker` (production branch `main`, preview builds off). Pages compiles `functions/`, and the build command stages the upload into `.pages-dist`, with the D1 binding coming from `wrangler.toml`. **At the cutover that command is `node tools/build-app.mjs --out .pages-dist`** (it stages `app/` plus `data/`, `fonts/`, the icons and the crawl files); until that line is changed the project keeps staging the repository root through `.assetsignore` (`node tools/deploy-pages.mjs --assets . --out .pages-dist`), which is the rollback. A `data/*` commit therefore republishes the site, which is what keeps `data/` current: the deployment serves those files from its own upload. Nothing is deployed from a shell, and local testing is `npx wrangler pages dev . --d1 DB=irish-visa-tracker-submissions` — measured: `pages dev` did not pick this site's D1 binding up from `wrangler.toml`, so the flag is what makes the local run bind the store it writes to (the deployed project's binding is configured on the project, and the config is what a deploy reads it from).
+- Deploy: a push to `main` deploys it — the repo is connected to the **Cloudflare Pages** project `irishvisaupdatetracker` (production branch `main`, preview builds off). Pages compiles `functions/`, and the build command stages the repository root into `.pages-dist` through `.assetsignore` (`node tools/deploy-pages.mjs --assets . --out .pages-dist`), with the D1 binding coming from `wrangler.toml`. A `data/*` commit therefore republishes the site, which is what keeps `data/` current: the deployment serves those files from its own upload. Nothing is deployed from a shell, and local testing is `npx wrangler pages dev . --d1 DB=irish-visa-tracker-submissions` — measured: `pages dev` did not pick this site's D1 binding up from `wrangler.toml`, so the flag is what makes the local run bind the store it writes to (the deployed project's binding is configured on the project, and the config is what a deploy reads it from).
 
-## Cutover build (`app/`, cutover commit 2026-10-20)
-- **The cutover is committed; the deployment still serves the root app until the Pages build command is switched.** `node tools/build-app.mjs --out .pages-dist` stages `app/` as the document root and copies in what it reads but does not own: `data/` (scraper-owned, read-only), `fonts/`, `icon.svg`/`apple-touch-icon.png`/`og-image.png`, and `robots.txt`/`sitemap.xml` (missing crawl files are a build failure, not a silent omission). Reverting the build command to `node tools/deploy-pages.mjs --assets . --out .pages-dist` restores the old app byte for byte: the root `index.html` and the root `_headers` are deliberately still here as the rollback, so the two header policies never fight over one upload — the staged `_headers` always comes from `app/`, and the root one only takes effect if the old app is served again.
-- `app/` is class-only and strict-CSP: `script-src 'self'`, `style-src 'self'`. No inline `<script>`, `<style>` or `style=` in served markup, and no runtime style injection. Run `node tools/build-app.mjs` then the shared `verify-csp.ts --dist .pages-dist` before any deploy review.
-- Keep `data/**` read-only. `tools/build-app.mjs` copies it into the upload; nothing in it may be rewritten by the app.
-- Keep the URL contract: `?tracker=(home|visa|1g|permits)&tab=(home|daily|past|suggest)&q=&date=`. Tab/tracker changes push history, search/date replace it, and `popstate` restores all four. `?watch=<digits,…>` seeds the watchlist (documented addition) and `?admin=1` shows the read-only submissions preview.
-- Keep the forms: `suggestions` (name, suggestion, `bot-field`), `timelines-visa` and `timelines-1g` (applied, decided, outcome, tracker, `bot-field`), all POSTed to this origin.
-- `tools/serve-app.mjs` + `VISA_BASE_URL=… node tools/verify-visa.mjs` is the local gate: 8 routes at 375/768/1280, both themes, axe, CSP console, keyboard, URL contract, reduced motion, worker update prompt.
-
-## Hairline figure (overview empty state)
-`app/hairline/` holds the Hairline engine (`kernel.js`), a bench-free mount adapter (`mount.js`) and one figure (`runway.js`, wrapped in an IIFE so its destructured `HL` names cannot collide with another figure). It renders only when `data/visa_decisions.json` is empty, inside the `Awaiting data…` card on the overview, and the words stay: the card's heading and hint are the accessible content, the stage is `role="img"` with the figure's own `aria-label`, and the small read-out (`rest` / `gate 1…3`) is `aria-live="polite"`.
-- **CSP:** the engine's `HL.inject()` is never called; its stylesheet is copied into `app/styles.css` with the palette mapped to this site's tokens (`--hairline-*`). Three external `<script defer>` files, nothing inline.
-- **Shape:** the stage must keep a 5:4 box (`width: min(100%, 400px)`), because the kernel maps pointer coordinates against the element's rect and assumes the viewBox fills it.
-- **Rebuild note:** the figure was authored and validated with the `hairline-create` skill (`build.mjs` / `validate.mjs`), and the mounted result was checked in a browser with the real `_headers` CSP enforced. If the figure changes, rebuild it on the bench first, then copy it here.
-## The design-system component layer
-
-The site is now built on the shared design-system rather than on hand-written
-markup, and the change is visible in the source.
-
-- **The 27 components** from `design-system/` are the base for this site's
-  controls. Every integrated instance renders `data-component="<slug>"`, and
-  that attribute is what the coverage verifier reads - it is the contract, not
-  a comment.
-- **The component layer** is `components.js`, and it is idempotent: it
-  re-runs on a debounced MutationObserver after each route render, and it
-  installs each part inside its own try/catch, so a component that cannot
-  install logs once and shows up as a missing marker rather than as a broken
-  page.
-- **The tokens** are the site's own stylesheet, so a spacing, colour or
-  motion value is set in one place and read by everything. The motion
-  durations are the four tiers (`--motion-duration-micro`, `-standard`,
-  `-complex`, `-page`) and the three easing curves; a duration is never
-  written into a rule.
-- **The strict CSP is not negotiable**: no inline `<script>`, no `<style>`
-  element, no `style=""` attribute in served HTML. `tools/check-csp-inline.py`
-  (or the shared `verify-csp.ts`) fails the build if one appears.
