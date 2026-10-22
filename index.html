@@ -143,6 +143,7 @@
     <link rel="stylesheet" href="glide-select.css">
     <link rel="stylesheet" href="jelly-radio.css" />
     <link rel="stylesheet" href="rubber-segment.css" />
+    <link rel="stylesheet" href="squish-switch.css" />
     <style>
 
         /* Both faces are self-hosted variable fonts, so nothing in this file
@@ -1095,6 +1096,14 @@
             transform: translateY(-1px);
             box-shadow: 0 2px 8px rgba(0,0,0,0.08);
         }
+        #visa-dash .theme-switch {
+            --ss-track: var(--border);
+            --ss-track-on: #0077e6;
+            --ss-thumb-color: #ffffff;
+            padding: 6px 0;
+            flex-shrink: 0;
+        }
+        #visa-dash .theme-switch:hover { filter: none; }
         #visa-dash .theme-toggle svg { display: block; }
         #visa-dash .theme-toggle .icon-moon { display: none; }
         #visa-dash[data-theme="dark"] .theme-toggle .icon-sun { display: none; }
@@ -1701,6 +1710,7 @@
     <script src="glide-select.js"></script>
     <script src="jelly-radio.js" defer></script>
     <script src="rubber-segment.js" defer></script>
+    <script src="squish-switch.js" defer></script>
     <script>
     (function() {
         function go() { if (window.lucide) lucide.createIcons({ nameAttr: 'data-lucide', attrs: { 'aria-hidden': 'true' } }); }
@@ -3206,6 +3216,10 @@
                 theme = theme === 'light' ? 'dark' : 'light';
                 localStorage.setItem('visa-theme', theme);
                 root.setAttribute('data-theme', theme);
+                // The switch reads aria-checked, so the thumb follows the
+                // stored theme without rebuilding the header.
+                const toggle = document.getElementById('theme-toggle');
+                if (toggle) toggle.setAttribute('aria-checked', String(theme === 'dark'));
                 // Theme switch is instant via CSS variables; the sun/moon SVG
                 // icon swaps via CSS on [data-theme], so no JS or DOM rebuild.
                 applyChrome();
@@ -3216,7 +3230,7 @@
             // tracker cards; 'visa' is the existing embassy-decisions tracker
             // (untouched below); '1g' is the Stamp 1G processing-date tracker
             // fed by data/stamp_1g.json (written daily by track_1g.py).
-            const THEME_BTN_HTML = '<button class="theme-toggle" id="theme-toggle" aria-label="Toggle dark mode" title="Toggle dark mode">' +
+            const THEME_BTN_HTML = '<button class="theme-switch" id="theme-toggle" role="switch" aria-checked="' + (theme === 'dark') + '" aria-label="Dark mode" title="Dark mode" data-squish-switch data-ss-bare data-ss-size="sm">' +
                 '<svg class="icon-sun" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8"/></svg>' +
                 '<svg class="icon-moon" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5a8.5 8.5 0 1 0 11 11z"/></svg></button>';
             const BACK_BTN_HTML = '<button type="button" class="back-btn" id="back-btn"><i data-lucide="arrow-left"></i> All trackers</button>';
