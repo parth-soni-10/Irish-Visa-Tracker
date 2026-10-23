@@ -1,0 +1,62 @@
+name: Track Stamp 1G Processing Date
+
+on:
+  workflow_dispatch: {}   # manual "Run workflow" button — still available for on-demand runs
+  schedule:
+    # One observation per day for the dashboard's advancement-rate + ETA
+    # projections. track_1g.py skips when the run date is already recorded, so
+    # re-runs and overlap are safe.
+    #
+    # Four attempts spread across the morning, and deliberately off the hour.
+    # GitHub's scheduled runs are low priority: on this repo the 03:00 UTC slot
+    # has been landing 6-9 hours late (2026-10-05..10-12), and on 2026-10-13
+    # nothing had run by mid-morning — the observation for that day had to be
+    # backfilled by hand. A single cron entry is therefore not a reliable daily
+    # observation. Only the first attempt of the day writes a row; the rest are
+    # quick no-ops, which is a cheap price for never losing a day.
+    - cron: '17 2 * * *'
+    - cron: '0 3 * * *'   # the original 08:30 IST slot, kept as the nominal one
+    - cron: '23 5 * * *'
+    - cron: '41 7 * * *'
+
+jobs:
+  track-1g:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # needed to commit data/stamp_1g.json back to the repo
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install requests beautifulsoup4
+
+      - name: Run Stamp 1G tracker
+        run: python track_1g.py
+
+      - name: Commit updated history
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/stamp_1g.json
+          git diff --staged --quiet || git commit -m "1G: record $(date -u +%F) processing date"
+          # The scrape workflow commits every ~30 minutes, so this push can lose
+          # the race. Retry it on top of a rebase: without that, a rejected push
+          # fails the job and that day's observation is gone for good, because
+          # this script only ever writes its own run date — tomorrow's run
+          # cannot re-derive it.
+          for attempt in 1 2 3 4 5; do
+            if git push; then
+              echo "pushed on attempt $attempt"
+              exit 0
+            fi
+            git pull --rebase --autostash origin "${GITHUB_REF_NAME:-main}"
+            sleep 5
+          done
+          echo "::error::could not push data/stamp_1g.json after 5 attempts"
+          exit 1
