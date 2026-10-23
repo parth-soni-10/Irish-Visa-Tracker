@@ -142,6 +142,7 @@
     </footer>
     <link rel="stylesheet" href="glide-select.css">
     <link rel="stylesheet" href="jelly-radio.css" />
+    <link rel="stylesheet" href="analytics-chart.css" />
     <link rel="stylesheet" href="rubber-segment.css" />
     <link rel="stylesheet" href="squish-switch.css" />
     <link rel="stylesheet" href="gooey-nav.css" />
@@ -1356,6 +1357,18 @@
             display: block;
             margin: 12px auto 0;
         }
+        /* The lag line is the analytics-chart kit: it sizes its own box, so the
+           card only names the height, the accent and the tooltip's paper. */
+        #visa-dash .g1-lag {
+            --ac-height: 200px;
+            --ac-accent: #0284c7;
+            --ac-area: rgba(2, 132, 199, .12);
+            --ac-grid: var(--border);
+            --ac-ink: var(--ink-muted);
+            --ac-tip-bg: var(--surface);
+            --ac-tip-ink: var(--ink);
+            margin-top: 12px;
+        }
         #visa-dash .pill.blue { background: #e3f0fd; color: #075985; }
         #visa-dash[data-theme="dark"] .pill.blue {
             background: rgba(0, 119, 230, 0.18);
@@ -1716,6 +1729,7 @@
     <script src="rubber-segment.js" defer></script>
     <script src="squish-switch.js" defer></script>
     <script src="gooey-nav.js" defer></script>
+    <script src="analytics-chart.js" defer></script>
     <script>
     (function() {
         function go() { if (window.lucide) lucide.createIcons({ nameAttr: 'data-lucide', attrs: { 'aria-hidden': 'true' } }); }
@@ -3638,7 +3652,14 @@
                 var mon = new Date(d.getTime() - ((d.getUTCDay() + 6) % 7) * 86400000);
                 return mon.toISOString().slice(0, 10);
             }
-            function g1TrendSVG(rows, userDate) {
+            /* Average lag per week, as the design system's analytics-chart.
+               The grouped SVG this replaces drew bars, a regression line and a
+               marker for the visitor's saved week; the bars are now a line with
+               one tooltip per week (observations included), which is what the
+               weekly means actually are — a continuous series, not categories. */
+            function renderG1LagChart(rows) {
+                var host = document.getElementById('g1-lag');
+                if (!host || !window.AnalyticsChart) return;
                 var weeks = [];
                 var byWeek = {};
                 rows.forEach(function(r) {
@@ -3647,77 +3668,15 @@
                     byWeek[k].sum += r.lag_days;
                     byWeek[k].n += 1;
                 });
-                var vals = weeks.map(function(k) { return byWeek[k].sum / byWeek[k].n; });
-                var W = 600, H = 200, PL = 52, PR = 14, PT = 14, PB = 32;
-                var y0 = Math.min.apply(null, vals), y1 = Math.max.apply(null, vals);
-                if (y1 === y0) { y0 -= 1; y1 += 1; }
-                // Baseline sits just below the minimum — lags live in a narrow
-                // band, so a zero baseline would flatten all variation.
-                var base = Math.floor(y0) - 2;
-                function Y(v) { return PT + (1 - (v - base) / (y1 - base)) * (H - PT - PB); }
-                function shortDay(iso) {
-                    var p = String(iso).split('-');
-                    return (+p[2]) + ' ' + ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][+p[1] - 1];
-                }
-                var grid = '';
-                for (var gi = 0; gi < 3; gi++) {
-                    var gv = Math.round(y0 + (y1 - y0) * gi / 2);
-                    var gy = Y(gv).toFixed(1);
-                    grid += '<line x1="' + PL + '" y1="' + gy + '" x2="' + (W - PR) + '" y2="' + gy +
-                        '" stroke="currentColor" stroke-width="1" opacity="0.14"/>' +
-                        '<text x="' + (PL - 8) + '" y="' + (+gy + 4) + '" font-size="11" fill="currentColor" opacity="0.7" text-anchor="end">' +
-                        gv + 'd</text>';
-                }
-                var plotW = W - PL - PR;
-                var slot = plotW / weeks.length;
-                var bw = Math.max(3, Math.min(26, slot - 4));
-                var bars = weeks.map(function(k, i) {
-                    var cx = PL + slot * i + slot / 2;
-                    var y = Y(vals[i]);
-                    var last = i === weeks.length - 1;
-                    return '<rect x="' + (cx - bw / 2).toFixed(1) + '" y="' + y.toFixed(1) +
-                        '" width="' + bw.toFixed(1) + '" height="' + Math.max(2, (H - PB) - y).toFixed(1) +
-                        '" rx="2.5" fill="' + (last ? '#0369a1' : '#0284c7') + '"' + (last ? '' : ' opacity="0.85"') +
-                        '><title>Week of ' + shortDay(k) + ': avg lag ' + vals[i].toFixed(1) + 'd (' + byWeek[k].n + ' obs)</title></rect>';
-                }).join('');
-                var ends = [0, Math.floor((weeks.length - 1) / 2), weeks.length - 1];
-                var xlabels = ends.map(function(i, j) {
-                    var anchor = j === 0 ? 'start' : j === 2 ? 'end' : 'middle';
-                    var xx = j === 0 ? PL : j === 2 ? (W - PR) : (PL + slot * i + slot / 2).toFixed(1);
-                    return '<text x="' + xx + '" y="' + (H - 10) + '" font-size="11" fill="currentColor" opacity="0.7" text-anchor="' + anchor + '">' +
-                        shortDay(weeks[i]) + '</text>';
-                }).join('');
-                // Dashed all-time average lag across every observation.
-                var avgLag = rows.reduce(function(s, r) { return s + r.lag_days; }, 0) / rows.length;
-                var ay = Y(avgLag).toFixed(1);
-                var avgLine = '<line x1="' + PL + '" y1="' + ay + '" x2="' + (W - PR) + '" y2="' + ay +
-                    '" stroke="currentColor" stroke-width="1.5" stroke-dasharray="6 4" opacity="0.55"/>' +
-                    '<text x="' + (W - PR) + '" y="' + (+ay - 6) + '" font-size="11" font-weight="700" fill="currentColor" opacity="0.75" text-anchor="end">avg ' +
-                    avgLag.toFixed(0) + 'd</text>';
-                // Solid linear trend through the weekly means (same OLS helper
-                // as the projections) + a marker for the user's saved
-                // application week, if it falls inside the observed range.
-                // Marker is neutral dark, not amber — amber is reserved for
-                // decision states elsewhere in this dashboard.
-                var regLine = '', marker = '';
-                var reg = g1LinReg(vals.map(function(v, i) { return { x: i, y: v }; }));
-                if (reg) {
-                    var rx0 = PL + slot / 2, rx1 = PL + slot * (weeks.length - 1) + slot / 2;
-                    regLine = '<line x1="' + rx0.toFixed(1) + '" y1="' + Y(reg.intercept).toFixed(1) +
-                        '" x2="' + rx1.toFixed(1) + '" y2="' + Y(reg.intercept + reg.slope * (weeks.length - 1)).toFixed(1) +
-                        '" stroke="#0369a1" stroke-width="2" opacity="0.8"/>';
-                    if (userDate) {
-                        var wi = weeks.indexOf(g1WeekKey(userDate));
-                        if (wi !== -1) {
-                            marker = '<circle cx="' + (PL + slot * wi + slot / 2).toFixed(1) +
-                                '" cy="' + Y(reg.intercept + reg.slope * wi).toFixed(1) +
-                                '" r="5.5" fill="currentColor" stroke="#fff" stroke-width="2"><title>Your week of ' +
-                                shortDay(weeks[wi]) + '</title></circle>';
-                        }
-                    }
-                }
-                return '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Average Stamp 1G lag per week, ' + weeks.length + ' weeks">' +
-                    grid + bars + avgLine + xlabels + '</svg>';
+                var points = weeks.map(function(k) {
+                    var p = String(k).split('-');
+                    var label = (+p[2]) + ' ' + ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][+p[1] - 1];
+                    return { label: label, value: +(byWeek[k].sum / byWeek[k].n).toFixed(1), note: byWeek[k].n + ' obs' };
+                });
+                AnalyticsChart.render(host, points, {
+                    label: 'average lag',
+                    format: function(v) { return v.toFixed(1) + ' days'; }
+                });
             }
 
             function renderG1Layout(rows, cats, activeCat) {
@@ -3784,7 +3743,8 @@
                         '</tbody></table></div></div>';
                 }
                 var chart = '<div class="g1-chart"><h3>Lag over time</h3>' +
-                    g1TrendSVG(rows, g1StoredDate()) + '</div>';
+                    '<div class="g1-lag" id="g1-lag" data-ac-label="average lag"></div>' +
+                    '<div class="note2">Weekly mean of the observations in <code>data/stamp_1g.json</code>.</div></div>';
                 var histRows = rows.slice().reverse().map(function(r) {
                     return '<tr><td class="mono">' + r.run_date + '</td><td class="mono">' + r.processing_date +
                         '</td><td>' + r.lag_days + '</td><td>' + r.lag_weeks.toFixed(2) + '</td></tr>';
@@ -3843,6 +3803,7 @@
                 g1ActiveRows = g1RowsFor(allRows, cat);
                 root.innerHTML = renderG1Layout(g1ActiveRows, g1Categories(allRows), cat);
                 wireChrome();
+                renderG1LagChart(g1ActiveRows);
                 var catRow = document.getElementById('g1-cats');
                 if (catRow) catRow.addEventListener('click', function(e) {
                     var chip = e.target && e.target.closest ? e.target.closest('[data-cat]') : null;
