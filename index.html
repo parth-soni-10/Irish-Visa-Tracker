@@ -144,6 +144,7 @@
     <link rel="stylesheet" href="jelly-radio.css" />
     <link rel="stylesheet" href="rubber-segment.css" />
     <link rel="stylesheet" href="squish-switch.css" />
+    <link rel="stylesheet" href="gooey-nav.css" />
     <style>
 
         /* Both faces are self-hosted variable fonts, so nothing in this file
@@ -289,6 +290,9 @@
             gap: 8px;
             margin-bottom: 24px;
             flex-wrap: wrap;
+            /* gooey-nav.js slides the active tab's fill between the pills */
+            --gn-fill: var(--green-deep);
+            --gn-radius: 100px;
         }
         #visa-dash .navpill {
             padding: 8px 18px;
@@ -1711,6 +1715,7 @@
     <script src="jelly-radio.js" defer></script>
     <script src="rubber-segment.js" defer></script>
     <script src="squish-switch.js" defer></script>
+    <script src="gooey-nav.js" defer></script>
     <script>
     (function() {
         function go() { if (window.lucide) lucide.createIcons({ nameAttr: 'data-lucide', attrs: { 'aria-hidden': 'true' } }); }
@@ -4186,7 +4191,7 @@
                     '</div>' +
                     '<div class="sub">' + (cache && cache.length ? cache.length + ' decisions on record' :
                         'Awaiting data') + '</div>' +
-                    '<div class="navpills">' + tabs.map(([k, label]) => '<button type="button" class="navpill ' + (activeTab === k ?
+                    '<div class="navpills" data-gooey-nav>' + tabs.map(([k, label]) => '<button type="button" class="navpill ' + (activeTab === k ?
                         'active' : '') + '" data-tab="' + k + '"><i data-lucide="' + ({home:'house',daily:'calendar-days',past:'archive',suggest:'message-circle'}[k] || 'circle') + '"></i> ' + label + '</button>').join('') + '</div>' +
                     '<div class="hero" id="hero" data-id="' + activeTab + '" style="opacity:0">' +
                         '<div class="hero-body">' +
