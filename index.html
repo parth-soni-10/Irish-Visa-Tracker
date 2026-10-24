@@ -147,6 +147,7 @@
     <link rel="stylesheet" href="squish-switch.css" />
     <link rel="stylesheet" href="gooey-nav.css" />
     <link rel="stylesheet" href="time-undo.css" />
+    <link rel="stylesheet" href="stepper.css" />
     <style>
 
         /* Both faces are self-hosted variable fonts, so nothing in this file
@@ -1402,6 +1403,9 @@
             border-color: transparent;
             color: #fff;
         }
+        /* The estimator's buffer is a stepper: a number of weeks, not a menu. */
+        #visa-dash .g1-buffer { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 12px; }
+        #visa-dash .g1-buffer .note2 { margin: 0; }
         #visa-dash .g1-estimate {
             margin-top: 12px;
             font-size: 14px;
@@ -1732,6 +1736,7 @@
     <script src="gooey-nav.js" defer></script>
     <script src="analytics-chart.js" defer></script>
     <script src="time-undo.js"></script>
+    <script src="stepper.js"></script>
     <script>
     (function() {
         function go() { if (window.lucide) lucide.createIcons({ nameAttr: 'data-lucide', attrs: { 'aria-hidden': 'true' } }); }
@@ -3657,12 +3662,38 @@
                         '</strong>, past your date. Your outcome may already be decided.</div>';
                     return;
                 }
-                var tentative = g1FromDay(g1ToDay(entered) + latest.lag_days);
+                var buffer = g1StoredBuffer();
+                var tentative = g1FromDay(g1ToDay(entered) + latest.lag_days + buffer * 7);
                 var inDays = Math.round(g1ToDay(tentative) - g1ToDay(new Date().toISOString().slice(0, 10)));
                 box.innerHTML = '<div class="g1-estimate">' + when +
                     ' \u2192 tentative outcome around <strong>' + fmtG1Date(tentative) + '</strong> (in ~' + inDays + ' days)' +
-                    ' <span class="pill blue">current lag ' + latest.lag_days + 'd (~' + fmtLagMonths(latest.lag_days) + ' mo)</span></div>' +
-                    '<div class="note2" style="margin-top:6px;">Your date + the current lag, recalculated automatically when new observations arrive.</div>';
+                    ' <span class="pill blue">current lag ' + latest.lag_days + 'd (~' + fmtLagMonths(latest.lag_days) + ' mo)</span>' +
+                    (buffer ? ' <span class="pill">+' + buffer + 'w buffer</span>' : '') + '</div>' +
+                    '<div class="note2" style="margin-top:6px;">Your date + the current lag' +
+                    (buffer ? ' + your ' + buffer + '-week buffer' : '') +
+                    ', recalculated automatically when new observations arrive.</div>';
+            }
+
+            // A buffer is the one number a visa applicant adds for themselves: the
+            // lag is a mean, so padding the estimate by 0–12 weeks is a choice,
+            // not a rule. It persists beside the date and never changes the data.
+            function g1StoredBuffer() {
+                try {
+                    var n = parseInt(localStorage.getItem('stamp1g-buffer'), 10);
+                    return isFinite(n) ? Math.max(0, Math.min(12, n)) : 0;
+                } catch (e) { return 0; }
+            }
+            function paintG1Buffer() {
+                var host = document.getElementById('g1-buffer');
+                if (!host || !window.Stepper || Stepper.get(host) !== null) return;
+                Stepper.mount(host, {
+                    value: g1StoredBuffer(), min: 0, max: 12, step: 1,
+                    label: 'Buffer', unit: 'week', size: 'sm',
+                    onChange: function (n) {
+                        try { localStorage.setItem('stamp1g-buffer', String(n)); } catch (e) { /* private mode */ }
+                        paintG1Estimate();
+                    }
+                });
             }
 
             function g1StoredExpiry() {
@@ -3812,6 +3843,9 @@
                     '<input type="date" id="g1-apply-date" autocomplete="off" aria-label="Your application date" value="' + escapeHtml(storedDate) + '">' +
                     '<button type="button" class="clear-btn" id="g1-apply-clear" aria-label="Clear application date" title="Clear application date">\u00d7</button>' +
                     '</div></div>' +
+                    '<div class="g1-buffer"><span class="note2">Buffer</span>' +
+                    '<div id="g1-buffer" class="stp-host"></div>' +
+                    '<span class="note2">weeks on top of the current lag</span></div>' +
                     '<div id="g1-estimate" aria-live="polite"></div>' +
                     '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:10px;">' +
                     '<label for="g1-expiry-date" style="font-size:12px;color:var(--ink-muted);">IRP expiry (optional)</label>' +
@@ -3882,6 +3916,7 @@
                     });
                 }
                 applyG1DateBounds();
+                paintG1Buffer();
                 paintG1Estimate();
                 var g1ExpEl = document.getElementById('g1-expiry-date');
                 if (g1ExpEl) g1ExpEl.addEventListener('change', function() {
