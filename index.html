@@ -146,6 +146,7 @@
     <link rel="stylesheet" href="rubber-segment.css" />
     <link rel="stylesheet" href="squish-switch.css" />
     <link rel="stylesheet" href="gooey-nav.css" />
+    <link rel="stylesheet" href="time-undo.css" />
     <style>
 
         /* Both faces are self-hosted variable fonts, so nothing in this file
@@ -1730,6 +1731,7 @@
     <script src="squish-switch.js" defer></script>
     <script src="gooey-nav.js" defer></script>
     <script src="analytics-chart.js" defer></script>
+    <script src="time-undo.js"></script>
     <script>
     (function() {
         function go() { if (window.lucide) lucide.createIcons({ nameAttr: 'data-lucide', attrs: { 'aria-hidden': 'true' } }); }
@@ -2358,6 +2360,8 @@
                 if (homeSearchEl) {
                     homeSearchEl.addEventListener('input', function(e) {
                         homeSearchTerm = e.target.value;
+                        var clearBtn = document.getElementById('home-search-clear');
+                        if (clearBtn && !clearBtn.getAttribute('data-tu-state')) clearBtn.hidden = !homeSearchTerm.trim();
                         // Debounce so rapid typing coalesces into a single repaint.
                         if (_searchDebounce) clearTimeout(_searchDebounce);
                         _searchDebounce = setTimeout(function() {
@@ -2477,6 +2481,43 @@
                     }
                     exportCSV(rows, file);
                 });
+                // Clear search is the home view's destructive control: the query
+                // is dropped immediately and the button itself holds the window.
+                // It lives in the toolbar, outside the table paint, so the click
+                // that clears the search is still there to bring it back.
+                var homeClear = document.getElementById('home-search-clear');
+                var clearedSearch = null;
+                if (homeClear && window.TimeUndo) {
+                    TimeUndo.mount(homeClear, {
+                        seconds: 6,
+                        onStart: function() {
+                            if (!homeSearchTerm.trim()) return false;
+                            var input = document.getElementById('home-search');
+                            clearedSearch = { term: homeSearchTerm, field: input ? input.value : homeSearchTerm };
+                            homeClear.hidden = false;
+                            homeSearchTerm = '';
+                            if (input) input.value = '';
+                            paintHomeRows();
+                            syncUrl('replace');
+                            return true;
+                        },
+                        onCancel: function() {
+                            if (!clearedSearch) return;
+                            homeSearchTerm = clearedSearch.term;
+                            var input = document.getElementById('home-search');
+                            if (input) input.value = clearedSearch.field;
+                            clearedSearch = null;
+                            paintHomeRows();
+                            syncUrl('replace');
+                        },
+                        onCommit: function() {
+                            clearedSearch = null;
+                            var input = document.getElementById('home-search');
+                            homeClear.hidden = !(input && input.value.trim());
+                        }
+                    });
+                    if (!homeSearchTerm.trim()) homeClear.hidden = true;
+                }
                 var pastExport = document.getElementById('past-export');
                 if (pastExport) pastExport.addEventListener('click', function() {
                     var rows = (cache || []).filter(function(r) { return !r._placeholder; });
@@ -2603,7 +2644,10 @@
                     '<datalist id="home-suggestions"></datalist>' +
                     '<div class="toolbar-row">' +
                     '<div id="recent-searches">' + recentSearchesHTML() + '</div>' +
+                    '<div style="display:flex;align-items:center;gap:8px;margin-left:auto;">' +
+                    '<button type="button" class="export-btn tu-btn" id="home-search-clear" title="Clear the search and show every result" hidden>Clear search</button>' +
                     '<button type="button" class="export-btn" id="home-export" title="Download the current results as CSV">Export CSV</button>' +
+                    '</div>' +
                     '</div>' +
                     '<div id="watch-area"></div>' +
                     '<div class="cards">' +
