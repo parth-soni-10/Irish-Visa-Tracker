@@ -151,6 +151,7 @@
     <link rel="stylesheet" href="scroll-island.css" />
     <link rel="stylesheet" href="scroll-island-theme.css" />
     <link rel="stylesheet" href="filter-disclosure.css" />
+    <link rel="stylesheet" href="dynamic-button.css" />
     <style>
 
         /* Both faces are self-hosted variable fonts, so nothing in this file
@@ -1741,6 +1742,10 @@
     <script src="time-undo.js"></script>
     <script src="stepper.js"></script>
     <script src="filter-disclosure.js"></script>
+    <!-- The stale-data banner's "Retry now" says "Retrying…" while it works:
+         the kit cross-fades the two labels and travels between their widths,
+         and the inline handler below writes plain text if this never loads. -->
+    <script src="dynamic-button.js" defer></script>
     <script>
     (function() {
         function go() { if (window.lucide) lucide.createIcons({ nameAttr: 'data-lucide', attrs: { 'aria-hidden': 'true' } }); }
@@ -2587,7 +2592,11 @@
                 var staleRetry = document.getElementById('stale-retry');
                 if (staleRetry) staleRetry.addEventListener('click', function() {
                     staleRetry.disabled = true;
-                    staleRetry.textContent = 'Retrying\u2026';
+                    // "Retry now" -> "Retrying…" -> "Retry now". The kit is what
+                    // cross-fades those two labels and travels between their
+                    // widths; the direct write is the no-kit fallback.
+                    if (window.DynamicButton) window.DynamicButton.say(staleRetry, 'Retrying\u2026');
+                    else staleRetry.textContent = 'Retrying\u2026';
                     loadData({ force: true }).then(function() {
                         var body = document.getElementById('tab-body');
                         if (!body) return location.reload();
@@ -2600,7 +2609,8 @@
                         else if (activeTab === 'past') paintPastRows();
                         if (staleAt) {
                             staleRetry.disabled = false;
-                            staleRetry.textContent = 'Retry now';
+                            if (window.DynamicButton) window.DynamicButton.restore(staleRetry);
+                            else staleRetry.textContent = 'Retry now';
                         }
                     });
                 });
