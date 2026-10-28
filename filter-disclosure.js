@@ -1,4 +1,4 @@
-/* Filter Disclosure — one funnel button, one single-select choice panel.
+/* Filter Disclosure - one funnel button, one single-select choice panel.
  *
  *   FilterDisclosure.mount(host, {
  *     label: 'Filter by status',

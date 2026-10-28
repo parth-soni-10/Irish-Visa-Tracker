@@ -1,7 +1,7 @@
 name: Track Stamp 1G Processing Date
 
 on:
-  workflow_dispatch: {}   # manual "Run workflow" button — still available for on-demand runs
+  workflow_dispatch: {}   # manual "Run workflow" button - still available for on-demand runs
   schedule:
     # One observation per day for the dashboard's advancement-rate + ETA
     # projections. track_1g.py skips when the run date is already recorded, so
@@ -10,7 +10,7 @@ on:
     # Four attempts spread across the morning, and deliberately off the hour.
     # GitHub's scheduled runs are low priority: on this repo the 03:00 UTC slot
     # has been landing 6-9 hours late (2026-10-05..10-12), and on 2026-10-13
-    # nothing had run by mid-morning — the observation for that day had to be
+    # nothing had run by mid-morning - the observation for that day had to be
     # backfilled by hand. A single cron entry is therefore not a reliable daily
     # observation. Only the first attempt of the day writes a row; the rest are
     # quick no-ops, which is a cheap price for never losing a day.
@@ -48,7 +48,7 @@ jobs:
           # The scrape workflow commits every ~30 minutes, so this push can lose
           # the race. Retry it on top of a rebase: without that, a rejected push
           # fails the job and that day's observation is gone for good, because
-          # this script only ever writes its own run date — tomorrow's run
+          # this script only ever writes its own run date - tomorrow's run
           # cannot re-derive it.
           for attempt in 1 2 3 4 5; do
             if git push; then

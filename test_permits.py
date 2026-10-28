@@ -1,4 +1,4 @@
-"""Unit tests for track_permits.py — DETE parsing + JSON history logic."""
+"""Unit tests for track_permits.py - DETE parsing + JSON history logic."""
 
 import unittest
 from datetime import date

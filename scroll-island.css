@@ -1,4 +1,4 @@
-/* Scroll Island — the floating index pill and its section list.
+/* Scroll Island - the floating index pill and its section list.
  *
  * Theming: seven custom properties, each read with its fallback in place rather
  * than declared on the root, so a host that sets them on any ancestor wins:

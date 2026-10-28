@@ -1,11 +1,11 @@
-/* Scroll Island — this site's palette.
+/* Scroll Island - this site's palette.
  *
  * The page keeps its theme on the dashboard root (#visa-dash[data-theme]) and
  * its own styles in a hash-pinned <style> block, so the island's tokens live
  * here, in a second external stylesheet.
  *
  * They hang off <body> rather than #visa-dash because the app repaints that
- * root's contents on every tracker switch — an island inside it would be
+ * root's contents on every tracker switch - an island inside it would be
  * wiped by the next render. The mount file mirrors the theme onto <body> as
  * data-si-theme, which is what the dark block below keys on.
  */

@@ -51,20 +51,20 @@ account lookup, no authentication and no private case data.
 
 All are public, read-only and same-origin:
 
-- `GET /data/visa_decisions.json` — JSON array of rows shaped
+- `GET /data/visa_decisions.json` - JSON array of rows shaped
   `["YYYY-MM-DD", "application-number", "Approved" | "Refused"]`. The file grows as the scraper
   commits new days.
-- `GET /data/visa_meta.json` — scraper health, for example
+- `GET /data/visa_meta.json` - scraper health, for example
   `{ "lastRunAt": "...", "sheetRows": 40435, "newRows": 0, "fileDate": null, "fileRows": null,
   "ok": true, "closureDates": [] }`. Read `lastRunAt` and `ok` before treating the data as
   current.
-- `GET /data/stamp_1g.json` — array of Stamp 1G observations with `run_date`,
+- `GET /data/stamp_1g.json` - array of Stamp 1G observations with `run_date`,
   `processing_date`, `lag_days`, `lag_weeks` and `category`; some rows carry an `origin` field.
-- `GET /data/work_permits.json` — array of employment-permit observations with `run_date`,
+- `GET /data/work_permits.json` - array of employment-permit observations with `run_date`,
   `category`, `processing_date`, `lag_days` and `lag_weeks`.
-- `GET /data/community_timelines.json` — public community timeline rows merged by the nightly
+- `GET /data/community_timelines.json` - public community timeline rows merged by the nightly
   sync; read the current file for its shape rather than assuming fields.
-- `GET /api/community-submissions` — `{ "submissions": [ { "form", "fields", "created_at" } ] }`
+- `GET /api/community-submissions` - `{ "submissions": [ { "form", "fields", "created_at" } ] }`
   for the two timeline forms only. It never returns the private `suggestions` form.
 
 The site has no per-application JSON endpoint. To answer "what happened to application X", fetch
@@ -72,11 +72,11 @@ the decisions file and search it. The file is a few megabytes, so cache it local
 
 ## Pages
 
-- [Tracker](https://irishvisaupdatetracker.pages.dev/) — the dashboard and search.
+- [Tracker](https://irishvisaupdatetracker.pages.dev/) - the dashboard and search.
 - [Markdown home](https://irishvisaupdatetracker.pages.dev/index.md)
-- [About](https://irishvisaupdatetracker.pages.dev/about) — what is tracked, sources, limits.
-- [Contact](https://irishvisaupdatetracker.pages.dev/contact) — corrections, bug reports, scope.
-- [Privacy](https://irishvisaupdatetracker.pages.dev/privacy) — browser storage and form data.
+- [About](https://irishvisaupdatetracker.pages.dev/about) - what is tracked, sources, limits.
+- [Contact](https://irishvisaupdatetracker.pages.dev/contact) - corrections, bug reports, scope.
+- [Privacy](https://irishvisaupdatetracker.pages.dev/privacy) - browser storage and form data.
 - [Sitemap](https://irishvisaupdatetracker.pages.dev/sitemap.xml)
 - [GitHub repository](https://github.com/parth-soni-10/Irish-Visa-Tracker)
 

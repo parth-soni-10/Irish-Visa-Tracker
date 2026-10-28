@@ -11,7 +11,7 @@
 #
 # `pages_build_output_dir` names the upload tools/deploy-pages.mjs stages from
 # this repository (the repository root, minus `.assetsignore`), and `_headers`
-# carries the response headers — the old netlify.toml is gone, since Cloudflare
+# carries the response headers - the old netlify.toml is gone, since Cloudflare
 # ignored it and every directive it held is in there now.
 
 name = "irishvisaupdatetracker"

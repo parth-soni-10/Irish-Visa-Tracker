@@ -6,12 +6,12 @@ A personal tool that watches the daily visa-decision list published by the **Emb
 
 ## Why it exists
 
-Every business day the embassy posts a spreadsheet of visa decisions — a single flat file with no history, no search and no trends. Checking your own application meant opening that day's file and hunting through it. This project keeps a running record automatically, so you can:
+Every business day the embassy posts a spreadsheet of visa decisions - a single flat file with no history, no search and no trends. Checking your own application meant opening that day's file and hunting through it. This project keeps a running record automatically, so you can:
 
 - **Look up any application number** and see its outcome and date
 - **See the latest decisions** on the day they are published
 - **Browse daily summaries** of accepted versus rejected
-- **Watch trends over time** — rates, busiest days, and the shape of a month
+- **Watch trends over time** - rates, busiest days, and the shape of a month
 - **Follow community waits** for embassy visas and Stamp 1G renewals, from submissions other visitors share
 
 ## How it works

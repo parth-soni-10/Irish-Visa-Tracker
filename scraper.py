@@ -1,5 +1,5 @@
 """
-Irish Visa Decision Tracker — scraper for GitHub Actions
+Irish Visa Decision Tracker - scraper for GitHub Actions
 -----------------------------------------------------------
 Reads the embassy's visa-decision file and upserts rows into
 data/visa_decisions.json in this repo (committed by the workflow).
@@ -14,16 +14,16 @@ Every run, in priority order:
      backfill empty days as above. Stop (no scrape attempted).
   4. Else (a normal business day) -> attempt the real scrape. If a file dated
      today (or later) is found, push new rows and clear any stale placeholder
-     for its date. Otherwise — the scrape failed, found nothing, or the site
+     for its date. Otherwise - the scrape failed, found nothing, or the site
      is still hosting an OLDER file (the file is cumulative and named after its
      last covered day, so an older file just means today's hasn't appeared
-     yet) — upsert "Visa office hasn't uploaded any sheet until now, check
+     yet) - upsert "Visa office hasn't uploaded any sheet until now, check
      back later, or come back tomorrow", dated TODAY. Every empty day after
      the latest file's date is backfilled too, so a missed run can never
      silently leave a hole in the dashboard.
 
 New rows are dated with the day they were SCRAPED (today), not the date in
- the file's filename — so the daily summary always shows a day's count
+ the file's filename - so the daily summary always shows a day's count
  against that day, regardless of which cumulative file the decisions came
  from.
 
@@ -37,15 +37,15 @@ turns a silent site change/outage (which otherwise just writes "no file" rows
 forever) into a visible GitHub Actions failure.
 
 Flags (env vars, all optional):
-  ENABLE_NO_UPLOAD_PLACEHOLDER "true" (default) or "false" — turns ALL of the
+  ENABLE_NO_UPLOAD_PLACEHOLDER "true" (default) or "false" - turns ALL of the
                                 above placeholder mechanisms on/off at once.
-  GAP_ALERT_BUSINESS_DAYS  "3" (default) — fail the run once no new file has
+  GAP_ALERT_BUSINESS_DAYS  "3" (default) - fail the run once no new file has
                                 appeared for this many consecutive business
                                 days (Mon-Fri, excluding listed closure dates),
                                 so a site change or outage shows up as a red
                                 GitHub Actions run instead of silent "no file"
                                 rows. "0" disables the check.
-  ALERT_WEBHOOK_URL         unset (default) — set to a webhook URL to ALSO
+  ALERT_WEBHOOK_URL         unset (default) - set to a webhook URL to ALSO
                                 fire an out-of-band notification outside GitHub
                                 whenever the gap alert trips. Accepts Slack /
                                 Teams / Discord / Telegram-bot / generic-email-
@@ -79,7 +79,7 @@ HISTORY_FILENAME = "visa_decisions.json"
 META_FILENAME = "visa_meta.json"
 ENABLE_NO_UPLOAD_PLACEHOLDER = os.environ.get("ENABLE_NO_UPLOAD_PLACEHOLDER", "true").strip().lower() == "true"
 # Optional out-of-band alert webhook. When set, a POST is fired the moment the
-# gap alert trips (not a replacement for the red run — a complement to it).
+# gap alert trips (not a replacement for the red run - a complement to it).
 # Works with any generic webhook (Slack/Teams/Discord/Telegram bot/email-gateway):
 # the payload is adapted to the well-known formats automatically. Empty string = off.
 ALERT_WEBHOOK_URL = os.environ.get("ALERT_WEBHOOK_URL", "").strip()
@@ -136,13 +136,13 @@ def find_ods_link():
     resp = requests.get(PAGE_URL, headers=BROWSER_HEADERS, timeout=30)
     print(f"Page fetch status: {resp.status_code} | length: {len(resp.text)}")
     if resp.status_code != 200:
-        raise RuntimeError(f"Blocked fetching page — status {resp.status_code}")
+        raise RuntimeError(f"Blocked fetching page - status {resp.status_code}")
 
     match = re.search(r'href=["\']([^"\']+\.ods)["\']', resp.text, re.IGNORECASE)
     if not match:
         match = re.search(r'(https?://[^\s"\'<>]+\.ods)', resp.text, re.IGNORECASE)
     if not match:
-        raise RuntimeError("No .ods link found in page HTML — site markup may have changed.")
+        raise RuntimeError("No .ods link found in page HTML - site markup may have changed.")
 
     href = match.group(1)
     if href.startswith("//"):
@@ -174,7 +174,7 @@ def download_and_parse_ods(ods_url: str):
     resp = requests.get(ods_url, headers=BROWSER_HEADERS, timeout=60)
     print(f"ODS fetch status: {resp.status_code} | bytes: {len(resp.content)}")
     if resp.status_code != 200:
-        raise RuntimeError(f"Blocked fetching .ods — status {resp.status_code}")
+        raise RuntimeError(f"Blocked fetching .ods - status {resp.status_code}")
 
     raw = pd.read_excel(io.BytesIO(resp.content), engine="odf", header=None)
     header_row_idx = find_header_row(raw)
@@ -232,7 +232,7 @@ def extract_closure_section(html: str, year: int) -> str:
     )
     if match:
         return match.group(1)
-    print(f"Could not find a 'closure-dates-{year}' anchor on the page — "
+    print(f"Could not find a 'closure-dates-{year}' anchor on the page - "
           f"scanning the entire page as a fallback (may be slower/noisier).")
     return html
 
@@ -244,7 +244,7 @@ def extract_candidate_lines(section_html: str):
 
     <tr> MUST come first: the captured section can contain unrelated <li>
     markup (footer/nav links), and picking those up first would shadow the
-    real closure table entirely (that is exactly what happened — the closure
+    real closure table entirely (that is exactly what happened - the closure
     rows were never scanned, so no holiday ever matched)."""
     items = re.findall(r"<tr[^>]*>(.*?)</tr>", section_html, re.IGNORECASE | re.DOTALL)
     if not items:
@@ -308,7 +308,7 @@ def _holiday_name(line: str) -> str:
 
 def check_holiday(today_dt: datetime):
     """Returns a holiday name string if today is a listed embassy closure date,
-    else None. Never raises — any parsing failure just means 'not a holiday',
+    else None. Never raises - any parsing failure just means 'not a holiday',
     the safest default (falls through to the normal scrape attempt).
 
     Matching is two-pass: explicit (day, month) extraction handles the
@@ -318,7 +318,7 @@ def check_holiday(today_dt: datetime):
         resp = requests.get(CLOSURE_DATES_URL, headers=BROWSER_HEADERS, timeout=30)
         print(f"Closure-dates page fetch status: {resp.status_code} | length: {len(resp.text)}")
         if resp.status_code != 200:
-            print("Could not fetch closure-dates page — treating as 'not a holiday'.")
+            print("Could not fetch closure-dates page - treating as 'not a holiday'.")
             return None
 
         section = extract_closure_section(resp.text, today_dt.year)
@@ -346,14 +346,14 @@ def check_holiday(today_dt: datetime):
         print("No closure-date match found for today.")
         return None
     except Exception as e:
-        print(f"check_holiday() failed unexpectedly ({e}) — treating as 'not a holiday'.")
+        print(f"check_holiday() failed unexpectedly ({e}) - treating as 'not a holiday'.")
         return None
 
 
 def _closure_dates(year):
     """Set of (month, day) closure dates listed for ``year`` on the embassy's
     closure-dates page. Returns an empty set if the page can't be fetched or
-    parsed, which makes the gap alert treat weekdays as business days — the
+    parsed, which makes the gap alert treat weekdays as business days - the
     conservative direction when a site change/outage is suspected."""
     dates = set()
     try:
@@ -364,7 +364,7 @@ def _closure_dates(year):
                 for day, month in _dates_in_line(line):
                     dates.add((month, day))
     except requests.exceptions.RequestException as e:
-        print(f"Could not fetch closure-dates page for gap alert ({e}) — "
+        print(f"Could not fetch closure-dates page for gap alert ({e}) - "
               f"treating weekdays as business days.")
     return dates
 
@@ -400,7 +400,7 @@ def load_history():
     """Read [date, irl, decision] rows from the repo JSON history file.
 
     A missing file means no data yet (first run, or pre-migration) and
-    returns []. A present-but-unusable file raises HistoryError — main()
+    returns []. A present-but-unusable file raises HistoryError - main()
     fails loudly instead of continuing with a fabricated empty baseline,
     which would duplicate history on write.
     """
@@ -449,7 +449,7 @@ def clear_no_file_placeholder(rows, date_str):
 def update_meta(meta):
     """Best-effort: store the run-status object for the dashboard.
 
-    Local file write replaces the old ?action=meta POST; still non-fatal —
+    Local file write replaces the old ?action=meta POST; still non-fatal -
     the history data is the source of truth, not the meta file.
     """
     try:
@@ -457,13 +457,13 @@ def update_meta(meta):
         _meta_path().write_text(
             json.dumps(meta, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
     except OSError as e:
-        print(f"Update meta failed ({e}) — continuing (non-fatal).")
+        print(f"Update meta failed ({e}) - continuing (non-fatal).")
 
 
 def _run_meta(today_dt, existing_irl, new_rows=(), fetch_date=None, file_rows=None,
               ok=True, closure_dates=None):
     """The run-status object stored via ?action=meta for the dashboard's health
-    card, reconciliation line and closure calendar. Pure data — no I/O."""
+    card, reconciliation line and closure calendar. Pure data - no I/O."""
     return {
         "lastRunAt": today_dt.strftime("%Y-%m-%dT%H:%M:%S"),
         "sheetRows": len(existing_irl),
@@ -490,7 +490,7 @@ def send_webhook_alert(message):
       * anything else              -> {"text": ...} generic fallback
 
     Completely best-effort and NEVER fatal: a webhook outage (network error,
-    non-2xx, bad JSON) is logged but must not suppress the real signal — the
+    non-2xx, bad JSON) is logged but must not suppress the real signal - the
     run still fails on the gap alert as before. Only sends when
     ``ALERT_WEBHOOK_URL`` is configured.
     """
@@ -515,12 +515,12 @@ def send_webhook_alert(message):
     try:
         resp = requests.post(ALERT_WEBHOOK_URL, json=data, timeout=30)
         if resp.status_code >= 300:
-            print(f"Alert webhook returned {resp.status_code} — alert not delivered "
+            print(f"Alert webhook returned {resp.status_code} - alert not delivered "
                   f"(non-fatal; text below).")
         else:
             print("Alert webhook sent successfully.")
     except requests.exceptions.RequestException as e:
-        print(f"Alert webhook failed to send ({e}) — non-fatal, the run still "
+        print(f"Alert webhook failed to send ({e}) - non-fatal, the run still "
               f"fails on the gap alert itself as usual.")
 
 
@@ -618,7 +618,7 @@ def _backfill_missing_days(existing_rows, today_dt, anchor=None, skip_date=None)
 # ---------------- main ----------------
 
 def main():
-    """Load history, run, always persist — even on failure paths, so
+    """Load history, run, always persist - even on failure paths, so
     placeholders written before a gap-alert exit are not lost."""
     try:
         existing_rows = load_history()
@@ -645,42 +645,42 @@ def _run(existing_rows):
     # Only skip if today already has REAL data (not just a placeholder)
     today_real = [r for r in existing_rows if r[0] == today_ist and not _is_placeholder_row(r)]
     if today_real:
-        print(f"Real data already present for {today_ist} ({len(today_real)} rows) — skipping this run.")
+        print(f"Real data already present for {today_ist} ({len(today_real)} rows) - skipping this run.")
         update_meta(_run_meta(today_dt, existing_irl))
         return
 
     # --- Priority 1: weekend ---
     weekday = today_dt.weekday()  # Monday=0 ... Sunday=6
     if weekday in (5, 6):
-        print(f"Today ({today_ist}) is a weekend — no scrape attempted.")
+        print(f"Today ({today_ist}) is a weekend - no scrape attempted.")
         if ENABLE_NO_UPLOAD_PLACEHOLDER:
             set_no_file_placeholder(existing_rows, today_ist, WEEKEND_MESSAGE)
             # Heal any weekday gaps left by missed runs.
             _backfill_missing_days(existing_rows, today_dt, skip_date=today_ist)
         else:
-            print("ENABLE_NO_UPLOAD_PLACEHOLDER is false — skipping placeholder.")
+            print("ENABLE_NO_UPLOAD_PLACEHOLDER is false - skipping placeholder.")
         update_meta(_run_meta(today_dt, existing_irl))
         return
 
     # --- Priority 2: public holiday per embassy closure-dates page ---
     holiday_name = check_holiday(today_dt)
     if holiday_name:
-        print(f"Today ({today_ist}) is a listed closure date: {holiday_name!r} — no scrape attempted.")
+        print(f"Today ({today_ist}) is a listed closure date: {holiday_name!r} - no scrape attempted.")
         if ENABLE_NO_UPLOAD_PLACEHOLDER:
             set_no_file_placeholder(existing_rows, today_ist, f"Embassy is closed today for {holiday_name}")
             # Heal any gaps left by missed runs.
             _backfill_missing_days(existing_rows, today_dt, skip_date=today_ist)
         else:
-            print("ENABLE_NO_UPLOAD_PLACEHOLDER is false — skipping placeholder.")
+            print("ENABLE_NO_UPLOAD_PLACEHOLDER is false - skipping placeholder.")
         update_meta(_run_meta(today_dt, existing_irl))
         return
 
     # --- Priority 3: normal business day, attempt the real scrape ---
     scrape_failed = False
     new_rows = []
-    fetch_date = None  # date embedded in the downloaded file's name — used for
+    fetch_date = None  # date embedded in the downloaded file's name - used for
                        # staleness/placeholder decisions only; rows are dated today
-    file_rows = None   # decision rows in the latest file — for the reconciliation line
+    file_rows = None   # decision rows in the latest file - for the reconciliation line
     try:
         ods_url = find_ods_link()
         filename, df = download_and_parse_ods(ods_url)
@@ -707,7 +707,7 @@ def _run(existing_rows):
         if new_rows:
             push_new_rows(existing_rows, new_rows)
         else:
-            print("File fetched fine, nothing new in it — Sheet already up to date.")
+            print("File fetched fine, nothing new in it - Sheet already up to date.")
 
     except Exception as e:
         scrape_failed = True
@@ -717,36 +717,36 @@ def _run(existing_rows):
         # The embassy's file is CUMULATIVE ("decisions made from 1 January to
         # <date>") and named after its last covered day, published the
         # following morning. "No file for date X" is therefore true for every
-        # X strictly after the latest file's date — even when the site still
+        # X strictly after the latest file's date - even when the site still
         # hosts, and we successfully parse, an older file. Treating a stale
         # file as success used to silently drop the day's placeholder, leaving
         # whole days with no row in the dashboard (Aug 12-14 2026).
         if new_rows:
-            # Real data landed and is stamped with today's date — today is not
+            # Real data landed and is stamped with today's date - today is not
             # a "no file" day. Clear any stale placeholder for it.
-            print(f"Real data for {today_ist} pushed ({len(new_rows)} rows) — "
+            print(f"Real data for {today_ist} pushed ({len(new_rows)} rows) - "
                   f"clearing any stale placeholder for {today_ist}.")
             clear_no_file_placeholder(existing_rows, today_ist)
         elif fetch_date is None:
-            # Scrape failed outright — we can't see the latest file, so at
+            # Scrape failed outright - we can't see the latest file, so at
             # minimum make sure today's placeholder exists.
-            print(f"No file found this run — upserting placeholder for {today_ist}.")
+            print(f"No file found this run - upserting placeholder for {today_ist}.")
             set_no_file_placeholder(existing_rows, today_ist, NO_UPLOAD_MESSAGE)
         elif fetch_date < today_ist:
             # A stale file was scraped but had nothing new (its decisions were
             # already recorded). Today's file hasn't been published yet, so
             # today gets the no-upload note and every empty gap day from the
-            # latest file's date through today is backfilled too — a missed
+            # latest file's date through today is backfilled too - a missed
             # run can never silently leave a hole in the daily summary.
-            print(f"Latest file ({fetch_date}) predates today ({today_ist}) — "
+            print(f"Latest file ({fetch_date}) predates today ({today_ist}) - "
                   f"ensuring placeholders for every gap day.")
             _backfill_missing_days(existing_rows, today_dt, anchor=fetch_date)
         else:
-            # File dated today (or later) is live — no placeholder needed.
-            print(f"File for {fetch_date} found — clearing any stale placeholder for {fetch_date}.")
+            # File dated today (or later) is live - no placeholder needed.
+            print(f"File for {fetch_date} found - clearing any stale placeholder for {fetch_date}.")
             clear_no_file_placeholder(existing_rows, fetch_date)
     else:
-        print("ENABLE_NO_UPLOAD_PLACEHOLDER is false — skipping placeholder.")
+        print("ENABLE_NO_UPLOAD_PLACEHOLDER is false - skipping placeholder.")
 
     # The closure page feeds both the gap alert below and the dashboard's
     # closure calendar, so fetch it once per run.
@@ -764,12 +764,12 @@ def _run(existing_rows):
             if stale_days >= GAP_ALERT_BUSINESS_DAYS:
                 # Say what this run actually observed: if we reached the page and
                 # downloaded its newest .ods fine, the diagnosis is a late upload,
-                # not a broken scraper — don't send the maintainer hunting for a
+                # not a broken scraper - don't send the maintainer hunting for a
                 # markup change that isn't there (embassy late upload, 2026-10-08).
                 if fetch_date is not None and not scrape_failed:
                     diagnosis = (
                         f"The embassy page was reachable this run and its latest "
-                        f".ods file downloaded fine — the office simply hasn't "
+                        f".ods file downloaded fine - the office simply hasn't "
                         f"published a newer file since. A late upload usually "
                         f"resolves itself; if this persists, check the visa-"
                         f"decisions page manually."

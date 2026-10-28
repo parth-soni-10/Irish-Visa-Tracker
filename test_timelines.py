@@ -1,4 +1,4 @@
-"""Unit tests for sync_timelines.py — validation, merge, aggregates."""
+"""Unit tests for sync_timelines.py - validation, merge, aggregates."""
 
 import ast
 import re
@@ -143,7 +143,7 @@ class FetchTests(unittest.TestCase):
 
     def test_an_unexpected_payload_is_loud_not_silent(self):
         # A 200 that is not the contract must fail the run, not read as "nobody
-        # has reported yet" — which is what left the panels empty before.
+        # has reported yet" - which is what left the panels empty before.
         with patch("sync_timelines.requests.get",
                    return_value=Response({"ok": True})):
             with self.assertRaises(RuntimeError):
@@ -164,7 +164,7 @@ class FetchTests(unittest.TestCase):
             encoding="utf-8")
         match = re.search(r"TIMELINE_FORMS = \[([^\]]*)\]", worker)
         self.assertIsNotNone(
-            match, "functions/_router.js declares no TIMELINE_FORMS — nothing to read")
+            match, "functions/_router.js declares no TIMELINE_FORMS - nothing to read")
         self.assertEqual(tuple(ast.literal_eval("[" + match.group(1) + "]")),
                          tuple(sync_timelines.FORM_NAMES))
 

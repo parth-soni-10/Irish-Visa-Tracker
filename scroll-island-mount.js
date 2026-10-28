@@ -1,9 +1,9 @@
-/* Scroll Island — the index of the tracker that is open.
+/* Scroll Island - the index of the tracker that is open.
  *
  * Two layouts, one index. The Embassy tracker paints each tab into #tab-body,
  * and the Stamp 1G and Permits trackers paint their panels as .g1-chart and
  * .readme blocks, so the selector names all three. The page replaces whole
- * subtrees on every tab and tracker switch — including #visa-dash's contents —
+ * subtrees on every tab and tracker switch - including #visa-dash's contents -
  * so the island mounts on <body>, where a repaint cannot delete it, and the
  * kit re-reads the selector when the headings it holds detach.
  *

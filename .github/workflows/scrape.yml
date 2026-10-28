@@ -1,7 +1,7 @@
 name: Scrape Visa Decisions
 
 on:
-  workflow_dispatch: {}   # manual "Run workflow" button — still available for on-demand runs
+  workflow_dispatch: {}   # manual "Run workflow" button - still available for on-demand runs
   schedule:
     - cron: '30 2 * * 1-5'  # Mon–Fri 08:00 IST
     - cron: '0 3 * * 1-5'   # Mon–Fri 08:30 IST
@@ -10,8 +10,8 @@ on:
     - cron: '30 4 * * 1-5'  # Mon–Fri 10:00 IST
     - cron: '0 5 * * 1-5'   # Mon–Fri 10:30 IST
     - cron: '30 5 * * 1-5'  # Mon–Fri 11:00 IST
-    - cron: '30 6 * * 6,0'  # Sat–Sun 08:00 IST — weekend placeholder (run 1)
-    - cron: '30 6 * * 6,0'  # Sat–Sun 12:00 IST — weekend placeholder (run 2)
+    - cron: '30 6 * * 6,0'  # Sat–Sun 08:00 IST - weekend placeholder (run 1)
+    - cron: '30 6 * * 6,0'  # Sat–Sun 12:00 IST - weekend placeholder (run 2)
 
 jobs:
   scrape:
@@ -34,7 +34,7 @@ jobs:
         run: python scraper.py
         env:
           # Optional out-of-band alert for the gap alert (Slack/Discord/generic
-          # webhook — see ALERT_WEBHOOK_URL in scraper.py). If the secret is not
+          # webhook - see ALERT_WEBHOOK_URL in scraper.py). If the secret is not
           # set this expands to an empty string, which the scraper treats as
           # disabled, so the workflow needs no secret to run.
           ALERT_WEBHOOK_URL: ${{ secrets.ALERT_WEBHOOK_URL }}
@@ -49,4 +49,4 @@ jobs:
           # A failed push (e.g. a concurrent run committed first) is safe to
           # ignore: the embassy file is cumulative, so the next run re-derives
           # any missing rows by IRL dedupe and reconciles automatically.
-          git push || echo "push failed — next scheduled run reconciles"
+          git push || echo "push failed - next scheduled run reconciles"

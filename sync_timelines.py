@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Community timelines sync — GitHub Actions cron job (nightly).
+Community timelines sync - GitHub Actions cron job (nightly).
 
 Pulls community-timeline submissions (visitors reporting their own
 applied -> decided dates), validates + dedupes them, and merges them into
@@ -9,21 +9,21 @@ data/community_timelines.json, which the dashboard aggregates into
 are just skipped (and logged) so a spam wave can't poison the file.
 
 Two separate forms (one per tracker, matching the site's split UI):
-  - "timelines-visa" — embassy-visa form on the Suggestions tab
-  - "timelines-1g"   — Stamp 1G form on the 1G page
+  - "timelines-visa" - embassy-visa form on the Suggestions tab
+  - "timelines-1g"   - Stamp 1G form on the 1G page
 The legacy single "timelines" form (with a tracker dropdown) is still
 read when present, so old submissions keep flowing after the split.
 
 Where the submissions live: the forms used to be Netlify Forms, and the
 handler that replaced them (functions/_router.js, run by Pages) writes every POST into the `submissions`
 table of D1 (form, fields, created_at). It also serves those rows back at
-GET /api/community-submissions — the three timeline form names only, never the
-`suggestions` form — and this reads that endpoint. No Cloudflare API token, no
+GET /api/community-submissions - the three timeline form names only, never the
+`suggestions` form - and this reads that endpoint. No Cloudflare API token, no
 repo secret, nothing to configure: the job runs on a fresh fork unchanged, and
 an empty answer means nobody has reported a timeline yet.
 
 (It used to query D1's API directly, which needed a CLOUDFLARE_API_TOKEN repo
-secret. A missing secret did not fail the job — it printed SKIP and exited 0 —
+secret. A missing secret did not fail the job - it printed SKIP and exited 0 -
 so the panels stayed empty with nothing on screen saying why.)
 
 Row schema:
@@ -133,7 +133,7 @@ def iso_utc(value):
 
     A space would sort before every "T" for the same date, which would shuffle
     mixed rows in the dashboard's ordering, so it becomes a T (and the string
-    is marked Z — valid_entry trims back to whole seconds when it stores it).
+    is marked Z - valid_entry trims back to whole seconds when it stores it).
     """
     text = str(value or "").strip()
     if not text:
@@ -176,8 +176,8 @@ def rows_from_records(records):
 def fetch_submissions(site_url):
     """All timeline-form submissions the Worker serves (one request).
 
-    Reads the site's own endpoint — every form in FORM_NAMES (the two split
-    forms plus the legacy combined one) in one call — and returns the rows as
+    Reads the site's own endpoint - every form in FORM_NAMES (the two split
+    forms plus the legacy combined one) in one call - and returns the rows as
     submission payloads. No credential is sent or needed.
     """
     resp = requests.get(site_url.rstrip("/") + SUBMISSIONS_PATH, timeout=30)
@@ -215,7 +215,7 @@ def main():
     existing = load_existing()
     merged = merge(existing, incoming)
     if merged == existing:
-        print("No new timelines — file unchanged.")
+        print("No new timelines - file unchanged.")
         return
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     DATA_FILE.write_text(json.dumps(merged, indent=2) + "\n", encoding="utf-8")

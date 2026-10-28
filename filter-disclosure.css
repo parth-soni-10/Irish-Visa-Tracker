@@ -1,9 +1,9 @@
-/* Filter Disclosure — the funnel button, its badge, and the choice panel.
+/* Filter Disclosure - the funnel button, its badge, and the choice panel.
  *
  * Colours are hooks with two fallbacks each: a host may set --fd-* on any
  * ancestor (the dark card in the harness does), or just leave the kit to read
  * the tokens it already has (--card, --ink, --line, --accent). The hooks are
- * therefore never declared on .fd itself — a declaration there would override
+ * therefore never declared on .fd itself - a declaration there would override
  * the inherited value and make an ancestor's remap silently do nothing.
  *
  * Nothing here uses !important, and the kit writes no markup into the page
@@ -79,7 +79,7 @@
 
 /* Opt-in (showValue): the active choice in words, for a host where the funnel
    sits alone in a row and an icon-only badge would leave the reader guessing.
-   Decoration too — the trigger's accessible name already carries it. */
+   Decoration too - the trigger's accessible name already carries it. */
 .fd-value {
   align-self: center;
   margin-left: 9px;

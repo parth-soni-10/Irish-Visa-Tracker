@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Stamp renewal processing-date tracker — GitHub Actions cron job.
+Stamp renewal processing-date tracker - GitHub Actions cron job.
 
 Each run:
 1. Fetches the current ISD processing page.
@@ -10,7 +10,7 @@ Each run:
    (creates it if missing).
 5. Skips pairs already recorded (cron re-runs are safe).
 
-The JSON file is the dashboard's data source — index.html fetches it
+The JSON file is the dashboard's data source - index.html fetches it
 directly and builds advancement-rate + ETA projections from it.
 
 Row schema:
@@ -195,7 +195,7 @@ def find_all_stamp_dates(html: str) -> dict[str, date]:
             if len(cells) < 2:
                 continue
             # The header row's date cell holds text like "Submission Date*",
-            # which never parses — so it filters itself out, no special case.
+            # which never parses - so it filters itself out, no special case.
             parsed = parse_date(cells[1])
             if parsed:
                 found.setdefault(normalize_category(cells[0]), parsed)
@@ -244,7 +244,7 @@ def append_tracking_rows(dates: dict, today: date | None = None) -> int:
 
     Unlike the original Excel version (which skipped when the ISD date was
     unchanged), one row per run date is kept even when the processing date
-    stalls — flat stretches are exactly what the dashboard's advancement-rate
+    stalls - flat stretches are exactly what the dashboard's advancement-rate
     projections need to see.
 
     Returns the number of rows added.

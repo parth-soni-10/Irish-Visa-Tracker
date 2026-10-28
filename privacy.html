@@ -48,15 +48,15 @@
     <section>
       <h2>What is stored in your browser</h2>
       <p>
-        The dashboard uses <code>localStorage</code> — not cookies — to remember things on your
+        The dashboard uses <code>localStorage</code> - not cookies - to remember things on your
         own device. None of it is sent to the server unless you submit a form. The keys are:
       </p>
       <ul>
-        <li><code>visa-theme</code> — light or dark preference.</li>
-        <li><code>visa-last-visit</code> — when you last opened the tracker, used for the “since you last checked” line.</li>
-        <li><code>visa-snapshot-gz</code> / <code>visa-snapshot-plain</code> — a compressed copy of the last successful decision download, so the page can still show something when offline.</li>
-        <li><code>visa-recent-searches</code>, <code>visa-watchlist</code> — the application numbers you looked up or chose to watch.</li>
-        <li><code>stamp1g-category</code>, <code>stamp1g-apply-date</code>, <code>stamp1g-apply-mode</code>, <code>stamp1g-expiry</code>, <code>permits-category</code> — the filters and dates you last used in the Stamp 1G and permit estimators.</li>
+        <li><code>visa-theme</code> - light or dark preference.</li>
+        <li><code>visa-last-visit</code> - when you last opened the tracker, used for the “since you last checked” line.</li>
+        <li><code>visa-snapshot-gz</code> / <code>visa-snapshot-plain</code> - a compressed copy of the last successful decision download, so the page can still show something when offline.</li>
+        <li><code>visa-recent-searches</code>, <code>visa-watchlist</code> - the application numbers you looked up or chose to watch.</li>
+        <li><code>stamp1g-category</code>, <code>stamp1g-apply-date</code>, <code>stamp1g-apply-mode</code>, <code>stamp1g-expiry</code>, <code>permits-category</code> - the filters and dates you last used in the Stamp 1G and permit estimators.</li>
       </ul>
       <p>
         Clearing site data in your browser removes all of it. There is no cross-site tracker and
@@ -75,7 +75,7 @@
           store the application date, decision date, outcome and tracker. These rows are public by
           design: they are merged into <a href="/data/community_timelines.json">community_timelines.json</a>
           and served, without names, at <code>GET /api/community-submissions</code> for the nightly sync.
-          Do not include personal details in a timeline — the form does not ask for a name.
+          Do not include personal details in a timeline - the form does not ask for a name.
         </li>
         <li>
           <strong>Suggestions</strong> (<code>suggestions</code>) store the name and free text you
@@ -93,8 +93,8 @@
       <h2>Hosting and server logs</h2>
       <p>
         The site runs on Cloudflare Pages with a Pages Function and a D1 database. Cloudflare
-        processes the request needed to serve a page or accept a form — including IP address,
-        requested URL, user agent and timestamp — under its own privacy terms, and may keep
+        processes the request needed to serve a page or accept a form - including IP address,
+        requested URL, user agent and timestamp - under its own privacy terms, and may keep
         security and operational logs. Parth does not run an analytics product over those logs,
         does not build visitor profiles and does not sell or share them.
       </p>

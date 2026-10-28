@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Irish Visa Decision Tracker">
   <!-- The app's own "approved" mark: the single green accent the page already
        uses for a granted decision, inside a stamp ring. Deliberately not the
-       initials-on-a-tinted-square that every generated project reaches for —
+       initials-on-a-tinted-square that every generated project reaches for -
        a check reads as a visa outcome at 16px, where "IV" would not.
 
        The tile is a deep slate-green rather than white so one file works on

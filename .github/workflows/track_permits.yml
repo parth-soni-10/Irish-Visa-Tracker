@@ -5,7 +5,7 @@ name: Track Employment Permit Dates
 # dashboard reuses its rendering + projection code).
 
 on:
-  workflow_dispatch: {}   # manual "Run workflow" button — still available for on-demand runs
+  workflow_dispatch: {}   # manual "Run workflow" button - still available for on-demand runs
   schedule:
     # One observation per day, right after the 1G run. The script skips when
     # the run date is already recorded, so re-runs and overlap are safe.

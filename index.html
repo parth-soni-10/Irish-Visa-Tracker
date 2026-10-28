@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Irish Visa Decision Tracker — Ireland Visa Decisions &amp; Stamp 1G</title>
+    <title>Irish Visa Decision Tracker - Ireland Visa Decisions &amp; Stamp 1G</title>
 <meta name="theme-color" content="#ffffff">
 <meta name="description" content="Irish Visa Decision Tracker: search Embassy of Ireland New Delhi visa decisions, daily approved/refused summaries, Stamp 1G and employment-permit processing dates.">
 <link rel="canonical" href="https://irishvisaupdatetracker.pages.dev/">
 <link rel="alternate" type="text/markdown" href="/index.md" title="Markdown version">
 <link rel="describedby" href="/llms.txt" type="text/plain">
 <meta property="og:site_name" content="Irish Visa Decision Tracker">
-<meta property="og:title" content="Irish Visa Decision Tracker — Ireland Visa Decisions &amp; Stamp 1G">
+<meta property="og:title" content="Irish Visa Decision Tracker - Ireland Visa Decisions &amp; Stamp 1G">
 <meta property="og:description" content="Search Irish embassy visa decisions, daily summaries, Stamp 1G and employment-permit processing dates.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://irishvisaupdatetracker.pages.dev/">
@@ -160,7 +160,7 @@
         @font-face { font-family: 'Geist Mono'; src: url('fonts/geist-mono.woff2') format('woff2'); font-weight: 100 900; font-display: swap; font-style: normal; }
         /* Inter, self-hosted. One variable file covers 400-800; it is split
            into the two subsets this site can use, and the unicode-range values
-           are the ones Google served — keeping them means a glyph outside them
+           are the ones Google served - keeping them means a glyph outside them
            falls through to the system stack instead of rendering .notdef. */
         @font-face { font-family: 'Inter'; src: url('fonts/inter-latin.woff2') format('woff2'); font-weight: 400 800; font-display: swap; font-style: normal;
             unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
@@ -477,7 +477,7 @@
         #visa-dash .daily-table th:nth-child(3), #visa-dash .daily-table td:nth-child(3),
         #visa-dash .daily-table th:nth-child(4), #visa-dash .daily-table td:nth-child(4),
         #visa-dash .daily-table th:nth-child(5), #visa-dash .daily-table td:nth-child(5) { min-width: 10ch; }
-        /* Headers never break mid-word — the wrap scrolls instead. (Placed
+        /* Headers never break mid-word - the wrap scrolls instead. (Placed
            after every table rule: equal specificity means last one wins.
            overflow-wrap MUST reset too: break-word would still force
            emergency mid-word breaks despite nowrap.) */
@@ -1458,7 +1458,7 @@
             position: relative; height: 130px;
             display: flex; align-items: center; justify-content: center;
         }
-        /* Home — concentric pulse rings */
+        /* Home - concentric pulse rings */
         #visa-dash .ring {
             position: absolute; border-radius: 50%;
             border: 2px solid rgba(255,255,255,.7);
@@ -1492,7 +1492,7 @@
             width: auto; min-width: 36px; padding: 0 12px; border-radius: 19px;
             font-size: 14px;
         }
-        /* Daily — animated sine-wave bar chart */
+        /* Daily - animated sine-wave bar chart */
         #visa-dash .wave { display: flex; align-items: flex-end; gap: 4px; height: 100%; width: 100%; }
         #visa-dash .wave-bar {
             flex: 1; background: #0077E6; border-radius: 2px 2px 0 0;
@@ -1508,7 +1508,7 @@
             #visa-dash .wave-bar { animation: wave-up .6s cubic-bezier(.2,.8,.2,1) backwards; }
         }
         @keyframes wave-up { from { transform: scaleY(0); } to { transform: scaleY(1); } }
-        /* Past — stacked waterfall, animated + functional */
+        /* Past - stacked waterfall, animated + functional */
         #visa-dash .wf {
             display: grid; grid-template-columns: repeat(7, 1fr);
             gap: 6px; height: 100%; width: 100%;
@@ -1547,13 +1547,13 @@
         }
         /* On narrow viewports the .visual column is too tight (~14-16px per bar)
            for "Sat 12" labels to fit. Date labels are nice-to-have context, the
-           bars are the core signal — drop the labels and reclaim the vertical
+           bars are the core signal - drop the labels and reclaim the vertical
            space for taller bars. Hover title still gives full counts. */
         @media (max-width: 760px) {
             #visa-dash .wf { padding-bottom: 0; }
             #visa-dash .wf-date { display: none; }
         }
-        /* Suggest — typewriter card */
+        /* Suggest - typewriter card */
         #visa-dash .paper {
             background: #fff; color: var(--ink);
             border-radius: 10px; padding: 12px 14px;
@@ -1627,7 +1627,7 @@
             #visa-dash .suggest-grid .form-col { flex: 1 1 100%; }
         }        @media (max-width: 480px) {
             /* Single column: stat labels (e.g. "7-DAY ACCEPTANCE") need the
-               full row width — two narrow columns clip them on phones. */
+               full row width - two narrow columns clip them on phones. */
             #visa-dash .cards { grid-template-columns: minmax(0, 1fr); }
             #visa-dash .card .label { font-size: 11px; letter-spacing: .04em; white-space: normal; }
             #visa-dash .card .label .lucide { width: 13px; height: 13px; margin-right: 5px; }
@@ -1757,7 +1757,7 @@
 
 
         (function() {
-            // Static data files committed by the scraper workflow — no backend,
+            // Static data files committed by the scraper workflow - no backend,
             // no secrets, no configuration. Same shape the Apps Script API
             // used to serve, so every render path below is untouched.
             const VISA_DATA_URL = 'data/visa_decisions.json';
@@ -1809,7 +1809,7 @@
             // Top-level tracker: 'home' is the landing screen with the two
             // tracker cards, 'visa' the embassy-decisions tracker, '1g' the
             // Stamp 1G processing-date tracker. Old shared links carry only
-            // ?tab=… — those resolve to 'visa' so nothing breaks.
+            // ?tab=… - those resolve to 'visa' so nothing breaks.
             const KNOWN_TRACKERS = ['home', 'visa', '1g', 'permits'];
             // Which decisions the Past table can be narrowed to. Declared before
             // readUrlState() runs, because the reader restores it from the URL.
@@ -1853,7 +1853,7 @@
             let homeSearchTerm = urlState.q;
             let pastDateFilter = urlState.date;
             // Kept beside the date filter: the two narrow the same rows and share
-            // the URL — ?tab=past&status=accepted&date=2026-10-01.
+            // the URL - ?tab=past&status=accepted&date=2026-10-01.
             let pastStatusFilter = urlState.status;
 
             // ---- visit tracking + stale-data state ----
@@ -1869,7 +1869,7 @@
             }
 
             // A "placeholder" row is a notice the scraper writes for a date that
-            // has no decisions file yet (or the office is closed) — NOT an
+            // has no decisions file yet (or the office is closed) - NOT an
             // application. The scraper keys them with an IRL of "NO_FILE_<date>";
             // message-based checks catch any older/odd rows as a fallback.
             function isPlaceholderRow(r) {
@@ -1989,7 +1989,7 @@
             // failed refresh shows real (stale) data with a banner instead of an
             // empty page. The history JSON is ~2.1MB and grows daily: stored
             // plain it would brush the ~5MB localStorage quota within months,
-            // after which the write would throw and fail SILENTLY forever — the
+            // after which the write would throw and fail SILENTLY forever - the
             // fallback would quietly die. So the snapshot is gzipped with the
             // native CompressionStream (~10x smaller, ~200KB today) and base64'd
             // before storing. Browsers without CompressionStream fall back to
@@ -2024,7 +2024,7 @@
                 } catch (e) {
                     // Quota / private mode: keep the previous snapshot and make
                     // the failure visible instead of swallowing it.
-                    console.warn('persistSnapshot failed — keeping previous snapshot:', e);
+                    console.warn('persistSnapshot failed - keeping previous snapshot:', e);
                 }
             }
             async function restoreSnapshot() {
@@ -2036,7 +2036,7 @@
                         const snap = JSON.parse(text);
                         if (snap && Array.isArray(snap.rows) && snap.rows.length) return snap;
                     }
-                } catch (e) { /* corrupted/unsupported — fall through to legacy key */ }
+                } catch (e) { /* corrupted/unsupported - fall through to legacy key */ }
                 try {
                     const snap = JSON.parse(localStorage.getItem(SNAPSHOT_PLAIN_KEY) || 'null');
                     if (snap && Array.isArray(snap.rows) && snap.rows.length) return snap;
@@ -2089,7 +2089,7 @@
                     if (!res.ok) return;
                     const m = await res.json();
                     if (m && typeof m === 'object' && m.lastRunAt) metaData = m;
-                } catch (e) { /* pre-migration or outage — card stays hidden */ }
+                } catch (e) { /* pre-migration or outage - card stays hidden */ }
                 renderMetaCard();
             }
             function renderMetaCard() {
@@ -2134,7 +2134,7 @@
 
             function avgDailyApps(byDate) {
                 // Days that only contain placeholder notices (no decisions file)
-                // are not "application days" — exclude them and their zero counts.
+                // are not "application days" - exclude them and their zero counts.
                 var filtered = byDate.filter(function(e) {
                     if (e[0] === EXCLUDE_FROM_AVERAGES) return false;
                     return e[1].some(function(r) { return !r._placeholder; });
@@ -2184,7 +2184,7 @@
 
 
             function renderConfigWarning() {
-                // No configuration step exists anymore (static data files) —
+                // No configuration step exists anymore (static data files) -
                 // kept as a function so every layout call site is untouched.
                 return '';
             }
@@ -2206,7 +2206,7 @@
                     '</details>';
             }
 
-            // ===== hero builder (Mockup C) — per-tab hero with real data =====
+            // ===== hero builder (Mockup C) - per-tab hero with real data =====
             function buildHeroHTML(tabId, rows) {
                 const byDate = groupByDate(rows);
                 const real = realRows(rows);
@@ -2480,7 +2480,7 @@
                         if (detail && detail.classList.contains('dd-row')) toggleDayDetail(t, detail);
                     };
                 }
-                // Real <form> — intercept the submit event (covers the button
+                // Real <form> - intercept the submit event (covers the button
                 // AND Enter-key submission) and POST via fetch, so the page
                 // shows its own success card instead of navigating away.
                 var suggForm = document.getElementById('sugg-form');
@@ -2504,7 +2504,7 @@
                     paintHomeRows();
                     syncUrl('replace');
                 };
-                // Watchlist add/remove (delegated — #watch-area is repainted
+                // Watchlist add/remove (delegated - #watch-area is repainted
                 // by paintWatch on every keystroke).
                 var watchArea = document.getElementById('watch-area');
                 if (watchArea) watchArea.onclick = function(e) {
@@ -2657,7 +2657,7 @@
             // Two-phase render: layout (cards + searchbar + empty table shell)
             // paints ONCE per tab switch. paintHomeRows() then only updates the
             // tbody innerHTML and the results-count node on every search keystroke
-            // or filter change — the input element stays alive so no cursor
+            // or filter change - the input element stays alive so no cursor
             // restoration is needed.
             function renderHomeLayout(rows) {
                 if (!rows.length) return renderConfigWarning() +
@@ -2845,7 +2845,7 @@
                 var head = '<div class="g1-chart"><h3><i data-lucide="users" style="width:15px;height:15px;vertical-align:-2px;"></i> Community waits</h3>';
                 if (!stats) {
                     return head + '<div class="note2">No community timelines for ' + where +
-                        ' yet — ' + link + ' and help others plan.</div></div>';
+                        ' yet - ' + link + ' and help others plan.</div></div>';
                 }
                 var med = Math.round(stats.median * 10) / 10;
                 return head + '<div class="note2">Median <strong>' + med + (med === 1 ? ' day' : ' days') +
@@ -3033,7 +3033,7 @@
             // Same layout/rows split as Home: renderPastLayout() paints the cards,
             // filter row, empty tbody shell, and scroll-to-top button ONCE per tab
             // switch. paintPastRows() then only updates the tbody + count note
-            // when the date filter changes — the datepicker stays alive so no
+            // when the date filter changes - the datepicker stays alive so no
             // cursor restoration is needed.
             function renderPastLayout(rows) {
                 if (!rows.length) return renderConfigWarning() +
@@ -3118,7 +3118,7 @@
             // store rather than from this page.
             // The form body lives in SUGG_FORM_HTML so it can be restored after
             // the post-submit success card is shown.
-            // Minimum time the "Submitting…" state stays visible — on a fast
+            // Minimum time the "Submitting…" state stays visible - on a fast
             // connection the fetch can resolve in a few ms, which would flash
             // the success card before the label was ever readable.
             const MIN_SUBMIT_MS = 800;
@@ -3127,7 +3127,7 @@
             // fields wrapped in <p><label>…</label></p>, a hidden `form-name`
             // field naming the form the Worker routes on, and an empty
             // `bot-field` the Worker reads as the honeypot. Nothing registers
-            // these forms anywhere — the Worker reads the POST itself.
+            // these forms anywhere - the Worker reads the POST itself.
             const SUGG_FORM_HTML =
                 '<input type="hidden" name="form-name" value="suggestions" />' +
                 '<p><label>Name <input type="text" id="sugg-name" name="name" placeholder="Your name\u2026" autocomplete="name" /></label></p>' +
@@ -3163,7 +3163,7 @@
             const TIMELINES_FORM_HTML =
             '<input type="hidden" name="form-name" value="timelines-visa" />' +
             '<h3 class="readme-title" style="margin-top:0;">Share your timeline</h3>' +
-            '<p class="note2">Embassy visa only — applied and decided dates from the New Delhi list. Published anonymously in aggregate.</p>' +
+            '<p class="note2">Embassy visa only - applied and decided dates from the New Delhi list. Published anonymously in aggregate.</p>' +
             '<input type="hidden" name="tracker" value="visa" />' +
             '<p><label>Applied on <input type="date" id="time-applied" name="applied" /></label></p>' +
             '<p><label>Decided on <input type="date" id="time-decided" name="decided" /></label></p>' +
@@ -3175,7 +3175,7 @@
             const TIMELINES_1G_FORM_HTML =
                 '<input type="hidden" name="form-name" value="timelines-1g" />' +
                 '<h3 class="readme-title" style="margin-top:0;">Share your 1G timeline</h3>' +
-                '<p class="note2">Stamp 1G renewals only — when did you apply, and when was it decided? Published anonymously in aggregate.</p>' +
+                '<p class="note2">Stamp 1G renewals only - when did you apply, and when was it decided? Published anonymously in aggregate.</p>' +
                 '<input type="hidden" name="tracker" value="1g" />' +
                 '<p><label>Applied on <input type="date" id="time-applied-1g" name="applied" /></label></p>' +
                 '<p><label>Decided on <input type="date" id="time-decided-1g" name="decided" /></label></p>' +
@@ -3208,7 +3208,7 @@
                     return;
                 }
                 if (applied > decided || decided > today || applied < '2020-01-01') {
-                    status.textContent = 'Those dates don\u2019t look right — applied must come first and decided can\u2019t be in the future.';
+                    status.textContent = 'Those dates don\u2019t look right - applied must come first and decided can\u2019t be in the future.';
                     return;
                 }
                 btn.disabled = true;
@@ -3234,7 +3234,7 @@
                     const form = document.getElementById(formId);
                     if (form) form.innerHTML =
                         '<div class="sugg-success" role="status">' +
-                        '<div class="sugg-success-title">Thanks — timeline shared!</div>' +
+                        '<div class="sugg-success-title">Thanks - timeline shared!</div>' +
                         '<div class="sugg-success-text">It appears in the community stats after the nightly sync.</div>' +
                         '<button class="btn" type="button" id="' + (is1G ? 'time-again-1g' : 'time-again') + '">Share another</button></div>';
                     const again = document.getElementById(is1G ? 'time-again-1g' : 'time-again');
@@ -3303,7 +3303,7 @@
                 status.textContent = 'Submitting…';
                 const startedAt = Date.now();
                 try {
-                    // POST straight to the site itself — the Worker stores any
+                    // POST straight to the site itself - the Worker stores any
                     // form post carrying form-name=suggestions in D1.
                     const body = new URLSearchParams({
                         'form-name': 'suggestions',
@@ -3536,10 +3536,10 @@
                 if (!isFinite(ms)) return '';
                 var left = Math.round(ms / 86400000);
                 if (left < 0) {
-                    return 'Expired ' + Math.abs(left) + ' days ago — renew now if you haven\u2019t.';
+                    return 'Expired ' + Math.abs(left) + ' days ago - renew now if you haven\u2019t.';
                 }
                 if (left <= 84) {
-                    return '12-week window is <strong>OPEN</strong> — apply now (' + left + ' days left).';
+                    return '12-week window is <strong>OPEN</strong> - apply now (' + left + ' days left).';
                 }
                 var opens = new Date(Date.parse(expiryISO + 'T00:00:00') - 84 * 86400000);
                 var label = opens.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
@@ -3618,7 +3618,7 @@
                 var todayStr = new Date().toISOString().slice(0, 10);
                 var remaining = g1ToDay(todayStr) - g1ToDay(latest.processing_date);
                 var slope = recent.slope;
-                // Slope <= ~0 means stalled (or regressing) — no finite ETA.
+                // Slope <= ~0 means stalled (or regressing) - no finite ETA.
                 var etaDays = slope > 0.005 ? Math.max(0, Math.ceil(remaining / slope)) : null;
                 var ahead = [14, 28, 56, 84].map(function(d) {
                     return { days: d, proc: g1FromDay(g1ToDay(latest.processing_date) + slope * d) };
@@ -3644,13 +3644,13 @@
                 var d = new Date(Date.UTC(+p[0], +p[1] - 1, +p[2]));
                 return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
             }
-            // Mean Gregorian month — good enough for a "how long" readout.
+            // Mean Gregorian month - good enough for a "how long" readout.
             function fmtLagMonths(days) { return (days / 30.44).toFixed(1); }
 
             // ---- 1G personal estimator ----
             // The user's application date + mode persist in localStorage so the
             // tentative outcome recomputes from the LATEST cron row on every
-            // load — the estimate tracks the moving lag automatically.
+            // load - the estimate tracks the moving lag automatically.
             function g1StoredDate() {
                 try { return (localStorage.getItem('stamp1g-apply-date') || '').slice(0, 10); }
                 catch (e) { return ''; }
@@ -3709,7 +3709,7 @@
                     return;
                 }
                 if (!entered) {
-                    box.innerHTML = '<span class="note2">Enter your date above — your estimate appears here and refreshes with every cron run.</span>';
+                    box.innerHTML = '<span class="note2">Enter your date above - your estimate appears here and refreshes with every cron run.</span>';
                     return;
                 }
                 var latest = rows[rows.length - 1];
@@ -3717,7 +3717,7 @@
                 var when = mode === 'plan' ? 'Apply on ' + fmtG1Date(entered) : 'Applied ' + fmtG1Date(entered);
                 if (entered <= latest.processing_date) {
                     box.innerHTML = '<div class="g1-estimate">' + when +
-                        ' — ISD is already processing <strong>' + fmtG1Date(latest.processing_date) +
+                        ' - ISD is already processing <strong>' + fmtG1Date(latest.processing_date) +
                         '</strong>, past your date. Your outcome may already be decided.</div>';
                     return;
                 }
@@ -3778,7 +3778,7 @@
             // Weekly-average lag bars: one bar per ISO week (Mon-Sun) showing
             // the mean lag of that week's observations. Weekly bins absorb the
             // day-to-day sawtooth (lag climbs while ISD stalls, then drops
-            // when it jumps) and never interpolate across archive gaps — a
+            // when it jumps) and never interpolate across archive gaps - a
             // week with no observations simply has no bar.
             function g1WeekKey(iso) {
                 var p = String(iso).split('-');
@@ -3790,7 +3790,7 @@
                The grouped SVG this replaces drew bars, a regression line and a
                marker for the visitor's saved week; the bars are now a line with
                one tooltip per week (observations included), which is what the
-               weekly means actually are — a continuous series, not categories. */
+               weekly means actually are - a continuous series, not categories. */
             function renderG1LagChart(rows) {
                 var host = document.getElementById('g1-lag');
                 if (!host || !window.AnalyticsChart) return;
@@ -3823,7 +3823,7 @@
                     '<div class="sub">' + (rows.length ? rows.length + ' observation' + (rows.length === 1 ? '' : 's') + ' on record' : 'Awaiting data') + '</div>';
                 if (!rows.length) {
                     return head +
-                        '<div class="empty">No observations recorded yet. The daily job writes to <code>data/stamp_1g.json</code> — check back after its first run.</div>';
+                        '<div class="empty">No observations recorded yet. The daily job writes to <code>data/stamp_1g.json</code> - check back after its first run.</div>';
                 }
                 var catPills = cats.length > 1
                     ? '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;" id="g1-cats" role="group" aria-label="Stamp category"' +
@@ -3858,10 +3858,10 @@
                 if (!proj.ok) {
                     projHtml = '';
                 } else {
-                    var pace = proj.fallback ? 'Early estimate — only one observation so far; assuming the queue keeps a 1:1 pace until more history arrives.' :
-                        proj.recentWeek >= 6.5 ? 'On pace — the queue is roughly keeping up with new applications.' :
-                        proj.recentWeek > 0.5 ? 'Moving, but slower than real time — the backlog is growing.' :
-                        'Stalled — the processing date is barely moving.';
+                    var pace = proj.fallback ? 'Early estimate - only one observation so far; assuming the queue keeps a 1:1 pace until more history arrives.' :
+                        proj.recentWeek >= 6.5 ? 'On pace - the queue is roughly keeping up with new applications.' :
+                        proj.recentWeek > 0.5 ? 'Moving, but slower than real time - the backlog is growing.' :
+                        'Stalled - the processing date is barely moving.';
                     projHtml = '<div class="g1-chart"><h3><i data-lucide="chart-line" style="width:15px;height:15px;vertical-align:-2px;"></i> Projections</h3>' +
                         '<div class="note2">Linear fit of processing-date advancement. Overall: <strong>' + proj.rateWeek.toFixed(1) +
                         ' days/week</strong> · Recent (last ' + Math.min(10, proj.count) + '): <strong>' + proj.recentWeek.toFixed(1) +
@@ -3887,12 +3887,12 @@
                     '<tbody>' + histRows + '</tbody></table></div>';
                 var note = '<div class="readme"><h3 class="readme-title">How this tracker works</h3>' +
                     '<p>Every day, an automated job reads the ISD renewal page, finds each stamp category\u2019s processing date, and appends one row per category to ' +
-                    '<a href="data/stamp_1g.json" target="_blank" rel="noopener"><code>data/stamp_1g.json</code></a> in this repo. The rate and ETA above are a straight-line fit through that history — not a promise.</p></div>';
+                    '<a href="data/stamp_1g.json" target="_blank" rel="noopener"><code>data/stamp_1g.json</code></a> in this repo. The rate and ETA above are a straight-line fit through that history - not a promise.</p></div>';
                 var storedDate = g1StoredDate();
                 var storedMode = g1StoredMode();
                 var storedExpiry = g1StoredExpiry();
                 var estimatorHtml = '<div class="g1-chart"><h3>Your application</h3>' +
-                    '<div class="note2">When did you apply — or when do you plan to? Your tentative outcome date updates itself as the lag moves.</div>' +
+                    '<div class="note2">When did you apply - or when do you plan to? Your tentative outcome date updates itself as the lag moves.</div>' +
                     '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:12px;">' +
                     '<span class="g1-mode" style="display:inline-flex;align-items:center;gap:8px;" data-jelly-radio data-jelly-bare data-jelly-size="sm" data-jelly-radius="999" data-jelly-swell="0.08" data-jelly-barge="2" data-jelly-shrink="0.03">' +
                     '<button type="button" class="recent-chip mode-chip' + (storedMode === 'applied' ? ' active' : '') + '" data-mode="applied" aria-pressed="' + (storedMode === 'applied') + '">I applied</button>' +
@@ -4030,7 +4030,7 @@
                     '<div class="sub">' + (rows.length ? rows.length + ' observation' + (rows.length === 1 ? '' : 's') + ' on record' : 'Awaiting data') + '</div>';
                 if (!rows.length) {
                     return head +
-                        '<div class="empty">No observations recorded yet. The daily job writes to <code>data/work_permits.json</code> — check back after its first run.</div>';
+                        '<div class="empty">No observations recorded yet. The daily job writes to <code>data/work_permits.json</code> - check back after its first run.</div>';
                 }
                 var catPills = cats.length > 1
                     ? '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;" id="permits-cats" role="group" aria-label="Permit category">' +
@@ -4112,7 +4112,7 @@
             // Landing status strip: one glanceable line built from the tiny
             // meta file + 1G history (never the full visa payload). Pure
             // function of its inputs so it can be unit-tested; numbers only,
-            // no user-controlled strings — no escaping needed.
+            // no user-controlled strings - no escaping needed.
             function landingStatusHTML(meta, g1Rows, todayIST) {
                 var parts = [];
                 // Ticker tracks the headline 1G series even once other stamp
@@ -4120,7 +4120,7 @@
                 g1Rows = g1RowsFor(g1Rows, '1G');
                 var wd = new Date(todayIST + 'T00:00:00').getDay();
                 if (wd === 0 || wd === 6) {
-                    parts.push('Embassy closed today — back Monday');
+                    parts.push('Embassy closed today - back Monday');
                 } else if (meta && meta.lastRunAt) {
                     if (String(meta.lastRunAt).slice(0, 10) === todayIST) {
                         parts.push('Today\u2019s embassy file is in' +
@@ -4150,8 +4150,8 @@
             }
 
             async function renderLandingPage() {
-                document.title = 'Irish Visa Decision Tracker — Ireland Visa Decisions & Stamp 1G';
-                // Paint the cards IMMEDIATELY with placeholder stats — never
+                document.title = 'Irish Visa Decision Tracker - Ireland Visa Decisions & Stamp 1G';
+                // Paint the cards IMMEDIATELY with placeholder stats - never
                 // block on the network. Each card's meta line fills in as its
                 // own fetch resolves (both are small static files, so this is
                 // fast; the full visa history still loads on tracker entry).
@@ -4169,7 +4169,7 @@
                     '<button class="btn" type="submit">Track</button></form>' +
                     '<div class="tracker-grid">' +
                     trackerCardHTML('visa', 'plane', 'Embassy Visa Decisions',
-                        'Daily decisions published by the Embassy of Ireland in New Delhi — searchable by application number, with trends and summaries.', 'Loading\u2026', 'visa-meta', '') +
+                        'Daily decisions published by the Embassy of Ireland in New Delhi - searchable by application number, with trends and summaries.', 'Loading\u2026', 'visa-meta', '') +
                     trackerCardHTML('1g', 'stamp', 'Stamp 1G Processing',
                         'ISD renewal queue: which application date is being processed now, how far behind it is, and when it may catch up.', 'Loading\u2026', 'g1-meta', 'g1') +
                     trackerCardHTML('permits', 'briefcase', 'Employment Permits',
@@ -4190,7 +4190,7 @@
                     homeSearchTerm = q ? q.value.trim() : '';
                     setTracker('visa');
                 });
-                // Count only — the full visa fetch happens on tracker entry
+                // Count only - the full visa fetch happens on tracker entry
                 // (with its own skeleton + snapshot fallback), so landing
                 // stays instant no matter how large the history grows.
                 Promise.all([
@@ -4238,7 +4238,7 @@
             // split is the single source of truth.
             async function render() {
                 // Landing + trackers own their skeleton/load/paint cycle and
-                // return early — everything below is the visa tracker.
+                // return early - everything below is the visa tracker.
                 if (activeTracker === 'home') { await renderLandingPage(); return; }
                 if (activeTracker === '1g') { await renderG1Page(); return; }
                 if (activeTracker === 'permits') { await renderPermitsPage(); return; }
@@ -4320,7 +4320,7 @@
                 // Initial body paint: populate the active tab's content DIRECTLY
                 // without the hero cross-fade dip. morphHero already faded the
                 // hero in (opacity 0 → 1), so calling animateHeroSwitch here
-                // would briefly dim it back to 0.4 before settling on 1 — a
+                // would briefly dim it back to 0.4 before settling on 1 - a
                 // visible flash on first page load. Subsequent tab clicks go
                 // through switchTab() which uses the cross-fade as expected.
                 var rows = cache || [];
@@ -4340,7 +4340,7 @@
                 }
                 wireTabListeners();
                 // Initial paint bypasses switchTab (no hero cross-fade dip), so
-                // mark the visit here too — otherwise the "since you last
+                // mark the visit here too - otherwise the "since you last
                 // checked" banner would re-show on every load until a tab click.
                 markVisited();
             }

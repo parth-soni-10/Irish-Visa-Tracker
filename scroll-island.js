@@ -1,4 +1,4 @@
-/* Scroll Island — the page's index, floating over the page.
+/* Scroll Island - the page's index, floating over the page.
  *
  *   ScrollIsland.mount(host, {
  *     label: 'Report sections',            // the pill's accessible name
@@ -24,7 +24,7 @@
  *
  * The headings may arrive after the mount (a report that is fetched, a tab that
  * is opened). `refresh()` re-reads the selector, and so does a ResizeObserver
- * on the scroll container — the island is not a snapshot of the first paint.
+ * on the scroll container - the island is not a snapshot of the first paint.
  *
  * CSP-safe: classes, attributes and CSS custom properties only, written through
  * the CSSOM. No style element, no inline handler, no network.
@@ -80,7 +80,7 @@
     return String(text || '')
       .replace(/\s+/g, ' ')
       .trim()
-      .replace(/^\d{1,2}\s*[).:\u00b7\-–—]?\s*/, '')
+      .replace(/^\d{1,2}\s*[).:\u00b7\-–-]?\s*/, '')
       .trim();
   }
 
@@ -240,7 +240,7 @@
       if (m.room - m.top < 4) return state.sections.length - 1; // the end is the last section
       // Two pixels of slack: a chosen section lands at exactly `offset` below
       // the top, and sub-pixel scroll positions make that landing a fraction
-      // short — without the slack the row the reader just picked reads as the
+      // short - without the slack the row the reader just picked reads as the
       // one above it.
       var line = m.top + cfg.offset + 2;
       var found = 0;
@@ -270,7 +270,7 @@
       // A host that re-renders its page (a fetched report, a filter that swaps
       // the list) replaces the heading nodes the island is holding. The
       // selector is the durable description of the index, so when the nodes it
-      // gave us are gone, ask it again — a floating index that points at
+      // gave us are gone, ask it again - a floating index that points at
       // detached elements is worse than no index.
       if (typeof cfg.sections === 'string' && (state.sections.length === 0
         || state.sections.some(function (s) { return !s.el.isConnected; })
@@ -341,11 +341,11 @@
     // A long page can grow while the smooth scroll is running: Portfolio's
     // live dashboard paints its charts under the fold and pushes every
     // heading below it down 118px. The scroll then stops where the heading
-    // used to be, and the reader who picked Credentials is left on Skills —
+    // used to be, and the reader who picked Credentials is left on Skills -
     // the one miss a floating index cannot afford. So when the scroll comes
     // to rest, if the chosen heading is no longer under `offset`, one silent
-    // correction puts it there. Any wheel, touch or key from the reader — or
-    // a second pick — cancels it, because by then moving is their call.
+    // correction puts it there. Any wheel, touch or key from the reader - or
+    // a second pick - cancels it, because by then moving is their call.
     var goTicket = 0;
 
     function cancelSettle() {
@@ -403,7 +403,7 @@
       var el0 = section.el;
       var target = Math.max(0, topOf(el0, scroller) - cfg.offset);
       // `auto` is not "no animation": it follows the page's own scroll-behavior,
-      // which is `smooth` on several hosts — so a reader who asked for reduced
+      // which is `smooth` on several hosts - so a reader who asked for reduced
       // motion would still get the glide. `instant` is the value that says so,
       // and where an engine does not know it, writing scrollTop is instant.
       var behavior = reduced() ? 'instant' : 'smooth';
@@ -425,7 +425,7 @@
       });
       if (typeof cfg.onChange === 'function') cfg.onChange(index, section);
       // Shut first, then hand focus to the heading. Returning focus to the pill
-      // would undo the move the reader just asked for — they chose a place in
+      // would undo the move the reader just asked for - they chose a place in
       // the page, and Tab should continue from there, not from the corner.
       close(false);
       if (!el0.hasAttribute('tabindex') && !/^(A|BUTTON|INPUT|SELECT|TEXTAREA)$/.test(el0.tagName)) {

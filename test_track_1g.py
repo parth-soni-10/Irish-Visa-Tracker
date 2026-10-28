@@ -1,4 +1,4 @@
-"""Unit tests for track_1g.py — ISD Stamp 1G parsing + JSON history logic."""
+"""Unit tests for track_1g.py - ISD Stamp 1G parsing + JSON history logic."""
 
 import json
 import unittest
@@ -128,7 +128,7 @@ class HistoryTests(unittest.TestCase):
             save.assert_not_called()
 
     def test_stalled_processing_date_still_recorded_next_day(self):
-        # Flat stretches matter for projections — a new run date always appends.
+        # Flat stretches matter for projections - a new run date always appends.
         existing = [{"run_date": "2026-09-08", "category": "1G",
                      "processing_date": "2026-07-04",
                      "lag_days": 66, "lag_weeks": 9.43}]

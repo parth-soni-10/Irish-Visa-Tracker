@@ -1,5 +1,5 @@
 /**
- * Irish Visa Tracker — the routing half of this site's Pages Function.
+ * Irish Visa Tracker - the routing half of this site's Pages Function.
  *
  * Pages compiles this directory (see `functions/[[path]].js`, the catch-all
  * route) and it imports this file, so the site's whole server side is here. The
@@ -8,12 +8,12 @@
  *
  * This replaces Netlify Forms. The page's three forms (`suggestions`,
  * `timelines-visa`, `timelines-1g`) already POST urlencoded bodies to their own
- * path with a `form-name` field — Netlify used to intercept those posts and
+ * path with a `form-name` field - Netlify used to intercept those posts and
  * record them. Nothing in the page changes: the same bodies arrive here.
  *
  * Behaviour, at parity with what the page's script expects:
  *   * The page's own AJAX submit only checks `res.ok`, then shows its success
- *     card — it gets a 200 JSON ack.
+ *     card - it gets a 200 JSON ack.
  *   * A no-JavaScript submit gets a 303 back to the tracker instead.
  *   * A filled `bot-field` honeypot is answered exactly like a stored
  *     submission but records nothing.
@@ -23,7 +23,7 @@
  *     or, for the timeline forms only, over HTTP:
  *       GET /api/community-submissions
  *
- * Every non-POST request is served straight from the static assets — with two
+ * Every non-POST request is served straight from the static assets - with two
  * exceptions: the JSON in `data/` (below) is proxied from the repository, so the
  * dashboard keeps tracking the GitHub Actions pipeline without a redeploy, and
  * the timeline submissions are served at `/api/community-submissions` so the
@@ -66,7 +66,7 @@ const DATA_CACHE_SECONDS = 300;
 // The community-timeline sync (sync_timelines.py, run nightly by
 // .github/workflows/timelines.yml) needs the rows the timeline forms wrote into
 // `submissions`. It used to read them over Cloudflare's D1 query API, which
-// means a D1 API token kept as a repo secret — and a secret nobody has created
+// means a D1 API token kept as a repo secret - and a secret nobody has created
 // does not fail that job, it makes it print SKIP and exit 0, so the "Community
 // waits" panels sat empty with nothing anywhere saying why.
 //
@@ -77,7 +77,7 @@ const DATA_CACHE_SECONDS = 300;
 //
 // Read-only, and deliberately narrow: the three timeline form names are the
 // only ones ever returned. `suggestions` holds a visitor's name and their free
-// text and is NOT served here — the sync has never read it either — while a
+// text and is NOT served here - the sync has never read it either - while a
 // timeline row carries applied/decided/outcome/tracker, which is the same data
 // the job commits to data/community_timelines.json in a public repo, so serving
 // it adds no exposure the pipeline does not already publish.
@@ -86,7 +86,7 @@ const TIMELINE_FORMS = ["timelines-visa", "timelines-1g", "timelines"];
 const MAX_TIMELINE_ROWS = 5000;
 
 // GitHub's raw host caches every URL for minutes and, on 2026-10-13, kept
-// serving the copy it took before the pipeline's last commit — a plain fetch
+// serving the copy it took before the pipeline's last commit - a plain fetch
 // returned 2026-10-12 rows from a file that already held 2026-10-13, long
 // after the push. Each cache window gets its own URL instead, so the first
 // request in a window reaches GitHub and the rest share what it returns.
@@ -133,7 +133,7 @@ async function ensureSchema(db) {
   schemaReady = true;
 }
 
-/** The timeline submissions, for the nightly sync — never the `suggestions` form. */
+/** The timeline submissions, for the nightly sync - never the `suggestions` form. */
 async function serveTimelineSubmissions(env) {
   const placeholders = TIMELINE_FORMS.map(() => "?").join(", ");
   try {
@@ -209,7 +209,7 @@ function invalidField(formName, fields) {
     if (!fields.suggestion || fields.suggestion.length > 2000) return "suggestion";
     return null;
   }
-  // timelines-visa / timelines-1g — mirrors the page's own date checks.
+  // timelines-visa / timelines-1g - mirrors the page's own date checks.
   if (!DATE_RE.test(fields.applied || "")) return "applied";
   if (!DATE_RE.test(fields.decided || "")) return "decided";
   const today = new Date().toISOString().slice(0, 10);
@@ -274,7 +274,7 @@ export default {
     const { pathname } = new URL(request.url);
     if (pathname === SUBMISSIONS_PATH) {
       const response = await serveTimelineSubmissions(env);
-      // HEAD answers with the same status and headers, no body — like /data/*.
+      // HEAD answers with the same status and headers, no body - like /data/*.
       return request.method === "HEAD"
         ? new Response(null, { status: response.status, headers: response.headers })
         : response;

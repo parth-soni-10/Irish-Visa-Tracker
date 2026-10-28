@@ -5,14 +5,14 @@ name: Sync Community Timelines
 # post to D1, and the Worker serves those rows back at
 # GET /api/community-submissions, so this reads the site itself: no secret, no
 # token, nothing to configure. (It used to query D1's API with a
-# CLOUDFLARE_API_TOKEN repo secret — one that was never created, and whose
+# CLOUDFLARE_API_TOKEN repo secret - one that was never created, and whose
 # absence made the job print SKIP and exit 0, leaving the community panels
 # empty with nothing anywhere saying why.)
 
 on:
-  workflow_dispatch: {}   # manual "Run workflow" button — still available for on-demand runs
+  workflow_dispatch: {}   # manual "Run workflow" button - still available for on-demand runs
   schedule:
-    # Nightly 01:00 IST (19:30 UTC previous day) — quiet hour, nothing else runs.
+    # Nightly 01:00 IST (19:30 UTC previous day) - quiet hour, nothing else runs.
     - cron: '30 19 * * *'
 
 jobs:

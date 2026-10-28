@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Employment-permit processing-date tracker — GitHub Actions cron job.
+Employment-permit processing-date tracker - GitHub Actions cron job.
 
 Each run:
 1. Fetches the Department of Enterprise (DETE) current processing dates.
@@ -60,7 +60,7 @@ ANCHOR = "we are processing applications received on the following dates"
 
 # Long page labels -> short stable category keys, matched in order.
 # Order matters: "All other New ..." mentions Critical Skills in its
-# parenthetical, and "(Renewal)" contains the substring "new" — so the
+# parenthetical, and "(Renewal)" contains the substring "new" - so the
 # exclusions and parenthesised variants come first.
 SHORT_KEYS = [
     ("all other new", "Other New"),
@@ -138,7 +138,7 @@ def find_permit_dates(html: str) -> dict[str, date]:
     found: dict[str, date] = {}
     prev_end = 0
     for match in dates:
-        label = section[prev_end:match.start()].strip(" :—-–")
+        label = section[prev_end:match.start()].strip(" :--–")
         parsed = parse_date(match.group(0))
         prev_end = match.end()
         if parsed and label:

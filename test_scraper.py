@@ -86,7 +86,7 @@ class UpdateMetaTests(unittest.TestCase):
 
 
 class CorruptHistoryTests(unittest.TestCase):
-    """A corrupt local baseline must fail loudly — never scrape or write."""
+    """A corrupt local baseline must fail loudly - never scrape or write."""
 
     def _run_with_history(self, content):
         with tempfile.TemporaryDirectory() as tmp:
@@ -182,7 +182,7 @@ class MainPlaceholderTests(unittest.TestCase):
         # the following morning). New rows are stamped with TODAY (Aug 12), not
         # the filename date (Aug 11), so the daily summary shows the count
         # against the day it was scraped. Today has real data, so no "no file"
-        # placeholder is written for it — any stale one is cleared instead.
+        # placeholder is written for it - any stale one is cleared instead.
         now = ist("2026-08-12")
         existing = [["2026-08-10", "IRL100", "Granted"]]
         push, set_ph, clear_ph, exited, upd_meta, save = self.run_main(now, existing, new_irls=("101",))
@@ -596,7 +596,7 @@ class WebhookAlertTests(unittest.TestCase):
         self.assertEqual(post.call_args[1]["json"], {"text": "msg"})
 
     def test_webhook_error_is_non_fatal(self):
-        # A failing webhook must never raise — the gap alert's sys.exit is the
+        # A failing webhook must never raise - the gap alert's sys.exit is the
         # real signal and must not be masked by an alerting failure.
         scraper.ALERT_WEBHOOK_URL = "https://hooks.slack.com/services/x"
         with patch("scraper.requests.post",

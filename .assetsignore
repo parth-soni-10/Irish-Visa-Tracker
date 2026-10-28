@@ -4,7 +4,7 @@
 #
 # Dot-paths are NOT excluded for you: the live site served /.git/config,
 # /.git/logs/HEAD and /.freebuff/desktop.db (7.4 MB of local app state) until
-# these lines were added — so name every one of them explicitly.
+# these lines were added - so name every one of them explicitly.
 .git/
 .github/
 .freebuff/
@@ -32,8 +32,8 @@ __pycache__/
 .pytest_cache/
 wrangler.toml
 # The function Pages compiles at deploy time. The upload is a staged copy of
-# this repository, so without this rule the handler's source — the honeypot
-# check, the size cap, the form names — would also be published as a file.
+# this repository, so without this rule the handler's source - the honeypot
+# check, the size cap, the form names - would also be published as a file.
 functions/
 schema.sql
 .gitignore

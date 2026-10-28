@@ -1,10 +1,10 @@
-/* pages.css — the trust pages (about, contact, privacy) and the 404.
+/* pages.css - the trust pages (about, contact, privacy) and the 404.
  *
  * A standalone sheet rather than a slice of index.html's inline CSS: the app
  * is one self-contained document, and a legal page that imported it would
  * carry the whole dashboard's styles for a few paragraphs. These pages use the
  * same green-on-slate palette, the same self-hosted fonts and the same radius
- * scale, so they still read as part of the tracker — without a build step or
+ * scale, so they still read as part of the tracker - without a build step or
  * a second copy of the app's layout system.
  */
 
