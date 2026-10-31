@@ -1,24 +1,30 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- No <lastmod>: nothing in the repo records a build date, and a guessed one
-     is worse than an absent one. Markdown aliases (/index.md, /about.md, …)
-     are alternates of these URLs, not separate pages. -->
+<!-- lastmod values are the last GitHub commit date for each HTML page.
+     New landing pages use their creation date. Data files update daily
+     via the scraper; check /data/visa_meta.json for freshness. -->
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://irishvisaupdatetracker.pages.dev/</loc>
-    <lastmod>2026-10-27T15:00:00+00:00</lastmod>
+    <lastmod>2026-10-27T14:50:26+00:00</lastmod>
   </url>
   <url>
     <loc>https://irishvisaupdatetracker.pages.dev/about</loc>
-    <lastmod>2026-10-27T15:00:00+00:00</lastmod>
+    <lastmod>2026-10-21T20:49:15+00:00</lastmod>
   </url>
   <url>
     <loc>https://irishvisaupdatetracker.pages.dev/contact</loc>
-    <lastmod>2026-10-27T15:00:00+00:00</lastmod>
+    <lastmod>2026-10-21T20:49:15+00:00</lastmod>
   </url>
   <url>
     <loc>https://irishvisaupdatetracker.pages.dev/privacy</loc>
-    <lastmod>2026-10-27T15:00:00+00:00</lastmod>
+    <lastmod>2026-10-21T20:49:15+00:00</lastmod>
+  </url>
+  <url>
+    <loc>https://irishvisaupdatetracker.pages.dev/stamp-1g-processing-dates</loc>
+    <lastmod>2026-10-31</lastmod>
+  </url>
+  <url>
+    <loc>https://irishvisaupdatetracker.pages.dev/daily-summaries</loc>
+    <lastmod>2026-10-31</lastmod>
   </url>
 </urlset>
-
-
