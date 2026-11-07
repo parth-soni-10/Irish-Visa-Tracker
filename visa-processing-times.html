@@ -4,21 +4,21 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>How Long Does an Irish Visa Take? What the Data Shows</title>
-  <meta name="description" content="What the published processing queues actually show: current Stamp 1G and permit dates, recent decision volume, and the limits of those figures.">
+  <meta name="description" content="What the published processing queues actually show: current Stamp 1G and permit dates, which queues are moving, and the limits of those figures.">
   <link rel="canonical" href="https://irishvisaupdatetracker.pages.dev/visa-processing-times">
   <link rel="alternate" type="text/markdown" href="/visa-processing-times.md" title="Markdown version">
   <link rel="describedby" href="/llms.txt" type="text/plain">
   <meta name="theme-color" content="#ffffff">
   <meta property="og:type" content="article">
   <meta property="og:title" content="How Long Does an Irish Visa Take? What the Data Shows">
-  <meta property="og:description" content="What the published processing queues show, how to read a queue date, and what those figures cannot tell you about an individual application.">
+  <meta property="og:description" content="What the published processing queues show, which queues are moving and in which direction, and what those figures cannot tell you.">
   <meta property="og:url" content="https://irishvisaupdatetracker.pages.dev/visa-processing-times">
   <meta property="og:image" content="https://irishvisaupdatetracker.pages.dev/og-image.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="How Long Does an Irish Visa Take? What the Data Shows">
-  <meta name="twitter:description" content="How to read a published queue date, and what it cannot tell you about an individual application.">
+  <meta name="twitter:description" content="Which published queues are moving, in which direction, and what that cannot tell you about an individual application.">
   <link rel="icon" href="/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
   <link rel="stylesheet" href="/pages.css">
@@ -31,7 +31,7 @@
         "@id": "https://irishvisaupdatetracker.pages.dev/visa-processing-times#webpage",
         "url": "https://irishvisaupdatetracker.pages.dev/visa-processing-times",
         "name": "Irish Visa Processing Times - What the Published Data Shows",
-        "description": "How to read a published Irish visa queue date, what the tracker records, and what those figures cannot tell you about an individual application.",
+        "description": "How to read a published Irish visa queue date, which queues are moving and in which direction, and what those figures cannot tell you about an individual application.",
         "inLanguage": "en",
         "isPartOf": { "@id": "https://irishvisaupdatetracker.pages.dev/#website" }
       },
@@ -75,14 +75,14 @@
   <main class="page">
     <p class="page-kicker">Ireland &middot; Processing times</p>
     <h1>Irish Visa Processing Times - What the Published Data Shows</h1>
-    <p class="page-meta">Irish Visa Decision Tracker &bull; Snapshot of 7 November 2026 &bull; Unofficial - not immigration advice</p>
+    <p class="page-meta">Irish Visa Decision Tracker &bull; Reading of 7 November 2026 &bull; Unofficial - not immigration advice</p>
 
     <p class="page-lede">
       There is no single processing time for an Irish visa, and no honest way to promise one. What
       the official publishers release - and what this tracker records - is a <strong>queue
       date</strong>: the application date an office or scheme has reached. The gap between that
-      date and today is the lag. This page explains how to read those figures, where each one
-      comes from, and what they cannot tell you.
+      date and today is the lag. This page shows what those queues are doing, how to read a change
+      in the right direction, and what none of it can tell you about an individual case.
     </p>
 
     <section>
@@ -90,7 +90,7 @@
       <ul>
         <li><strong>Queue date</strong> - the application date the office says it has reached. Anything received after it has not been reached yet.</li>
         <li><strong>Lag</strong> - the distance between the queue date and the date the figure was published. It is a property of the queue, not of your application.</li>
-        <li><strong>Change</strong> - the same figure measured at two points. A growing lag means the queue is falling further behind; a shrinking lag means it is catching up.</li>
+        <li><strong>Change</strong> - the same figure measured twice. A growing lag means the queue is falling further behind; a shrinking lag means it is catching up.</li>
       </ul>
       <p class="small-note">
         A queue date that has not moved for a week is not a mistake. Published dates often sit
@@ -123,7 +123,37 @@
       <p class="small-note">
         The approval share describes decisions already published. It is not the probability that
         any particular application is approved, because the published file does not record the
-        applications still waiting or the applications refused without publication.
+        applications still waiting.
+      </p>
+    </section>
+
+    <section>
+      <h2>What the data shows right now</h2>
+      <p>
+        A queue date on its own says little, so this is the same figures measured thirty days
+        apart. These are the tracker's own observations, as of 7 November 2026, and each one
+        describes a direction rather than a prediction.
+      </p>
+      <p id="trend-g1">
+        <strong>Stamp 1G.</strong> The overall queue moved from 30 days behind on 8 October 2026
+        to 40 days behind on 7 November 2026 - it fell 10 days further behind in a month.
+      </p>
+      <p id="trend-permits">
+        <strong>Employment permits.</strong> Reviews moved from 163 days behind on 8 October 2026
+        to 192 days on 7 November 2026, while ICT (Renewal) improved from 80 days behind to 65.
+        Queues inside the same scheme are moving in opposite directions.
+      </p>
+      <p id="trend-volume">
+        <strong>Decision volume.</strong> The last six published days carried 1,174 decisions,
+        against 1,283 across the six published days before them. Fewer decisions being published
+        is not the same as more refusals.
+      </p>
+      <p class="small-note">
+        Computed from <a href="/data/stamp_1g.json">/data/stamp_1g.json</a>,
+        <a href="/data/work_permits.json">/data/work_permits.json</a> and
+        <a href="/data/visa_decisions.json">/data/visa_decisions.json</a>, and refreshed from
+        those files when the page loads. A lag that grows means the queue is falling further
+        behind. It says nothing about any particular application.
       </p>
     </section>
 
@@ -192,11 +222,14 @@
   </footer>
 
   <script>
-  /* Refresh the snapshot from the three data files. The static text above is the truth as of
-     this page's build; this keeps it true afterwards. A failed fetch leaves the static values. */
+  /* One fetch per data file, then both the snapshot and the trend paragraphs are filled
+     from the same responses. Static text in the HTML is the truth as of this page's build;
+     this keeps it true afterwards. A failed fetch leaves the static text untouched. */
   (function () {
     var months = ['January', 'February', 'March', 'April', 'May', 'June',
                   'July', 'August', 'September', 'October', 'November', 'December'];
+    var DAY = 86400000;
+
     function longDate(iso) {
       var p = String(iso).slice(0, 10).split('-');
       if (p.length !== 3) return null;
@@ -204,57 +237,150 @@
       if (!m) return null;
       return Number(p[2]) + ' ' + m + ' ' + p[0];
     }
+    function isoMinusDays(iso, n) {
+      var p = String(iso).slice(0, 10).split('-');
+      var d = new Date(Date.UTC(Number(p[0]), Number(p[1]) - 1, Number(p[2])));
+      return new Date(d.getTime() - n * DAY).toISOString().slice(0, 10);
+    }
     function get(url) {
       return fetch(url, { cache: 'no-store' })
         .then(function (r) { return r.ok ? r.json() : Promise.reject(new Error('HTTP ' + r.status)); })
         .catch(function () { return null; });
     }
-    var g1El = document.getElementById('t-g1-date');
-    var g1Lag = document.getElementById('t-g1-lag');
-    var pMin = document.getElementById('t-perm-min');
-    var pMax = document.getElementById('t-perm-max');
-    var dCount = document.getElementById('t-decisions');
-    var dDays = document.getElementById('t-days');
-    var dShare = document.getElementById('t-approved-share');
-
-    get('/data/stamp_1g.json').then(function (rows) {
-      if (!Array.isArray(rows) || !rows.length) return;
-      var latest = rows.reduce(function (a, r) { return r.run_date > a ? r.run_date : a; }, '');
-      var same = rows.filter(function (r) { return r.run_date === latest; });
-      var row = null;
-      for (var i = 0; i < same.length; i++) {
-        if (String(same[i].category).toLowerCase() === 'other') { row = same[i]; break; }
+    function series(rows, cat) {
+      var out = [];
+      (rows || []).forEach(function (r) {
+        if (!r || String(r.category) !== cat) return;
+        if (typeof r.lag_days !== 'number' || !r.run_date) return;
+        out.push([r.run_date, r.lag_days]);
+      });
+      out.sort(function (a, b) { return a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0; });
+      return out;
+    }
+    function atOrBefore(pts, target) {
+      var best = null;
+      for (var i = 0; i < pts.length; i++) {
+        if (pts[i][0] <= target) { if (!best || pts[i][0] > best[0]) best = pts[i]; }
       }
-      if (!row) row = same[same.length - 1];
-      if (!row) return;
-      if (g1El && longDate(row.processing_date)) g1El.textContent = longDate(row.processing_date);
-      if (g1Lag && typeof row.lag_days === 'number') g1Lag.textContent = row.lag_days + ' days';
-    });
+      return best;
+    }
+    function lastOf(pts) { return pts.length ? pts[pts.length - 1] : null; }
+    function setText(id, text) {
+      var el = document.getElementById(id);
+      if (el && text) el.textContent = text;
+    }
 
-    get('/data/work_permits.json').then(function (rows) {
-      if (!Array.isArray(rows) || !rows.length) return;
-      var latest = rows.reduce(function (a, r) { return r.run_date > a ? r.run_date : a; }, '');
-      var lags = rows.filter(function (r) {
-        return r.run_date === latest && typeof r.lag_days === 'number';
-      }).map(function (r) { return r.lag_days; });
-      if (!lags.length) return;
-      if (pMin) pMin.textContent = Math.min.apply(null, lags) + ' days';
-      if (pMax) pMax.textContent = Math.max.apply(null, lags) + ' days';
-    });
+    Promise.all([
+      get('/data/stamp_1g.json'),
+      get('/data/work_permits.json'),
+      get('/data/visa_decisions.json')
+    ]).then(function (res) {
+      var g1 = res[0], pm = res[1], dec = res[2];
 
-    get('/data/visa_decisions.json').then(function (rows) {
-      if (!Array.isArray(rows)) return;
-      var by = {}, approved = 0, refused = 0;
-      for (var i = 0; i < rows.length; i++) {
-        var d = rows[i][0], v = rows[i][2];
-        if (v === 'Approved') { approved++; by[d] = true; }
-        else if (v === 'Refused') { refused++; by[d] = true; }
+      /* ---- snapshot ---- */
+      if (Array.isArray(g1) && g1.length) {
+        var latest = g1.reduce(function (a, r) { return r.run_date > a ? r.run_date : a; }, '');
+        var same = g1.filter(function (r) { return r.run_date === latest; });
+        var row = null;
+        for (var i = 0; i < same.length; i++) {
+          if (String(same[i].category).toLowerCase() === 'other') { row = same[i]; break; }
+        }
+        if (!row) row = same[same.length - 1];
+        if (row) {
+          var d = document.getElementById('t-g1-date');
+          var l = document.getElementById('t-g1-lag');
+          if (d && longDate(row.processing_date)) d.textContent = longDate(row.processing_date);
+          if (l && typeof row.lag_days === 'number') l.textContent = row.lag_days + ' days';
+        }
       }
-      var days = Object.keys(by).length;
-      var total = approved + refused;
-      if (dCount) dCount.textContent = total.toLocaleString('en-IE');
-      if (dDays) dDays.textContent = days;
-      if (dShare && total > 0) dShare.textContent = (100 * approved / total).toFixed(1) + '%';
+      if (Array.isArray(pm) && pm.length) {
+        var latestP = pm.reduce(function (a, r) { return r.run_date > a ? r.run_date : a; }, '');
+        var lags = pm.filter(function (r) {
+          return r.run_date === latestP && typeof r.lag_days === 'number';
+        }).map(function (r) { return r.lag_days; });
+        if (lags.length) {
+          var mn = document.getElementById('t-perm-min');
+          var mx = document.getElementById('t-perm-max');
+          if (mn) mn.textContent = Math.min.apply(null, lags) + ' days';
+          if (mx) mx.textContent = Math.max.apply(null, lags) + ' days';
+        }
+      }
+      var published = [];
+      if (Array.isArray(dec)) {
+        var by = {}, approved = 0, refused = 0;
+        for (var k = 0; k < dec.length; k++) {
+          var dd = dec[k][0], vv = dec[k][2];
+          if (vv === 'Approved') { approved++; by[dd] = (by[dd] || 0) + 1; }
+          else if (vv === 'Refused') { refused++; by[dd] = (by[dd] || 0) + 1; }
+        }
+        published = Object.keys(by).sort().map(function (key) { return [key, by[key]]; });
+        var total = approved + refused;
+        var cEl = document.getElementById('t-decisions');
+        var dEl = document.getElementById('t-days');
+        var sEl = document.getElementById('t-approved-share');
+        if (cEl) cEl.textContent = total.toLocaleString('en-IE');
+        if (dEl) dEl.textContent = published.length;
+        if (sEl && total > 0) sEl.textContent = (100 * approved / total).toFixed(1) + '%';
+      }
+
+      /* ---- trends: the same figures 30 days apart ---- */
+      if (Array.isArray(g1) && g1.length) {
+        var g1pts = series(g1, 'Other');
+        var g1last = lastOf(g1pts);
+        var g1then = g1last ? atOrBefore(g1pts, isoMinusDays(g1last[0], 30)) : null;
+        if (g1last && g1then && g1then[0] !== g1last[0]) {
+          var dg = g1last[1] - g1then[1];
+          var g1Text = dg === 0
+            ? 'The overall queue held at ' + g1last[1] + ' days behind between ' +
+              longDate(g1then[0]) + ' and ' + longDate(g1last[0]) + '.'
+            : 'The overall queue moved from ' + g1then[1] + ' days behind on ' + longDate(g1then[0]) +
+              ' to ' + g1last[1] + ' days behind on ' + longDate(g1last[0]) + ' - it ' +
+              (dg > 0 ? 'fell ' + dg + ' days further behind' : 'caught up by ' + (-dg) + ' days') +
+              ' over that period.';
+          setText('trend-g1', 'Stamp 1G. ' + g1Text);
+        }
+      }
+
+      if (Array.isArray(pm) && pm.length) {
+        var cats = {};
+        pm.forEach(function (r) { if (r && r.category) cats[r.category] = true; });
+        var changes = [];
+        Object.keys(cats).forEach(function (cat) {
+          var pts = series(pm, cat);
+          var last = lastOf(pts);
+          if (!last) return;
+          var then = atOrBefore(pts, isoMinusDays(last[0], 30));
+          if (!then || then[0] === last[0]) return;
+          changes.push({ cat: cat, from: then[1], to: last[1], at: then[0], now: last[0], delta: last[1] - then[1] });
+        });
+        if (changes.length) {
+          var worst = changes.slice().sort(function (a, b) { return b.delta - a.delta; })[0];
+          var best = changes.slice().sort(function (a, b) { return a.delta - b.delta; })[0];
+          var parts = [];
+          if (worst && worst.delta > 0) {
+            parts.push(worst.cat + ' moved from ' + worst.from + ' days behind on ' + longDate(worst.at) +
+                       ' to ' + worst.to + ' days on ' + longDate(worst.now));
+          }
+          if (best && best.delta < 0 && best !== worst) {
+            parts.push(best.cat + ' improved from ' + best.from + ' days behind to ' + best.to);
+          }
+          if (parts.length) {
+            setText('trend-permits', 'Employment permits. ' + parts.join(', while ') + '.');
+          }
+        }
+      }
+
+      if (published.length >= 12) {
+        var n = 6;
+        var recent = published.slice(-n).reduce(function (a, p) { return a + p[1]; }, 0);
+        var prior = published.slice(-2 * n, -n).reduce(function (a, p) { return a + p[1]; }, 0);
+        var dir = recent === prior ? 'the same as'
+                : recent > prior ? 'above' : 'below';
+        var volText = 'Decision volume. The last ' + n + ' published days carried ' +
+          recent.toLocaleString('en-IE') + ' decisions, ' + dir + ' the ' +
+          prior.toLocaleString('en-IE') + ' across the ' + n + ' published days before them.';
+        setText('trend-volume', volText);
+      }
     });
   })();
   </script>
