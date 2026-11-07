@@ -119,58 +119,6 @@
      its own mask. Both are same-origin, which is all img-src 'self' needs. -->
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-</head>
-<body>
-    <div id="visa-dash">
-      <!-- Static summary: what an agent or a no-JavaScript reader gets before the
-           dashboard hydrates. render() replaces this node's contents with the app,
-           so it is never shown twice; it is real content, not a noscript shim. -->
-      <article class="static-fallback">
-        <p class="static-kicker">Ireland &middot; New Delhi Visa Section</p>
-        <h1>Irish Visa Decision Tracker</h1>
-        <p class="static-lede">
-          The <strong>Irish Visa Decision Tracker</strong> (also known as the Irish Visa Update
-          Tracker) is an independent, unofficial record of visa decisions published by the
-          <strong>Embassy of Ireland in New Delhi</strong>, with
-          daily approved and refused summaries, Stamp 1G processing dates and employment-permit
-          queues. Search any published application number, follow trends over time, and read
-          community-reported wait times.
-        </p>
-        <h2>What this tracker covers</h2>
-        <ul>
-          <li><strong>Visa decisions</strong> &mdash; each application number in the embassy's daily spreadsheet, with its decision date and approved/refused outcome.</li>
-          <li><strong>Daily summaries and trends</strong> &mdash; accepted and refused counts for every published day, with the applications behind those counts available on demand.</li>
-          <li><strong>Stamp 1G and employment permits</strong> &mdash; the processing dates reached by ISD and DETE, the lag in days and weeks, and how it has moved.</li>
-          <li><strong>Community timelines</strong> &mdash; waits shared by visitors and merged nightly. They are anecdotes, not a statistical sample.</li>
-        </ul>
-        <h2>Data, sources and limits</h2>
-        <p>
-          Decision rows come from the embassy's published spreadsheet. Stamp 1G and permit figures
-          come from the processing dates published by ISD and DETE. A scheduled scraper commits new
-          rows to the public GitHub repository, and this page reads those JSON files, so a pipeline
-          run appears without a redeploy. Check <a href="/data/visa_meta.json">visa_meta.json</a>
-          for scraper health before treating the figures as current.
-        </p>
-        <p>
-          This project is not affiliated with the Embassy of Ireland, ISD, DETE or any Irish
-          government body. It does not give immigration advice, predict an individual outcome or
-          see private case data. For a decision on your own application, contact the official body
-          handling it.
-        </p>
-        <p class="static-nav">
-          <a href="/about">About the project</a> &middot;
-          <a href="/contact">Contact and corrections</a> &middot;
-          <a href="/privacy">Privacy</a> &middot;
-          <a href="/llms.txt">Agent guide (llms.txt)</a>
-        </p>
-      </article>
-    </div>
-
-    <footer class="site-foot">
-      <p><strong>Irish Visa Decision Tracker</strong> &mdash; independent, unofficial, and not affiliated with any Irish government body.</p>
-      <p><a href="/">Tracker</a> &middot; <a href="/daily-summaries">Daily summaries</a> &middot; <a href="/stamp-1g-processing-dates">Stamp 1G processing dates</a> &middot; <a href="/employment-permit-processing-dates">Employment permits</a> &middot; <a href="/visa-processing-times">Processing times</a> &middot; <a href="/about">About</a> &middot; <a href="/contact">Contact</a> &middot; <a href="/privacy">Privacy</a> &middot; <a href="/sitemap.xml">Sitemap</a> &middot; <a href="/llms.txt">llms.txt</a> &middot; <a href="https://github.com/parth-soni-10/Irish-Visa-Tracker">GitHub</a></p>
-      <p>&copy; 2026 Parth Soni &middot; Dublin, Ireland</p>
-    </footer>
     <link rel="stylesheet" href="glide-select.css">
     <link rel="stylesheet" href="jelly-radio.css" />
     <link rel="stylesheet" href="analytics-chart.css" />
@@ -1763,6 +1711,58 @@
         }
         .glide-select__option { font-family: "Inter", sans-serif; font-size: 12.5px; }
     </style>
+</head>
+<body>
+    <div id="visa-dash">
+      <!-- Static summary: what an agent or a no-JavaScript reader gets before the
+           dashboard hydrates. render() replaces this node's contents with the app,
+           so it is never shown twice; it is real content, not a noscript shim. -->
+      <article class="static-fallback">
+        <p class="static-kicker">Ireland &middot; New Delhi Visa Section</p>
+        <h1>Irish Visa Decision Tracker</h1>
+        <p class="static-lede">
+          The <strong>Irish Visa Decision Tracker</strong> (also known as the Irish Visa Update
+          Tracker) is an independent, unofficial record of visa decisions published by the
+          <strong>Embassy of Ireland in New Delhi</strong>, with
+          daily approved and refused summaries, Stamp 1G processing dates and employment-permit
+          queues. Search any published application number, follow trends over time, and read
+          community-reported wait times.
+        </p>
+        <h2>What this tracker covers</h2>
+        <ul>
+          <li><strong>Visa decisions</strong> &mdash; each application number in the embassy's daily spreadsheet, with its decision date and approved/refused outcome.</li>
+          <li><strong>Daily summaries and trends</strong> &mdash; accepted and refused counts for every published day, with the applications behind those counts available on demand.</li>
+          <li><strong>Stamp 1G and employment permits</strong> &mdash; the processing dates reached by ISD and DETE, the lag in days and weeks, and how it has moved.</li>
+          <li><strong>Community timelines</strong> &mdash; waits shared by visitors and merged nightly. They are anecdotes, not a statistical sample.</li>
+        </ul>
+        <h2>Data, sources and limits</h2>
+        <p>
+          Decision rows come from the embassy's published spreadsheet. Stamp 1G and permit figures
+          come from the processing dates published by ISD and DETE. A scheduled scraper commits new
+          rows to the public GitHub repository, and this page reads those JSON files, so a pipeline
+          run appears without a redeploy. Check <a href="/data/visa_meta.json">visa_meta.json</a>
+          for scraper health before treating the figures as current.
+        </p>
+        <p>
+          This project is not affiliated with the Embassy of Ireland, ISD, DETE or any Irish
+          government body. It does not give immigration advice, predict an individual outcome or
+          see private case data. For a decision on your own application, contact the official body
+          handling it.
+        </p>
+        <p class="static-nav">
+          <a href="/about">About the project</a> &middot;
+          <a href="/contact">Contact and corrections</a> &middot;
+          <a href="/privacy">Privacy</a> &middot;
+          <a href="/llms.txt">Agent guide (llms.txt)</a>
+        </p>
+      </article>
+    </div>
+
+    <footer class="site-foot">
+      <p><strong>Irish Visa Decision Tracker</strong> &mdash; independent, unofficial, and not affiliated with any Irish government body.</p>
+      <p><a href="/">Tracker</a> &middot; <a href="/daily-summaries">Daily summaries</a> &middot; <a href="/stamp-1g-processing-dates">Stamp 1G processing dates</a> &middot; <a href="/employment-permit-processing-dates">Employment permits</a> &middot; <a href="/visa-processing-times">Processing times</a> &middot; <a href="/about">About</a> &middot; <a href="/contact">Contact</a> &middot; <a href="/privacy">Privacy</a> &middot; <a href="/sitemap.xml">Sitemap</a> &middot; <a href="/llms.txt">llms.txt</a> &middot; <a href="https://github.com/parth-soni-10/Irish-Visa-Tracker">GitHub</a></p>
+      <p>&copy; 2026 Parth Soni &middot; Dublin, Ireland</p>
+    </footer>
     <script src="lucide.min.js"></script>
     <script src="glide-select.js" defer></script>
     <script src="jelly-radio.js" defer></script>
