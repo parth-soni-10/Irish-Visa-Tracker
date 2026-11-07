@@ -56,6 +56,11 @@ const ASSETS = {
         headers: { "Content-Type": "text/html; charset=utf-8" },
       });
     }
+    if (path === "/404" || path === "/404/" || path === "/404.html") {
+      return new Response("<!doctype html><h1>Page not found</h1>", {
+        headers: { "Content-Type": "text/html; charset=utf-8" },
+      });
+    }
     return new Response("<!doctype html><h1>Not found</h1>", {
       status: 404,
       headers: { "Content-Type": "text/html; charset=utf-8" },
@@ -169,6 +174,28 @@ test("router: the same missing path keeps the HTML 404 for browsers", async () =
   assert.equal(response.status, 404);
   assert.match(response.headers.get("Content-Type"), /^text\/html/);
   assert.match(response.headers.get("Vary"), /Accept/);
+});
+
+test("router: /404 and /404.html answer the page with a real 404 status", async () => {
+  for (const path of ["/404", "/404/", "/404.html"]) {
+    const response = await call(path, "text/html");
+    assert.equal(response.status, 404, path);
+    assert.match(response.headers.get("Content-Type"), /^text\/html/, path);
+    assert.match(await response.text(), /Page not found/, path);
+  }
+});
+
+test("router: /404 keeps Markdown negotiation and the HEAD contract", async () => {
+  const markdown = await call("/404", "text/markdown");
+  assert.equal(markdown.status, 404);
+  assert.equal(markdown.headers.get("Content-Type"), "text/markdown; charset=utf-8");
+  assert.equal(markdown.headers.get("Vary"), "Accept");
+  assert.match(await markdown.text(), /llms\.txt/);
+
+  const head = await call("/404", "text/html", "HEAD");
+  assert.equal(head.status, 404);
+  assert.match(head.headers.get("Content-Type"), /^text\/html/);
+  assert.equal(await head.text(), "");
 });
 
 test("router: 406 when neither format is acceptable", async () => {

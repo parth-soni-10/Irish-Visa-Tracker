@@ -82,6 +82,13 @@ const DATA_CACHE_SECONDS = 300;
 // the job commits to data/community_timelines.json in a public repo, so serving
 // it adds no exposure the pipeline does not already publish.
 const SUBMISSIONS_PATH = "/api/community-submissions";
+
+// `/404`, `/404/` and `/404.html` are the not-found page, but it is also a real
+// file, so Pages resolves them through the clean-URL rewrite and answers 200 -
+// a soft 404 that reads as a live page to anything checking the status. These
+// are the paths that mean "not found" rather than a page of their own, and they
+// get the page plus the status it stands for.
+const NOT_FOUND_PATHS = new Set(["/404", "/404/", "/404.html"]);
 const TIMELINE_FORMS = ["timelines-visa", "timelines-1g", "timelines"];
 const MAX_TIMELINE_ROWS = 5000;
 
@@ -294,6 +301,32 @@ export default {
         return markdownResponse(NOT_ACCEPTABLE_MARKDOWN, 406, request.method);
       }
       return withDocHeaders(await fetchDocument(env, request, document), document);
+    }
+
+    if (NOT_FOUND_PATHS.has(pathname)) {
+      if (negotiate(request.headers.get("Accept")) === "markdown") {
+        return markdownResponse(notFoundMarkdown(pathname), 404, request.method);
+      }
+      // The page itself, with the status it means. Ask for the clean URL: the
+      // assets layer answers `/404` with the file's body at 200, while a
+      // request for `/404.html` is redirected to it - and a redirect carries no
+      // body, which would turn this into an empty 404.
+      const pageUrl = new URL(request.url);
+      pageUrl.pathname = "/404";
+      let page = await env.ASSETS.fetch(new Request(pageUrl, request));
+      if (page.status >= 300 && page.status < 400) {
+        const location = page.headers.get("Location");
+        if (location) {
+          page = await env.ASSETS.fetch(new Request(new URL(location, pageUrl), request));
+        }
+      }
+      const headers = new Headers(page.headers);
+      headers.delete("Location");
+      return new Response(request.method === "HEAD" ? null : page.body, {
+        status: 404,
+        statusText: "Not Found",
+        headers,
+      });
     }
 
     const response = await env.ASSETS.fetch(request);
