@@ -3,21 +3,21 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Employment Permit Processing Dates Ireland - Irish Visa Tracker</title>
+  <title>Employment Permit Processing Dates Ireland - Irish Visa Decision Tracker</title>
   <meta name="description" content="Employment permit processing dates by category: the application date DETE has reached, the lag in days, and how each queue has moved. Independent, unofficial.">
   <link rel="canonical" href="https://irishvisaupdatetracker.pages.dev/employment-permit-processing-dates">
   <link rel="alternate" type="text/markdown" href="/employment-permit-processing-dates.md" title="Markdown version">
   <link rel="describedby" href="/llms.txt" type="text/plain">
   <meta name="theme-color" content="#ffffff">
   <meta property="og:type" content="article">
-  <meta property="og:title" content="Employment Permit Processing Dates Ireland - Irish Visa Tracker">
+  <meta property="og:title" content="Employment Permit Processing Dates Ireland - Irish Visa Decision Tracker">
   <meta property="og:description" content="The application date DETE has reached in each employment permit category, with the lag in days and how each queue has moved.">
   <meta property="og:url" content="https://irishvisaupdatetracker.pages.dev/employment-permit-processing-dates">
   <meta property="og:image" content="https://irishvisaupdatetracker.pages.dev/og-image.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Employment Permit Processing Dates Ireland - Irish Visa Tracker">
+  <meta name="twitter:title" content="Employment Permit Processing Dates Ireland - Irish Visa Decision Tracker">
   <meta name="twitter:description" content="The date DETE has reached in each employment permit category, with the lag in days.">
   <link rel="icon" href="/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
@@ -108,26 +108,26 @@
       </p>
       <ul>
         <li><strong>Critical Skills</strong> - processing applications received on
-          <span data-perm-date="Critical Skills">24 October 2026</span>
-          (<span data-perm-lag="Critical Skills">14 days</span> behind).</li>
+          <span data-perm-date="Critical Skills">24 October 2026</span>,
+          <span data-perm-lag="Critical Skills">14 days</span> behind.</li>
         <li><strong>General (New)</strong> - processing applications received on
-          <span data-perm-date="General (New)">2 October 2026</span>
-          (<span data-perm-lag="General (New)">36 days</span> behind).</li>
+          <span data-perm-date="General (New)">2 October 2026</span>,
+          <span data-perm-lag="General (New)">36 days</span> behind.</li>
         <li><strong>ICT (New)</strong> - processing applications received on
-          <span data-perm-date="ICT (New)">1 November 2026</span>
-          (<span data-perm-lag="ICT (New)">6 days</span> behind).</li>
+          <span data-perm-date="ICT (New)">1 November 2026</span>,
+          <span data-perm-lag="ICT (New)">6 days</span> behind.</li>
         <li><strong>ICT (Renewal)</strong> - processing applications received on
-          <span data-perm-date="ICT (Renewal)">3 September 2026</span>
-          (<span data-perm-lag="ICT (Renewal)">65 days</span> behind).</li>
+          <span data-perm-date="ICT (Renewal)">3 September 2026</span>,
+          <span data-perm-lag="ICT (Renewal)">65 days</span> behind.</li>
         <li><strong>Other New</strong> - processing applications received on
-          <span data-perm-date="Other New">2 October 2026</span>
-          (<span data-perm-lag="Other New">36 days</span> behind).</li>
+          <span data-perm-date="Other New">2 October 2026</span>,
+          <span data-perm-lag="Other New">36 days</span> behind.</li>
         <li><strong>Renewals</strong> - processing applications received on
-          <span data-perm-date="Renewals">3 September 2026</span>
-          (<span data-perm-lag="Renewals">65 days</span> behind).</li>
+          <span data-perm-date="Renewals">3 September 2026</span>,
+          <span data-perm-lag="Renewals">65 days</span> behind.</li>
         <li><strong>Reviews</strong> - processing applications received on
-          <span data-perm-date="Reviews">29 April 2026</span>
-          (<span data-perm-lag="Reviews">192 days</span> behind).</li>
+          <span data-perm-date="Reviews">29 April 2026</span>,
+          <span data-perm-lag="Reviews">192 days</span> behind.</li>
       </ul>
       <p class="small-note">
         Figures are updated when the scraper runs and commits to the public repository. Always
@@ -231,7 +231,13 @@
         var d = document.querySelector('[data-perm-date="' + cat + '"]');
         var l = document.querySelector('[data-perm-lag="' + cat + '"]');
         if (d && longDate(r.processing_date)) d.textContent = longDate(r.processing_date);
-        if (l && typeof r.lag_days === 'number') l.textContent = r.lag_days + ' days';
+        if (l && typeof r.lag_days === 'number') {
+          var txt = r.lag_days + ' days';
+          if (typeof r.lag_weeks === 'number') {
+            txt += ' (about ' + r.lag_weeks.toFixed(1) + ' weeks)';
+          }
+          l.textContent = txt;
+        }
       });
     }).catch(function () { /* static figures remain */ });
   })();
