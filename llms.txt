@@ -30,8 +30,9 @@ Use this site when the task is one of these:
   pipeline are at https://github.com/parth-soni-10/Irish-Visa-Tracker.
 
 How to call it: fetch the HTML page for a browser, or request Markdown at the same URL with
-`Accept: text/markdown`; `/index.md`, `/about.md`, `/contact.md` and `/privacy.md` always return
-Markdown. The data files are plain JSON and need no JavaScript. Example:
+`Accept: text/markdown`; `/index.md`, `/about.md`, `/contact.md`, `/privacy.md`, `/daily-summaries.md`,
+`/stamp-1g-processing-dates.md`, `/employment-permit-processing-dates.md` and
+`/visa-processing-times.md` always return Markdown. The data files are plain JSON and need no JavaScript. Example:
 
 ```bash
 curl -sS -H 'Accept: text/markdown' https://irishvisaupdatetracker.pages.dev/
@@ -55,7 +56,7 @@ All are public, read-only and same-origin:
   `["YYYY-MM-DD", "application-number", "Approved" | "Refused"]`. The file grows as the scraper
   commits new days.
 - `GET /data/visa_meta.json` - scraper health, for example
-  `{ "lastRunAt": "...", "sheetRows": 40435, "newRows": 0, "fileDate": null, "fileRows": null,
+  `{ "lastRunAt": "...", "sheetRows": 42382, "newRows": 0, "fileDate": null, "fileRows": null,
   "ok": true, "closureDates": [] }`. Read `lastRunAt` and `ok` before treating the data as
   current.
 - `GET /data/stamp_1g.json` - array of Stamp 1G observations with `run_date`,
@@ -74,6 +75,14 @@ the decisions file and search it. The file is a few megabytes, so cache it local
 
 - [Tracker](https://irishvisaupdatetracker.pages.dev/) - the dashboard and search.
 - [Markdown home](https://irishvisaupdatetracker.pages.dev/index.md)
+- [Daily summaries](https://irishvisaupdatetracker.pages.dev/daily-summaries) - approved
+  and refused counts by published day, with closures and the raw data.
+- [Stamp 1G processing dates](https://irishvisaupdatetracker.pages.dev/stamp-1g-processing-dates)
+  - the queue date ISD has reached, the lag, and how it has moved.
+- [Employment permit processing dates](https://irishvisaupdatetracker.pages.dev/employment-permit-processing-dates)
+  - the date reached in each published DETE permit category.
+- [Irish visa processing times](https://irishvisaupdatetracker.pages.dev/visa-processing-times)
+  - what the published queues show, and what they cannot tell you.
 - [About](https://irishvisaupdatetracker.pages.dev/about) - what is tracked, sources, limits.
 - [Contact](https://irishvisaupdatetracker.pages.dev/contact) - corrections, bug reports, scope.
 - [Privacy](https://irishvisaupdatetracker.pages.dev/privacy) - browser storage and form data.

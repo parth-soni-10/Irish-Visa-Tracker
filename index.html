@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Irish Visa Decision Tracker — Embassy of Ireland New Delhi Visa Decisions &amp; Stamp 1G</title>
 <meta name="theme-color" content="#ffffff">
-<meta name="description" content="Search Embassy of Ireland New Delhi visa decisions by application number. Daily approved/refused summaries, Stamp 1G and employment-permit processing dates from ISD and DETE. Independent and unofficial — not immigration advice.">
+<meta name="description" content="Search Embassy of Ireland New Delhi visa decisions by application number, plus daily approved and refused counts and Stamp 1G processing dates.">
 <link rel="canonical" href="https://irishvisaupdatetracker.pages.dev/">
 <link rel="alternate" type="text/markdown" href="/index.md" title="Markdown version">
 <link rel="describedby" href="/llms.txt" type="text/plain">
@@ -87,7 +87,7 @@
       "encodingFormat": "application/json",
       "isAccessibleForFree": true,
       "publisher": { "@id": "https://irishvisaupdatetracker.pages.dev/#organization" },
-      "dateModified": "2026-10-31"
+      "dateModified": "2026-11-07"
     },
     {
       "@type": "Dataset",
@@ -98,7 +98,7 @@
       "encodingFormat": "application/json",
       "isAccessibleForFree": true,
       "publisher": { "@id": "https://irishvisaupdatetracker.pages.dev/#organization" },
-      "dateModified": "2026-10-31"
+      "dateModified": "2026-11-07"
     },
     {
       "@type": "Dataset",
@@ -109,7 +109,7 @@
       "encodingFormat": "application/json",
       "isAccessibleForFree": true,
       "publisher": { "@id": "https://irishvisaupdatetracker.pages.dev/#organization" },
-      "dateModified": "2026-10-31"
+      "dateModified": "2026-11-07"
     }
   ]
 }
@@ -174,7 +174,7 @@
 
     <footer class="site-foot">
       <p><strong>Irish Visa Decision Tracker</strong> &mdash; independent, unofficial, and not affiliated with any Irish government body.</p>
-      <p><a href="/about">About</a> &middot; <a href="/contact">Contact</a> &middot; <a href="/privacy">Privacy</a> &middot; <a href="/llms.txt">llms.txt</a> &middot; <a href="https://github.com/parth-soni-10/Irish-Visa-Tracker">GitHub</a></p>
+      <p><a href="/">Tracker</a> &middot; <a href="/daily-summaries">Daily summaries</a> &middot; <a href="/stamp-1g-processing-dates">Stamp 1G processing dates</a> &middot; <a href="/about">About</a> &middot; <a href="/contact">Contact</a> &middot; <a href="/privacy">Privacy</a> &middot; <a href="/sitemap.xml">Sitemap</a> &middot; <a href="/llms.txt">llms.txt</a> &middot; <a href="https://github.com/parth-soni-10/Irish-Visa-Tracker">GitHub</a> &middot; <a href="/employment-permit-processing-dates">Employment permits</a> &middot; <a href="/visa-processing-times">Processing times</a></p>
     </footer>
 
     <link rel="stylesheet" href="glide-select.css">
@@ -1029,7 +1029,7 @@
             async function render() {
                 if (!cache) {
                     root.innerHTML = '<div class="eyebrow">Ireland &middot; New Delhi Visa Section</div>' +
-                        '<div class="titlerow"><h1>Visa Decision Tracker</h1></div>' +
+                        '<div class="titlerow"><h1>Irish Visa Decision Tracker</h1></div>' +
                         '<div class="topbar"><div class="topbar-fill"></div></div>' +
                         '<div class="navpills" data-gooey-nav></div>' +
                         '<div class="cards"></div>' +
@@ -1049,13 +1049,13 @@
                 root.innerHTML =
                     '<a class="skip-link" href="#tab-body" target="_self">Skip to content</a>' +
                     '<div class="eyebrow">Ireland &middot; New Delhi Visa Section</div>' +
-                    '<div class="titlerow"><h1>Visa Decision Tracker</h1></div>' +
+                    '<div class="titlerow"><h1>Irish Visa Decision Tracker</h1></div>' +
                     '<div class="sub">' + (cache && cache.length ? cache.length + ' decisions on record' : 'Awaiting data') + '</div>' +
                     '<div class="navpills" data-gooey-nav>' + tabs.map(([k, label]) => '<button type="button" class="navpill ' + (activeTab === k ? 'active' : '') + '" data-tab="' + k + '"><i data-lucide="circle"></i> ' + label + '</button>').join('') + '</div>' +
                     '<div class="hero" id="hero" data-id="' + activeTab + '" style="opacity:1">' +
                     '<div class="hero-body">' +
                     '<div>' +
-                    '<h2 class="hero-title">Irish Visa Decision Tracker</h2>' +
+                    '<h2 class="hero-title">Ireland visa decisions, Stamp 1G and employment-permit processing dates</h2>' +
                     '<div class="hero-sub">Search Embassy of Ireland New Delhi visa decisions by application number.</div>' +
                     '</div>' +
                     '<div class="visual"></div>' +

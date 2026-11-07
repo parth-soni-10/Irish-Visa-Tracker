@@ -3,26 +3,64 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Daily Visa Decision Summaries — Irish Visa Decision Tracker</title>
-  <meta name="description" content="Daily approved/refused visa decision summaries from the Embassy of Ireland New Delhi — counts per published day, trends, and links to the raw data. Independent and unofficial — not immigration advice.">
+  <title>Daily Visa Decision Summaries - Irish Visa Decision Tracker</title>
+  <meta name="description" content="Daily approved and refused visa decision counts from the Embassy of Ireland in New Delhi, with the published days, closures and raw data behind each figure.">
   <link rel="canonical" href="https://irishvisaupdatetracker.pages.dev/daily-summaries">
   <link rel="alternate" type="text/markdown" href="/daily-summaries.md" title="Markdown version">
   <link rel="describedby" href="/llms.txt" type="text/plain">
   <meta name="theme-color" content="#ffffff">
   <meta property="og:type" content="article">
-  <meta property="og:title" content="Daily Visa Decision Summaries — Irish Visa Decision Tracker">
-  <meta property="og:description" content="Daily approved/refused visa decision summaries from the Embassy of Ireland New Delhi — counts per published day, trends, and raw data.">
+  <meta property="og:title" content="Daily Visa Decision Summaries - Irish Visa Decision Tracker">
+  <meta property="og:description" content="Approved and refused visa decision counts for each day the Embassy of Ireland in New Delhi published decisions, with the raw data behind them.">
   <meta property="og:url" content="https://irishvisaupdatetracker.pages.dev/daily-summaries">
   <meta property="og:image" content="https://irishvisaupdatetracker.pages.dev/og-image.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Daily Visa Decision Summaries — Irish Visa Decision Tracker">
-  <meta name="twitter:description" content="Daily approved/refused visa decision summaries from the Embassy of Ireland New Delhi — counts per published day.">
+  <meta name="twitter:title" content="Daily Visa Decision Summaries - Irish Visa Decision Tracker">
+  <meta name="twitter:description" content="Approved and refused visa decision counts for each published day at the Embassy of Ireland in New Delhi.">
   <link rel="icon" href="/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
   <link rel="stylesheet" href="/pages.css">
-  
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebPage",
+        "@id": "https://irishvisaupdatetracker.pages.dev/daily-summaries#webpage",
+        "url": "https://irishvisaupdatetracker.pages.dev/daily-summaries",
+        "name": "Daily Visa Decision Summaries",
+        "description": "Approved and refused visa decision counts for each day the Embassy of Ireland in New Delhi published decisions.",
+        "inLanguage": "en",
+        "isPartOf": { "@id": "https://irishvisaupdatetracker.pages.dev/#website" },
+        "about": {
+          "@type": "Dataset",
+          "name": "Embassy of Ireland New Delhi visa decisions",
+          "url": "https://irishvisaupdatetracker.pages.dev/data/visa_decisions.json",
+          "encodingFormat": "application/json"
+        }
+      },
+      {
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          {
+            "@type": "ListItem",
+            "position": 1,
+            "name": "Tracker",
+            "item": "https://irishvisaupdatetracker.pages.dev/"
+          },
+          {
+            "@type": "ListItem",
+            "position": 2,
+            "name": "Daily summaries",
+            "item": "https://irishvisaupdatetracker.pages.dev/daily-summaries"
+          }
+        ]
+      }
+    ]
+  }
+  </script>
 </head>
 <body>
 
@@ -41,40 +79,85 @@
   </header>
 
   <main class="page">
-    <p class="page-kicker">Visa decisions · Embassy of Ireland New Delhi</p>
+    <p class="page-kicker">Visa decisions &middot; Embassy of Ireland New Delhi</p>
     <h1>Daily Visa Decision Summaries</h1>
-    <p class="page-meta">Irish Visa Decision Tracker &bull; Data as of 31 October 2026 &bull; Unofficial — not immigration advice</p>
+    <p class="page-meta">Irish Visa Decision Tracker &bull; Updated from the tracker's daily scraper run &bull; Unofficial - not immigration advice</p>
 
     <p class="page-lede">
       Every business day the Embassy of Ireland in New Delhi publishes a spreadsheet of visa
       decisions. This page summarises the approved and refused counts for each published day,
-      drawn from the tracker's running record of those decisions.
+      drawn from the tracker's running record of those decisions, and points at the raw file
+      behind every figure.
     </p>
 
     <p class="page-data-freshness">
-      <strong>Data as of:</strong> 31 October 2026 &middot;
-      <strong>Scraper status:</strong> OK &middot;
-      <strong>Total rows tracked:</strong> 41,462 &middot;
+      <strong>Data as of:</strong>
+      <time id="visa-as-of" datetime="2026-11-07">7 November 2026</time> &middot;
+      <strong>Scraper status:</strong> <span id="visa-status">OK</span> &middot;
+      <strong>Decisions on record:</strong> <span id="visa-rows">42,382</span> &middot;
       <strong>Source:</strong>
       <a href="/data/visa_decisions.json">/data/visa_decisions.json</a>
     </p>
 
     <section>
-      <h2>How to read this</h2>
+      <h2>How to read these counts</h2>
       <ul>
-        <li><strong>Approved</strong> — applications the embassy has marked as approved in the published daily spreadsheet.</li>
-        <li><strong>Refused</strong> — applications the embassy has marked as refused.</li>
-        <li>Days with no embassy file are shown as closures or placeholders, not as decisions.</li>
+        <li><strong>Approved</strong> - applications the embassy has marked as approved in the published daily spreadsheet.</li>
+        <li><strong>Refused</strong> - applications the embassy has marked as refused.</li>
+        <li><strong>Published day</strong> - the date the embassy published the file, which is not necessarily the date a decision was made on a case.</li>
+        <li><strong>Closures</strong> - a day with no embassy file is a closure or placeholder, not a day with zero decisions.</li>
       </ul>
+      <p class="small-note">
+        Counts describe what the embassy has published. They are not an approval rate for
+        applications submitted on that day, and they say nothing about a case that has not
+        appeared in a published file yet.
+      </p>
+    </section>
+
+    <section>
+      <h2>Why a daily summary is useful</h2>
+      <p>
+        The embassy's file is a single flat list with no history and no totals. Reading it tells
+        you what was published that day; it does not tell you how decision volume has moved, which
+        days were closures, or whether a quiet week was a slow week or a holiday. Keeping every
+        published day in one running record is what makes those comparisons possible, and it is
+        why this archive keeps days that the current file no longer contains.
+      </p>
+      <p>
+        Because the record is complete, a missing application number means one of three things:
+        the embassy has not published a decision for it yet, the application sits with a different
+        visa office, or the file has not been published for that day. It does not mean the
+        application was refused.
+      </p>
+    </section>
+
+    <section>
+      <h2>Official sources</h2>
+      <p>
+        This page is an independent record, not the publisher. For the authoritative list, use the
+        official pages:
+      </p>
+      <ul>
+        <li><a href="https://www.irishimmigration.ie/visa-decisions/">ISD visa decisions</a> - the official decision lists, including the Dublin visa office, which publishes on Tuesdays.</li>
+        <li><a href="https://www.irishimmigration.ie/visa-offices/">ISD visa offices</a> - which office handles which countries; New Delhi covers India, Bangladesh, Nepal and Sri Lanka.</li>
+        <li><a href="https://www.ireland.ie/india">Embassy of Ireland in India</a> - the embassy's own site and contact details.</li>
+      </ul>
+      <p class="small-note">
+        Dates and totals on official pages can change without notice. If a figure here disagrees
+        with the official page, the official page is correct - please
+        <a href="/contact">report the difference</a>.
+      </p>
     </section>
 
     <section>
       <h2>Raw data</h2>
       <p>
         The complete decision history is available as a public JSON file:
-        <a href="/data/visa_decisions.json">/data/visa_decisions.json</a> (approximately 2 MB,
-        shaped as <code>[date, application number, decision]</code> rows). Scraper health is at
-        <a href="/data/visa_meta.json">/data/visa_meta.json</a>.
+        <a href="/data/visa_decisions.json">/data/visa_decisions.json</a>, shaped as
+        <code>[date, application number, decision]</code> rows. Scraper health - last run, row
+        count and whether the last run succeeded - is at
+        <a href="/data/visa_meta.json">/data/visa_meta.json</a>. The figures above are read from
+        that health file when this page loads, so they follow the pipeline without a redeploy.
       </p>
     </section>
 
@@ -96,8 +179,43 @@
   </main>
 
   <footer class="site-footer">
-    <p><a href="/">Tracker</a> &bull; <a href="/stamp-1g-processing-dates">Stamp 1G</a> &bull; <a href="/daily-summaries">Daily summaries</a> &bull; <a href="/about">About</a></p>
+    <p><a href="/">Tracker</a> &bull; <a href="/stamp-1g-processing-dates">Stamp 1G</a> &bull; <a href="/daily-summaries">Daily summaries</a> &bull; <a href="/about">About</a> &bull; <a href="/contact">Contact</a> &bull; <a href="/sitemap.xml">Sitemap</a> &bull; <a href="/employment-permit-processing-dates">Employment permits</a> &bull; <a href="/visa-processing-times">Processing times</a></p>
   </footer>
+
+  <script>
+  /* Fill the freshness line from the scraper health file. The static text above is the
+     truth as of this page's last build; this keeps it true after the next pipeline run.
+     If the fetch fails, the static values stay - they are never replaced by blanks. */
+  (function () {
+    var asOf = document.getElementById('visa-as-of');
+    var rows = document.getElementById('visa-rows');
+    var status = document.getElementById('visa-status');
+    if (!asOf && !rows && !status) return;
+    var months = ['January', 'February', 'March', 'April', 'May', 'June',
+                  'July', 'August', 'September', 'October', 'November', 'December'];
+    function longDate(iso) {
+      var p = String(iso).slice(0, 10).split('-');
+      if (p.length !== 3) return null;
+      var m = months[Number(p[1]) - 1];
+      if (!m) return null;
+      return Number(p[2]) + ' ' + m + ' ' + p[0];
+    }
+    fetch('/data/visa_meta.json', { cache: 'no-store' })
+      .then(function (r) { return r.ok ? r.json() : Promise.reject(new Error('HTTP ' + r.status)); })
+      .then(function (meta) {
+        var shown = longDate(meta.lastRunAt);
+        if (asOf && shown) {
+          asOf.textContent = shown;
+          asOf.setAttribute('datetime', String(meta.lastRunAt).slice(0, 10));
+        }
+        if (rows && typeof meta.sheetRows === 'number') {
+          rows.textContent = meta.sheetRows.toLocaleString('en-IE');
+        }
+        if (status) status.textContent = meta.ok ? 'OK' : 'Degraded';
+      })
+      .catch(function () { /* static figures remain */ });
+  })();
+  </script>
 
 </body>
 </html>

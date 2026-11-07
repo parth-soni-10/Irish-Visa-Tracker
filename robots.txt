@@ -1,5 +1,11 @@
-# The whole site is one page and everything published is meant to be
-# crawled; the only job here is to point at the sitemap.
+# Every published page on this site is meant to be crawled, including the two data landing
+# pages (/daily-summaries and /stamp-1g-processing-dates) and the public JSON files under
+# /data/. Nothing here is private, so the whole site stays open to every crawler - search
+# engines and AI agents alike - and this file's only real job is pointing at the sitemap.
+#
+# Markdown alternates (/index.md, /about.md, ...) are the same pages in another format, not
+# separate URLs, so they are deliberately not listed in the sitemap.
+
 User-agent: *
 Allow: /
 

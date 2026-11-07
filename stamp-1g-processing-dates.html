@@ -3,26 +3,64 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Stamp 1G Processing Dates — Irish Visa Decision Tracker</title>
-  <meta name="description" content="Stamp 1G processing dates for Ireland — the application date ISD is currently processing, lag in days and weeks, and how it has moved. Independent and unofficial — not immigration advice.">
+  <title>Stamp 1G Processing Dates Ireland - Irish Visa Decision Tracker</title>
+  <meta name="description" content="Stamp 1G processing dates for Ireland: the application date ISD is processing now, the lag in days and weeks, and how the queue has moved over time.">
   <link rel="canonical" href="https://irishvisaupdatetracker.pages.dev/stamp-1g-processing-dates">
   <link rel="alternate" type="text/markdown" href="/stamp-1g-processing-dates.md" title="Markdown version">
   <link rel="describedby" href="/llms.txt" type="text/plain">
   <meta name="theme-color" content="#ffffff">
   <meta property="og:type" content="article">
-  <meta property="og:title" content="Stamp 1G Processing Dates — Irish Visa Decision Tracker">
-  <meta property="og:description" content="Stamp 1G processing dates for Ireland — the application date ISD is currently processing, lag in days and weeks, and how it has moved.">
+  <meta property="og:title" content="Stamp 1G Processing Dates Ireland - Irish Visa Decision Tracker">
+  <meta property="og:description" content="The Stamp 1G application date ISD is processing now, the lag in days and weeks, and how the queue has moved.">
   <meta property="og:url" content="https://irishvisaupdatetracker.pages.dev/stamp-1g-processing-dates">
   <meta property="og:image" content="https://irishvisaupdatetracker.pages.dev/og-image.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Stamp 1G Processing Dates — Irish Visa Decision Tracker">
-  <meta name="twitter:description" content="Stamp 1G processing dates for Ireland — the application date ISD is currently processing, lag in days and weeks.">
+  <meta name="twitter:title" content="Stamp 1G Processing Dates Ireland - Irish Visa Decision Tracker">
+  <meta name="twitter:description" content="The Stamp 1G application date ISD is processing now, with the lag in days and weeks.">
   <link rel="icon" href="/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
   <link rel="stylesheet" href="/pages.css">
-  
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebPage",
+        "@id": "https://irishvisaupdatetracker.pages.dev/stamp-1g-processing-dates#webpage",
+        "url": "https://irishvisaupdatetracker.pages.dev/stamp-1g-processing-dates",
+        "name": "Stamp 1G Processing Dates Ireland",
+        "description": "The Stamp 1G application date Irish Immigration Service Delivery is currently processing, the lag in days and weeks, and how the queue has moved.",
+        "inLanguage": "en",
+        "isPartOf": { "@id": "https://irishvisaupdatetracker.pages.dev/#website" },
+        "about": {
+          "@type": "Dataset",
+          "name": "Stamp 1G processing queue observations",
+          "url": "https://irishvisaupdatetracker.pages.dev/data/stamp_1g.json",
+          "encodingFormat": "application/json"
+        }
+      },
+      {
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          {
+            "@type": "ListItem",
+            "position": 1,
+            "name": "Tracker",
+            "item": "https://irishvisaupdatetracker.pages.dev/"
+          },
+          {
+            "@type": "ListItem",
+            "position": 2,
+            "name": "Stamp 1G processing dates",
+            "item": "https://irishvisaupdatetracker.pages.dev/stamp-1g-processing-dates"
+          }
+        ]
+      }
+    ]
+  }
+  </script>
 </head>
 <body>
 
@@ -41,20 +79,21 @@
   </header>
 
   <main class="page">
-    <p class="page-kicker">Stamp 1G · Ireland</p>
-    <h1>Stamp 1G Processing Dates — Ireland</h1>
-    <p class="page-meta">Irish Visa Decision Tracker &bull; Data as of 31 October 2026 &bull; Unofficial — not immigration advice</p>
+    <p class="page-kicker">Stamp 1G &middot; Ireland</p>
+    <h1>Stamp 1G Processing Dates - Ireland</h1>
+    <p class="page-meta">Irish Visa Decision Tracker &bull; Updated from the tracker's daily scraper run &bull; Unofficial - not immigration advice</p>
 
     <p class="page-lede">
-      This page records the Stamp 1G processing queue for Ireland — the application date that
+      This page records the Stamp 1G processing queue for Ireland: the application date that
       <strong>ISD (Immigration Service Delivery)</strong> is currently processing, the lag in days
       and weeks, and how that lag has moved over time. Figures come from the processing dates
       published by ISD and are refreshed by the tracker's scheduled scraper.
     </p>
 
     <p class="page-data-freshness">
-      <strong>Data as of:</strong> 31 October 2026 &middot;
-      <strong>Scraper status:</strong> OK &middot;
+      <strong>Observation of:</strong>
+      <time id="g1-as-of" datetime="2026-11-07">7 November 2026</time> &middot;
+      <strong>Scraper status:</strong> <span id="g1-status">OK</span> &middot;
       <strong>Source:</strong> ISD-published processing dates, mirrored in
       <a href="/data/stamp_1g.json">/data/stamp_1g.json</a>
     </p>
@@ -63,13 +102,45 @@
       <h2>Latest Stamp 1G processing observation</h2>
       <p>
         ISD is currently processing Stamp 1G applications received on
-        <strong>28 September 2026</strong> — a lag of <strong>33 days</strong> (about 5 weeks)
-        from the observation recorded on 31 October 2026.
+        <strong id="g1-processing">28 September 2026</strong> - a lag of
+        <strong id="g1-lag">40 days</strong> from the observation recorded on
+        <span id="g1-run">7 November 2026</span>.
       </p>
       <p class="small-note">
-        Figures are updated when the scraper runs and commits to the public repository.
-        Always check <a href="/data/stamp_1g.json">/data/stamp_1g.json</a> for the most
-        recent observation before making decisions.
+        Figures are updated when the scraper runs and commits to the public repository. Always
+        check <a href="/data/stamp_1g.json">/data/stamp_1g.json</a> for the most recent
+        observation before making decisions.
+      </p>
+    </section>
+
+    <section>
+      <h2>How to read the lag</h2>
+      <ul>
+        <li><strong>Processing date</strong> - the application date ISD says it has reached. Applications received after that date have not been reached yet.</li>
+        <li><strong>Lag</strong> - the gap between the processing date and the date ISD published it. It describes the queue, not your case.</li>
+        <li><strong>Moving the wrong way</strong> - if the lag grows between observations, the queue is falling further behind; if it shrinks, ISD is catching up.</li>
+      </ul>
+      <p class="small-note">
+        The queue date is published for the scheme as a whole. It is not a promise about when an
+        individual application will be decided, and an application can be decided earlier or later
+        than the published date suggests.
+      </p>
+    </section>
+
+    <section>
+      <h2>Official sources</h2>
+      <p>
+        This page is an independent record, not the publisher. For the authoritative figures, use
+        the official pages:
+      </p>
+      <ul>
+        <li><a href="https://www.irishimmigration.ie/visa-decisions/">ISD visa decisions and processing times</a> - the official published dates, updated by ISD.</li>
+        <li><a href="https://www.irishimmigration.ie/visa-offices/">ISD visa offices</a> - which office handles which countries and applications.</li>
+        <li><a href="https://www.ireland.ie/india">Embassy of Ireland in India</a> - contact details for the embassy that publishes the New Delhi decision lists.</li>
+      </ul>
+      <p class="small-note">
+        If a figure here disagrees with the official page, the official page is correct - please
+        <a href="/contact">report the difference</a>.
       </p>
     </section>
 
@@ -91,8 +162,68 @@
   </main>
 
   <footer class="site-footer">
-    <p><a href="/">Tracker</a> &bull; <a href="/stamp-1g-processing-dates">Stamp 1G</a> &bull; <a href="/daily-summaries">Daily summaries</a> &bull; <a href="/about">About</a></p>
+    <p><a href="/">Tracker</a> &bull; <a href="/stamp-1g-processing-dates">Stamp 1G</a> &bull; <a href="/daily-summaries">Daily summaries</a> &bull; <a href="/about">About</a> &bull; <a href="/contact">Contact</a> &bull; <a href="/sitemap.xml">Sitemap</a> &bull; <a href="/employment-permit-processing-dates">Employment permits</a> &bull; <a href="/visa-processing-times">Processing times</a></p>
   </footer>
+
+  <script>
+  /* Fill the observation from the Stamp 1G file. The static text above is the truth as of
+     this page's last build; this keeps it true after the next pipeline run. A failed fetch
+     leaves the static values in place rather than blanking the page. */
+  (function () {
+    var asOf = document.getElementById('g1-as-of');
+    var run = document.getElementById('g1-run');
+    var processing = document.getElementById('g1-processing');
+    var lag = document.getElementById('g1-lag');
+    var status = document.getElementById('g1-status');
+    var months = ['January', 'February', 'March', 'April', 'May', 'June',
+                  'July', 'August', 'September', 'October', 'November', 'December'];
+    function longDate(iso) {
+      var p = String(iso).slice(0, 10).split('-');
+      if (p.length !== 3) return null;
+      var m = months[Number(p[1]) - 1];
+      if (!m) return null;
+      return Number(p[2]) + ' ' + m + ' ' + p[0];
+    }
+    function setDate(el, iso) {
+      var shown = longDate(iso);
+      if (el && shown) {
+        el.textContent = shown;
+        el.setAttribute('datetime', String(iso).slice(0, 10));
+      }
+    }
+    Promise.all([
+      fetch('/data/stamp_1g.json', { cache: 'no-store' })
+        .then(function (r) { return r.ok ? r.json() : Promise.reject(new Error('HTTP ' + r.status)); }),
+      fetch('/data/visa_meta.json', { cache: 'no-store' })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .catch(function () { return null; })
+    ]).then(function (out) {
+      var rows = out[0];
+      var meta = out[1];
+      if (meta && status) status.textContent = meta.ok ? 'OK' : 'Degraded';
+      if (!Array.isArray(rows) || !rows.length) return;
+      var latest = rows.reduce(function (a, r) {
+        return r && r.run_date && r.run_date > a ? r.run_date : a;
+      }, '');
+      var sameDay = rows.filter(function (r) { return r && r.run_date === latest; });
+      var row = null;
+      for (var i = 0; i < sameDay.length; i++) {
+        if (String(sameDay[i].category).toLowerCase() === 'other') { row = sameDay[i]; break; }
+      }
+      if (!row) row = sameDay[sameDay.length - 1];
+      if (!row) return;
+      setDate(asOf, latest);
+      setDate(run, latest);
+      setDate(processing, row.processing_date);
+      if (lag && typeof row.lag_days === 'number') {
+        lag.textContent = row.lag_days + ' days';
+        if (typeof row.lag_weeks === 'number') {
+          lag.textContent += ' (about ' + row.lag_weeks.toFixed(1) + ' weeks)';
+        }
+      }
+    }).catch(function () { /* static figures remain */ });
+  })();
+  </script>
 
 </body>
 </html>
