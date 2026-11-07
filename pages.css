@@ -237,3 +237,12 @@ a:focus-visible { outline: 2px solid var(--green); outline-offset: 3px; border-r
   .page-lede { font-size: 17px; }
   .site-footer { flex-direction: column; gap: 8px; padding-top: 22px; }
 }
+
+/* Breadcrumb trail: matches the BreadcrumbList JSON-LD on the data pages, which
+   search engines expect to be visible content rather than markup alone. */
+.breadcrumbs { margin: 0 0 12px; font-size: 12.5px; line-height: 1.4; }
+.breadcrumbs ol { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.breadcrumbs li { display: flex; align-items: center; gap: 6px; color: var(--muted, #5a6b62); }
+.breadcrumbs li + li::before { content: "/"; color: var(--border, #c9d3cd); }
+.breadcrumbs a { color: inherit; text-decoration: none; }
+.breadcrumbs a:hover { color: var(--green-deep, #0a6b3d); text-decoration: underline; }

@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Irish Visa Decision Tracker — Embassy of Ireland New Delhi Visa Decisions &amp; Stamp 1G</title>
+    <title>Irish Visa Decision Tracker - New Delhi Visa Decisions &amp; Stamp 1G</title>
 <meta name="theme-color" content="#ffffff">
 <meta name="description" content="Search Embassy of Ireland New Delhi visa decisions by application number, plus daily approved and refused counts and Stamp 1G processing dates.">
 <link rel="canonical" href="https://irishvisaupdatetracker.pages.dev/">
 <link rel="alternate" type="text/markdown" href="/index.md" title="Markdown version">
 <link rel="describedby" href="/llms.txt" type="text/plain">
 <meta property="og:site_name" content="Irish Visa Decision Tracker">
-<meta property="og:title" content="Irish Visa Decision Tracker — Embassy of Ireland New Delhi Visa Decisions &amp; Stamp 1G">
+<meta property="og:title" content="Irish Visa Decision Tracker - New Delhi Visa Decisions &amp; Stamp 1G">
 <meta property="og:description" content="Search Embassy of Ireland New Delhi visa decisions by application number. Daily approved/refused summaries, Stamp 1G and employment-permit processing dates from ISD and DETE.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://irishvisaupdatetracker.pages.dev/">
@@ -19,7 +19,7 @@
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="Irish Visa Decision Tracker dashboard">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Irish Visa Decision Tracker — Embassy of Ireland New Delhi Visa Decisions &amp; Stamp 1G">
+<meta name="twitter:title" content="Irish Visa Decision Tracker - New Delhi Visa Decisions &amp; Stamp 1G">
 <meta name="twitter:description" content="Search visa decisions by application number. Daily summaries, Stamp 1G and employment-permit processing dates from ISD and DETE.">
 <meta name="twitter:image" content="https://irishvisaupdatetracker.pages.dev/og-image.png">
 <script type="application/ld+json">
@@ -119,9 +119,6 @@
      its own mask. Both are same-origin, which is all img-src 'self' needs. -->
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<link rel="preload" href="fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="preload" href="fonts/geist-sans.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="preload" href="fonts/geist-mono.woff2" as="font" type="font/woff2" crossorigin>
 
 </head>
 <body>
@@ -872,15 +869,15 @@
     </style>
     <!-- INDEX_JS_START -->
     <script src="lucide.min.js"></script>
-    <script src="glide-select.js"></script>
+    <script src="glide-select.js" defer></script>
     <script src="jelly-radio.js" defer></script>
     <script src="rubber-segment.js" defer></script>
     <script src="squish-switch.js" defer></script>
     <script src="gooey-nav.js" defer></script>
     <script src="analytics-chart.js" defer></script>
-    <script src="time-undo.js"></script>
-    <script src="stepper.js"></script>
-    <script src="filter-disclosure.js"></script>
+    <script src="time-undo.js" defer></script>
+    <script src="stepper.js" defer></script>
+    <script src="filter-disclosure.js" defer></script>
     <script src="dynamic-button.js" defer></script>
     <script>
     (function() {
@@ -1074,5 +1071,29 @@
         </script>
     <script src="scroll-island.js" defer></script>
     <script src="scroll-island-mount.js" defer></script>
+<script>
+  /* Dataset.dateModified describes the data, so it is derived from the data at read time
+     rather than frozen at whichever date the HTML was last edited. The static value stays
+     as the no-JS fallback. */
+  (function () {
+    var tag = document.querySelector('script[type="application/ld+json"]');
+    if (!tag) return;
+    fetch('/data/visa_meta.json', { cache: 'no-store' })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .catch(function () { return null; })
+      .then(function (meta) {
+        if (!meta || !meta.lastRunAt) return;
+        var day = String(meta.lastRunAt).slice(0, 10);
+        var graph;
+        try { graph = JSON.parse(tag.textContent); } catch (e) { return; }
+        var nodes = graph['@graph'] || [graph];
+        var changed = false;
+        nodes.forEach(function (n) {
+          if (n && n['@type'] === 'Dataset' && n.dateModified) { n.dateModified = day; changed = true; }
+        });
+        if (changed) tag.textContent = JSON.stringify(graph);
+      });
+  })();
+</script>
 </body>
 </html>
