@@ -43,3 +43,7 @@ _headers
 # writes (`.pages-dist/`) are development files. The assets directory is the
 # repository root, so anything not listed here would be uploaded and served.
 .pages-dist/
+
+# Performance baselines are measurement notes, not site assets.
+record_web_vitals.py
+perf/

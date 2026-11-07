@@ -1,0 +1,64 @@
+{
+  "commit": "8a747a2",
+  "fetch_time": "2026-11-07T21:31:23.354Z",
+  "field": {
+    "metrics": {
+      "CLS": {
+        "category": null,
+        "p75": null
+      },
+      "FCP": {
+        "category": null,
+        "p75": null
+      },
+      "INP": {
+        "category": null,
+        "p75": null
+      },
+      "LCP": {
+        "category": null,
+        "p75": null
+      }
+    },
+    "overall": null
+  },
+  "form_factor": "mobile",
+  "lab": {
+    "CLS": 0.022760281973939128,
+    "FCP": 1261.7350000000001,
+    "LCP": 1261.7350000000001,
+    "SI": 2344.132624600576,
+    "TBT": 283,
+    "TTFB": 94.947,
+    "bootup": 5253.82799999983,
+    "bytes": 631371,
+    "score": 0.94
+  },
+  "label": "lab-baseline",
+  "lighthouse_version": "12.8.2",
+  "origin_field": {
+    "metrics": {
+      "CLS": {
+        "category": null,
+        "p75": null
+      },
+      "FCP": {
+        "category": null,
+        "p75": null
+      },
+      "INP": {
+        "category": null,
+        "p75": null
+      },
+      "LCP": {
+        "category": null,
+        "p75": null
+      }
+    },
+    "overall": null
+  },
+  "recorded_at": "2026-11-07T21:31:42+00:00",
+  "source": "lighthouse-local",
+  "strategy": "mobile",
+  "url": "https://irishvisaupdatetracker.pages.dev/?tracker=visa&tab=home"
+}
