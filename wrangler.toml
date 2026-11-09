@@ -18,9 +18,27 @@ name = "irishvisaupdatetracker"
 pages_build_output_dir = ".pages-dist"
 compatibility_date = "2026-10-01"
 
-# No compatibility_flags key, on purpose: nothing in the handler needs a Node
-# API (fetch, D1 and the assets binding only), so the deployment runs without
-# nodejs_compat.
+# Cron triggers for scheduled scraping (runs on Cloudflare Pages Functions)
+# New Delhi: Daily at 11:00 IST (05:30 UTC)
+# Beijing: Weekly on Monday (06:00 UTC)
+# Dublin: Weekly on Tuesday (06:00 UTC)
+# Abu Dhabi: Weekly on Friday (06:00 UTC)
+# Abuja: Weekly on Sunday (06:00 UTC)
+# Ankara: Weekly on Sunday (06:00 UTC)
+[triggers]
+crons = [
+  "30 5 * * *",   # New Delhi daily at 11:00 IST (05:30 UTC)
+  "0 6 * * 1",    # Beijing weekly Monday 06:00 UTC
+  "0 6 * * 2",    # Dublin weekly Tuesday 06:00 UTC
+  "0 6 * * 5",    # Abu Dhabi weekly Friday 06:00 UTC
+  "0 6 * * 0",    # Abuja weekly Sunday 06:00 UTC
+  "0 6 * * 0",    # Ankara weekly Sunday 06:00 UTC
+]
+
+# Web Push (functions/push.js -> web-push) signs VAPID requests with JWS,
+# which imports Node's stream/util/crypto built-ins. The nodejs_compat flag
+# supplies those; every other handler still uses only fetch, D1 and assets.
+compatibility_flags = ["nodejs_compat"]
 
 # The submissions store: the `submissions` table the handler creates lazily
 # (schema.sql is a reference copy).

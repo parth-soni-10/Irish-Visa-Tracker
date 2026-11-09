@@ -1,0 +1,92 @@
+name: ML Model Retraining
+
+on:
+  schedule:
+    # Run monthly on the 1st at 02:00 UTC
+    - cron: '0 2 1 * *'
+  workflow_dispatch:
+    inputs:
+      force:
+        description: 'Force retrain even if no new data'
+        required: false
+        default: 'false'
+
+jobs:
+  retrain:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Need full history for data files
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+      
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install xgboost scikit-learn pandas numpy onnx skl2onnx onnxruntime
+      
+      - name: Check for new data
+        id: check_data
+        run: |
+          # Check if data files have changed since last retrain
+          LAST_RETRAIN=$(git log --oneline -1 --grep="ML Model" --format="%H" || echo "none")
+          if [ "$LAST_RETRAIN" = "none" ] || [ "${{ github.event.inputs.force }}" = "true" ]; then
+            echo "force=true" >> $GITHUB_OUTPUT
+          else
+            CHANGED=$(git diff --name-only $LAST_RETRAIN HEAD -- data/ | wc -l)
+            if [ $CHANGED -gt 0 ]; then
+              echo "force=true" >> $GITHUB_OUTPUT
+            else
+              echo "force=false" >> $GITHUB_OUTPUT
+            fi
+          fi
+      
+      - name: Train ML model
+        if: ${{ steps.check_data.outputs.force == 'true' }}
+        run: |
+          python train_model.py
+      
+      - name: Check model performance
+        if: ${{ steps.check_data.outputs.force == 'true' }}
+        run: |
+          python -c "
+          import json
+          with open('models/metrics.json') as f:
+              metrics = json.load(f)
+          mae = metrics['mae']
+          print(f'MAE: {mae:.2f} days')
+          if mae > 10:
+            print('::warning::Model MAE > 10 days, consider investigating')
+            exit(1)
+          "
+      
+      - name: Commit model artifacts
+        if: ${{ steps.check_data.outputs.force == 'true' }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add models/
+          git diff --staged --quiet || git commit -m "ML Model: retrain $(date -u +%F) - MAE: $(cat models/metrics.json | jq -r .mae) days"
+          git push || echo "push failed - next scheduled run reconciles"
+      
+      - name: Notify on failure
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: 'ML Model Retraining Failed',
+              body: 'Scheduled ML model retraining failed. Check the workflow run for details.',
+              labels: ['ml', 'retraining', 'failure']
+            })

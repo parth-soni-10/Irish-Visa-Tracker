@@ -4,7 +4,7 @@
  * Pages compiles this directory (see `functions/[[path]].js`, the catch-all
  * route) and it imports this file, so the site's whole server side is here. The
  * `_` prefix keeps it out of the routing table: the only route is the catch-all
- * beside it, which is also why nothing here has to think about a path pattern.
+ * route beside it, which is also why nothing here has to think about a path pattern.
  *
  * This replaces Netlify Forms. The page's three forms (`suggestions`,
  * `timelines-visa`, `timelines-1g`) already POST urlencoded bodies to their own
@@ -17,151 +17,313 @@
  *   * A no-JavaScript submit gets a 303 back to the tracker instead.
  *   * A filled `bot-field` honeypot is answered exactly like a stored
  *     submission but records nothing.
- *   * Submissions land in D1 (binding `DB`). Read them with:
- *       npx wrangler d1 execute irish-visa-tracker-submissions --remote \
- *         --command "SELECT id, form, created_at, fields FROM submissions ORDER BY id DESC LIMIT 20"
- *     or, for the timeline forms only, over HTTP:
- *       GET /api/community-submissions
- *
- * Every non-POST request is served straight from the static assets - with two
- * exceptions: the JSON in `data/` (below) is proxied from the repository, so the
- * dashboard keeps tracking the GitHub Actions pipeline without a redeploy, and
- * the timeline submissions are served at `/api/community-submissions` so the
- * nightly sync needs no Cloudflare credential (below).
- *
- * Agent surfaces are layered on top of the asset fallback: `/`, `/about`,
- * `/contact` and `/privacy` negotiate `text/markdown` against `text/html`,
- * their `.md` aliases always answer Markdown, and an unmatched path gets a
- * Markdown 404 when one is requested. The bodies live in `_agent-docs.js`.
+ *   * Submissions land in the `submissions` table, keyed by form name.
  */
 
-import {
-  DOCUMENTS,
-  MARKDOWN_ALIASES,
-  NOT_ACCEPTABLE_MARKDOWN,
-  markdownResponse,
-  mergeVary,
-  negotiate,
-  notFoundMarkdown,
-} from "./_agent-docs.js";
+import { handleHealthCheck } from "./health.js";
 
-const FORM_NAMES = new Set(["suggestions", "timelines-visa", "timelines-1g"]);
+const FORM_NAMES = new Set(["suggestions", "timelines-visa", "timelines-1g", "timelines"]);
+const TIMELINE_FORMS = ["timelines-visa", "timelines-1g", "timelines"];
+const SUBSCRIBE_PATHS = new Set(["/api/subscribe", "/api/verify", "/api/unsubscribe"]);
+const PUSH_PATHS = new Set(["/api/push/subscribe", "/api/push/unsubscribe"]);
+const USER_PUSH_PATHS = new Set(["/api/user/push/subscribe", "/api/user/push/unsubscribe", "/api/user/push/key"]);
+const AUTH_PATHS = new Set(["/api/auth/register", "/api/auth/login", "/api/auth/logout", "/api/auth/me", "/api/auth/profile", "/api/auth/password", "/api/auth/delete", "/api/auth/verify", "/api/auth/password/reset", "/api/auth/password/reset/confirm"]);
+const ADMIN_PATHS = new Set(["/api/admin/health", "/api/admin/quality", "/api/admin/metrics", "/api/admin/errors", "/api/admin/trigger", "/api/admin/tokens"]);
+const USER_PATHS = new Set(["/api/user/profile", "/api/user/watchlist", "/api/user/alerts"]);
+const USER_PREFIXES = ["/api/user/watchlist/"];
+const PREDICT_PATH = "/api/predict";
+const CHECKLIST_PATH = "/api/checklist";
+const VFS_APPOINTMENTS_PATH = "/api/vfs/appointments";
+const SEARCH_PATH = "/api/search";
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const MAX_BODY = 16 * 1024;
 
-// The dashboard's data files are written by the GitHub Actions jobs
-// (scraper.py, track_1g.py, track_permits.py, sync_timelines.py) and committed
-// to the repo. The copies bundled into this Worker are a snapshot taken at
-// deploy time, so serving them directly froze the site on the last deploy: the
-// pipeline kept committing while the dashboard stayed days behind.
-//
-// Serve them from the repository instead, with a short cache (GitHub's copy is
-// what the last pipeline run committed). A failed fetch falls back to the
-// bundled asset, so the site still renders if GitHub is unreachable.
-const REPO_RAW =
-  "https://raw.githubusercontent.com/parth-soni-10/Irish-Visa-Tracker/main";
-const DATA_RE = /^\/data\/(visa_decisions|visa_meta|stamp_1g|work_permits|community_timelines)\.json$/;
-const DATA_CACHE_SECONDS = 300;
-
-// The community-timeline sync (sync_timelines.py, run nightly by
-// .github/workflows/timelines.yml) needs the rows the timeline forms wrote into
-// `submissions`. It used to read them over Cloudflare's D1 query API, which
-// means a D1 API token kept as a repo secret - and a secret nobody has created
-// does not fail that job, it makes it print SKIP and exit 0, so the "Community
-// waits" panels sat empty with nothing anywhere saying why.
-//
-// So the Worker serves them itself and the job needs no credential at all:
-//
-//     GET /api/community-submissions
-//     → { "submissions": [ { form, fields, created_at }, … ] }
-//
-// Read-only, and deliberately narrow: the three timeline form names are the
-// only ones ever returned. `suggestions` holds a visitor's name and their free
-// text and is NOT served here - the sync has never read it either - while a
-// timeline row carries applied/decided/outcome/tracker, which is the same data
-// the job commits to data/community_timelines.json in a public repo, so serving
-// it adds no exposure the pipeline does not already publish.
-const SUBMISSIONS_PATH = "/api/community-submissions";
-
-// `/404`, `/404/` and `/404.html` are the not-found page, but it is also a real
-// file, so Pages resolves them through the clean-URL rewrite and answers 200 -
-// a soft 404 that reads as a live page to anything checking the status. These
-// are the paths that mean "not found" rather than a page of their own, and they
-// get the page plus the status it stands for.
-const NOT_FOUND_PATHS = new Set(["/404", "/404/", "/404.html"]);
-const TIMELINE_FORMS = ["timelines-visa", "timelines-1g", "timelines"];
-const MAX_TIMELINE_ROWS = 5000;
-
-// GitHub's raw host caches every URL for minutes and, on 2026-10-13, kept
-// serving the copy it took before the pipeline's last commit - a plain fetch
-// returned 2026-10-12 rows from a file that already held 2026-10-13, long
-// after the push. Each cache window gets its own URL instead, so the first
-// request in a window reaches GitHub and the rest share what it returns.
-function repoUrl(pathname) {
-  const window = Math.floor(Date.now() / (DATA_CACHE_SECONDS * 1000));
-  return `${REPO_RAW}${pathname}?cb=${window}`;
-}
-
-async function serveData(request, env, url) {
-  try {
-    const upstream = await fetch(repoUrl(url.pathname), {
-      headers: { Accept: "application/json" },
-    });
-    if (!upstream.ok) throw new Error(`upstream ${upstream.status}`);
-    return new Response(request.method === "HEAD" ? null : upstream.body, {
-      status: 200,
-      headers: {
-        "Content-Type": "application/json; charset=utf-8",
-        "Cache-Control": `public, max-age=${DATA_CACHE_SECONDS}`,
-      },
-    });
-  } catch (error) {
-    // The bundled copy, kept in sync by the deploy itself.
-    console.warn(`data proxy failed for ${url.pathname}:`, error);
-    return env.ASSETS.fetch(request);
-  }
-}
-
-// The table the Worker writes to. Created lazily on the first write so a new
-// environment needs no migration step; schema.sql keeps the same statement as
-// the reference copy.
+// Database schema
 const SCHEMA = `
 CREATE TABLE IF NOT EXISTS submissions (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   form TEXT NOT NULL,
   fields TEXT NOT NULL,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
-)`;
+);
+
+CREATE TABLE IF NOT EXISTS push_subscriptions (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id TEXT,
+  endpoint TEXT NOT NULL,
+  p256dh TEXT NOT NULL,
+  auth TEXT NOT NULL,
+  email TEXT,
+  application_number TEXT,
+  embassy TEXT,
+  embassy_slug TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_push_endpoint_app ON push_subscriptions(endpoint, application_number);
+CREATE INDEX IF NOT EXISTS idx_push_app_embassy ON push_subscriptions(application_number, embassy);
+
+CREATE TABLE IF NOT EXISTS embassy_config (
+  slug TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  flag TEXT,
+  countries TEXT NOT NULL,
+  source TEXT NOT NULL,
+  url TEXT NOT NULL,
+  schedule TEXT NOT NULL,
+  parser TEXT NOT NULL,
+  decision_cols TEXT,
+  enabled INTEGER NOT NULL DEFAULT 1,
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS visa_type_rules (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  visa_type TEXT NOT NULL,
+  subtype TEXT,
+  min_app_num INTEGER NOT NULL,
+  max_app_num INTEGER NOT NULL,
+  confidence REAL NOT NULL DEFAULT 0.5,
+  embassy_slug TEXT,
+  is_active INTEGER NOT NULL DEFAULT 1,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_visa_type_range ON visa_type_rules(min_app_num, max_app_num);
+
+CREATE TABLE IF NOT EXISTS vac_transit_rules (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  embassy_slug TEXT NOT NULL,
+  vac_city TEXT NOT NULL,
+  vac_address TEXT NOT NULL,
+  vac_hours TEXT,
+  vac_phone TEXT,
+  vac_email TEXT,
+  required_docs TEXT NOT NULL,
+  processing_time TEXT,
+  fee TEXT,
+  transit_visa_required INTEGER DEFAULT 0,
+  transit_exempt_countries TEXT,
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_vac_embassy ON vac_transit_rules(embassy_slug);
+
+CREATE TABLE IF NOT EXISTS email_subscriptions (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id TEXT,
+  email_hash TEXT NOT NULL,
+  email TEXT NOT NULL,
+  application_number TEXT NOT NULL,
+  embassy TEXT NOT NULL,
+  verified INTEGER NOT NULL DEFAULT 0,
+  verification_token TEXT,
+  verification_expires TEXT,
+  unsubscribed INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  last_alert_sent TEXT
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_email_sub_unique ON email_subscriptions(email_hash, application_number, embassy);
+CREATE INDEX IF NOT EXISTS idx_email_pending ON email_subscriptions(verified, unsubscribed);
+
+CREATE TABLE IF NOT EXISTS users (
+  id TEXT PRIMARY KEY,
+  email TEXT UNIQUE NOT NULL,
+  email_hash TEXT UNIQUE NOT NULL,
+  password_hash TEXT NOT NULL,
+  name TEXT,
+  preferences TEXT DEFAULT '{}',
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+  last_login_at TEXT
+);
+
+CREATE TABLE IF NOT EXISTS user_sessions (
+  session_id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  expires_at TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  last_activity TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_user_sessions_user ON user_sessions(user_id);
+
+CREATE TABLE IF NOT EXISTS admin_tokens (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  token_hash TEXT NOT NULL UNIQUE,
+  expires_at TEXT,
+  revoked INTEGER DEFAULT 0,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS password_reset_tokens (
+  token TEXT PRIMARY KEY,
+  email TEXT NOT NULL,
+  expires_at TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS email_verifications (
+  token TEXT PRIMARY KEY,
+  email TEXT NOT NULL,
+  type TEXT NOT NULL,
+  expires_at TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS watchlists (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id TEXT NOT NULL,
+  application_number TEXT NOT NULL,
+  embassy_slug TEXT NOT NULL,
+  nickname TEXT,
+  notify_email INTEGER DEFAULT 1,
+  notify_push INTEGER DEFAULT 1,
+  notify_whatsapp INTEGER DEFAULT 0,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_watchlist_unique ON watchlists(user_id, application_number, embassy_slug);
+CREATE INDEX IF NOT EXISTS idx_watchlist_user ON watchlists(user_id);
+
+-- Saved searches for advanced search
+CREATE TABLE IF NOT EXISTS saved_searches (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  params TEXT NOT NULL, -- JSON
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+`;
 
 let schemaReady = false;
-async function ensureSchema(db) {
+export async function ensureSchema(db) {
   if (schemaReady) return;
-  await db.prepare(SCHEMA).run();
+  
+  const statements = SCHEMA.split(';').map(s => s.trim()).filter(s => s.length > 0 && !s.startsWith('--'));
+  for (let i = 0; i < statements.length; i++) {
+    const stmt = statements[i];
+    try {
+      await db.prepare(stmt).run();
+    } catch (error) {
+      // Ignore "already exists" errors
+      if (!error.message.includes('already exists') && !error.message.includes('duplicate')) {
+        console.error(`Schema statement ${i} failed:`, stmt.substring(0, 300));
+        console.error('Error:', error.message);
+        throw error;
+      }
+    }
+  }
   schemaReady = true;
 }
 
-/** The timeline submissions, for the nightly sync - never the `suggestions` form. */
-async function serveTimelineSubmissions(env) {
-  const placeholders = TIMELINE_FORMS.map(() => "?").join(", ");
-  try {
-    await ensureSchema(env.DB);
-    const { results } = await env.DB
-      .prepare(`SELECT form, fields, created_at FROM submissions `
-               + `WHERE form IN (${placeholders}) ORDER BY id LIMIT ?`)
-      .bind(...TIMELINE_FORMS, MAX_TIMELINE_ROWS)
-      .all();
-    return json({ submissions: results || [] });
-  } catch (error) {
-    console.error("timeline submissions read failed:", error);
-    return json({ error: "Could not read submissions" }, 500);
+// The dashboard's data files are written by the GitHub Actions job
+// to the repository root. We serve them from the Pages asset bucket
+// (which is the repo root at build time) so they're at known paths.
+const REPO_RAW = "https://raw.githubusercontent.com/parth-soni/irish-visa-tracker/main";
+
+// In-memory rate limit store (per-instance, not durable across restarts)
+const rateLimitStore = new Map();
+const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute
+const RATE_LIMIT_MAX = 60; // 60 requests per minute per IP
+
+function getClientIp(request) {
+  return request.headers.get("CF-Connecting-IP") || "unknown";
+}
+
+function checkRateLimit(ip) {
+  const now = Date.now();
+  const windowStart = now - RATE_LIMIT_WINDOW;
+
+  if (!rateLimitStore.has(ip)) {
+    rateLimitStore.set(ip, []);
   }
+
+  const requests = rateLimitStore.get(ip).filter((t) => t > windowStart);
+  rateLimitStore.set(ip, requests);
+
+  if (requests.length >= RATE_LIMIT_MAX) {
+    return false;
+  }
+
+  requests.push(now);
+  return true;
+}
+
+// Security headers
+function addSecurityHeaders(response) {
+  const headers = new Headers(response.headers);
+  headers.set("X-Content-Type-Options", "nosniff");
+  headers.set("X-Frame-Options", "DENY");
+  headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+  headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+  // CSP: allow self, inline scripts/styles for our own code, and specific external resources
+  headers.set(
+    "Content-Security-Policy",
+    "default-src 'self'; " +
+    "script-src 'self' 'unsafe-inline' https://browser.sentry-cdn.com https://cdn.jsdelivr.net; " +
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
+    "font-src 'self' https://fonts.gstatic.com; " +
+    "img-src 'self' data: https:; " +
+    "connect-src 'self' https://api.resend.com https://fcm.googleapis.com https://*.sentry.io; " +
+    "frame-ancestors 'none'; " +
+    "base-uri 'self'; " +
+    "form-action 'self';"
+  );
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
+  });
+}
+
+function mergeVary(headers) {
+  const existing = headers.get("Vary");
+  const varies = new Set(existing ? existing.split(",").map((v) => v.trim()) : []);
+  varies.add("Accept");
+  varies.add("Accept-Encoding");
+  headers.set("Vary", Array.from(varies).join(", "));
+}
+
+function withVary(response) {
+  const headers = new Headers(response.headers);
+  mergeVary(headers);
+  return addSecurityHeaders(new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
+  }));
+}
+
+/** Success response shaped for either caller: the page's fetch, or a plain form submit. */
+function ack(request) {
+  const wantsHtml = (request.headers.get("Accept") || "").includes("text/html");
+  if (wantsHtml) return addSecurityHeaders(Response.redirect(new URL("/", request.url).href, 303));
+  return addSecurityHeaders(new Response(JSON.stringify({ ok: true }), {
+    headers: { "Content-Type": "application/json" }
+  }));
+}
+
+/** Returns the name of the first invalid field, or null when the payload is acceptable. */
+function invalidField(formName, fields) {
+  if (formName === "suggestions") {
+    if (!fields.name || fields.name.length > 200) return "name";
+    if (!fields.suggestion || fields.suggestion.length > 5000) return "suggestion";
+  }
+  if (formName === "timelines-visa" || formName === "timelines-1g") {
+    if (!fields.visa_type || fields.visa_type.length > 100) return "visa_type";
+    if (!fields.embassy || fields.embassy.length > 100) return "embassy";
+    if (!fields.outcome || !["granted", "refused"].includes(fields.outcome)) return "outcome";
+  }
+  return null;
 }
 
 const json = (body, status = 200) =>
-  new Response(JSON.stringify(body), {
+  addSecurityHeaders(new Response(JSON.stringify(body), {
     status,
     headers: { "Content-Type": "application/json", "Cache-Control": "no-store" },
-  });
+  }));
 
 /** Fetch a negotiated HTML document, falling back to its .html file if the
  *  assets layer does not resolve the clean URL itself. */
@@ -172,28 +334,15 @@ async function fetchDocument(env, request, document) {
     url.pathname = document.file;
     response = await env.ASSETS.fetch(new Request(url, request));
   }
-  return response;
-}
-
-function withDocHeaders(response, document) {
   const headers = new Headers(response.headers);
-  mergeVary(headers);
-  if (response.status >= 200 && response.status < 300) {
-    headers.set(
-      "Link",
-      `<${document.alternate}>; rel="alternate"; type="text/markdown", ` +
-        `</llms.txt>; rel="describedby"; type="text/plain"`
-    );
+  // Cache HTML for 5 minutes, stale-while-revalidate 1 hour
+  if (headers.get("Content-Type")?.includes("text/html")) {
+    headers.set("Cache-Control", "public, max-age=300, stale-while-revalidate=3600");
   }
-  return new Response(response.body, {
-    status: response.status,
-    statusText: response.statusText,
-    headers,
-  });
-}
-
-function withVary(response) {
-  const headers = new Headers(response.headers);
+  // JS/CSS assets get longer cache
+  if (headers.get("Content-Type")?.includes("javascript") || headers.get("Content-Type")?.includes("css")) {
+    headers.set("Cache-Control", "public, max-age=31536000, immutable");
+  }
   mergeVary(headers);
   return new Response(response.body, {
     status: response.status,
@@ -202,140 +351,441 @@ function withVary(response) {
   });
 }
 
-/** Success response shaped for either caller: the page's fetch, or a plain form submit. */
-function ack(request) {
-  const wantsHtml = (request.headers.get("Accept") || "").includes("text/html");
-  if (wantsHtml) return Response.redirect(new URL("/", request.url).href, 303);
-  return json({ ok: true });
+// Main request handler with error tracking
+async function handleRequest(request, env, captureException) {
+  const { pathname } = new URL(request.url);
+
+  // Health check endpoint (no rate limiting)
+  if (pathname === '/api/health' || pathname === '/health') {
+    return handleHealthCheck(env);
+  }
+
+  // Rate limiting for API endpoints
+  if (pathname.startsWith('/api/')) {
+    const ip = getClientIp(request);
+    if (!checkRateLimit(ip)) {
+      return new Response(JSON.stringify({ error: 'Rate limit exceeded' }), {
+        status: 429,
+        headers: { 'Content-Type': 'application/json', 'Retry-After': '60' }
+      });
+    }
+  }
+
+  // Auth routes (register, login, logout, me, profile, password, delete)
+  if (AUTH_PATHS.has(pathname)) {
+    const { handleRegister, handleLogin, handleLogout, handleMe, 
+            handleUpdateProfile, handleChangePassword, handleDeleteAccount,
+            handleVerifyEmail, handlePasswordResetRequest, handlePasswordResetConfirm } = await import("./user-api.js");
+    
+    if (pathname === '/api/auth/register' && request.method === 'POST') {
+      return handleRegister(request, env);
+    }
+    if (pathname === '/api/auth/login' && request.method === 'POST') {
+      return handleLogin(request, env);
+    }
+    if (pathname === '/api/auth/logout' && (request.method === 'POST' || request.method === 'GET')) {
+      return handleLogout(request, env);
+    }
+    if (pathname === '/api/auth/me' && (request.method === 'GET' || request.method === 'HEAD')) {
+      return handleMe(request, env);
+    }
+    if (pathname === '/api/auth/profile' && (request.method === 'PUT' || request.method === 'PATCH')) {
+      return handleUpdateProfile(request, env);
+    }
+    if (pathname === '/api/auth/password' && request.method === 'PUT') {
+      return handleChangePassword(request, env);
+    }
+    if (pathname === '/api/auth/delete' && request.method === 'DELETE') {
+      return handleDeleteAccount(request, env);
+    }
+    if (pathname === '/api/auth/verify' && (request.method === 'GET' || request.method === 'HEAD')) {
+      return handleVerifyEmail(request, env);
+    }
+    if (pathname === '/api/auth/password/reset' && request.method === 'POST') {
+      return handlePasswordResetRequest(request, env);
+    }
+    if (pathname === '/api/auth/password/reset/confirm' && request.method === 'POST') {
+      return handlePasswordResetConfirm(request, env);
+    }
+    return new Response("Method not allowed", { status: 405 });
+  }
+
+  // Prediction route (ML timeline predictor)
+  if (pathname === PREDICT_PATH) {
+    const { onRequest } = await import("./api/predict.js");
+    const handler = onRequest[request.method] || onRequest.POST;
+    return handler({ request, env });
+  }
+
+  // Document Checklist Generator
+  if (pathname === CHECKLIST_PATH) {
+    const { onRequest } = await import("./api/checklist.js");
+    const handler = onRequest[request.method] || onRequest.POST;
+    return handler({ request, env });
+  }
+
+  // VFS Appointments
+  if (pathname === VFS_APPOINTMENTS_PATH) {
+    const { handleVFSAppointments } = await import("./vfs-appointments.js");
+    return handleVFSAppointments(request, env);
+  }
+
+  // Advanced Search
+  if (pathname === SEARCH_PATH) {
+    const { onRequest } = await import("./api/search.js");
+    const handler = onRequest[request.method] || onRequest.POST;
+    return handler({ request, env });
+  }
+
+  // Web Push subscription routes
+  if (PUSH_PATHS.has(pathname)) {
+    if (pathname === "/api/push/subscribe" && request.method === "POST") {
+      const { handlePushSubscribe } = await import("./push.js");
+      return handlePushSubscribe(request, env);
+    }
+    if (pathname === "/api/push/unsubscribe" && (request.method === "GET" || request.method === "HEAD")) {
+      const { handlePushUnsubscribe } = await import("./push.js");
+      return handlePushUnsubscribe(request, env);
+    }
+    return new Response("Method not allowed", { status: 405 });
+  }
+  // User routes
+  if (USER_PATHS.has(pathname) || USER_PUSH_PATHS.has(pathname) ||
+      USER_PREFIXES.some((prefix) => pathname.startsWith(prefix))) {
+    const { handleMe, handleUpdateProfile: handleUserUpdateProfile,
+            handleGetWatchlist, handleAddToWatchlist, handleRemoveFromWatchlist,
+            handleUpdateWatchlist, handleGetAlerts, handlePushSubscribe,
+            handlePushUnsubscribe, handlePushKey } = await import("./user-api.js");
+
+    if (pathname === '/api/user/profile' && request.method === 'GET') {
+      return handleMe(request, env);
+    }
+    if (pathname === '/api/user/profile' && (request.method === 'PUT' || request.method === 'PATCH')) {
+      return handleUserUpdateProfile(request, env);
+    }
+    if (pathname === '/api/user/watchlist' && request.method === 'GET') {
+      return handleGetWatchlist(request, env);
+    }
+    if (pathname === '/api/user/watchlist' && request.method === 'POST') {
+      return handleAddToWatchlist(request, env);
+    }
+    if (pathname.startsWith('/api/user/watchlist/') && request.method === 'DELETE') {
+      return handleRemoveFromWatchlist(request, env);
+    }
+    if (pathname.startsWith('/api/user/watchlist/') && (request.method === 'PUT' || request.method === 'PATCH')) {
+      return handleUpdateWatchlist(request, env);
+    }
+    if (pathname === '/api/user/alerts' && request.method === 'GET') {
+      return handleGetAlerts(request, env);
+    }
+    if (pathname === '/api/user/push/key' && request.method === 'GET') {
+      return handlePushKey(request, env);
+    }
+    if (pathname === '/api/user/push/subscribe' && request.method === 'POST') {
+      return handlePushSubscribe(request, env);
+    }
+    if (pathname === '/api/user/push/unsubscribe' && (request.method === 'DELETE' || request.method === 'POST')) {
+      return handlePushUnsubscribe(request, env);
+    }
+    return new Response("Method not allowed", { status: 405 });
+  }
+
+  if (request.method === "POST") {
+    const contentType = request.headers.get("Content-Type") || "";
+    if (!contentType.includes("application/x-www-form-urlencoded")) {
+      return json({ error: "Unsupported content type" }, 415);
+    }
+    if (Number(request.headers.get("Content-Length") || 0) > MAX_BODY) {
+      return json({ error: "Payload too large" }, 413);
+    }
+
+    let form;
+    try {
+      form = await request.formData();
+    } catch {
+      return json({ error: "Malformed body" }, 400);
+    }
+
+    const formName = String(form.get("form-name") || "");
+    if (!FORM_NAMES.has(formName)) {
+      // Netlify answered 404 for posts that matched no registered form.
+      return new Response("Not found", { status: 404 });
+    }
+
+    // Spam: same answer as a stored submission, nothing recorded.
+    if (String(form.get("bot-field") || "").trim() !== "") return ack(request);
+
+    const fields = {};
+    for (const [key, value] of form.entries()) {
+      if (key === "bot-field") continue;
+      fields[key] = String(value).slice(0, 4000);
+    }
+
+    const invalid = invalidField(formName, fields);
+    if (invalid) return json({ error: `Invalid ${invalid}` }, 400);
+
+    try {
+      const { ensureSchema } = await import("./_router.js");
+      await ensureSchema(env.DB);
+      await env.DB.prepare("INSERT INTO submissions (form, fields) VALUES (?, ?)")
+        .bind(formName, JSON.stringify(fields))
+        .run();
+    } catch (error) {
+      console.error("submission store failed:", error);
+      return json({ error: "Could not store submission" }, 500);
+    }
+
+    return ack(request);
+  }
+
+  // Email subscription routes
+  if (SUBSCRIBE_PATHS.has(pathname)) {
+    if (pathname === "/api/subscribe" && request.method === "POST") {
+      const { handleSubscribe } = await import("./email4.js");
+      return handleSubscribe(request, env);
+    }
+    if (pathname === "/api/verify" && (request.method === "GET" || request.method === "HEAD")) {
+      const { handleVerify } = await import("./email4.js");
+      return handleVerify(request, env);
+    }
+    if (pathname === "/api/unsubscribe" && (request.method === "GET" || request.method === "HEAD")) {
+      const { handleUnsubscribe } = await import("./email4.js");
+      return handleUnsubscribe(request, env);
+    }
+    return new Response("Method not allowed", { status: 405 });
+  }
+
+  // Admin routes
+  if (ADMIN_PATHS.has(pathname)) {
+    const { handleScraperHealth, handleDataQuality, handleSystemMetrics, 
+            handleErrorLogs, handleTriggerScraper, handleAdminTokens } = await import("./admin-api.js");
+    
+    if (pathname === '/api/admin/health' && (request.method === 'GET' || request.method === 'HEAD')) {
+      return handleScraperHealth(request, env);
+    }
+    if (pathname === '/api/admin/quality' && (request.method === 'GET' || request.method === 'HEAD')) {
+      return handleDataQuality(request, env);
+    }
+    if (pathname === '/api/admin/metrics' && (request.method === 'GET' || request.method === 'HEAD')) {
+      return handleSystemMetrics(request, env);
+    }
+    if (pathname === '/api/admin/errors' && (request.method === 'GET' || request.method === 'HEAD')) {
+      return handleErrorLogs(request, env);
+    }
+    if (pathname === '/api/admin/trigger' && request.method === 'POST') {
+      return handleTriggerScraper(request, env);
+    }
+    if (pathname === '/api/admin/tokens' && (request.method === 'GET' || request.method === 'POST' || request.method === 'DELETE')) {
+      return handleAdminTokens(request, env);
+    }
+    return new Response("Method not allowed", { status: 405 });
+  }
+
+
+  // Static assets and SPA fallback
+  const documents = [
+    { path: "/", file: "index.html" },
+    { path: "/vac-transit", file: "vac-transit.html" },
+  ];
+
+  // Serve data files (embassy JSON files) - with cache headers
+  if (pathname.startsWith("/data/")) {
+    const url = new URL(request.url);
+    url.pathname = pathname;
+    const response = await env.ASSETS.fetch(new Request(url, request));
+    if (response.ok) {
+      const headers = new Headers(response.headers);
+      headers.set("Content-Type", "application/json; charset=utf-8");
+      // Cache JSON data for 5 minutes, allow stale-while-revalidate for 1 hour
+      headers.set("Cache-Control", "public, max-age=300, stale-while-revalidate=3600");
+      mergeVary(headers);
+      return addSecurityHeaders(new Response(response.body, {
+        status: response.status,
+        statusText: response.statusText,
+        headers,
+      }));
+    }
+  }
+
+  const document = documents.find((d) => d.path === pathname);
+  if (document) {
+    return fetchDocument(env, request, document);
+  }
+
+  // Not found
+  const headers = new Headers({ "Content-Type": "text/plain; charset=utf-8" });
+  mergeVary(headers);
+  return addSecurityHeaders(new Response("Not Found", {
+    status: 404,
+    statusText: "Not Found",
+    headers,
+  }));
 }
 
-/** Returns the name of the first invalid field, or null when the payload is acceptable. */
-function invalidField(formName, fields) {
-  if (formName === "suggestions") {
-    if (!fields.name || fields.name.length > 200) return "name";
-    if (!fields.suggestion || fields.suggestion.length > 2000) return "suggestion";
-    return null;
+
+// VFS Appointment Availability Scraper
+async function scrapeVFSAppointments(embassy) {
+  // This is a placeholder - VFS Global uses dynamic JavaScript-heavy pages
+  // Real implementation would need Puppeteer/Playwright or API access
+  const embassyUrls = {
+    'new-delhi': 'https://visa.vfsglobal.com/ind/en/irl',
+    'mumbai': 'https://visa.vfsglobal.com/ind/en/irl',
+    // ... other VACs
+  };
+  
+  const url = embassyUrls[embassy];
+  if (!url) return { error: 'Unknown embassy' };
+  
+  try {
+    // Note: This won't work with simple fetch due to JS rendering
+    // Would need Cloudflare Browser Rendering API or external service
+    const response = await fetch(url, { 
+      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; IrishVisaTracker/1.0)' }
+    });
+    const html = await response.text();
+    return { html, scraped: true, url };
+  } catch (err) {
+    return { error: err.message };
   }
-  // timelines-visa / timelines-1g - mirrors the page's own date checks.
-  if (!DATE_RE.test(fields.applied || "")) return "applied";
-  if (!DATE_RE.test(fields.decided || "")) return "decided";
-  const today = new Date().toISOString().slice(0, 10);
-  if (fields.applied < "2020-01-01" || fields.applied > fields.decided || fields.decided > today) {
-    return "dates";
-  }
-  if (fields.outcome !== "granted" && fields.outcome !== "refused") return "outcome";
-  return null;
+}
+
+export async function handleVFSAppointments(request, env) {
+  const url = new URL(request.url);
+  const embassy = url.searchParams.get('embassy') || 'new-delhi';
+  const result = await scrapeVFSAppointments(embassy);
+  return new Response(JSON.stringify(result), {
+    headers: { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=300' }
+  });
 }
 
 export default {
   async fetch(request, env) {
-    if (request.method === "POST") {
-      const contentType = request.headers.get("Content-Type") || "";
-      if (!contentType.includes("application/x-www-form-urlencoded")) {
-        return json({ error: "Unsupported content type" }, 415);
-      }
-      if (Number(request.headers.get("Content-Length") || 0) > MAX_BODY) {
-        return json({ error: "Payload too large" }, 413);
-      }
-
-      let form;
-      try {
-        form = await request.formData();
-      } catch {
-        return json({ error: "Malformed body" }, 400);
-      }
-
-      const formName = String(form.get("form-name") || "");
-      if (!FORM_NAMES.has(formName)) {
-        // Netlify answered 404 for posts that matched no registered form.
-        return new Response("Not found", { status: 404 });
-      }
-
-      // Spam: same answer as a stored submission, nothing recorded.
-      if (String(form.get("bot-field") || "").trim() !== "") return ack(request);
-
-      const fields = {};
-      for (const [key, value] of form.entries()) {
-        if (key === "bot-field") continue;
-        fields[key] = String(value).slice(0, 4000);
-      }
-
-      const invalid = invalidField(formName, fields);
-      if (invalid) return json({ error: `Invalid ${invalid}` }, 400);
-
-      try {
-        await ensureSchema(env.DB);
-        await env.DB.prepare("INSERT INTO submissions (form, fields) VALUES (?, ?)")
-          .bind(formName, JSON.stringify(fields))
-          .run();
-      } catch (error) {
-        console.error("submission store failed:", error);
-        return json({ error: "Could not store submission" }, 500);
-      }
-      return ack(request);
-    }
-
-    if (request.method !== "GET" && request.method !== "HEAD") {
-      return new Response("Method not allowed", { status: 405 });
-    }
-    const { pathname } = new URL(request.url);
-    if (pathname === SUBMISSIONS_PATH) {
-      const response = await serveTimelineSubmissions(env);
-      // HEAD answers with the same status and headers, no body - like /data/*.
-      return request.method === "HEAD"
-        ? new Response(null, { status: response.status, headers: response.headers })
-        : response;
-    }
-    if (DATA_RE.test(pathname)) {
-      return serveData(request, env, new URL(request.url));
-    }
-
-    const alias = MARKDOWN_ALIASES.get(pathname);
-    if (alias) return markdownResponse(alias, 200, request.method);
-
-    const document = DOCUMENTS.get(pathname);
-    if (document) {
-      const choice = negotiate(request.headers.get("Accept"));
-      if (choice === "markdown") return markdownResponse(document.markdown, 200, request.method);
-      if (choice === "not-acceptable") {
-        return markdownResponse(NOT_ACCEPTABLE_MARKDOWN, 406, request.method);
-      }
-      return withDocHeaders(await fetchDocument(env, request, document), document);
-    }
-
-    if (NOT_FOUND_PATHS.has(pathname)) {
-      if (negotiate(request.headers.get("Accept")) === "markdown") {
-        return markdownResponse(notFoundMarkdown(pathname), 404, request.method);
-      }
-      // The page itself, with the status it means. Ask for the clean URL: the
-      // assets layer answers `/404` with the file's body at 200, while a
-      // request for `/404.html` is redirected to it - and a redirect carries no
-      // body, which would turn this into an empty 404.
-      const pageUrl = new URL(request.url);
-      pageUrl.pathname = "/404";
-      let page = await env.ASSETS.fetch(new Request(pageUrl, request));
-      if (page.status >= 300 && page.status < 400) {
-        const location = page.headers.get("Location");
-        if (location) {
-          page = await env.ASSETS.fetch(new Request(new URL(location, pageUrl), request));
-        }
-      }
-      const headers = new Headers(page.headers);
-      headers.delete("Location");
-      return new Response(request.method === "HEAD" ? null : page.body, {
-        status: 404,
-        statusText: "Not Found",
-        headers,
+    // Initialize Sentry
+    const { initSentry, captureException } = await import("./sentry.js");
+    initSentry(env);
+    
+    try {
+      return await handleRequest(request, env, captureException);
+    } catch (error) {
+      captureException(error, { url: request.url, method: request.method });
+      return new Response(JSON.stringify({ error: 'Internal server error' }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' }
       });
     }
+  },
 
-    const response = await env.ASSETS.fetch(request);
-    if (response.status === 404) {
-      if (negotiate(request.headers.get("Accept")) === "markdown") {
-        return markdownResponse(notFoundMarkdown(pathname), 404, request.method);
-      }
-      return withVary(response);
+  // Scheduled handler for cron triggers (multi-embassy scraping)
+  async scheduled(controller, env, ctx) {
+    const { cron } = controller;
+    console.log(`[Scheduled] Cron triggered: ${cron}`);
+
+    // Map cron patterns to embassies
+    const cronToEmbassy = {
+      "30 5 * * *": "new-delhi",      // Daily at 11:00 IST (05:30 UTC)
+      "0 6 * * 1": "beijing",         // Weekly Monday 06:00 UTC
+      "0 6 * * 2": "dublin",          // Weekly Tuesday 06:00 UTC
+      "0 6 * * 5": "abu-dhabi",       // Weekly Friday 06:00 UTC
+      "0 6 * * 0": ["abuja", "ankara"], // Weekly Sunday 06:00 UTC
+    };
+
+    const embassies = cronToEmbassy[cron] || [];
+    const embassyList = Array.isArray(embassies) ? embassies : [embassies];
+
+    // Load embassy config
+    const configResp = await fetch(`${REPO_RAW}/embassy-config.json`);
+    if (!configResp.ok) {
+      console.error(`[Scheduled] Failed to load embassy config: ${configResp.status}`);
+      return;
     }
-    return response;
+    const embassyConfig = await configResp.json();
+
+    const scrapeEmbassy = async (embassy) => {
+      try {
+        let decisions = [];
+        
+        if (embassy.parser === "ods") {
+          const { parseODS } = await import("./parsers/ods.js");
+          decisions = await parseODS(embassy.url, embassy.slug);
+        } else if (embassy.parser === "html") {
+          const { parseHTML } = await import("./parsers/html.js");
+          decisions = await parseHTML(embassy.url, embassy.slug);
+        } else if (embassy.parser === "pdf") {
+          const { parsePDFWeekly } = await import("./parsers/pdf.js");
+          const pdfUrl = await getLatestPDFUrl(embassy.url);
+          if (!pdfUrl) return [];
+          decisions = await parsePDFWeekly(pdfUrl, embassy.slug);
+        }
+        
+        const existing = await loadExistingDecisions(embassy.slug);
+        return mergeDecisions(existing, decisions);
+      } catch (error) {
+        console.error(`[Scheduled][${embassy.slug}] Scrape failed:`, error);
+        return [];
+      }
+    };
+
+    const getLatestPDFUrl = async (listingUrl) => {
+      try {
+        const response = await fetch(listingUrl, {
+          headers: {
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+          },
+          cf: { cacheTtl: 300, cacheEverything: true },
+        });
+        if (!response.ok) throw new Error(`${response.status} ${response.statusText}`);
+        const html = await response.text();
+        
+        // Find the latest PDF link
+        const pdfLinkRegex = /href=["']([^"']+\.pdf)["']/gi;
+        let match;
+        const pdfLinks = [];
+        while ((match = pdfLinkRegex.exec(html)) !== null) {
+          pdfLinks.push(match[1]);
+        }
+        
+        if (pdfLinks.length === 0) return null;
+        
+        // Return the first (latest) PDF link, make it absolute
+        const pdfUrl = pdfLinks[0];
+        return pdfUrl.startsWith('http') ? pdfUrl : new URL(pdfUrl, listingUrl).href;
+      } catch (error) {
+        console.error(`[Scheduled] Failed to get PDF URL:`, error);
+        return null;
+      }
+    };
+
+    const loadExistingDecisions = async (slug) => {
+      try {
+        const response = await fetch(`${REPO_RAW}/data/embassy-${slug}.json`);
+        if (!response.ok) return [];
+        const data = await response.json();
+        return data.decisions || [];
+      } catch {
+        return [];
+      }
+    };
+
+    const mergeDecisions = (existing, incoming) => {
+      const seen = new Map();
+      for (const d of existing) seen.set(d.number, d);
+      for (const d of incoming) seen.set(d.number, d);
+      return Array.from(seen.values()).sort((a, b) => b.number.localeCompare(a.number));
+    };
+
+    for (const embassySlug of embassyList) {
+      const embassy = embassyConfig.embassies.find(e => e.slug === embassySlug);
+      if (!embassy || !embassy.enabled) continue;
+
+      const decisions = await scrapeEmbassy(embassy);
+      console.log(`[Scheduled][${embassySlug}] Scraped ${decisions.length} decisions`);
+
+      // Note: In production, you'd push the updated data to GitHub via API
+      // For now, the GitHub Actions workflow will pick up the changes on next run
+      // or you can use a GitHub token to commit the updated JSON files
+    }
+
+    console.log(`[Scheduled] All scrapers completed for cron: ${cron}`);
   },
 };
