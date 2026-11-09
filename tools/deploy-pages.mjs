@@ -8,8 +8,25 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+// Parse command line arguments
+const args = process.argv.slice(2);
+let assetsDir = '.';
+let outDir = '.pages-dist';
+
+for (let i = 0; i < args.length; i++) {
+  if (args[i] === '--assets' && i + 1 < args.length) {
+    assetsDir = args[i + 1];
+    i++;
+  } else if (args[i] === '--out' && i + 1 < args.length) {
+    outDir = args[i + 1];
+    i++;
+  }
+}
+
 const rootDir = path.resolve(__dirname, '..');
-const distDir = path.resolve(rootDir, '.pages-dist');
+const assetsRootDir = path.resolve(rootDir, assetsDir);
+const distDir = path.resolve(rootDir, outDir);
 
 // Files and directories to copy to .pages-dist
 // Only includes files that actually exist
@@ -127,7 +144,7 @@ async function main() {
   // Copy individual files
   let copied = 0;
   for (const file of assetsToCopy) {
-    const src = path.resolve(rootDir, file);
+    const src = path.resolve(assetsRootDir, file);
     const dest = path.resolve(distDir, file);
     if (fs.existsSync(src)) {
       await copyFile(src, dest);
@@ -139,7 +156,7 @@ async function main() {
   
   // Copy directories
   for (const dir of dirsToCopy) {
-    const src = path.resolve(rootDir, dir);
+    const src = path.resolve(assetsRootDir, dir);
     const dest = path.resolve(distDir, dir);
     if (fs.existsSync(src)) {
       await copyDir(src, dest);
@@ -148,7 +165,7 @@ async function main() {
     }
   }
   
-  console.log(`Build complete! Copied ${copied} files to .pages-dist`);
+  console.log(`Build complete! Copied ${copied} files to ${outDir}`);
   console.log(`Output directory: ${distDir}`);
 }
 
