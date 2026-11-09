@@ -1,0 +1,28 @@
+{
+  "name": "irish-visa-tracker",
+  "type": "module",
+  "scripts": {
+    "build": "node tools/deploy-pages.mjs",
+    "dev": "npx wrangler pages dev .",
+    "deploy": "npm run build && npx wrangler pages deploy .pages-dist"
+  },
+  "dependencies": {
+    "@sentry/cloudflare": "^11.11.0",
+    "canvas": "^3.2.3",
+    "cheerio": "^1.2.0",
+    "pdf-parse": "^2.4.5",
+    "pdf-poppler": "^0.2.3",
+    "pdf2pic": "^3.2.0",
+    "pdfjs-dist": "^6.5.438",
+    "puppeteer": "^25.16.0",
+    "tesseract.js": "^7.0.0",
+    "web-push": "^4.0.0",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.14.0",
+    "@playwright/test": "^1.65.0",
+    "esbuild": "^0.28.2",
+    "playwright": "^1.65.0"
+  }
+}
