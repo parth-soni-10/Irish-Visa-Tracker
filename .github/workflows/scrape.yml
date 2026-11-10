@@ -30,6 +30,11 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
+      - name: Install OCR dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y poppler-utils tesseract-ocr tesseract-ocr-eng
+
       - name: Run scraper
         run: python scraper.py
         env:
@@ -39,13 +44,26 @@ jobs:
           # disabled, so the workflow needs no secret to run.
           ALERT_WEBHOOK_URL: ${{ secrets.ALERT_WEBHOOK_URL }}
 
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install ingestion dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Ingest official office decisions
+        run: node tools/scrape-embassies.mjs
+
+      - name: Verify Ankara OCR decisions
+        run: node tools/verify-ankara.mjs
+
       - name: Commit updated data
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/visa_decisions.json
-          [ -f data/visa_meta.json ] && git add data/visa_meta.json
-          git diff --staged --quiet || git commit -m "visa: record $(date -u +%F) decisions"
+          git add data/
+          git diff --staged --quiet || git commit -m "data: record $(date -u +%F) official decisions"
           # A failed push (e.g. a concurrent run committed first) is safe to
           # ignore: the embassy file is cumulative, so the next run re-derives
           # any missing rows by IRL dedupe and reconciles automatically.
