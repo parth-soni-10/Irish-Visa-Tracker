@@ -705,13 +705,13 @@ export default {
         let decisions = [];
         
         if (embassy.parser === "ods") {
-          const { parseODS } = await import("./parsers/ods.js");
+          const { parseODS } = await import("./parsers/ods-cumulative.js");
           decisions = await parseODS(embassy.url, embassy.slug);
         } else if (embassy.parser === "html") {
-          const { parseHTML } = await import("./parsers/html.js");
+          const { parseHTML } = await import("./parsers/html-paginated.js");
           decisions = await parseHTML(embassy.url, embassy.slug);
         } else if (embassy.parser === "pdf") {
-          const { parsePDFWeekly } = await import("./parsers/pdf.js");
+          const { parsePDFWeekly } = await import("./parsers/pdf-weekly.js");
           const pdfUrl = await getLatestPDFUrl(embassy.url);
           if (!pdfUrl) return [];
           decisions = await parsePDFWeekly(pdfUrl, embassy.slug);
