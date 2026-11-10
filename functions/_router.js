@@ -490,6 +490,43 @@ async function handleRequest(request, env, captureException) {
     return new Response("Method not allowed", { status: 405 });
   }
 
+  // Cron-friendly scraper trigger (shared secret, no admin auth required)
+  // For cron-job.org, EasyCron, etc. Set SCRAPER_CRON_SECRET in Cloudflare Pages env vars
+  if (pathname === '/api/scraper/trigger' && request.method === 'POST') {
+    const expected = env.SCRAPER_CRON_SECRET;
+    if (!expected) {
+      return new Response(JSON.stringify({ error: 'Cron secret not configured' }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
+    // Parse body first to check for secret in body
+    let body = {};
+    try { body = await request.json(); } catch {}
+    const secret = request.headers.get('X-Cron-Secret') || 
+                   new URL(request.url).searchParams.get('secret') || 
+                   body.secret;
+    
+    if (secret !== expected) {
+      return new Response(JSON.stringify({ error: 'Invalid or missing cron secret' }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
+    const { embassy } = body; // optional: specific embassy or all
+
+    return new Response(JSON.stringify({
+      success: true,
+      message: embassy ? `Scraper trigger received for ${embassy}` : 'Scraper trigger received for all embassies',
+      note: 'Actual scraping runs via GitHub Actions on schedule; this endpoint acknowledges the cron trigger'
+    }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }
+
   if (request.method === "POST") {
     const contentType = request.headers.get("Content-Type") || "";
     if (!contentType.includes("application/x-www-form-urlencoded")) {
