@@ -38,6 +38,9 @@ jobs:
         # metadata/structured data in index.html.
         run: node --test tests/agent-docs.test.mjs
 
+      - name: Run Ankara OCR parser tests
+        run: node --test tests/ankara-ocr.test.mjs
+
       - name: Syntax-check index.html inline scripts
         # The dashboard is one 4000-line single file; a stray brace or quote in
         # any inline block would only surface on the deployed site otherwise.
