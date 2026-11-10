@@ -822,6 +822,112 @@ export async function handleUpdateWatchlist(request, env) {
   });
 }
 
+// Bulk watchlist add for agencies, families and employers.
+export async function handleBulkAddToWatchlist(request, env) {
+  const sessionId = getSessionIdFromCookie(request);
+  const session = await validateSession(env, sessionId);
+  if (!session) {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+      status: 401, headers: { 'Content-Type': 'application/json' }
+    });
+  }
+
+  let body;
+  try { body = await request.json(); } catch {
+    return new Response(JSON.stringify({ error: 'Invalid JSON' }), {
+      status: 400, headers: { 'Content-Type': 'application/json' }
+    });
+  }
+
+  const applications = Array.isArray(body.applications) ? body.applications : [];
+  if (!applications.length) {
+    return new Response(JSON.stringify({ error: 'applications array required' }), {
+      status: 400, headers: { 'Content-Type': 'application/json' }
+    });
+  }
+  if (applications.length > 50) {
+    return new Response(JSON.stringify({ error: 'Maximum 50 applications per request' }), {
+      status: 400, headers: { 'Content-Type': 'application/json' }
+    });
+  }
+
+  const offices = new Set(['new-delhi', 'beijing', 'dublin', 'abu-dhabi', 'abuja', 'ankara']);
+  const notifyEmail = body.notify_email !== false;
+  const notifyPush = body.notify_push !== false;
+  let added = 0, skipped = 0;
+  const rejected = [];
+
+  for (const entry of applications) {
+    const applicationNumber = String(entry && (entry.application_number || entry.number) || '').trim().toUpperCase();
+    const embassy = offices.has(entry && entry.embassy_slug) ? entry.embassy_slug : 'new-delhi';
+    if (!/^[A-Z0-9-]{6,20}$/.test(applicationNumber)) {
+      rejected.push({ application_number: applicationNumber || null, reason: 'invalid application number' });
+      continue;
+    }
+    const nickname = entry && entry.nickname ? sanitizeInput(entry.nickname) : null;
+    try {
+      const result = await env.DB.prepare(
+        'INSERT OR IGNORE INTO watchlists (user_id, application_number, embassy_slug, nickname, notify_email, notify_push, notify_whatsapp) VALUES (?, ?, ?, ?, ?, ?, ?)'
+      ).bind(session.id, applicationNumber, embassy, nickname, notifyEmail ? 1 : 0, notifyPush ? 1 : 0, 0).run();
+      const changed = (result.meta && result.meta.changes) || result.changes || 0;
+      if (changed) {
+        added++;
+        if (notifyEmail) await upsertEmailAlert(env, session, applicationNumber, embassy);
+      } else {
+        skipped++;
+      }
+    } catch (error) {
+      rejected.push({ application_number: applicationNumber, reason: 'database error' });
+    }
+  }
+
+  return new Response(JSON.stringify({ success: true, added, skipped, rejected }), {
+    status: 201, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }
+  });
+}
+
+// GDPR-style export of the signed-in user's account data.
+export async function handleExportAccountData(request, env) {
+  const sessionId = getSessionIdFromCookie(request);
+  const session = await validateSession(env, sessionId);
+  if (!session) {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+      status: 401, headers: { 'Content-Type': 'application/json' }
+    });
+  }
+
+  const safeAll = async (sql) => {
+    try { const result = await env.DB.prepare(sql).bind(session.id).all(); return result.results || []; }
+    catch (error) { return []; }
+  };
+
+  let profile = null;
+  try {
+    profile = await env.DB.prepare(
+      'SELECT id, email, name, preferences, created_at, updated_at, last_login_at FROM users WHERE id = ?'
+    ).bind(session.id).first();
+  } catch (error) { profile = null; }
+
+  const payload = {
+    exported_at: new Date().toISOString(),
+    service: 'Irish Visa Decision Tracker',
+    account: profile || {
+      id: session.id, email: session.email, name: session.name || null,
+      preferences: session.preferences || '{}', created_at: session.created_at || null
+    },
+    watchlist: await safeAll('SELECT id, application_number, embassy_slug, nickname, notify_email, notify_push, notify_whatsapp, created_at FROM watchlists WHERE user_id = ? ORDER BY created_at DESC'),
+    email_alerts: await safeAll('SELECT application_number, embassy, verified, unsubscribed, created_at, last_alert_sent FROM email_subscriptions WHERE user_id = ? ORDER BY created_at DESC')
+  };
+
+  return new Response(JSON.stringify(payload, null, 2), {
+    headers: {
+      'Content-Type': 'application/json; charset=utf-8',
+      'Content-Disposition': 'attachment; filename="irish-visa-tracker-export.json"',
+      'Cache-Control': 'no-store'
+    }
+  });
+}
+
 // Push subscription handlers
 export async function handlePushSubscribe(request, env) {
   const sessionId = getSessionIdFromCookie(request);

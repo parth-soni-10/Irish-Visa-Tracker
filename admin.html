@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Admin - Irish Visa Decision Tracker</title>
+  <meta name="theme-color" content="#ffffff">
+  <link rel="icon" href="/icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/pages.css">
+  <style>
+    .admin-toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: end; margin: 18px 0; }
+    .admin-toolbar label { display: flex; flex-direction: column; gap: 4px; min-width: 260px; }
+    .admin-toolbar input { padding: 8px 10px; border: 1px solid #d1d5db; border-radius: 8px; }
+    .admin-card { border: 1px solid #e5e7eb; border-radius: 12px; padding: 16px; margin: 14px 0; }
+    .admin-card h2 { margin-top: 0; }
+    .admin-pre { background: #0f172a; color: #e2e8f0; padding: 14px; border-radius: 10px; overflow: auto; max-height: 480px; font-size: 12px; }
+    .admin-status { font-size: 13px; color: #5b6572; }
+    .admin-status.error { color: #b91c1c; }
+    .admin-status.ok { color: #047857; }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <a class="brand" href="/"><img src="/icon.svg" alt="" width="22" height="22"> Irish Visa Decision Tracker</a>
+      <nav class="site-nav" aria-label="Site"><a href="/">Tracker</a><a href="/about">About</a><a href="/contact">Contact</a></nav>
+    </div>
+  </header>
+  <main class="page">
+    <p class="page-kicker">Operator &middot; Admin</p>
+    <h1>Admin dashboard</h1>
+    <p class="page-lede">Scraper health, data quality, system metrics and errors. Requires an admin bearer token; it is kept in this tab's session storage only.</p>
+    <div class="admin-toolbar">
+      <label>Admin token
+        <input id="admin-token" type="password" autocomplete="off" placeholder="Paste the admin token">
+      </label>
+      <button class="btn" type="button" id="admin-refresh">Load dashboard</button>
+      <button class="btn" type="button" id="admin-clear">Clear token</button>
+    </div>
+    <p id="admin-status" class="admin-status" aria-live="polite"></p>
+    <div class="admin-card">
+      <h2>Scraper health</h2>
+      <pre id="admin-health" class="admin-pre">Not loaded.</pre>
+    </div>
+    <div class="admin-card">
+      <h2>Data quality</h2>
+      <pre id="admin-quality" class="admin-pre">Not loaded.</pre>
+    </div>
+    <div class="admin-card">
+      <h2>System metrics</h2>
+      <pre id="admin-metrics" class="admin-pre">Not loaded.</pre>
+    </div>
+    <div class="admin-card">
+      <h2>Recent errors</h2>
+      <pre id="admin-errors" class="admin-pre">Not loaded.</pre>
+    </div>
+  </main>
+  <footer class="site-footer"><p><a href="/">Tracker</a> &bull; <a href="/about">About</a> &bull; <a href="/contact">Contact</a> &bull; <a href="/privacy">Privacy</a> &bull; <a href="/terms">Terms</a> &bull; <a href="/refunds">Refunds</a></p></footer>
+  <script>
+  (function () {
+    var token = document.getElementById('admin-token');
+    var status = document.getElementById('admin-status');
+    var panels = {
+      health: document.getElementById('admin-health'),
+      quality: document.getElementById('admin-quality'),
+      metrics: document.getElementById('admin-metrics'),
+      errors: document.getElementById('admin-errors')
+    };
+    token.value = sessionStorage.getItem('admin-token') || '';
+
+    function setStatus(text, kind) {
+      status.textContent = text;
+      status.className = 'admin-status' + (kind ? ' ' + kind : '');
+    }
+
+    function load() {
+      var value = token.value.trim();
+      if (!value) { setStatus('Enter an admin token first.', 'error'); return; }
+      sessionStorage.setItem('admin-token', value);
+      setStatus('Loading\u2026');
+      var endpoints = ['health', 'quality', 'metrics', 'errors'];
+      Promise.all(endpoints.map(function (name) {
+        return fetch('/api/admin/' + name, { headers: { Authorization: 'Bearer ' + value } })
+          .then(function (r) { return r.json().then(function (body) { return { name: name, ok: r.ok, body: body }; }); })
+          .catch(function (e) { return { name: name, ok: false, body: { error: e.message } }; });
+      })).then(function (results) {
+        var failed = 0;
+        results.forEach(function (result) {
+          panels[result.name].textContent = JSON.stringify(result.body, null, 2);
+          if (!result.ok) failed++;
+        });
+        setStatus(failed ? failed + ' endpoint(s) failed. Check the token and server logs.' : 'Dashboard loaded.', failed ? 'error' : 'ok');
+      });
+    }
+
+    document.getElementById('admin-refresh').addEventListener('click', load);
+    document.getElementById('admin-clear').addEventListener('click', function () {
+      sessionStorage.removeItem('admin-token');
+      token.value = '';
+      Object.keys(panels).forEach(function (key) { panels[key].textContent = 'Not loaded.'; });
+      setStatus('Token cleared.');
+    });
+    if (token.value) load();
+  })();
+  </script>
+</body>
+</html>

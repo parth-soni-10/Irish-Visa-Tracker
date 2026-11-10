@@ -1,0 +1,1766 @@
+{
+  "office": "abu-dhabi",
+  "name": "Abu Dhabi",
+  "source_url": "https://www.ireland.ie/en/uae/abudhabi/services/visas/weekly-decision-reports/",
+  "source_file": "https://www.ireland.ie/5302/Decisions_for_period_from_01-11-2026_to_06-11-2026.pdf",
+  "source_name": "Embassy of Ireland, Abu Dhabi",
+  "report_date": "2026-11-06",
+  "as_of": "2026-11-10",
+  "fetched_at": "2026-11-10T12:07:32.929Z",
+  "data_status": "official",
+  "date_basis": "report_period_end",
+  "note": null,
+  "checksum": "f4e550c321fdf40d",
+  "decisions": [
+    {
+      "date": "2026-11-06",
+      "number": "73447032",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "75845762",
+      "decision": "Refused",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "79866742",
+      "decision": "Refused",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "85334522",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "85335952",
+      "decision": "Refused",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "85371912",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "85484122",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "85484382",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "85531082",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "85534382",
+      "decision": "Refused",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "85546202",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "85555192",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "85557182",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "85568012",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "85578082",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "85622282",
+      "decision": "Refused",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "85624592",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "85645442",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "85645702",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "85699722",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "85706342",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "85715782",
+      "decision": "Refused",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "85721662",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "85746002",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "85773072",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "85775272",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "85777342",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "85798612",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "85800332",
+      "decision": "Refused",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "85800842",
+      "decision": "Refused",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "85803722",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "85808982",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "85825172",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "85844642",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "85853962",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "85857732",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "85861272",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "85881282",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "85882502",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "85891412",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "85893822",
+      "decision": "Refused",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "85898762",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "85899592",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "85904212",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "85905512",
+      "decision": "Refused",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "85906162",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "85911152",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "85912132",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "85912512",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "85913532",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "85913562",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "85917712",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "85918522",
+      "decision": "Refused",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "85920372",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "85927082",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "85928212",
+      "decision": "Refused",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "85932912",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "85933412",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "85943682",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "85946002",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "85956592",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "85962322",
+      "decision": "Refused",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "85966502",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "85968642",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "85969012",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "85972572",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "85972822",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "85972982",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "85973052",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "85973722",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "85973842",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "85975462",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "85977712",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "85980092",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "85980952",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "85983622",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "85983982",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "85984582",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "85991272",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "85991602",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "85992752",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "85994062",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86007682",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86011312",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86011932",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86012562",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86015172",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86022162",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86022442",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86022632",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86022682",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86022992",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86024022",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86024472",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86024482",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86024602",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86026582",
+      "decision": "Refused",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86026752",
+      "decision": "Refused",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86033072",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86034472",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86035892",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86040692",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86045782",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86046402",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86050172",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86050312",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86050352",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86050572",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86050582",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86051622",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86054272",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86055072",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86055252",
+      "decision": "Refused",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86055432",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86055632",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86057962",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86058452",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86058692",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86061862",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86062792",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86064522",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86065822",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86066352",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86066542",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86069702",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86072682",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86074332",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86074662",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86077442",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86078652",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86082242",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86082292",
+      "decision": "Refused",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86082772",
+      "decision": "Refused",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86084892",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86085222",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86085982",
+      "decision": "Refused",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86086332",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86087112",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86087852",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86088612",
+      "decision": "Refused",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86089662",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86089772",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86091332",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86091662",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86093182",
+      "decision": "Refused",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86093332",
+      "decision": "Refused",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86093452",
+      "decision": "Refused",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86093552",
+      "decision": "Refused",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86093682",
+      "decision": "Refused",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86096612",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86097202",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86097382",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86097582",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86097822",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86097852",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86098172",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86098252",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86098612",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86099252",
+      "decision": "Refused",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86100972",
+      "decision": "Refused",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86101252",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86104312",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86112472",
+      "decision": "Refused",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86112542",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86116402",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86118582",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86119002",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86119272",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86119482",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86121592",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86122532",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86123822",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86126562",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86126612",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86130482",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86131902",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86139782",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86140062",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86140192",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86140702",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86148462",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86156522",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86158252",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86158752",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86160922",
+      "decision": "Refused",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86162812",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86187462",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86193532",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86195352",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86195842",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86196992",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86198082",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86200562",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86200822",
+      "decision": "Refused",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86211872",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86212122",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86214312",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86216502",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86221912",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86222412",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86222622",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86226432",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86233152",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86233322",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86233652",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86234132",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86234482",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86241202",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86254172",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86261682",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86265542",
+      "decision": "Refused",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86269052",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86274552",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86274572",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86274602",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86274832",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86291202",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86296272",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86331012",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86332272",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86398762",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86422382",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86430902",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86457532",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86481522",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86486172",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86490682",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86498262",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86506422",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86508652",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86508842",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86509192",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86539232",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86540522",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86541182",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86541922",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86546772",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86560332",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86565832",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86566582",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86571362",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86575052",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86575742",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86583832",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86614402",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86621462",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86633662",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86647702",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86665892",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-11-06",
+      "number": "86669062",
+      "decision": "Approved",
+      "embassy": "abu-dhabi",
+      "date_basis": "report_period_end"
+    }
+  ]
+}

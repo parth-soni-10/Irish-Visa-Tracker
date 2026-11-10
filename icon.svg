@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Irish Visa Decision Tracker">
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" role="img" aria-label="Irish Visa Decision Tracker">
   <!-- The app's own "approved" mark: the single green accent the page already
        uses for a granted decision, inside a stamp ring. Deliberately not the
        initials-on-a-tinted-square that every generated project reaches for -

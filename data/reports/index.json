@@ -1,0 +1,112 @@
+{
+  "offices": {
+    "new-delhi": [
+      {
+        "report_date": "2026-11-05",
+        "fetched_at": "2026-11-10T12:07:21.740Z",
+        "decisions": 42370,
+        "approved": 35773,
+        "refused": 6597,
+        "source_file": "https://www.ireland.ie/5301/20261105_NDVO_Visa_Decisions.ods",
+        "checksum": "31ffbb2fc9420e79",
+        "added": 42370,
+        "removed": 500,
+        "changed": []
+      }
+    ],
+    "beijing": [
+      {
+        "report_date": "2026-11-01",
+        "fetched_at": "2026-11-10T12:07:29.607Z",
+        "decisions": 13724,
+        "approved": 11373,
+        "refused": 2351,
+        "source_file": "https://www.ireland.ie/5288/20261101_BVO_visa_decisions.ods",
+        "checksum": "1755eb2259f182a4",
+        "added": 13724,
+        "removed": 500,
+        "changed": []
+      }
+    ],
+    "abu-dhabi": [
+      {
+        "report_date": "2026-11-06",
+        "fetched_at": "2026-11-10T12:07:32.929Z",
+        "decisions": 250,
+        "approved": 219,
+        "refused": 31,
+        "source_file": "https://www.ireland.ie/5302/Decisions_for_period_from_01-11-2026_to_06-11-2026.pdf",
+        "checksum": "f4e550c321fdf40d",
+        "added": 250,
+        "removed": 500,
+        "changed": []
+      }
+    ],
+    "abuja": [
+      {
+        "report_date": "2026-10-18",
+        "fetched_at": "2026-11-10T12:07:34.863Z",
+        "decisions": 52,
+        "approved": 19,
+        "refused": 33,
+        "source_file": "https://www.ireland.ie/5271/12.10_to_18.10.pdf",
+        "checksum": "1ad754c61c63eaa9",
+        "added": 52,
+        "removed": 500,
+        "changed": []
+      }
+    ],
+    "ankara": [
+      {
+        "report_date": "2026-11-01",
+        "fetched_at": "2026-11-10T12:59:13.915Z",
+        "decisions": 172,
+        "approved": 165,
+        "refused": 7,
+        "source_file": "https://www.ireland.ie/5294/Ankara_Visa_Decisions_24_October_2026_to_1_November_2026.pdf",
+        "checksum": "86a794d172ac05e3",
+        "added": 172,
+        "removed": 0,
+        "changed": []
+      },
+      {
+        "report_date": "2026-11-10",
+        "fetched_at": "2026-11-10T12:57:42.309Z",
+        "decisions": 0,
+        "approved": 0,
+        "refused": 0,
+        "source_file": "https://www.ireland.ie/5294/Ankara_Visa_Decisions_24_October_2026_to_1_November_2026.pdf",
+        "checksum": "4f53cda18c2baa0c",
+        "added": 0,
+        "removed": 0,
+        "changed": []
+      },
+      {
+        "report_date": "2026-11-10",
+        "fetched_at": "2026-11-10T12:07:35.915Z",
+        "decisions": 0,
+        "approved": 0,
+        "refused": 0,
+        "source_file": "https://www.ireland.ie/5294/Ankara_Visa_Decisions_24_October_2026_to_1_November_2026.pdf",
+        "checksum": "4f53cda18c2baa0c",
+        "added": 0,
+        "removed": 500,
+        "changed": []
+      }
+    ],
+    "dublin": [
+      {
+        "report_date": "2026-11-10",
+        "fetched_at": "2026-11-10T12:07:42.170Z",
+        "decisions": 4335,
+        "approved": 2475,
+        "refused": 1860,
+        "source_file": "https://www.irishimmigration.ie/visa-decisions/",
+        "checksum": "5e00c2e0957adabb",
+        "added": 4335,
+        "removed": 500,
+        "changed": []
+      }
+    ]
+  }
+}

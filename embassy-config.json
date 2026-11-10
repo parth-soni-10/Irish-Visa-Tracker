@@ -1,0 +1,71 @@
+{
+  "embassies": [
+    {
+      "slug": "new-delhi",
+      "name": "New Delhi",
+      "flag": "🇮🇳",
+      "countries": ["India", "Bangladesh", "Nepal", "Sri Lanka"],
+      "source": "ods",
+      "url": "https://www.ireland.ie/en/india/newdelhi/services/visas/processing-times-and-decisions/",
+      "schedule": "daily-11ist",
+      "parser": "ods-cumulative",
+      "decisionCols": { "number": 0, "decision": 2, "date": 1 },
+      "enabled": true
+    },
+    {
+      "slug": "beijing",
+      "name": "Beijing",
+      "flag": "🇨🇳",
+      "countries": ["China", "Hong Kong", "Macau", "Mongolia"],
+      "source": "ods",
+      "url": "https://www.ireland.ie/en/china/beijing/services/visas/visa-decisions/",
+      "schedule": "weekly-monday",
+      "parser": "ods-cumulative",
+      "enabled": true
+    },
+    {
+      "slug": "dublin",
+      "name": "Dublin Visa Office",
+      "flag": "🇮🇪",
+      "countries": ["Pakistan", "transfers from all offices"],
+      "source": "html-table",
+      "url": "https://www.irishimmigration.ie/visa-decisions/",
+      "schedule": "weekly-tuesday",
+      "parser": "html-paginated",
+      "enabled": true
+    },
+    {
+      "slug": "abu-dhabi",
+      "name": "Abu Dhabi",
+      "flag": "🇦🇪",
+      "countries": ["UAE", "Afghanistan", "Algeria", "Bahrain", "Jordan", "Kuwait", "Lebanon", "Libya", "Morocco", "Oman", "Qatar", "Sudan", "Syria", "Tunisia"],
+      "source": "pdf-weekly",
+      "url": "https://www.ireland.ie/en/uae/abudhabi/services/visas/weekly-decision-reports/",
+      "schedule": "weekly-friday",
+      "parser": "pdf-weekly",
+      "enabled": true
+    },
+    {
+      "slug": "abuja",
+      "name": "Abuja",
+      "flag": "🇳🇬",
+      "countries": ["Nigeria", "Ghana", "Côte d'Ivoire", "Senegal"],
+      "source": "pdf-weekly",
+      "url": "https://www.ireland.ie/en/nigeria/abuja/services/visas/weekly-decision-reports/",
+      "schedule": "weekly-sunday",
+      "parser": "pdf-weekly",
+      "enabled": true
+    },
+    {
+      "slug": "ankara",
+      "name": "Ankara",
+      "flag": "🇹🇷",
+      "countries": ["Türkiye", "Azerbaijan", "Saudi Arabia residents"],
+      "source": "pdf-weekly",
+      "url": "https://www.ireland.ie/en/turkiye/ankara/services/visas/weekly-decision-report/",
+      "schedule": "weekly-sunday",
+      "parser": "pdf-weekly",
+      "enabled": true
+    }
+  ]
+}

@@ -4123,8 +4123,8 @@
     .watch-h3 { margin: 0 0 12px; font-size: 15px; color: var(--ink); }
     .watch-field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
     .watch-field label { font-size: 12px; font-weight: 600; color: var(--ink-soft); }
-    .watch-field input, .watch-field select { width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: var(--r-control); background: var(--surface); color: var(--ink); font-size: 13px; box-sizing: border-box; }
-    .watch-field input:focus, .watch-field select:focus { outline: 2px solid var(--green); outline-offset: 1px; border-color: var(--green); }
+    .watch-field input, .watch-field select, .watch-field textarea { width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: var(--r-control); background: var(--surface); color: var(--ink); font-size: 13px; box-sizing: border-box; }
+    .watch-field input:focus, .watch-field select:focus, .watch-field textarea:focus { outline: 2px solid var(--green); outline-offset: 1px; border-color: var(--green); }
     .watch-card table { width: 100%; border-collapse: collapse; font-size: 13px; }
     .watch-card th { text-align: left; color: var(--ink-soft); font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; padding: 8px; border-bottom: 1px solid var(--border); }
     .watch-card td { padding: 10px 8px; border-bottom: 1px solid var(--border); color: var(--ink); }
@@ -4259,6 +4259,8 @@
           <a href="/about">About the project</a> &middot;
           <a href="/contact">Contact and corrections</a> &middot;
           <a href="/privacy">Privacy</a> &middot;
+          <a href="/terms">Terms</a> &middot;
+          <a href="/refund">Refunds</a> &middot;
           <a href="/llms.txt">Agent guide (llms.txt)</a>
         </p>
       </article>
@@ -4270,8 +4272,8 @@
         <button type="button" class="modal-close" onclick="closeAccountModal()" aria-label="Close">&times;</button>
         <h3 id="account-modal-title">Sign in</h3>
         <div class="modal-tabs" role="tablist">
-          <button type="button" role="tab" aria-selected="true" id="account-tab-signin">Sign in</button>
-          <button type="button" role="tab" aria-selected="false" id="account-tab-register">Create account</button>
+          <button type="button" role="tab" aria-selected="true" id="account-tab-signin" onclick="showAccountTab('signin')">Sign in</button>
+          <button type="button" role="tab" aria-selected="false" id="account-tab-register" onclick="showAccountTab('register')">Create account</button>
         </div>
         <form id="account-form-signin" novalidate>
           <p><label>Email <input type="email" name="email" required placeholder="you@example.com"></label></p>
@@ -4294,7 +4296,7 @@
 
     <footer class="site-foot">
       <p><strong>Irish Visa Decision Tracker</strong> &mdash; independent, unofficial, and not affiliated with any Irish government body.</p>
-      <p><a href="/">Tracker</a> &middot; <a href="/daily-summaries">Daily summaries</a> &middot; <a href="/stamp-1g-processing-dates">Stamp 1G processing dates</a> &middot; <a href="/employment-permit-processing-dates">Employment permits</a> &middot; <a href="/visa-processing-times">Processing times</a> &middot; <a href="/about">About</a> &middot; <a href="/contact">Contact</a> &middot; <a href="/privacy">Privacy</a> &middot; <a href="/sitemap.xml">Sitemap</a> &middot; <a href="/llms.txt">llms.txt</a> &middot; <a href="https://github.com/parth-soni-10/Irish-Visa-Tracker">GitHub</a></p>
+      <p><a href="/">Tracker</a> &middot; <a href="/comparison">Compare</a> &middot; <a href="/daily-summaries">Daily summaries</a> &middot; <a href="/stamp-1g-processing-dates">Stamp 1G processing dates</a> &middot; <a href="/employment-permit-processing-dates">Employment permits</a> &middot; <a href="/monthly-report">Monthly report</a> &middot; <a href="/employer">Employer compliance</a> &middot; <a href="/visa-processing-times">Processing times</a> &middot; <a href="/about">About</a> &middot; <a href="/contact">Contact</a> &middot; <a href="/privacy">Privacy</a> &middot; <a href="/terms">Terms</a> &middot; <a href="/refund">Refunds</a> &middot; <a href="/sitemap.xml">Sitemap</a> &middot; <a href="/llms.txt">llms.txt</a> &middot; <a href="https://github.com/parth-soni-10/Irish-Visa-Tracker">GitHub</a></p>
       <p>&copy; 2026 Parth Soni &middot; Dublin, Ireland</p>
     </footer>
     <script src="lucide.min.js"></script>
@@ -5025,6 +5027,12 @@ document.addEventListener('click', function(e) {
                     if (tRegister) tRegister.setAttribute('aria-selected', 'false');
                 }
             }
+
+            // The modal markup uses inline handlers, but this script is wrapped
+            // in a closure. Expose the controls those handlers call; without
+            // this the Create account tab, close button and backdrop were dead.
+            window.showAccountTab = showAccountTab;
+            window.closeAccountModal = closeAccountModal;
 
             async function handleAccountForm(e) {
                 e.preventDefault();
@@ -6093,7 +6101,7 @@ document.addEventListener('click', function(e) {
                 else if (tabId === 'daily') tabBody.innerHTML = renderDailySummary(rows);
                 else if (tabId === 'past') tabBody.innerHTML = renderPastLayout(rows);
                 else if (tabId === 'analytics') tabBody.innerHTML = renderAnalyticsLayout(rows);
-                else if (tabId === 'watchlist') { tabBody.innerHTML = renderWatchlistLayout(rows); wireWatchAdd(); }
+                else if (tabId === 'watchlist') { tabBody.innerHTML = renderWatchlistLayout(rows); wireWatchAdd(); wireWatchBulk(); }
                 else if (tabId === 'checklist') { tabBody.innerHTML = renderChecklistLayout(); wireChecklistForm(); }
                 else if (tabId === 'search') { tabBody.innerHTML = renderSearchLayout(); wireSearchForm(); wireVFSTracking(); }
                 else { tabBody.innerHTML = renderSuggestLayout(); }
@@ -6273,6 +6281,10 @@ document.addEventListener('click', function(e) {
                     '<option value="number_desc">Application number (desc)</option>' +
                     '<option value="number_asc">Application number (asc)</option>' +
                     '</select></div>' +
+                    '<div class="search-field"><label for="search-date-from">Decisions from</label>' +
+                    '<input type="date" id="search-date-from" name="date_from"></div>' +
+                    '<div class="search-field"><label for="search-date-to">Decisions to</label>' +
+                    '<input type="date" id="search-date-to" name="date_to"></div>' +
                     '</div>' +
                     '<div class="search-actions">' +
                     '<button class="btn" type="submit" id="search-submit">Search</button>' +
@@ -6412,17 +6424,28 @@ document.addEventListener('click', function(e) {
                     '<strong>' + data.results.length + '</strong> of <strong>' + data.pagination.total + '</strong> results' +
                     '</div>';
                 html += '<div class="search-results-table"><table class="results-table"><thead>' +
-                    '<tr><th>Date</th><th>Application No.</th><th>Decision</th><th>Office</th></tr></thead><tbody>';
+                    '<tr><th>Decision date</th><th>Application No.</th><th>Decision</th><th>Office</th><th>Office report</th></tr></thead><tbody>';
+                var officeNames = {
+                    'new-delhi': 'New Delhi',
+                    'beijing': 'Beijing',
+                    'dublin': 'Dublin',
+                    'abu-dhabi': 'Abu Dhabi',
+                    'abuja': 'Abuja',
+                    'ankara': 'Ankara'
+                };
                 data.results.forEach(function(r) {
                     var pillClass = r.decision === 'Approved' ? 'green' : r.decision === 'Refused' ? 'red' : 'amber';
+                    var office = officeNames[r.embassy] || r.embassy || '';
                     html += '<tr>' +
                         '<td class="mono">' + escapeHtml(r.date || '') + '</td>' +
                         '<td class="mono">' + escapeHtml(r.number || r.irl || '') + '</td>' +
                         '<td><span class="pill ' + pillClass + '">' + escapeHtml(r.decision || '') + '</span></td>' +
-                        '<td>' + escapeHtml(r.embassy || '') + '</td>' +
+                        '<td>' + escapeHtml(office) + '</td>' +
+                        '<td class="mono">' + escapeHtml(r.report_date || '—') + '</td>' +
                         '</tr>';
                 });
-                html += '</tbody></table></div>';
+                html += '</tbody></table></div>' +
+                    '<p class="note2 search-report-note">Office report is the latest published report date from that office; decision date is the date of the individual decision.</p>';
                 if (data.pagination.has_more) {
                     html += '<div class="search-pagination"><button type="button" class="btn" id="search-load-more">Load more</button></div>';
                 }
@@ -6556,7 +6579,25 @@ document.addEventListener('click', function(e) {
                     : '<div class="watch-card"><h3 class="watch-h3">Sign in to sync your watchlist</h3>' +
                       '<p class="note2">Create an account or sign in to keep your watched applications ' +
                       'across devices and receive email/push alerts when a decision is published.</p></div>';
-                return addForm + listBox;
+                var bulkBox = currentUser
+                    ? '<div class="watch-card"><h3 class="watch-h3">Bulk add (agency / family)</h3>' +
+                      '<p class="note2">Paste up to 50 application numbers, one per line. They are added to the office selected here.</p>' +
+                      '<form id="watch-bulk-form" novalidate>' +
+                      '<div class="watch-field"><label>Application numbers</label>' +
+                      '<textarea name="numbers" rows="4" placeholder="48850812&#10;63690452"></textarea></div>' +
+                      '<div class="watch-field"><label>Visa office</label><select name="embassy_slug">' +
+                      '<option value="new-delhi">New Delhi</option><option value="beijing">Beijing</option>' +
+                      '<option value="dublin">Dublin</option><option value="abu-dhabi">Abu Dhabi</option>' +
+                      '<option value="abuja">Abuja</option><option value="ankara">Ankara</option>' +
+                      '</select></div>' +
+                      '<button class="btn" type="submit" id="watch-bulk-btn">Add all</button>' +
+                      '<div class="note" id="watch-bulk-status" aria-live="polite"></div>' +
+                      '</form></div>' +
+                      '<div class="watch-card"><h3 class="watch-h3">Your data</h3>' +
+                      '<p class="note2">Download a JSON copy of your account, watchlist and alert subscriptions.</p>' +
+                      '<button type="button" class="export-btn tu-btn" id="watch-export-btn">Export my data</button></div>'
+                    : '';
+                return addForm + listBox + bulkBox;
             }
 
             async function paintWatchlist() {
@@ -6653,12 +6694,10 @@ document.addEventListener('click', function(e) {
             }
 
             // Watch add form on the watchlist tab.
-            var _watchAddWired = false;
             function wireWatchAdd() {
-                if (_watchAddWired) return;
-                _watchAddWired = true;
                 var form = document.getElementById('watch-add-form');
-                if (!form) return;
+                if (!form || form.dataset.wired === '1') return;
+                form.dataset.wired = '1';
                 form.addEventListener('submit', async function(e) {
                     e.preventDefault();
                     var btn = document.getElementById('watch-add-btn');
@@ -6687,6 +6726,57 @@ document.addEventListener('click', function(e) {
                         btn.disabled = false;
                     }
                 });
+            }
+
+            function wireWatchBulk() {
+                var form = document.getElementById('watch-bulk-form');
+                if (form && form.dataset.wired !== '1') {
+                    form.dataset.wired = '1';
+                    form.addEventListener('submit', async function(e) {
+                        e.preventDefault();
+                        var status = document.getElementById('watch-bulk-status');
+                        var btn = document.getElementById('watch-bulk-btn');
+                        var raw = form.elements['numbers'].value || '';
+                        var numbers = raw.split(/[\s,;]+/).map(function(v) { return v.trim().toUpperCase(); })
+                            .filter(function(v) { return v.length > 0; });
+                        numbers = numbers.filter(function(v, i, arr) { return arr.indexOf(v) === i; }).slice(0, 50);
+                        if (!numbers.length) { if (status) status.textContent = 'Enter at least one application number.'; return; }
+                        if (btn) btn.disabled = true;
+                        if (status) { status.textContent = 'Adding ' + numbers.length + '...'; status.style.color = ''; }
+                        try {
+                            var res = await fetch('/api/user/watchlist/bulk', {
+                                method: 'POST', credentials: 'include',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    applications: numbers.map(function(n) {
+                                        return { application_number: n, embassy_slug: form.elements['embassy_slug'].value };
+                                    }),
+                                    notify_email: true, notify_push: true
+                                })
+                            });
+                            var data = await res.json().catch(function() { return {}; });
+                            if (res.ok) {
+                                if (status) {
+                                    status.textContent = 'Added ' + (data.added || 0) + ', skipped ' + (data.skipped || 0) +
+                                        (data.rejected && data.rejected.length ? ', invalid ' + data.rejected.length : '') + '.';
+                                    status.style.color = 'var(--green)';
+                                }
+                                form.reset();
+                                paintWatchlist();
+                            } else if (status) {
+                                status.textContent = data.error || 'Could not add these applications.';
+                                status.style.color = 'var(--red)';
+                            }
+                        } catch (err) {
+                            if (status) { status.textContent = 'Could not add these applications.'; status.style.color = 'var(--red)'; }
+                        } finally { if (btn) btn.disabled = false; }
+                    });
+                }
+                var exportBtn = document.getElementById('watch-export-btn');
+                if (exportBtn && exportBtn.dataset.wired !== '1') {
+                    exportBtn.dataset.wired = '1';
+                    exportBtn.addEventListener('click', function() { window.location.href = '/api/user/export'; });
+                }
             }
 
             // ====== HOME TAB ======
@@ -9217,29 +9307,42 @@ document.addEventListener('click', function(e) {
                 });
                 container.innerHTML = html + '</div>';
 
-                embassies.forEach(function(emb) {
-                    fetch('data/embassy-' + emb.slug + '.json', { cache: 'no-store' })
-                        .then(function(r) { return r.ok ? r.json() : null; })
-                        .then(function(data) {
-                            var el = document.getElementById('embassy-meta-' + emb.slug);
-                            if (!el) return;
-                            var rows = (data && data.decisions) || [];
-                            if (!rows.length) {
-                                el.innerHTML = '<span class="embassy-status stale">No data</span>';
-                                return;
-                            }
-                            var latest = '';
-                            rows.forEach(function(r) {
-                                if (r && r.date && r.date > latest) latest = r.date;
-                            });
-                            el.innerHTML = '<span class="embassy-status live">Latest ' + escapeHtml(latest) + '</span>' +
-                                '<span class="embassy-count">' + rows.length.toLocaleString() + ' decisions</span>';
-                        })
-                        .catch(function() {
-                            var el = document.getElementById('embassy-meta-' + emb.slug);
-                            if (el) el.innerHTML = '<span class="embassy-status stale">Failed to load</span>';
+                function paint(office) {
+                    var el = document.getElementById('embassy-meta-' + office.slug);
+                    if (!el) return;
+                    if (office.status && office.status !== 'official') {
+                        el.innerHTML = '<span class="embassy-status stale">' + escapeHtml(String(office.status).replace(/_/g, ' ')) + '</span>' +
+                            '<span class="embassy-count">' + escapeHtml(office.note || 'Not currently ingested') + '</span>';
+                        return;
+                    }
+                    el.innerHTML = '<span class="embassy-status live">As of ' + escapeHtml(office.report_date || office.as_of || '\u2014') + '</span>' +
+                        '<span class="embassy-count">' + Number(office.decisions || 0).toLocaleString() + ' decisions</span>' +
+                        (office.corrections ? '<span class="embassy-count">' + office.corrections + ' correction(s)</span>' : '');
+                }
+
+                fetch('data/data_manifest.json', { cache: 'no-store' })
+                    .then(function(r) { return r.ok ? r.json() : null; })
+                    .then(function(manifest) {
+                        var offices = (manifest && manifest.offices) || [];
+                        if (!offices.length) throw new Error('no manifest');
+                        var bySlug = {};
+                        offices.forEach(function(o) { bySlug[o.slug] = o; });
+                        embassies.forEach(function(emb) { if (bySlug[emb.slug]) paint(bySlug[emb.slug]); });
+                    })
+                    .catch(function() {
+                        embassies.forEach(function(emb) {
+                            fetch('data/embassy-' + emb.slug + '.json', { cache: 'no-store' })
+                                .then(function(r) { return r.ok ? r.json() : null; })
+                                .then(function(data) {
+                                    var el = document.getElementById('embassy-meta-' + emb.slug);
+                                    if (!el) return;
+                                    var rows = (data && data.decisions) || [];
+                                    el.innerHTML = rows.length
+                                        ? '<span class="embassy-status live">' + rows.length.toLocaleString() + ' decisions</span>'
+                                        : '<span class="embassy-status stale">No data</span>';
+                                });
                         });
-                });
+                    });
             }
 
             // Community-reported wait times for embassy visas. The JSON is an
@@ -9335,8 +9438,7 @@ document.addEventListener('click', function(e) {
                     '<div class="est-submit"><button class="btn" type="submit" id="estimator-calc-btn">Calculate</button></div>' +
                     '</form>' +
                     '<div id="estimator-result" class="estimator-result" hidden></div>' +
-                    '<p class="note2 est-note">Model estimate only, not an official processing time. ' +
-                    'Trained on synthetic historical data; typical error \u00b14 days.</p>';
+                    '<p class="note2 est-note">Estimate only, not an official processing time. Use the official queue dates for planning.</p>';
 
                 var form = document.getElementById('estimator-form');
                 if (form) form.addEventListener('submit', function(e) {
@@ -9393,12 +9495,7 @@ document.addEventListener('click', function(e) {
                         '<div class="stat"><span class="stat-value">' + p.confidence_interval.lower +
                         '\u2013' + p.confidence_interval.upper + '</span>' +
                         '<span class="stat-label">95% range (days)</span></div>' +
-                        '<div class="stat"><span class="stat-value">' + escapeHtml(String(p.model_metrics.mae)) + '</span>' +
-                        '<span class="stat-label">Model MAE (days)</span></div>' +
-                        '</div>' +
-                        '<p class="note2">Based on the tracker\u2019s trained model (' +
-                        escapeHtml(p.model_type) + ' v' + escapeHtml(p.model_version) +
-                        '). Actual processing time may vary.</p>';
+                        '</div>';
                 } catch (e) {
                     estimatorError(resultDiv, 'Estimate unavailable right now: ' + e.message);
                 }
@@ -9499,7 +9596,7 @@ async function renderLandingPage() {
                     '<button class="btn" type="submit">Track</button></form>' +
                     '<div class="tracker-grid">' +
                     trackerCardHTML('visa', 'plane', 'Embassy Visa Decisions',
-                        'Daily decisions published by the Embassy of Ireland in New Delhi - searchable by application number, with trends and summaries.', 'Loading\u2026', 'visa-meta', '') +
+                        'Official decisions from six Irish visa offices - searchable by application number, with report dates, trends and summaries.', 'Loading\u2026', 'visa-meta', '') +
                     trackerCardHTML('1g', 'stamp', 'Stamp 1G Processing',
                         'ISD renewal queue: which application date is being processed now, how far behind it is, and when it may catch up.', 'Loading\u2026', 'g1-meta', 'g1') +
                     trackerCardHTML('permits', 'briefcase', 'Employment Permits',
@@ -9508,26 +9605,19 @@ async function renderLandingPage() {
                     // New: Stats Bar
                     '<div class="stats-bar" role="region" id="landing-stats-bar" aria-label="Live statistics">' +
                     '<div class="stat"><span class="stat-value" id="stat-decisions">--</span><span class="stat-label">Decisions Tracked</span></div>' +
-                    '<div class="stat"><span class="stat-value" id="stat-approval">--</span><span class="stat-label">Approval Rate</span></div>' +
-                    '<div class="stat"><span class="stat-value" id="stat-embassies">6</span><span class="stat-label">Active Embassies</span></div>' +
+                    '<div class="stat"><span class="stat-value" id="stat-approval">--</span><span class="stat-label">Approval share</span></div>' +
+                    '<div class="stat"><span class="stat-value" id="stat-embassies">6</span><span class="stat-label">Visa offices</span></div>' +
                     '<div class="stat"><span class="stat-value" id="stat-updated">--</span><span class="stat-label">Last Updated</span></div>' +
                     '</div>' +
                     // New: Embassy Status Cards
                     '<div class="embassy-status-grid" role="region" id="embassy-status-grid" aria-label="Embassy Status"></div>' +
+                    '<p class="note2" id="embassy-coverage-note">All six offices are loaded from their official published decision reports, not synthetic fixtures. Each card shows that office\u2019s own report date and coverage varies: New Delhi\u2019s decision-level history currently starts on 12 July 2026, while the other five offices show their latest official report snapshot. <a href="/visa-processing-times">See Dublin queue dates by category and the submit-by planner</a>.</p>' +
                     // New: Community Wait Times
                     '<div class="community-wait-section" role="region" id="community-wait-section" aria-label="Community Wait Times"></div>' +
                     // New: Processing Estimator
                     '<div class="estimator-section" role="region" id="estimator-section" aria-label="Processing Time Estimator"></div>' +
                     // New: Recent Decisions Feed
                     '<div class="recent-decisions-section" role="region" id="recent-decisions-section" aria-label="Latest Decisions"></div>' +
-                    // New: Trust Signals
-                    '<div class="trust-signals" role="region" aria-label="Trust Signals">' +
-                    '<div class="trust-item"><i data-lucide="shield-check"></i><span>Trusted by 12,000+ applicants</span></div>' +
-                    '<div class="trust-item"><i data-lucide="database"></i><span>94% data accuracy</span></div>' +
-                    '<div class="trust-item"><i data-lucide="lock"></i><span>Privacy-first: No personal data stored</span></div>' +
-                    '<div class="trust-item"><i data-lucide="users"></i><span>Community-driven: 2,000+ shared timelines</span></div>' +
-                    '<div class="trust-item"><i data-lucide="smartphone"></i><span>PWA: Install as app &bull; Works offline</span></div>' +
-                    '</div>' +
                     // New: Quick Actions
                     '<div class="quick-actions" role="region" aria-label="Quick Actions">' +
                     '<a class="quick-action" href="/?tab=suggest" data-tracker="suggest"><i data-lucide="bell"></i><span>Get Alerts</span></a>' +
@@ -9535,7 +9625,7 @@ async function renderLandingPage() {
                     '<a class="quick-action" href="/?tracker=1g" data-tracker="1g"><i data-lucide="calendar"></i><span>Check IRP Expiry</span></a>' +
                     '<a class="quick-action" href="#" id="pwa-install-btn"><i data-lucide="download"></i><span>Install as App</span></a>' +
                     '</div>' +
-                    '<div class="landing-foot">Data: Embassy of Ireland, New Delhi \u00b7 ISD \u00b7 DETE \u00b7 Updated daily ~11:15 IST \u00b7 Unofficial tracker, not affiliated with the Irish government.</div></div>';
+                    '<div class="landing-foot">Data: official decision reports from six Irish visa offices \u00b7 ISD \u00b7 DETE \u00b7 Updated when sources publish \u00b7 Unofficial tracker, not affiliated with the Irish government.</div></div>';
                 wireChrome();
                 var cards = root.querySelectorAll('.tracker-card');
                 for (var i = 0; i < cards.length; i++) {
@@ -9783,6 +9873,13 @@ async function renderLandingPage() {
         if (changed) tag.textContent = JSON.stringify(graph);
       });
   })();
+</script>
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function () {
+      navigator.serviceWorker.register('/sw.js').catch(function () {});
+    });
+  }
 </script>
 </body>
 </html>

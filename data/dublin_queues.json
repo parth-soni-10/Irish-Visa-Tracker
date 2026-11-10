@@ -1,0 +1,71 @@
+{
+  "as_of": "2026-11-10",
+  "source_url": "https://www.irishimmigration.ie/visa-decisions/",
+  "categories": [
+    {
+      "category": "Business",
+      "applications_received": "2026-08-27",
+      "appeals_received": "2026-04-10"
+    },
+    {
+      "category": "Employment",
+      "applications_received": "2026-09-09",
+      "appeals_received": "2026-02-01"
+    },
+    {
+      "category": "Join family (Sponsor is in Category B*)",
+      "applications_received": "2024-06-28",
+      "appeals_received": "2025-01-13"
+    },
+    {
+      "category": "Join family (Sponsor is an Irish citizen** or is in Category A*)",
+      "applications_received": "2024-07-04",
+      "appeals_received": "2025-06-18"
+    },
+    {
+      "category": "Family Member of EU/EEA/Swiss Citizen***",
+      "applications_received": "2026-05-18",
+      "appeals_received": "2026-07-15"
+    },
+    {
+      "category": "Study",
+      "applications_received": "2026-06-22",
+      "appeals_received": "2025-10-06"
+    },
+    {
+      "category": "Tourism or visit a family/friend",
+      "applications_received": "2025-10-07",
+      "appeals_received": "2025-09-17"
+    },
+    {
+      "category": "Family Member of UK National",
+      "applications_received": "2025-03-01",
+      "appeals_received": "2024-04-09"
+    },
+    {
+      "category": "Minister of Religion",
+      "applications_received": "2026-07-01",
+      "appeals_received": null
+    },
+    {
+      "category": "Volunteer",
+      "applications_received": "2026-07-07",
+      "appeals_received": "2026-03-27"
+    },
+    {
+      "category": "De Facto (unmarried) Partner of Irish National",
+      "applications_received": "2025-07-01",
+      "appeals_received": "2025-03-15"
+    },
+    {
+      "category": "De Facto (unmarried) Partner of CSEP/HA",
+      "applications_received": "2025-07-23",
+      "appeals_received": "2024-12-01"
+    },
+    {
+      "category": "Other",
+      "applications_received": "2026-03-24",
+      "appeals_received": "2026-01-05"
+    }
+  ]
+}

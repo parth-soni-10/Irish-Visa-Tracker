@@ -28,6 +28,10 @@
     <lastmod>2026-11-07</lastmod>
   </url>
   <url>
+    <loc>https://irishvisaupdatetracker.pages.dev/comparison</loc>
+    <lastmod>2026-11-10</lastmod>
+  </url>
+  <url>
     <loc>https://irishvisaupdatetracker.pages.dev/about</loc>
     <lastmod>2026-11-07</lastmod>
   </url>
@@ -39,4 +43,8 @@
     <loc>https://irishvisaupdatetracker.pages.dev/privacy</loc>
     <lastmod>2026-11-07</lastmod>
   </url>
+  <url><loc>https://irishvisaupdatetracker.pages.dev/terms</loc></url>
+  <url><loc>https://irishvisaupdatetracker.pages.dev/refund</loc></url>
+  <url><loc>https://irishvisaupdatetracker.pages.dev/monthly-report</loc></url>
+  <url><loc>https://irishvisaupdatetracker.pages.dev/employer</loc></url>
 </urlset>

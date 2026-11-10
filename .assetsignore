@@ -12,6 +12,8 @@
 .vscode/
 .idea/
 .env
+.dev.vars
+.dev.vars.*
 .assetsignore
 brag-output/
 CLAUDE.md

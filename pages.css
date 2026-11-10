@@ -190,6 +190,63 @@ a:focus-visible { outline: 2px solid var(--green); outline-offset: 3px; border-r
 .page .contact-list a { font-weight: 650; }
 .page .contact-list span { display: block; font-size: 13px; color: var(--ink-muted); }
 
+/* Comparison page: the table is the one place a trust page needs horizontal
+   scrolling on a phone, so keep the wrapper scrollable rather than shrinking
+   the text until the columns stop being readable. */
+.compare-table-wrap {
+  margin-top: 20px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow-x: auto;
+  background: var(--surface);
+}
+.compare-table {
+  width: 100%;
+  min-width: 780px;
+  border-collapse: collapse;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.compare-table caption {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+  color: var(--ink-muted);
+  font-size: 12px;
+  text-align: left;
+}
+.compare-table th,
+.compare-table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  vertical-align: top;
+}
+.compare-table thead th {
+  background: var(--raised);
+  color: var(--ink-muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.compare-table tbody th {
+  width: 20%;
+  color: var(--ink);
+  font-weight: 650;
+}
+.compare-table tbody tr:last-child th,
+.compare-table tbody tr:last-child td { border-bottom: 0; }
+.compare-table .is-us { background: #f0fdf4; }
+.compare-table .is-us strong { color: var(--green-deep); }
+.compare-table .yes { color: var(--green-deep); font-weight: 650; }
+.compare-table .note {
+  display: block;
+  margin-top: 3px;
+  color: var(--ink-muted);
+  font-size: 12px;
+  font-weight: 400;
+}
+
 .site-footer {
   max-width: 760px;
   margin: 0 auto;

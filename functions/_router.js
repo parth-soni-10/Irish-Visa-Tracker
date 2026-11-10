@@ -29,12 +29,17 @@ const PUSH_PATHS = new Set(["/api/push/subscribe", "/api/push/unsubscribe"]);
 const USER_PUSH_PATHS = new Set(["/api/user/push/subscribe", "/api/user/push/unsubscribe", "/api/user/push/key"]);
 const AUTH_PATHS = new Set(["/api/auth/register", "/api/auth/login", "/api/auth/logout", "/api/auth/me", "/api/auth/profile", "/api/auth/password", "/api/auth/delete", "/api/auth/verify", "/api/auth/password/reset", "/api/auth/password/reset/confirm"]);
 const ADMIN_PATHS = new Set(["/api/admin/health", "/api/admin/quality", "/api/admin/metrics", "/api/admin/errors", "/api/admin/trigger", "/api/admin/tokens"]);
-const USER_PATHS = new Set(["/api/user/profile", "/api/user/watchlist", "/api/user/alerts"]);
+const USER_PATHS = new Set(["/api/user/profile", "/api/user/watchlist", "/api/user/alerts", "/api/user/export"]);
 const USER_PREFIXES = ["/api/user/watchlist/"];
 const PREDICT_PATH = "/api/predict";
 const CHECKLIST_PATH = "/api/checklist";
 const VFS_APPOINTMENTS_PATH = "/api/vfs/appointments";
 const SEARCH_PATH = "/api/search";
+const REPORT_PATHS = new Set([
+  "/api/reports/monthly", "/api/reports/changes", "/api/digest/preview",
+  "/api/digest/subscribe", "/api/digest/verify", "/api/digest/unsubscribe", "/api/digest/send"
+]);
+const EMPLOYER_PREFIX = "/api/employer/";
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const MAX_BODY = 16 * 1024;
 
@@ -119,6 +124,7 @@ CREATE TABLE IF NOT EXISTS email_subscriptions (
   verified INTEGER NOT NULL DEFAULT 0,
   verification_token TEXT,
   verification_expires TEXT,
+  unsubscribe_token TEXT,
   unsubscribed INTEGER NOT NULL DEFAULT 0,
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   last_alert_sent TEXT
@@ -329,7 +335,7 @@ const json = (body, status = 200) =>
  *  assets layer does not resolve the clean URL itself. */
 async function fetchDocument(env, request, document) {
   let response = await env.ASSETS.fetch(request);
-  if (response.status === 404 && document.file) {
+  if ((response.status === 404 || (response.status >= 300 && response.status < 400)) && document.file) {
     const url = new URL(request.url);
     url.pathname = document.file;
     response = await env.ASSETS.fetch(new Request(url, request));
@@ -454,7 +460,7 @@ async function handleRequest(request, env, captureException) {
       USER_PREFIXES.some((prefix) => pathname.startsWith(prefix))) {
     const { handleMe, handleUpdateProfile: handleUserUpdateProfile,
             handleGetWatchlist, handleAddToWatchlist, handleRemoveFromWatchlist,
-            handleUpdateWatchlist, handleGetAlerts, handlePushSubscribe,
+            handleUpdateWatchlist, handleBulkAddToWatchlist, handleExportAccountData, handleGetAlerts, handlePushSubscribe,
             handlePushUnsubscribe, handlePushKey } = await import("./user-api.js");
 
     if (pathname === '/api/user/profile' && request.method === 'GET') {
@@ -465,6 +471,12 @@ async function handleRequest(request, env, captureException) {
     }
     if (pathname === '/api/user/watchlist' && request.method === 'GET') {
       return handleGetWatchlist(request, env);
+    }
+    if (pathname === '/api/user/watchlist/bulk' && request.method === 'POST') {
+      return handleBulkAddToWatchlist(request, env);
+    }
+    if (pathname === '/api/user/export' && request.method === 'GET') {
+      return handleExportAccountData(request, env);
     }
     if (pathname === '/api/user/watchlist' && request.method === 'POST') {
       return handleAddToWatchlist(request, env);
@@ -488,6 +500,16 @@ async function handleRequest(request, env, captureException) {
       return handlePushUnsubscribe(request, env);
     }
     return new Response("Method not allowed", { status: 405 });
+  }
+
+  if (REPORT_PATHS.has(pathname)) {
+    const { handleReports } = await import("./reports.js");
+    return handleReports(request, env);
+  }
+
+  if (pathname.startsWith(EMPLOYER_PREFIX)) {
+    const { handleEmployer } = await import("./employer.js");
+    return handleEmployer(request, env);
   }
 
   // Cron-friendly scraper trigger (shared secret, no admin auth required)
@@ -527,7 +549,10 @@ async function handleRequest(request, env, captureException) {
     });
   }
 
-  if (request.method === "POST") {
+  // API routes are handled explicitly above. Only the legacy HTML form posts
+  // should reach the generic form handler below; without this guard it also
+  // swallowed POST /api/subscribe with a 415 before the email routes ran.
+  if (request.method === "POST" && !pathname.startsWith("/api/")) {
     const contentType = request.headers.get("Content-Type") || "";
     if (!contentType.includes("application/x-www-form-urlencoded")) {
       return json({ error: "Unsupported content type" }, 415);
@@ -622,6 +647,20 @@ async function handleRequest(request, env, captureException) {
   // Static assets and SPA fallback
   const documents = [
     { path: "/", file: "index.html" },
+    { path: "/about", file: "about.html" },
+    { path: "/comparison", file: "comparison.html" },
+    { path: "/contact", file: "contact.html" },
+    { path: "/privacy", file: "privacy.html" },
+    { path: "/terms", file: "terms.html" },
+    { path: "/refund", file: "refund.html" },
+    { path: "/refunds", file: "refund.html" },
+    { path: "/admin", file: "admin.html" },
+    { path: "/daily-summaries", file: "daily-summaries.html" },
+    { path: "/stamp-1g-processing-dates", file: "stamp-1g-processing-dates.html" },
+    { path: "/employment-permit-processing-dates", file: "employment-permit-processing-dates.html" },
+    { path: "/visa-processing-times", file: "visa-processing-times.html" },
+    { path: "/monthly-report", file: "monthly-report.html" },
+    { path: "/employer", file: "employer.html" },
     { path: "/vac-transit", file: "vac-transit.html" },
   ];
 
@@ -647,6 +686,14 @@ async function handleRequest(request, env, captureException) {
   const document = documents.find((d) => d.path === pathname);
   if (document) {
     return fetchDocument(env, request, document);
+  }
+
+  // Static files other than the clean-URL documents above (CSS, JS, icons,
+  // fonts, images and manifests) also live in the assets binding. Without
+  // this fallback the catch-all function returns 404 for them.
+  const assetResponse = await env.ASSETS.fetch(request);
+  if (assetResponse.status !== 404) {
+    return addSecurityHeaders(assetResponse);
   }
 
   // Not found

@@ -1,0 +1,304 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Monthly Irish Visa Report &amp; Weekly Changes | Irish Visa Tracker</title>
+<meta name="description" content="Monthly Irish visa decision report from the public embassy files, plus a feed of what changed this week. Independent and unofficial.">
+<link rel="canonical" href="https://irishvisaupdatetracker.pages.dev/monthly-report">
+<style>
+  :root{--ink:#14231d;--muted:#5c7067;--line:#d9e4de;--paper:#f4f7f5;--card:#fff;--green:#067a57;--green-soft:#eaf4ef;--red:#b42318;--amber:#b54708;--blue:#175cd3}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.55 system-ui,-apple-system,"Segoe UI",sans-serif}
+  a{color:var(--green)}
+  .wrap{max-width:1080px;margin:0 auto;padding:0 20px}
+  header.site{background:#fff;border-bottom:1px solid var(--line)}
+  .nav{display:flex;align-items:center;justify-content:space-between;gap:18px;min-height:64px;flex-wrap:wrap}
+  .brand{font-weight:800;letter-spacing:-.02em;text-decoration:none;color:var(--ink)}
+  .nav-links{display:flex;gap:16px;flex-wrap:wrap;font-size:14px}
+  .nav-links a{text-decoration:none;color:var(--muted)}
+  .nav-links a[aria-current="page"]{color:var(--green);font-weight:700}
+  main{padding:36px 0 56px}
+  .kicker{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--green);font-weight:800;margin:0 0 8px}
+  h1{font-size:clamp(30px,4vw,48px);line-height:1.08;letter-spacing:-.035em;margin:0 0 12px}
+  .lede{font-size:17px;color:var(--muted);max-width:760px;margin:0 0 24px}
+  .controls{display:flex;gap:10px;align-items:end;flex-wrap:wrap;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px}
+  .control{display:flex;flex-direction:column;gap:6px;font-size:12px;font-weight:700;color:var(--muted)}
+  input,select,button{font:inherit}
+  input[type=month],input[type=email]{padding:10px 12px;border:1px solid var(--line);border-radius:9px;background:#fff;color:var(--ink);min-height:42px}
+  button,.button{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:10px 16px;border-radius:9px;border:1px solid transparent;background:var(--green);color:#fff;text-decoration:none;font-weight:700;cursor:pointer;min-height:42px}
+  button.secondary,.button.secondary{background:#fff;color:var(--ink);border-color:var(--line)}
+  button:disabled{opacity:.6;cursor:wait}
+  .status{font-size:13px;color:var(--muted);min-height:20px;margin-top:10px}
+  .cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:22px 0}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px}
+  .card .label{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:800}
+  .card .value{font-size:28px;font-weight:800;letter-spacing:-.03em;margin-top:6px}
+  .card .hint{font-size:12px;color:var(--muted);margin-top:4px}
+  .grid{display:grid;grid-template-columns:1.05fr .95fr;gap:18px;align-items:start}
+  section.panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:18px}
+  h2{font-size:20px;letter-spacing:-.02em;margin:0 0 12px}
+  h3{font-size:15px;margin:18px 0 8px}
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);padding:8px;border-bottom:1px solid var(--line)}
+  td{padding:10px 8px;border-bottom:1px solid #edf2ef}
+  td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+  tbody tr:last-child td{border-bottom:0}
+  .pill{display:inline-block;padding:2px 7px;border-radius:999px;font-size:11px;font-weight:800;border:1px solid transparent}
+  .pill.ok{background:#e7f6ee;color:#05603a;border-color:#b7e4c7}
+  .pill.notice{background:#eef4ff;color:#175cd3;border-color:#c7d7fe}
+  .pill.warning{background:#fff6e5;color:#b54708;border-color:#fedf89}
+  .pill.critical{background:#fff1f0;color:#b42318;border-color:#fecdca}
+  .pill.expired{background:#fef3f2;color:#912018;border-color:#fda29b}
+  .pill.missing{background:#f2f4f7;color:#475467;border-color:#d0d5dd}
+  .feed{list-style:none;padding:0;margin:0}
+  .feed li{padding:12px 0;border-bottom:1px solid #edf2ef}
+  .feed li:last-child{border-bottom:0}
+  .feed .meta{font-size:12px;color:var(--muted);margin-top:3px}
+  .empty{color:var(--muted);padding:14px 0}
+  .note{font-size:12px;color:var(--muted);line-height:1.5}
+  .subscribe{display:flex;gap:8px;flex-wrap:wrap;align-items:end}
+  .subscribe input{flex:1;min-width:220px}
+  .bars{display:flex;align-items:end;gap:4px;height:110px;padding:8px 0 0;overflow-x:auto}
+  .bar{min-width:8px;flex:1;background:#9fd3bd;border-radius:3px 3px 0 0;position:relative}
+  .bar span{position:absolute;left:0;right:0;bottom:-20px;text-align:center;font-size:9px;color:var(--muted);white-space:nowrap}
+  .bars-wrap{padding-bottom:22px;overflow:hidden}
+  footer.site{border-top:1px solid var(--line);background:#fff;padding:24px 0;color:var(--muted);font-size:13px}
+  footer.site a{color:var(--muted)}
+  @media(max-width:800px){.cards{grid-template-columns:repeat(2,minmax(0,1fr))}.grid{grid-template-columns:1fr}}
+  @media(max-width:480px){.cards{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header class="site">
+  <div class="wrap nav">
+    <a class="brand" href="/">Irish Visa Decision Tracker</a>
+    <nav class="nav-links" aria-label="Site">
+      <a href="/">Tracker</a>
+      <a href="/monthly-report" aria-current="page">Monthly report</a>
+      <a href="/employer">Employer compliance</a>
+      <a href="/visa-processing-times">Processing times</a>
+    </nav>
+  </div>
+</header>
+<main class="wrap">
+  <p class="kicker">Monthly report</p>
+  <h1>What the visa offices decided this month</h1>
+  <p class="lede">Dated decisions from the public files, the latest cumulative report from each visa office, and a feed of what changed this week. Every number is derived from the published lists; corrections are shown rather than hidden.</p>
+
+  <div class="controls">
+    <label class="control" for="report-month">Report month
+      <input id="report-month" type="month" aria-label="Report month">
+    </label>
+    <button id="load-month" type="button">View report</button>
+    <a class="button secondary" id="download-json" href="/api/reports/monthly" download>Download JSON</a>
+    <span class="status" id="report-status" role="status" aria-live="polite"></span>
+  </div>
+
+  <div class="cards" id="summary-cards" aria-live="polite"></div>
+
+  <div class="grid">
+    <section class="panel" aria-labelledby="office-heading">
+      <h2 id="office-heading">By visa office</h2>
+      <table>
+        <thead><tr><th>Office</th><th class="num">Dated</th><th class="num">Dated approval</th><th class="num">Latest report</th><th class="num">Report date</th></tr></thead>
+        <tbody id="office-rows"><tr><td colspan="5" class="empty">Loading the official files…</td></tr></tbody>
+      </table>
+      <p class="note" id="office-note"></p>
+    </section>
+
+    <section class="panel" aria-labelledby="changes-heading">
+      <h2 id="changes-heading">What changed this week</h2>
+      <div id="changes-body"><p class="empty">Loading this week's changes…</p></div>
+    </section>
+  </div>
+
+  <section class="panel" aria-labelledby="activity-heading">
+    <h2 id="activity-heading">Daily dated decisions</h2>
+    <p class="note" style="margin-top:-6px">New Delhi publishes decision-level dates. Other offices publish only the cumulative report shown above.</p>
+    <div class="bars-wrap"><div class="bars" id="bars" aria-hidden="true"></div></div>
+    <table>
+      <thead><tr><th>Date</th><th class="num">Decisions</th><th class="num">Approved</th><th class="num">Refused</th></tr></thead>
+      <tbody id="daily-rows"><tr><td colspan="4" class="empty">Loading…</td></tr></tbody>
+    </table>
+  </section>
+
+  <section class="panel" aria-labelledby="digest-heading">
+    <h2 id="digest-heading">Get the monthly report by email</h2>
+    <p class="note">One email a month with the report and the week's change summary. We use double opt-in: you must confirm the address before anything is sent. Unsubscribe from every email.</p>
+    <form class="subscribe" id="digest-form">
+      <label class="control" for="digest-email" style="flex:1">Email address
+        <input id="digest-email" type="email" name="email" required placeholder="you@example.com" autocomplete="email">
+      </label>
+      <button type="submit" id="digest-button">Subscribe</button>
+    </form>
+    <p class="status" id="digest-status" role="status" aria-live="polite"></p>
+  </section>
+
+  <p class="note">This is an independent, unofficial tracker. It is not affiliated with the Embassy of Ireland, the Immigration Service Delivery (ISD) or the Department of Enterprise, Tourism and Employment (DETE). A monthly total can change when an office republishes or corrects a list. For a decision on your own application, contact the office handling it.</p>
+</main>
+<footer class="site">
+  <div class="wrap">
+    <p>Irish Visa Decision Tracker &middot; <a href="/">Tracker</a> &middot; <a href="/monthly-report">Monthly report</a> &middot; <a href="/employer">Employer compliance</a> &middot; <a href="/visa-processing-times">Processing times</a> &middot; <a href="/about">About</a> &middot; <a href="/privacy">Privacy</a> &middot; <a href="/terms">Terms</a></p>
+  </div>
+</footer>
+<script>
+(function () {
+  var monthInput = document.getElementById('report-month');
+  var statusEl = document.getElementById('report-status');
+  var cardsEl = document.getElementById('summary-cards');
+  var officeRows = document.getElementById('office-rows');
+  var officeNote = document.getElementById('office-note');
+  var dailyRows = document.getElementById('daily-rows');
+  var barsEl = document.getElementById('bars');
+  var changesBody = document.getElementById('changes-body');
+  var downloadJson = document.getElementById('download-json');
+  var currentMonth = '';
+
+  function esc(value) {
+    return String(value == null ? '' : value).replace(/[&<>"']/g, function (ch) {
+      return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch];
+    });
+  }
+  function num(value) { return Number(value || 0).toLocaleString('en-IE'); }
+  function pct(value) { return Number(value || 0).toFixed(1) + '%'; }
+  function statusClass(key) { return ['expired', 'critical', 'warning', 'notice', 'ok', 'missing'].indexOf(key) >= 0 ? key : 'missing'; }
+
+  function showStatus(message, error) {
+    statusEl.textContent = message || '';
+    statusEl.style.color = error ? 'var(--red)' : 'var(--muted)';
+  }
+
+  function renderSummary(report) {
+    var c = report.change;
+    var sign = c.total > 0 ? '+' : '';
+    cardsEl.innerHTML =
+      '<div class="card"><div class="label">Dated decisions</div><div class="value">' + num(report.totals.total) + '</div><div class="hint">' + sign + num(c.total) + ' vs ' + esc(report.previous_month) + '</div></div>' +
+      '<div class="card"><div class="label">Approved</div><div class="value">' + num(report.totals.approved) + '</div><div class="hint">' + pct(report.totals.approval_rate) + ' approval rate</div></div>' +
+      '<div class="card"><div class="label">Refused</div><div class="value">' + num(report.totals.refused) + '</div><div class="hint">' + sign + num(c.refused) + ' vs previous month</div></div>' +
+      '<div class="card"><div class="label">Busiest day</div><div class="value" style="font-size:19px">' + (report.busiest_day ? esc(report.busiest_day.date) : 'No data') + '</div><div class="hint">' + (report.busiest_day ? num(report.busiest_day.total) + ' decisions' : '') + '</div></div>';
+  }
+
+  function renderOffices(report) {
+    if (!report.offices.length) {
+      officeRows.innerHTML = '<tr><td colspan="5" class="empty">No office data for this month.</td></tr>';
+      return;
+    }
+    officeRows.innerHTML = report.offices.map(function (office) {
+      var status = office.status === 'ocr_required' ? ' <span class="pill missing">OCR required</span>' : '';
+      return '<tr><td><strong>' + esc(office.name) + '</strong>' + status + '</td>' +
+        '<td class="num">' + num(office.total) + '</td><td class="num">' + pct(office.approval_rate) + '</td>' +
+        '<td class="num">' + num(office.reported_total) + '</td><td class="num">' + esc(office.report_date || '—') + '</td></tr>';
+    }).join('');
+    var asOf = report.offices.filter(function (o) { return o.report_date; }).map(function (o) { return o.name + ' ' + o.report_date; }).join('; ');
+    officeNote.textContent = 'Dated counts use decision dates (currently New Delhi only). Other offices publish a cumulative report, so "Latest report" is the size of that file, not a month count.' + (asOf ? ' Latest reports: ' + asOf + '.' : '');
+  }
+
+  function renderDaily(report) {
+    var daily = report.daily || [];
+    dailyRows.innerHTML = daily.length ? daily.slice().reverse().map(function (day) {
+      return '<tr><td>' + esc(day.date) + '</td><td class="num">' + num(day.total) + '</td><td class="num">' + num(day.approved) + '</td><td class="num">' + num(day.refused) + '</td></tr>';
+    }).join('') : '<tr><td colspan="4" class="empty">No decisions in this month.</td></tr>';
+    var max = daily.reduce(function (m, day) { return Math.max(m, day.total); }, 0) || 1;
+    barsEl.innerHTML = daily.slice(-31).map(function (day) {
+      var height = Math.max(4, Math.round((day.total / max) * 92));
+      return '<div class="bar" style="height:' + height + 'px" title="' + esc(day.date) + ': ' + day.total + '"><span>' + esc(day.date.slice(8)) + '</span></div>';
+    }).join('');
+  }
+
+  function renderReport(report) {
+    currentMonth = report.month;
+    monthInput.value = report.month;
+    document.getElementById('download-json').href = '/api/reports/monthly?month=' + encodeURIComponent(report.month);
+    renderSummary(report);
+    renderOffices(report);
+    renderDaily(report);
+    showStatus('Showing ' + report.label + '.');
+  }
+
+  async function loadReport(month) {
+    showStatus('Loading the official files…');
+    try {
+      var url = '/api/reports/monthly' + (month ? '?month=' + encodeURIComponent(month) : '');
+      var response = await fetch(url);
+      var data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Could not load the report');
+      renderReport(data.report);
+    } catch (error) {
+      showStatus(error.message, true);
+    }
+  }
+
+  function renderChanges(changes) {
+    var updates = (changes.office_updates || []).filter(function (o) { return o.report_date; });
+    var recent = (changes.recent || []).slice(0, 8);
+    changesBody.innerHTML =
+      '<p><strong>' + esc(changes.headline) + '</strong></p>' +
+      '<p class="note">Window: ' + esc(changes.window.start) + ' to ' + esc(changes.window.end) + '. Previous: ' + esc(changes.previous_window.start) + ' to ' + esc(changes.previous_window.end) + '.</p>' +
+      '<p class="note">The headline counts dated decisions only. Office reports below are cumulative snapshots, not day-by-day changes.</p>' +
+      (updates.length ? '<h3>Office reports</h3><ul class="feed">' + updates.map(function (o) {
+        return '<li><strong>' + esc(o.name) + '</strong> ' + (o.is_this_week ? '<span class="pill ok">updated this week</span>' : '<span class="pill notice">latest</span>') +
+          '<div class="meta">Report date ' + esc(o.report_date) + (o.added != null ? ' · ' + num(o.added) + ' rows added' : '') + (o.corrections ? ' · ' + num(o.corrections) + ' corrections' : '') + '</div></li>';
+      }).join('') + '</ul>' : '') +
+      (recent.length ? '<h3>Latest decisions</h3><ul class="feed">' + recent.map(function (d) {
+        return '<li><strong>' + esc(d.number) + '</strong> <span class="pill ' + (d.decision === 'Approved' ? 'ok' : 'critical') + '">' + esc(d.decision) + '</span><div class="meta">' + esc(d.office) + ' · ' + esc(d.date) + '</div></li>';
+      }).join('') + '</ul>' : '<p class="empty">No decisions were recorded in this window.</p>') +
+      (changes.corrections && changes.corrections.length ? '<h3>Corrections</h3><ul class="feed">' + changes.corrections.map(function (c) {
+        return '<li>' + esc(c.application_number || c.number || 'Corrected row') + '<div class="meta">' + esc(c.office) + ' · report ' + esc(c.report_date) + '</div></li>';
+      }).join('') + '</ul>' : '');
+  }
+
+  async function loadChanges() {
+    try {
+      var response = await fetch('/api/reports/changes?days=7');
+      var data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Could not load changes');
+      renderChanges(data.changes);
+    } catch (error) {
+      changesBody.innerHTML = '<p class="status" style="color:var(--red)">' + esc(error.message) + '</p>';
+    }
+  }
+
+  document.getElementById('load-month').addEventListener('click', function () {
+    if (monthInput.value) loadReport(monthInput.value);
+  });
+  monthInput.addEventListener('change', function () {
+    if (monthInput.value) loadReport(monthInput.value);
+  });
+  document.getElementById('digest-form').addEventListener('submit', async function (event) {
+    event.preventDefault();
+    var button = document.getElementById('digest-button');
+    var status = document.getElementById('digest-status');
+    var email = document.getElementById('digest-email').value.trim();
+    if (!email) return;
+    button.disabled = true;
+    status.textContent = 'Requesting confirmation…';
+    status.style.color = 'var(--muted)';
+    try {
+      var response = await fetch('/api/digest/subscribe', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email })
+      });
+      var data = await response.json().catch(function () { return {}; });
+      if (response.ok) {
+        status.textContent = data.message || 'Check your inbox to confirm the subscription.';
+        status.style.color = 'var(--green)';
+        document.getElementById('digest-email').value = '';
+      } else {
+        status.textContent = data.error || 'Could not subscribe.';
+        status.style.color = 'var(--red)';
+      }
+    } catch (error) {
+      status.textContent = 'Could not subscribe.';
+      status.style.color = 'var(--red)';
+    } finally { button.disabled = false; }
+  });
+
+  var params = new URLSearchParams(location.search);
+  var requested = params.get('month') || '';
+  loadReport(requested);
+  loadChanges();
+})();
+</script>
+</body>
+</html>

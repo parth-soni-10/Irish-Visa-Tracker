@@ -83,6 +83,8 @@ the decisions file and search it. The file is a few megabytes, so cache it local
   - the date reached in each published DETE permit category.
 - [Irish visa processing times](https://irishvisaupdatetracker.pages.dev/visa-processing-times)
   - what the published queues show, and what they cannot tell you.
+- [Compare Irish visa trackers](https://irishvisaupdatetracker.pages.dev/comparison) - a sourced
+  comparison with VisaRelay, Snifox/Visastat and the official sources, including where each fits.
 - [About](https://irishvisaupdatetracker.pages.dev/about) - what is tracked, sources, limits.
 - [Contact](https://irishvisaupdatetracker.pages.dev/contact) - corrections, bug reports, scope.
 - [Privacy](https://irishvisaupdatetracker.pages.dev/privacy) - browser storage and form data.

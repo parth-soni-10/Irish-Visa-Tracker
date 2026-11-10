@@ -12,3 +12,9 @@ perf/raw/
 # Deploy staging output, written by tools/deploy-pages.mjs. Build output; also
 # listed in .assetsignore, so it can never be uploaded even by hand.
 .pages-dist/
+
+# Local Wrangler secrets - never commit
+.dev.vars
+.dev.vars.*
+.env
+.env.*
