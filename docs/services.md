@@ -57,6 +57,11 @@ set and never returns provider details or credentials.
 arbitrary recipients, verify a sending domain in Resend and update `EMAIL_FROM`
 before relying on production mail.
 
+The production bridge was exercised on 2026-11-11: missing/wrong secrets
+returned 401, an invalid recipient returned 400, and a real message returned
+200 with a Resend message id. Pages binds secrets at deployment time, so after
+adding or changing one, redeploy the Functions bundle before testing.
+
 ## Schedulers
 
 Pages Functions do not support Cloudflare cron triggers. The GitHub Actions

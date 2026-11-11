@@ -28,6 +28,7 @@ still exist after the current tree and release checks.
 | OIDC credentials absent | SSO is disabled; password auth still works | Register an OIDC client and set the three variables |
 | GitHub Actions secret not yet set | Scheduled digest/exports/alerts skip safely | Add `SCRAPER_CRON_SECRET` to the repository |
 | Commit not pushed | Schedules and the repository deployment workflow are not live | Push the release commit after the local deploy is verified |
+| Resend key was exposed in an earlier terminal session | The key should be treated as compromised | Rotate it in Resend, update the Pages `RESEND_API_KEY` secret, and redeploy |
 | Abuja 31 Aug–6 Sep 2026 PDF unavailable | One historical week has no rows | Ingest only if the official PDF is recovered |
 
 ## Product decision

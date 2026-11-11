@@ -1,8 +1,7 @@
 # Irish Visa Tracker — Current Completion Record
 
-Updated 2026-11-11 (UTC). This is the working-tree record before the final commit
-and Pages deployment; any live deployment verification is appended after the
-deploy.
+Updated 2026-11-11 (UTC). Release commit `c8e8380` was verified locally and deployed
+to Cloudflare Pages production. This record includes the live post-deploy checks.
 
 ## Verified data
 
@@ -35,9 +34,29 @@ sources. No rows were inferred for that week.
 | Ankara verifier | **passed** |
 | Python suites | **98 passed, 6 subtests passed** |
 | Playwright Chromium suite | **14 passed** (120s timeout) |
-| Build | `npm run build` stages `.pages-dist` |
-| Pages deployment | pending release step |
-| Post-deploy smoke | pending release step |
+| Build | passed; 79 files staged (24 MB) |
+| Pages deployment | **Production** on `main`; latest `e66ebf83` |
+| Post-deploy smoke | **16/16 passed** |
+| Live archive comparison | **8/8 files byte-identical** |
+| Production email bridge | **HTTP 200** through Resend |
+
+## Live deployment
+
+- Production: <https://irishvisaupdatetracker.pages.dev>
+- Latest deployment: <https://e66ebf83.irishvisaupdatetracker.pages.dev>
+- Environment: Production, branch `main`
+- Deployment source: release commit `c8e8380`
+
+The live `data_manifest.json`, New Delhi tracker and all six office archives
+matched the committed files byte for byte. The email bridge was exercised with
+missing and wrong secrets (401), an invalid recipient (400), and a real Resend
+delivery (200). The post-deploy smoke check covered the homepage, comparison,
+status, workspace, SSO status, manifest, service worker, icon, search, monthly
+report, digest preview, auth and data manifest.
+
+Pages binds secrets at deployment time. Email secrets were added and the
+Functions bundle redeployed; an existing deployment does not automatically see
+a newly added secret.
 
 ## Shipped product surfaces
 
@@ -56,8 +75,9 @@ sources. No rows were inferred for that week.
 
 ## External services
 
-Configured: `APP_BASE_URL`, `SCRAPER_CRON_SECRET`, VAPID keys, existing
-`RESEND_API_KEY`, plus the new email bridge URL/secret and `EMAIL_FROM`.
+Configured: `APP_BASE_URL`, `SCRAPER_CRON_SECRET`, VAPID keys, `RESEND_API_KEY`,
+plus the email bridge URL/secret and `EMAIL_FROM`. The production email bridge
+was verified with a real delivery on 2026-11-11.
 
 Still blocked on account-specific values: **Sentry DSN/project**, **Twilio SMS
 and WhatsApp**, **OCR.space key**, and **OIDC provider/client credentials**. The
