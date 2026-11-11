@@ -1,6 +1,6 @@
 # Irish Visa Tracker — Current Completion Record
 
-Updated 2026-11-11 (UTC). Release commit `c8e8380` was verified locally and deployed
+Updated 2026-11-11 (UTC). Release commit `54a0598` was verified locally and deployed
 to Cloudflare Pages production. This record includes the live post-deploy checks.
 
 ## Verified data
@@ -33,19 +33,20 @@ sources. No rows were inferred for that week.
 | Embassy checksum verifier | **passed, 6 files / 65,773 decisions** |
 | Ankara verifier | **passed** |
 | Python suites | **98 passed, 6 subtests passed** |
-| Playwright Chromium suite | **14 passed** (120s timeout) |
-| Build | passed; 79 files staged (24 MB) |
-| Pages deployment | **Production** on `main`; latest `e66ebf83` |
+| Playwright Chromium suite | **19 passed** (11 + 8 clean-server runs; combined run hit a Windows worker crash) |
+| Build | passed; 78 files staged |
+| Pages deployment | **Production** on `main`; latest `712d1e8f` |
 | Post-deploy smoke | **16/16 passed** |
 | Live archive comparison | **8/8 files byte-identical** |
-| Production email bridge | **HTTP 200** through Resend |
+| Production email bridge | **HTTP 200** through Resend (verified in the prior release; path unchanged) |
 
 ## Live deployment
 
 - Production: <https://irishvisaupdatetracker.pages.dev>
-- Latest deployment: <https://e66ebf83.irishvisaupdatetracker.pages.dev>
+- Latest deployment: <https://712d1e8f.irishvisaupdatetracker.pages.dev>
 - Environment: Production, branch `main`
-- Deployment source: release commit `c8e8380`
+- Deployment source: release commit `54a0598`
+- Live archive counts: Abu Dhabi **2,386** rows (2,136 historical) and Abuja **2,229** rows (2,177 historical); the status page renders an archive total of **65,773**.
 
 The live `data_manifest.json`, New Delhi tracker and all six office archives
 matched the committed files byte for byte. The email bridge was exercised with
@@ -61,7 +62,9 @@ a newly added secret.
 ## Shipped product surfaces
 
 - Six-office official decision archives and the New Delhi daily tracker.
-- Account registration/login, private watchlists, sessions and profile settings.
+- Account registration/login, private multiple-application watchlists, sessions and profile settings.
+- Account-scoped saved searches, referral acceptance and one-credit reward accounting.
+- Account email verification and password reset were removed by product decision; subscriber alert verification remains.
 - In-app notification inbox and decision alert runner.
 - Browser push via VAPID.
 - Provider-neutral email with the new secret-protected Resend bridge.
