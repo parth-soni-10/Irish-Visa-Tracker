@@ -93,6 +93,35 @@
     </section>
 
     <section>
+      <h2>Dated archive history</h2>
+      <p class="small-note">
+        Every archived report date currently held for each office. Period-report offices list their
+        individual report dates; New Delhi, Beijing and Dublin show the latest published snapshot.
+      </p>
+      <div class="compare-table-wrap" role="region" aria-label="Archived report dates" tabindex="0">
+        <table class="compare-table">
+          <caption>Archived report dates in the current data manifest</caption>
+          <thead>
+            <tr>
+              <th scope="col">Office</th>
+              <th scope="col">Archived report date</th>
+              <th scope="col">Archived rows</th>
+              <th scope="col">Basis</th>
+            </tr>
+          </thead>
+          <tbody id="archive-history-rows">
+            <tr><td colspan="4" class="note2">Loading archived report dates&hellip;</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="small-note">
+        Rows are deduplicated by application number within each office, so a repeated application is
+        counted at its most recent report date. Period dates are report-period end dates, not the date
+        of an individual decision.
+      </p>
+    </section>
+
+    <section>
       <h2>What the data does and does not show</h2>
       <ul>
         <li><strong>Four offices have dated history.</strong> New Delhi, Abu Dhabi, Abuja and Ankara keep published decision rows across report dates, which is what powers the daily views and historical comparisons. Beijing and Dublin remain latest-report snapshots.</li>
@@ -238,10 +267,42 @@
               '<td>' + history + '</td>' +
             '</tr>';
           }).join('');
+
+          var periodicOffices = { 'abu-dhabi': true, abuja: true, ankara: true };
+          var historyRows = [];
+          offices.forEach(function (office) {
+            var reports = Array.isArray(office.archive_reports) ? office.archive_reports.slice() : [];
+            if (!reports.length && office.report_date) {
+              reports.push({
+                report_date: office.report_date,
+                decisions: Number(office.archive_decisions) || Number(office.decisions) || 0
+              });
+            }
+            reports.sort(function (a, b) {
+              return String(b.report_date || '').localeCompare(String(a.report_date || ''));
+            });
+            reports.forEach(function (report) {
+              historyRows.push({ office: office, report: report });
+            });
+          });
+          document.getElementById('archive-history-rows').innerHTML = historyRows.length
+            ? historyRows.map(function (entry) {
+                var office = entry.office;
+                var report = entry.report;
+                var basis = periodicOffices[office.slug] ? 'Period end' : 'Latest snapshot';
+                return '<tr>' +
+                  '<th scope="row">' + esc(office.name || office.slug) + '</th>' +
+                  '<td><time datetime="' + esc(String(report.report_date || '').slice(0, 10)) + '">' + esc(fmtDate(report.report_date)) + '</time></td>' +
+                  '<td>' + (Number(report.decisions) || 0).toLocaleString('en-IE') + '</td>' +
+                  '<td>' + basis + '</td>' +
+                '</tr>';
+              }).join('')
+            : '<tr><td colspan="4" class="note2">No archived report dates are recorded in the manifest.</td></tr>';
         })
         .catch(function (error) {
           document.getElementById('status-summary').innerHTML = '<p class="note2">The data manifest could not be loaded: ' + esc(error.message) + '. <a href="/data/data_manifest.json">Open the manifest directly</a>.</p>';
           document.getElementById('status-rows').innerHTML = '<tr><td colspan="6" class="note2">Office coverage is unavailable right now. The manifest link above remains authoritative.</td></tr>';
+          document.getElementById('archive-history-rows').innerHTML = '<tr><td colspan="4" class="note2">Archived report dates are unavailable right now.</td></tr>';
         });
     })();
   </script>

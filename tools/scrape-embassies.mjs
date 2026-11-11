@@ -458,6 +458,14 @@ async function ingestOffice(slug, config) {
   const fileRows = config.preserveHistory
     ? mergeDecisionHistory(previous.decisions || [], rows)
     : rows;
+  const archiveCounts = new Map();
+  for (const row of fileRows) {
+    if (!row || !row.date) continue;
+    archiveCounts.set(row.date, (archiveCounts.get(row.date) || 0) + 1);
+  }
+  const archiveReports = [...archiveCounts.entries()]
+    .sort(([a], [b]) => b.localeCompare(a))
+    .map(([report_date, decisions]) => ({ report_date, decisions }));
   const approved = rows.filter((r) => r.decision === 'Approved').length;
   const diff = diffDecisions(previous.decisions || [], fileRows);
   const officeChecksum = decisionChecksum(fileRows);
@@ -513,6 +521,7 @@ async function ingestOffice(slug, config) {
     decisions: rows.length,
     archive_decisions: fileRows.length,
     historical_decisions: Math.max(0, fileRows.length - rows.length),
+    archive_reports: archiveReports,
     approved,
     refused: rows.length - approved,
     corrections: diff.changed.length,

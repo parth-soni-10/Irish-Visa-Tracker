@@ -74,6 +74,17 @@ function writeJSON(file, value) {
   fs.writeFileSync(file, JSON.stringify(value, null, 2).replace(/\n/g, newline) + newline);
 }
 
+function archiveReports(rows) {
+  const counts = new Map();
+  for (const row of rows) {
+    if (!row || !row.date) continue;
+    counts.set(row.date, (counts.get(row.date) || 0) + 1);
+  }
+  return [...counts.entries()]
+    .sort(([a], [b]) => b.localeCompare(a))
+    .map(([report_date, decisions]) => ({ report_date, decisions }));
+}
+
 function periodEnd(text) {
   const matches = String(text).match(/(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{4})/g) || [];
   const dates = matches
@@ -199,6 +210,8 @@ export async function runBackfill(options = {}) {
   const warn = options.warn || console.warn;
   const reportIndex = readJSON(reportIndexFile);
   if (!reportIndex.offices) reportIndex.offices = {};
+  const manifestFile = options.manifestFile || path.join(dataDir, 'data_manifest.json');
+  const manifest = fs.existsSync(manifestFile) ? readJSON(manifestFile) : null;
   const results = [];
 
   for (const [slug, config] of Object.entries(offices)) {
@@ -244,6 +257,18 @@ export async function runBackfill(options = {}) {
     entries.sort((a, b) => String(b.report_date).localeCompare(String(a.report_date)));
     reportIndex.offices[slug] = entries.slice(0, 100);
 
+    if (manifest && Array.isArray(manifest.offices)) {
+      const summary = manifest.offices.find((officeSummary) => officeSummary.slug === slug);
+      if (summary) {
+        summary.archive_decisions = merged.length;
+        summary.historical_decisions = Math.max(
+          0,
+          merged.length - (Number(summary.decisions) || 0)
+        );
+        summary.archive_reports = archiveReports(merged);
+      }
+    }
+
     results.push({ slug, office: nextOffice, reportIndex: reportIndex.offices[slug] });
   }
 
@@ -264,6 +289,7 @@ export async function runBackfill(options = {}) {
     writeJSON(path.join(dataDir, `embassy-${result.slug}.json`), result.office);
   }
   writeJSON(reportIndexFile, reportIndex);
+  if (manifest) writeJSON(manifestFile, manifest);
   log('Backfill written.');
   return { dryRun, results };
 }

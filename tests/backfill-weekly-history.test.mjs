@@ -142,8 +142,20 @@ test('weekly PDF backfill is dry-run safe and keeps current/archive checksum bou
   };
   const officePath = path.join(dataDir, 'embassy-abu-dhabi.json');
   const indexPath = path.join(reportsDir, 'index.json');
+  const manifestPath = path.join(dataDir, 'data_manifest.json');
+  const manifest = {
+    offices: [
+      {
+        slug: 'abu-dhabi',
+        decisions: currentRows.length,
+        archive_decisions: currentRows.length + archivedRows.length,
+        historical_decisions: archivedRows.length
+      }
+    ]
+  };
   fs.writeFileSync(officePath, JSON.stringify(officeFile, null, 2) + '\n');
   fs.writeFileSync(indexPath, JSON.stringify(reportIndex, null, 2) + '\n');
+  fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + '\n');
 
   const pdfs = new Map([
     [report23Url, fixturePdf('16/10/2026', '23/10/2026', report23Entries.map(([number, decision]) => `${number} ${decision}`))],
@@ -177,12 +189,14 @@ test('weekly PDF backfill is dry-run safe and keeps current/archive checksum bou
 
   const beforeOffice = fs.readFileSync(officePath, 'utf8');
   const beforeIndex = fs.readFileSync(indexPath, 'utf8');
+  const beforeManifest = fs.readFileSync(manifestPath, 'utf8');
   const dryRun = await runBackfill({ ...options, dryRun: true });
 
   assert.equal(dryRun.dryRun, true);
   assert.equal(dryRun.results.length, 1);
   assert.equal(fs.readFileSync(officePath, 'utf8'), beforeOffice, 'dry run leaves office file unchanged');
   assert.equal(fs.readFileSync(indexPath, 'utf8'), beforeIndex, 'dry run leaves report index unchanged');
+  assert.equal(fs.readFileSync(manifestPath, 'utf8'), beforeManifest, 'dry run leaves manifest unchanged');
   assert.deepEqual(
     dryRun.results[0].office.decisions.map((row) => row.number).sort(),
     expectedRows.map((row) => row.number).sort()
@@ -202,6 +216,7 @@ test('weekly PDF backfill is dry-run safe and keeps current/archive checksum bou
   assert.equal(written.dryRun, false);
   const writtenOffice = JSON.parse(fs.readFileSync(officePath, 'utf8'));
   const writtenIndex = JSON.parse(fs.readFileSync(indexPath, 'utf8'));
+  const writtenManifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
   assert.equal(writtenOffice.report_date, '2026-11-06');
   assert.equal(writtenOffice.source_file, 'https://fixture.test/current.pdf');
   assert.equal(writtenOffice.decisions.length, expectedRows.length);
@@ -217,6 +232,16 @@ test('weekly PDF backfill is dry-run safe and keeps current/archive checksum bou
     decisionChecksum(report16Rows)
   );
   assert.deepEqual(verifyEmbassyChecksums([writtenOffice], writtenIndex), []);
+  assert.equal(writtenManifest.offices[0].archive_decisions, expectedRows.length);
+  assert.equal(writtenManifest.offices[0].historical_decisions, expectedRows.length - currentRows.length);
+  assert.deepEqual(
+    writtenManifest.offices[0].archive_reports.map((report) => report.report_date),
+    ['2026-11-06', '2026-10-30', '2026-10-23', '2026-10-16']
+  );
+  assert.equal(
+    writtenManifest.offices[0].archive_reports.reduce((sum, report) => sum + report.decisions, 0),
+    expectedRows.length
+  );
   assert.equal(
     writtenOffice.decisions.find((row) => row.number === '10000001').decision,
     'Approved',

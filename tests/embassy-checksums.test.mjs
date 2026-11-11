@@ -9,6 +9,7 @@ import { verifyEmbassyChecksums } from '../tools/verify-embassy-checksums.mjs';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const DATA = path.join(ROOT, 'data');
 const reportIndex = JSON.parse(fs.readFileSync(path.join(DATA, 'reports', 'index.json'), 'utf8'));
+const manifest = JSON.parse(fs.readFileSync(path.join(DATA, 'data_manifest.json'), 'utf8'));
 const offices = fs
   .readdirSync(DATA)
   .filter((file) => /^embassy-.*\.json$/.test(file))
@@ -66,6 +67,22 @@ test('the verifier rejects duplicate and empty report-index entries', () => {
     emptyErrors.some((error) => error.includes('invalid decisions 0')),
     emptyErrors.join('\n')
   );
+});
+
+test('manifest archive report dates reconcile to archived rows', () => {
+  for (const office of manifest.offices) {
+    assert.ok(Array.isArray(office.archive_reports), `${office.slug} archive_reports`);
+    assert.ok(office.archive_reports.length > 0, `${office.slug} archive report dates`);
+    const dates = new Set();
+    let total = 0;
+    for (const report of office.archive_reports) {
+      assert.match(report.report_date, /^\d{4}-\d{2}-\d{2}$/, `${office.slug} report date`);
+      assert.ok(!dates.has(report.report_date), `${office.slug} duplicate report date ${report.report_date}`);
+      dates.add(report.report_date);
+      total += Number(report.decisions) || 0;
+    }
+    assert.equal(total, Number(office.archive_decisions), `${office.slug} archived row total`);
+  }
 });
 
 test('office archives have unique application numbers and valid dated rows', () => {

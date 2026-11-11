@@ -18,7 +18,13 @@
       "corrections": 1,
       "added": 103,
       "archive_decisions": 42472,
-      "historical_decisions": 0
+      "historical_decisions": 0,
+      "archive_reports": [
+        {
+          "report_date": "2026-11-10",
+          "decisions": 42472
+        }
+      ]
     },
     {
       "slug": "beijing",
@@ -37,7 +43,13 @@
       "corrections": 0,
       "added": 13724,
       "archive_decisions": 13724,
-      "historical_decisions": 0
+      "historical_decisions": 0,
+      "archive_reports": [
+        {
+          "report_date": "2026-11-01",
+          "decisions": 13724
+        }
+      ]
     },
     {
       "slug": "abu-dhabi",
@@ -56,7 +68,45 @@
       "corrections": 0,
       "added": 250,
       "archive_decisions": 2386,
-      "historical_decisions": 2136
+      "historical_decisions": 2136,
+      "archive_reports": [
+        {
+          "report_date": "2026-11-06",
+          "decisions": 250
+        },
+        {
+          "report_date": "2026-10-30",
+          "decisions": 285
+        },
+        {
+          "report_date": "2026-10-23",
+          "decisions": 352
+        },
+        {
+          "report_date": "2026-10-16",
+          "decisions": 162
+        },
+        {
+          "report_date": "2026-10-09",
+          "decisions": 272
+        },
+        {
+          "report_date": "2026-10-02",
+          "decisions": 134
+        },
+        {
+          "report_date": "2026-09-25",
+          "decisions": 292
+        },
+        {
+          "report_date": "2026-09-18",
+          "decisions": 326
+        },
+        {
+          "report_date": "2026-09-11",
+          "decisions": 313
+        }
+      ]
     },
     {
       "slug": "abuja",
@@ -75,7 +125,113 @@
       "corrections": 0,
       "added": 52,
       "archive_decisions": 2229,
-      "historical_decisions": 2177
+      "historical_decisions": 2177,
+      "archive_reports": [
+        {
+          "report_date": "2026-10-18",
+          "decisions": 52
+        },
+        {
+          "report_date": "2026-10-11",
+          "decisions": 61
+        },
+        {
+          "report_date": "2026-10-04",
+          "decisions": 41
+        },
+        {
+          "report_date": "2026-09-27",
+          "decisions": 49
+        },
+        {
+          "report_date": "2026-09-20",
+          "decisions": 65
+        },
+        {
+          "report_date": "2026-09-13",
+          "decisions": 58
+        },
+        {
+          "report_date": "2026-08-30",
+          "decisions": 33
+        },
+        {
+          "report_date": "2026-08-23",
+          "decisions": 69
+        },
+        {
+          "report_date": "2026-08-16",
+          "decisions": 65
+        },
+        {
+          "report_date": "2026-08-09",
+          "decisions": 79
+        },
+        {
+          "report_date": "2026-08-02",
+          "decisions": 68
+        },
+        {
+          "report_date": "2026-07-26",
+          "decisions": 78
+        },
+        {
+          "report_date": "2026-07-19",
+          "decisions": 107
+        },
+        {
+          "report_date": "2026-06-07",
+          "decisions": 99
+        },
+        {
+          "report_date": "2026-05-31",
+          "decisions": 111
+        },
+        {
+          "report_date": "2026-05-10",
+          "decisions": 127
+        },
+        {
+          "report_date": "2026-05-03",
+          "decisions": 131
+        },
+        {
+          "report_date": "2026-04-26",
+          "decisions": 171
+        },
+        {
+          "report_date": "2026-04-19",
+          "decisions": 104
+        },
+        {
+          "report_date": "2026-04-05",
+          "decisions": 113
+        },
+        {
+          "report_date": "2026-03-29",
+          "decisions": 94
+        },
+        {
+          "report_date": "2026-03-22",
+          "decisions": 52
+        },
+        {
+          "report_date": "2026-02-01",
+          "decisions": 132
+        },
+        {
+          "report_date": "2026-01-25",
+          "decisions": 122
+        },
+        {
+          "report_date": "2026-01-18",
+          "decisions": 105
+        },
+        {
+          "report_date": "2026-01-04",
+          "decisions": 43
+        }
+      ]
     },
     {
       "slug": "ankara",
@@ -94,7 +250,25 @@
       "corrections": 0,
       "added": 172,
       "archive_decisions": 627,
-      "historical_decisions": 455
+      "historical_decisions": 455,
+      "archive_reports": [
+        {
+          "report_date": "2026-11-01",
+          "decisions": 172
+        },
+        {
+          "report_date": "2026-10-25",
+          "decisions": 147
+        },
+        {
+          "report_date": "2026-10-18",
+          "decisions": 141
+        },
+        {
+          "report_date": "2026-10-11",
+          "decisions": 167
+        }
+      ]
     },
     {
       "slug": "dublin",
@@ -113,7 +287,13 @@
       "corrections": 0,
       "added": 4335,
       "archive_decisions": 4335,
-      "historical_decisions": 0
+      "historical_decisions": 0,
+      "archive_reports": [
+        {
+          "report_date": "2026-11-10",
+          "decisions": 4335
+        }
+      ]
     }
   ],
   "dublin_queue": {
