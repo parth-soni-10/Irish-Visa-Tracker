@@ -164,6 +164,247 @@ test.describe('Watchlist API + UI', () => {
   });
 });
 
+test.describe('Removed account-email flows', () => {
+  test('does not expose reset or verification routes or UI', async ({ page, request }) => {
+    const reset = await request.get(`${BASE_URL}/reset-password`);
+    expect(reset.ok()).toBe(false);
+
+    const resetPost = await request.post(`${BASE_URL}/api/auth/password/reset`, {
+      data: { email: TEST_USER.email },
+    });
+    expect(resetPost.ok()).toBe(false);
+
+    const verify = await request.get(`${BASE_URL}/api/auth/verify?token=test`);
+    expect(verify.ok()).toBe(false);
+
+    await gotoHome(page);
+    await page.locator('.tracker-card').first().click();
+    await page.waitForTimeout(1000);
+    await page.locator('#account-btn').click();
+    await expect(page.locator('#account-form-signin')).toBeVisible();
+    await expect(page.locator('#account-form-signin')).not.toContainText('Forgot password?');
+  });
+});
+
+test.describe('Watchlists and saved searches', () => {
+  test('stores multiple applications per account and isolates accounts', async ({ request }) => {
+    const suffix = Date.now();
+    const firstEmail = `watch_a_${suffix}@example.com`;
+    const secondEmail = `watch_b_${suffix}@example.com`;
+    const password = 'TestPass1234!';
+
+    await request.post(`${BASE_URL}/api/auth/register`, {
+      data: { email: firstEmail, password, name: 'Watchlist A' },
+    });
+    const added = await request.post(`${BASE_URL}/api/user/watchlist`, {
+      data: { application_number: 'IRL2023981083', embassy_slug: 'new-delhi', nickname: 'First' },
+    });
+    expect(added.ok()).toBe(true);
+    await request.post(`${BASE_URL}/api/user/watchlist`, {
+      data: { application_number: 'IRL2023981084', embassy_slug: 'new-delhi', nickname: 'Second' },
+    });
+
+    const firstList = await request.get(`${BASE_URL}/api/user/watchlist`);
+    expect(firstList.ok()).toBe(true);
+    const firstJson = await firstList.json();
+    expect(firstJson.watchlist.length).toBeGreaterThanOrEqual(2);
+    const numbers = firstJson.watchlist.map((row) => row.application_number);
+    expect(numbers).toContain('IRL2023981083');
+    expect(numbers).toContain('IRL2023981084');
+
+    await request.post(`${BASE_URL}/api/auth/logout`);
+    await request.post(`${BASE_URL}/api/auth/register`, {
+      data: { email: secondEmail, password, name: 'Watchlist B' },
+    });
+    const secondList = await request.get(`${BASE_URL}/api/user/watchlist`);
+    expect(secondList.ok()).toBe(true);
+    const secondJson = await secondList.json();
+    expect(secondJson.watchlist.some((row) => numbers.includes(row.application_number))).toBe(false);
+
+    await request.post(`${BASE_URL}/api/auth/logout`);
+    await request.post(`${BASE_URL}/api/auth/login`, { data: { email: firstEmail, password } });
+    const owned = await request.get(`${BASE_URL}/api/user/watchlist`);
+    const ownedJson = await owned.json();
+    for (const row of ownedJson.watchlist.filter((item) => numbers.includes(item.application_number))) {
+      await request.delete(`${BASE_URL}/api/user/watchlist/${row.id}`);
+    }
+  });
+
+  test('supports filter pagination and saved-search isolation', async ({ request }) => {
+    const suffix = Date.now();
+    const firstEmail = `saved_a_${suffix}@example.com`;
+    const secondEmail = `saved_b_${suffix}@example.com`;
+    const password = 'TestPass1234!';
+
+    const search = await request.post(`${BASE_URL}/api/search`, {
+      data: { mode: 'filter', filters: { embassy: 'new-delhi' }, limit: 3, offset: 0, sort: 'number_asc' },
+    });
+    expect(search.ok()).toBe(true);
+    const searchJson = await search.json();
+    expect(searchJson.results.length).toBe(3);
+    expect(searchJson.pagination.total).toBeGreaterThan(3);
+    expect(searchJson.pagination.has_more).toBe(true);
+    const values = searchJson.results.map((row) => Number(String(row.number).replace(/\D/g, '')));
+    expect(values).toEqual([...values].sort((a, b) => a - b));
+
+    await request.post(`${BASE_URL}/api/auth/register`, {
+      data: { email: firstEmail, password, name: 'Saved A' },
+    });
+    const saved = await request.post(`${BASE_URL}/api/search`, {
+      data: { query: 'visa', mode: 'fuzzy', save_search: true, search_name: 'My saved search' },
+    });
+    expect(saved.ok()).toBe(true);
+    const savedJson = await saved.json();
+    expect(savedJson.saved_search_id).toBeTruthy();
+    const savedId = savedJson.saved_search_id;
+
+    const firstList = await request.get(`${BASE_URL}/api/search?action=list`);
+    expect(firstList.ok()).toBe(true);
+    const firstJson = await firstList.json();
+    expect(firstJson.searches.some((row) => row.id === savedId)).toBe(true);
+
+    await request.post(`${BASE_URL}/api/auth/logout`);
+    await request.post(`${BASE_URL}/api/auth/register`, {
+      data: { email: secondEmail, password, name: 'Saved B' },
+    });
+    const secondList = await request.get(`${BASE_URL}/api/search?action=list`);
+    const secondJson = await secondList.json();
+    expect(secondJson.searches.some((row) => row.id === savedId)).toBe(false);
+
+    await request.post(`${BASE_URL}/api/auth/logout`);
+    await request.post(`${BASE_URL}/api/auth/login`, { data: { email: firstEmail, password } });
+    const removed = await request.delete(`${BASE_URL}/api/search?id=${encodeURIComponent(savedId)}`);
+    expect(removed.ok()).toBe(true);
+  });
+});
+
+test.describe('Referral acceptance and reward', () => {
+  test('awards one credit when an invited account is created', async ({ request }) => {
+    const suffix = Date.now();
+    const inviterEmail = `ref_a_${suffix}@example.com`;
+    const invitedEmail = `ref_b_${suffix}@example.com`;
+    const password = 'TestPass1234!';
+
+    await request.post(`${BASE_URL}/api/auth/register`, {
+      data: { email: inviterEmail, password, name: 'Referral A' },
+    });
+    const referral = await request.get(`${BASE_URL}/api/portal/referrals`);
+    expect(referral.ok()).toBe(true);
+    const referralJson = await referral.json();
+    expect(referralJson.code).toBeTruthy();
+
+    await request.post(`${BASE_URL}/api/auth/logout`);
+    const invited = await request.post(`${BASE_URL}/api/auth/register`, {
+      data: { email: invitedEmail, password, name: 'Referral B', referral_code: referralJson.code },
+    });
+    expect(invited.ok()).toBe(true);
+
+    await request.post(`${BASE_URL}/api/auth/logout`);
+    await request.post(`${BASE_URL}/api/auth/login`, { data: { email: inviterEmail, password } });
+    const after = await request.get(`${BASE_URL}/api/portal/referrals`);
+    expect(after.ok()).toBe(true);
+    const afterJson = await after.json();
+    expect(afterJson.accepted).toBeGreaterThanOrEqual(1);
+    expect(afterJson.credits).toBeGreaterThanOrEqual(1);
+    expect(afterJson.rewards.length).toBeGreaterThanOrEqual(1);
+  });
+});
+
+test.describe('Community, organization, and exports', () => {
+  test('creates Q&A, reviews, success stories, organization membership, and an export schedule', async ({ request }) => {
+    const suffix = Date.now();
+    const ownerEmail = `community_a_${suffix}@example.com`;
+    const memberEmail = `community_b_${suffix}@example.com`;
+    const password = 'TestPass1234!';
+
+    await request.post(`${BASE_URL}/api/auth/register`, {
+      data: { email: ownerEmail, password, name: 'Community Owner' },
+    });
+
+    const question = await request.post(`${BASE_URL}/api/portal/community`, {
+      data: { kind: 'question', title: 'How long after approval?', body: 'How long should I expect before the passport comes back?', office: 'new-delhi', visa_type: 'study' },
+    });
+    expect(question.ok()).toBe(true);
+    const questionJson = await question.json();
+    expect(questionJson.id).toBeTruthy();
+
+    const review = await request.post(`${BASE_URL}/api/portal/community`, {
+      data: { kind: 'review', title: 'Helpful office experience', body: 'The staff explained the next steps clearly.', office: 'new-delhi', rating: 5 },
+    });
+    expect(review.ok()).toBe(true);
+
+    const success = await request.post(`${BASE_URL}/api/portal/community`, {
+      data: { kind: 'success', title: 'Approved after four weeks', body: 'My study visa was approved after four weeks.', office: 'new-delhi', outcome: 'Approved' },
+    });
+    expect(success.ok()).toBe(true);
+
+    const publicPosts = await request.get(`${BASE_URL}/api/portal/community?kind=question`);
+    expect(publicPosts.ok()).toBe(true);
+    const publicJson = await publicPosts.json();
+    expect(publicJson.posts.some((post) => post.id === questionJson.id)).toBe(true);
+
+    await request.post(`${BASE_URL}/api/auth/logout`);
+    await request.post(`${BASE_URL}/api/auth/register`, {
+      data: { email: memberEmail, password, name: 'Community Member' },
+    });
+    const answer = await request.post(`${BASE_URL}/api/portal/community/${questionJson.id}/answers`, {
+      data: { body: 'It usually arrives within two weeks after the decision.' },
+    });
+    expect(answer.ok()).toBe(true);
+    const answerJson = await answer.json();
+    expect(answerJson.id).toBeTruthy();
+
+    await request.post(`${BASE_URL}/api/auth/logout`);
+    await request.post(`${BASE_URL}/api/auth/login`, { data: { email: ownerEmail, password } });
+    const accepted = await request.post(`${BASE_URL}/api/portal/community/${questionJson.id}/answers/${answerJson.id}/accept`);
+    expect(accepted.ok()).toBe(true);
+    const post = await request.get(`${BASE_URL}/api/portal/community/${questionJson.id}`);
+    expect(post.ok()).toBe(true);
+    const postJson = await post.json();
+    expect(postJson.answers.some((row) => row.id === answerJson.id && row.accepted === true)).toBe(true);
+
+    const org = await request.post(`${BASE_URL}/api/portal/org`, {
+      data: { name: `E2E Organization ${suffix}`, brand_color: '#123456' },
+    });
+    expect(org.ok()).toBe(true);
+    const orgJson = await org.json();
+    expect(orgJson.org.slug).toBeTruthy();
+
+    const invite = await request.post(`${BASE_URL}/api/portal/org/invite`, { data: { email: memberEmail } });
+    expect(invite.ok()).toBe(true);
+    const inviteJson = await invite.json();
+    expect(inviteJson.invite_url).toBeTruthy();
+    const token = new URL(inviteJson.invite_url).searchParams.get('org_invite');
+    expect(token).toBeTruthy();
+
+    await request.post(`${BASE_URL}/api/auth/logout`);
+    await request.post(`${BASE_URL}/api/auth/login`, { data: { email: memberEmail, password } });
+    const joined = await request.post(`${BASE_URL}/api/portal/org/join`, { data: { token } });
+    expect(joined.ok()).toBe(true);
+
+    await request.post(`${BASE_URL}/api/auth/logout`);
+    await request.post(`${BASE_URL}/api/auth/login`, { data: { email: ownerEmail, password } });
+    const branded = await request.patch(`${BASE_URL}/api/portal/org`, { data: { brand_name: 'E2E Brand' } });
+    expect(branded.ok()).toBe(true);
+    const publicOrg = await request.get(`${BASE_URL}/api/portal/org/public?slug=${encodeURIComponent(orgJson.org.slug)}`);
+    expect(publicOrg.ok()).toBe(true);
+    const publicOrgJson = await publicOrg.json();
+    expect(publicOrgJson.org.brand_name).toBe('E2E Brand');
+
+    const scheduled = await request.post(`${BASE_URL}/api/portal/exports/schedules`, {
+      data: { format: 'csv', frequency: 'weekly', filters: { office: 'new-delhi' } },
+    });
+    expect(scheduled.ok()).toBe(true);
+    const scheduledJson = await scheduled.json();
+    expect(scheduledJson.id).toBeTruthy();
+    const schedules = await request.get(`${BASE_URL}/api/portal/exports/schedules`);
+    expect(schedules.ok()).toBe(true);
+    const schedulesJson = await schedules.json();
+    expect(schedulesJson.schedules.some((row) => row.id === scheduledJson.id)).toBe(true);
+    await request.delete(`${BASE_URL}/api/portal/exports/schedules?id=${encodeURIComponent(scheduledJson.id)}`);
+  });
+});
+
 test.describe('ML Predict API', () => {
   test('returns a prediction for a study visa application', async ({ request }) => {
     const res = await request.post(`${BASE_URL}/api/predict`, {

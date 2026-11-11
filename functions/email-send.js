@@ -80,28 +80,6 @@ export async function sendDecisionAlert(env, email, appNum, embassy, decision) {
   await sendEmail(env, { from: env.EMAIL_FROM, to: email, subject, html });
 }
 
-export async function sendAccountVerificationEmail(env, email, token) {
-  const verifyUrl = appBase(env) + '/api/auth/verify?token=' + encodeURIComponent(token);
-  await sendEmail(env, {
-    from: env.EMAIL_FROM,
-    to: email,
-    subject: 'Verify your Irish Visa Tracker account',
-    html: '<p>Confirm your email address to finish setting up your Irish Visa Tracker account.</p><p><a href="' + verifyUrl + '" style="background:#047857;color:white;padding:12px 24px;border-radius:6px;text-decoration:none;display:inline-block;">Verify email</a></p><p style="color:#666;font-size:12px;">This link expires in 24 hours.</p>',
-    text: 'Verify your Irish Visa Tracker account: ' + verifyUrl
-  });
-}
-
-export async function sendPasswordResetEmail(env, email, token) {
-  const resetUrl = appBase(env) + '/reset-password?token=' + encodeURIComponent(token);
-  await sendEmail(env, {
-    from: env.EMAIL_FROM,
-    to: email,
-    subject: 'Reset your Irish Visa Tracker password',
-    html: '<p>Use the link below to choose a new password. It expires in one hour.</p><p><a href="' + resetUrl + '" style="background:#047857;color:white;padding:12px 24px;border-radius:6px;text-decoration:none;display:inline-block;">Reset password</a></p><p style="color:#666;font-size:12px;">If you did not request this, ignore this email.</p>',
-    text: 'Reset your Irish Visa Tracker password: ' + resetUrl
-  });
-}
-
 export async function checkDecision(env, applicationNumber, embassy) {
   try {
     const response = await fetch('https://raw.githubusercontent.com/parth-soni-10/Irish-Visa-Tracker/main/data/embassy-' + embassy + '.json');

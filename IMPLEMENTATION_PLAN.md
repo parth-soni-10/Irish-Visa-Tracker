@@ -1,6 +1,6 @@
 # Implementation Plan: Features 1, 4, 5 + Detailed Plan for 6
 
-> **Status — 2026-11-11.** Features 1, 4 and 5 are implemented and verified in the current tree. Native mobile (section 6) is **deferred**: the installable PWA is the supported mobile product. The detailed section is retained as a future option, not current scope. See `COMPLETION_REPORT.md` and `GAP_ANALYSIS.md` for the live record.
+> **Status — 2026-11-11.** Features 1, 4 and 5 are implemented and verified in the current tree. Native mobile (section 6) is **deferred**: the installable PWA is the supported mobile product. The detailed section is retained as a future option, not current scope. Account email verification and password reset were also **removed by product decision**; references to them below are historical design context, not current routes. See `COMPLETION_REPORT.md` and `GAP_ANALYSIS.md` for the live record.
 
 ## 1. User Accounts + Saved Watchlists (Medium)
 
@@ -94,14 +94,8 @@ CREATE TABLE IF NOT EXISTS email_subscriptions (
   last_alert_sent TEXT
 );
 
--- Email verification tokens
-CREATE TABLE IF NOT EXISTS email_verifications (
-  token TEXT PRIMARY KEY,
-  email TEXT NOT NULL,
-  type TEXT NOT NULL, -- 'registration', 'subscription', 'password_reset'
-  expires_at TEXT NOT NULL,
-  created_at TEXT NOT NULL DEFAULT (datetime('now'))
-);
+-- Account email verification and password-reset tokens are not part of the
+-- current product. Subscriber alert verification remains in email_subscriptions.
 ```
 
 ### 1.2 Auth Module (`functions/auth.js`)
@@ -119,13 +113,8 @@ async function deleteSession(env, sessionId) { ... }
 async function createAPIToken(env, userId, name, scopes) { ... }
 async function validateAPIToken(env, token) { ... }
 
-// Password reset flow
-async function requestPasswordReset(env, email) { ... }
-async function resetPassword(env, token, newPassword) { ... }
-
-// Email verification
-async function sendVerificationEmail(env, email, type) { ... }
-async function verifyEmail(env, token) { ... }
+// Account email verification and password reset are intentionally not provided.
+// Subscriber alert verification remains in the email delivery flow.
 ```
 
 ### 1.3 User API Routes (`functions/user-api.js`)
@@ -137,8 +126,7 @@ async function verifyEmail(env, token) { ... }
 // PUT /api/auth/profile - Update profile (name, preferences)
 // PUT /api/auth/password - Change password
 // DELETE /api/auth/delete - Delete account
-// POST /api/auth/password/reset - Request password reset
-// POST /api/auth/password/reset/confirm - Confirm password reset
+// Account email verification and password reset routes are intentionally not provided.
 
 // Watchlist management
 // GET /api/user/watchlist - Get user's watchlist
@@ -616,8 +604,7 @@ export const authApi = {
   updateProfile: (data: Partial<User>) => api.put('/api/auth/profile', data),
   changePassword: (data: { current: string; new: string }) => api.put('/api/auth/password', data),
   deleteAccount: () => api.delete('/api/auth/delete'),
-  requestPasswordReset: (email: string) => api.post('/api/auth/password/reset', { email }),
-  resetPassword: (token: string, password: string) => api.post('/api/auth/password/reset/confirm', { token, password }),
+  // Account email verification and password reset are intentionally not provided.
 };
 ```
 

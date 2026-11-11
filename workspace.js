@@ -181,8 +181,7 @@
         return '<div class="workspace-stat"><span>' + esc(item[0]) + '</span><strong>' + count(item[1]) + '</strong></div>';
       }).join('') + '</div>' +
       '<section class="workspace-card"><h3>Account</h3>' +
-        '<div class="workspace-row"><div><strong>' + esc(user.email || '') + '</strong><p class="workspace-muted">' + (prefs.email_verified ? pill('Email verified', 'ok') : pill('Email not verified', 'off')) + '</p></div>' +
-        (prefs.email_verified ? '' : '<button class="btn secondary" type="button" data-action="resend-verification">Resend verification</button>') + '</div>' +
+        '<div class="workspace-row"><div><strong>' + esc(user.email || '') + '</strong><p class="workspace-muted">Account email</p></div></div>' +
         '<div class="workspace-actions" style="margin-top:10px;"><button class="btn" type="button" data-action="go" data-view="profile">Edit profile</button><a class="btn" href="/">Open tracker</a></div>' +
       '</section>' +
       '<section class="workspace-card"><h3>Alerts and delivery</h3><div class="workspace-inline">' +
@@ -220,9 +219,9 @@
           '<label class="workspace-check"><input type="checkbox" name="notify_push"' + (notify.push ? ' checked' : '') + '> Browser push decisions</label>' +
           '<label class="workspace-check"><input type="checkbox" name="notify_digest"' + (notify.digest ? ' checked' : '') + '> Include a periodic digest when available</label>' +
         '</fieldset>' +
-        '<div class="workspace-actions"><button class="btn primary" type="submit">Save profile</button><button class="btn" type="button" data-action="resend-verification">Resend verification</button></div>' +
+        '<div class="workspace-actions"><button class="btn primary" type="submit">Save profile</button></div>' +
         '<p class="form-status" data-form-status aria-live="polite"></p></form></section>' +
-      '<section class="workspace-card"><h3>Account security</h3><p class="workspace-muted">Sessions expire after 30 days. A password reset link is sent by email when delivery is configured.</p><div class="workspace-actions"><a class="btn" href="/reset-password">Reset password</a><button class="btn secondary" type="button" id="profile-signout">Sign out</button></div></section>';
+      '<section class="workspace-card"><h3>Account security</h3><p class="workspace-muted">Sessions expire after 30 days. Password changes require your current password.</p><div class="workspace-actions"><button class="btn secondary" type="button" id="profile-signout">Sign out</button></div></section>';
   }
 
   function renderNotifications() {
@@ -373,7 +372,7 @@
         (data && data.posts && data.posts.length ? data.posts.map(function (row) {
           return '<article class="workspace-post"><h4>' + esc(row.title) + '</h4><p>' + esc(row.body).slice(0, 220) + (row.body && row.body.length > 220 ? '…' : '') + '</p><div class="workspace-row"><span class="workspace-meta">' + esc(row.kind) + ' · ' + esc(row.author) + ' · ' + count(row.answer_count) + ' answer(s)</span><button class="workspace-link-button" type="button" data-action="open-post" data-id="' + esc(row.id) + '">Open discussion</button></div></article>';
         }).join('') : empty('No posts yet.')) + '</section>' +
-      '<section class="workspace-card"><h3>Referrals</h3>' + (state.referral ? '<p class="workspace-muted">Invite another applicant. You have credited <strong>' + count(state.referral.accepted) + '</strong> accepted referral(s).</p><code class="workspace-code">' + esc(state.referral.link) + '</code><div class="workspace-actions" style="margin-top:8px;"><button class="btn" type="button" data-action="copy-referral">Copy invite link</button></div><form class="workspace-form" data-action="referral-invite" style="margin-top:12px;"><div class="workspace-form-grid"><label>Invite email<input type="email" name="email" required placeholder="colleague@example.com"></label></div><button class="btn secondary" type="submit">Create email invite</button><p class="form-status" data-form-status aria-live="polite"></p></form>' : '<p class="workspace-muted">Sign in to get your referral link.</p>') + '</section>';
+      '<section class="workspace-card"><h3>Referrals</h3>' + (state.referral ? '<p class="workspace-muted">Invite another applicant. You have <strong>' + count(state.referral.accepted) + '</strong> accepted referral(s) and <strong>' + count(state.referral.credits || 0) + '</strong> referral credit(s).</p><code class="workspace-code">' + esc(state.referral.link) + '</code><div class="workspace-actions" style="margin-top:8px;"><button class="btn" type="button" data-action="copy-referral">Copy invite link</button></div><form class="workspace-form" data-action="referral-invite" style="margin-top:12px;"><div class="workspace-form-grid"><label>Invite email<input type="email" name="email" required placeholder="colleague@example.com"></label></div><button class="btn secondary" type="submit">Create email invite</button><p class="form-status" data-form-status aria-live="polite"></p></form>' : '<p class="workspace-muted">Sign in to get your referral link.</p>') + '</section>';
   }
 
   function renderOrganization() {
@@ -567,16 +566,6 @@
     }
     if (action === 'retry') {
       await setView(state.view);
-      return;
-    }
-    if (action === 'resend-verification') {
-      target.disabled = true;
-      try {
-        var result = await api('/api/portal/verify/resend', { method: 'POST' });
-        flash(result.message || 'Verification email sent.');
-      } catch (error) {
-        flash(error.message, 'error');
-      } finally { target.disabled = false; }
       return;
     }
     if (action === 'test-channel') {

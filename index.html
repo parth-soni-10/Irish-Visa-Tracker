@@ -3759,7 +3759,6 @@
           <p><label>Password <input type="password" name="password" required minlength="8"></label></p>
           <p class="note" id="account-remember"><label><input type="checkbox" name="remember"> Remember me for 30 days</label></p>
           <button class="btn" type="submit" id="account-signin-btn">Sign in</button>
-          <p class="note2" style="margin-top:8px;"><button type="button" class="link-btn" onclick="requestPasswordReset()">Forgot password?</button></p>
           <p class="note2" style="margin-top:8px;">No account? <button type="button" class="link-btn" onclick="showAccountTab('register')">Create one</button></p>
           <div class="note" id="account-signin-status" aria-live="polite"></div>
         </form>
@@ -4609,27 +4608,6 @@ document.addEventListener('click', function(e) {
             window.showAccountTab = showAccountTab;
             window.closeAccountModal = closeAccountModal;
 
-            async function requestPasswordReset() {
-                var emailInput = document.querySelector('#account-form-signin input[name="email"]');
-                var status = document.getElementById('account-signin-status');
-                var email = emailInput ? emailInput.value.trim() : '';
-                if (!email) { status.textContent = 'Enter your email first.'; return; }
-                status.style.color = '';
-                status.textContent = 'Sending reset link…';
-                try {
-                    var response = await fetch('/api/auth/password/reset', {
-                        method: 'POST', headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ email: email })
-                    });
-                    var data = await response.json();
-                    status.textContent = data.message || data.error || 'Check your email.';
-                    if (!response.ok) status.style.color = 'var(--red)';
-                } catch (error) {
-                    status.textContent = 'Network error.';
-                    status.style.color = 'var(--red)';
-                }
-            }
-
             async function sendPushTest() {
                 var status = document.getElementById('push-test-status');
                 var button = document.getElementById('push-test-btn');
@@ -4652,7 +4630,6 @@ document.addEventListener('click', function(e) {
             }
 
             window.sendPushTest = sendPushTest;
-            window.requestPasswordReset = requestPasswordReset;
 
             async function handleAccountForm(e) {
                 e.preventDefault();

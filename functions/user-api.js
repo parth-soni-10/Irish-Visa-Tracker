@@ -9,25 +9,22 @@ import {
   createSession, 
   validateSession, 
   deleteSession,
-  createVerificationToken,
-  verifyEmailToken,
-  createPasswordResetToken,
-  verifyPasswordResetToken,
   hashEmail
 } from './auth.js';
 
 import { ensureSchema } from './_router.js';
 import { ensurePortalSchema } from './portal-schema.js';
-import { isEmailConfigured, sendAccountVerificationEmail, sendPasswordResetEmail } from './email-send.js';
+import { ensureEmailSchema } from './email4.js';
 
 // Rate limiting for auth endpoints
 const authRateLimitStore = new Map();
 const AUTH_RATE_LIMIT_WINDOW = 15 * 60 * 1000; // 15 minutes
-const AUTH_RATE_LIMIT_MAX = 10; // 10 attempts per window
+const AUTH_RATE_LIMIT_MAX = 50; // bounded attempts per client IP per window
 
-function checkAuthRateLimit(ip) {
+function checkAuthRateLimit(ip, env) {
   const now = Date.now();
   const windowStart = now - 15 * 60 * 1000;
+  const max = Math.max(1, Number(env?.AUTH_RATE_LIMIT_MAX) || AUTH_RATE_LIMIT_MAX);
   
   if (!authRateLimitStore.has(ip)) {
     authRateLimitStore.set(ip, []);
@@ -36,7 +33,7 @@ function checkAuthRateLimit(ip) {
   const requests = authRateLimitStore.get(ip).filter(t => t > windowStart);
   authRateLimitStore.set(ip, requests);
   
-  if (requests.length >= 10) {
+  if (requests.length >= max) {
     return false;
   }
   
@@ -92,7 +89,7 @@ export async function handleRegister(request, env) {
   }
 
   const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
-  if (!checkAuthRateLimit(ip)) {
+  if (!checkAuthRateLimit(ip, env)) {
     return new Response(JSON.stringify({ error: 'Too many attempts, try again later' }), { 
       status: 429, 
       headers: { 'Content-Type': 'application/json', 'Retry-After': '900' } 
@@ -164,7 +161,6 @@ export async function handleRegister(request, env) {
       JSON.stringify({ 
         theme: 'light', 
         language: 'en', 
-        email_verified: false,
         notifications: { email: true, push: true },
         timezone: 'UTC'
       }),
@@ -180,37 +176,34 @@ export async function handleRegister(request, env) {
         const inviter = await env.DB.prepare('SELECT user_id FROM referral_codes WHERE code = ?')
           .bind(String(referral_code).slice(0, 80)).first();
         if (inviter && inviter.user_id !== userId) {
+          const code = String(referral_code).slice(0, 80);
           const invite = await env.DB.prepare(
             'SELECT id FROM referrals WHERE code = ? AND invited_email = ?'
-          ).bind(String(referral_code).slice(0, 80), email.toLowerCase()).first();
+          ).bind(code, email.toLowerCase()).first();
+          let referralId;
           if (invite) {
+            referralId = invite.id;
             await env.DB.prepare(`
               UPDATE referrals SET referred_user_id = ?, status = 'accepted', accepted_at = datetime('now')
               WHERE id = ?
             `).bind(userId, invite.id).run();
           } else {
+            referralId = crypto.randomUUID();
             await env.DB.prepare(`
               INSERT INTO referrals (id, user_id, code, referred_user_id, status, accepted_at)
               VALUES (?, ?, ?, ?, 'accepted', datetime('now'))
-            `).bind(crypto.randomUUID(), inviter.user_id, String(referral_code).slice(0, 80), userId).run();
+            `).bind(referralId, inviter.user_id, code, userId).run();
           }
+          // A successful signup with an invite code earns one tracked credit.
+          // The unique referral_id makes the award idempotent on retries.
+          await env.DB.prepare(`
+            INSERT OR IGNORE INTO referral_rewards (id, user_id, referral_id, credits, reason)
+            VALUES (?, ?, ?, 1, 'accepted_referral')
+          `).bind(crypto.randomUUID(), inviter.user_id, referralId).run();
         }
       } catch (referralError) {
         console.warn('Referral credit skipped:', referralError.message);
       }
-    }
-
-    // Send the account-verification link when mail is configured. A registration
-    // must still succeed if the mail provider is temporarily unavailable.
-    let verificationEmailSent = false;
-    try {
-      const verificationToken = await createVerificationToken(env, email.toLowerCase(), 'registration');
-      if (isEmailConfigured(env)) {
-        await sendAccountVerificationEmail(env, email.toLowerCase(), verificationToken);
-        verificationEmailSent = true;
-      }
-    } catch (verificationError) {
-      console.warn('Account verification email failed:', verificationError.message);
     }
 
     // Create initial session
@@ -225,8 +218,7 @@ export async function handleRegister(request, env) {
         id: userId, 
         email, 
         name: sanitizedName,
-        email_verification_sent: verificationEmailSent,
-        preferences: { theme: 'light', language: 'en', email_verified: false, notifications: { email: true, push: true } }
+        preferences: { theme: 'light', language: 'en', notifications: { email: true, push: true } }
       }
     }), { 
       status: 201, 
@@ -254,7 +246,7 @@ export async function handleLogin(request, env) {
   }
 
   const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
-  if (!checkAuthRateLimit(ip)) {
+  if (!checkAuthRateLimit(ip, env)) {
     return new Response(JSON.stringify({ error: 'Too many attempts, try again later' }), { 
       status: 429, 
       headers: { 'Content-Type': 'application/json', 'Retry-After': '900' } 
@@ -525,157 +517,12 @@ export async function handleDeleteAccount(request, env) {
   });
 }
 
-// Email verification
-export async function handleVerifyEmail(request, env) {
-  const url = new URL(request.url);
-  const token = url.searchParams.get('token');
-  if (!token) {
-    return new Response(JSON.stringify({ error: 'Missing token' }), { 
-      status: 400, 
-      headers: { 'Content-Type': 'application/json' } 
-    });
-  }
-
-  const result = await verifyEmailToken(env, token);
-  if (!result) {
-    return new Response(JSON.stringify({ error: 'Invalid or expired token' }), { 
-      status: 400, 
-      headers: { 'Content-Type': 'application/json' } 
-    });
-  }
-
-  // Mark email as verified in email_subscriptions
-  await env.DB.prepare(`
-    UPDATE email_subscriptions SET verified = 1, verification_token = NULL 
-    WHERE email = ?
-  `).bind(result.email).run();
-
-  // If this was a registration verification, mark user as verified
-  await env.DB.prepare(`
-    UPDATE users SET preferences = json_set(preferences, '$.email_verified', 1) 
-    WHERE email = ?
-  `).bind(result.email).run();
-
-  return new Response(JSON.stringify({ success: true, message: 'Email verified successfully' }), { 
-    status: 200, 
-    headers: { 'Content-Type': 'application/json' } 
-  });
-}
-
-// Password reset request
-export async function handlePasswordResetRequest(request, env) {
-  if (request.method !== 'POST') {
-    return new Response(JSON.stringify({ error: 'Method not allowed' }), { 
-      status: 405, headers: { 'Content-Type': 'application/json' } 
-    });
-  }
-
-  let body;
-  try {
-    body = await request.json();
-  } catch {
-    return new Response(JSON.stringify({ error: 'Invalid JSON' }), { 
-      status: 400, headers: { 'Content-Type': 'application/json' } 
-    });
-  }
-
-  const { email } = body;
-  if (!email || !validateEmail(email)) {
-    return new Response(JSON.stringify({ error: 'Valid email required' }), { 
-      status: 400, headers: { 'Content-Type': 'application/json' } 
-    });
-  }
-
-  const emailHash = await hashEmail(email.toLowerCase());
-  const user = await env.DB.prepare('SELECT id FROM users WHERE email_hash = ?')
-    .bind(emailHash).first();
-
-  // Always use the same response so this endpoint cannot be used to enumerate
-  // accounts. Only an existing account gets a token.
-  const generic = { success: true, message: 'If that email is registered, a reset link has been sent.' };
-  if (!user) {
-    return new Response(JSON.stringify(generic), { status: 200, headers: { 'Content-Type': 'application/json' } });
-  }
-  if (!isEmailConfigured(env)) {
-    return new Response(JSON.stringify({ error: 'Email delivery is not configured' }), {
-      status: 503, headers: { 'Content-Type': 'application/json' }
-    });
-  }
-
-  try {
-    const token = await createPasswordResetToken(env, email.toLowerCase());
-    await sendPasswordResetEmail(env, email.toLowerCase(), token);
-    // Development escape hatch only; never expose reset tokens in production.
-    if (env.ALLOW_DEV_RESET_TOKEN === '1') {
-      return new Response(JSON.stringify({ ...generic, reset_token: token, reset_url: `${new URL(request.url).origin}/reset-password?token=${token}` }), {
-        status: 200, headers: { 'Content-Type': 'application/json' }
-      });
-    }
-    return new Response(JSON.stringify(generic), { status: 200, headers: { 'Content-Type': 'application/json' } });
-  } catch (error) {
-    console.error('Password reset email failed:', error.message);
-    return new Response(JSON.stringify({ error: 'Could not send reset email' }), {
-      status: 502, headers: { 'Content-Type': 'application/json' }
-    });
-  }
-}
-
-// Password reset confirmation
-export async function handlePasswordResetConfirm(request, env) {
-  if (request.method !== 'POST') {
-    return new Response(JSON.stringify({ error: 'Method not allowed' }), { 
-      status: 405, headers: { 'Content-Type': 'application/json' } 
-    });
-  }
-
-  let body;
-  try {
-    body = await request.json();
-  } catch {
-    return new Response(JSON.stringify({ error: 'Invalid JSON' }), { 
-      status: 400, headers: { 'Content-Type': 'application/json' } 
-    });
-  }
-
-  const { token, password } = body;
-  
-  if (!token || !password) {
-    return new Response(JSON.stringify({ error: 'Token and new password required' }), { 
-      status: 400, headers: { 'Content-Type': 'application/json' } 
-    });
-  }
-
-  if (!validatePassword(password)) {
-    return new Response(JSON.stringify({ error: 'Password must be at least 8 characters with uppercase, lowercase, and number' }), { 
-      status: 400, headers: { 'Content-Type': 'application/json' } 
-    });
-  }
-
-  const result = await verifyPasswordResetToken(env, token);
-  if (!result) {
-    return new Response(JSON.stringify({ error: 'Invalid or expired token' }), { 
-      status: 400, headers: { 'Content-Type': 'application/json' } 
-    });
-  }
-
-  const newHash = await hashPassword(password);
-  await env.DB.prepare('UPDATE users SET password_hash = ?, updated_at = ? WHERE email = ?')
-    .bind(newHash, new Date().toISOString(), result.email).run();
-
-  // Invalidate all sessions
-  await env.DB.prepare('DELETE FROM user_sessions WHERE user_id = (SELECT id FROM users WHERE email = ?)')
-    .bind(result.email).run();
-
-  return new Response(JSON.stringify({ success: true, message: 'Password reset successful' }), { 
-    status: 200, headers: { 'Content-Type': 'application/json' } 
-  });
-}
-
 // Mirror a watchlist entry into the email-subscription table so the alert
 // pipeline can find it by address even if the user later signs out.
 async function upsertEmailAlert(env, session, applicationNumber, embassySlug) {
   if (!session || !session.email) return;
   try {
+    await ensureEmailSchema(env);
     const emailHash = await hashEmail(session.email.toLowerCase());
     const unsubscribeToken = crypto.randomUUID().replace(/-/g, '');
     await env.DB.prepare(`
@@ -1113,14 +960,6 @@ export async function handleGetAlerts(request, env) {
     alerts: results.results || [] 
   }), { headers: { 'Content-Type': 'application/json' } });
 }
-
-// Password reset tokens table schema (moved outside export to avoid wrangler parser issues with colon in "PRIMARY KEY")
-export const PASSWORD_RESET_SCHEMA = `CREATE TABLE IF NOT EXISTS password_reset_tokens (
-  token TEXT PRIMARY KEY,
-  email TEXT NOT NULL,
-  expires_at TEXT NOT NULL,
-  created_at TEXT NOT NULL DEFAULT (datetime('now'))
-);`;
 
 function tokenResponse(body, status = 200) {
   return new Response(JSON.stringify(body), {

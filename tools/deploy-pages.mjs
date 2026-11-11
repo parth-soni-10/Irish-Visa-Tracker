@@ -45,7 +45,6 @@ const assetsToCopy = [
   'admin.html',
   'workspace.html',
   'monthly-report.html',
-  'reset-password.html',
 
   'stamp-1g-processing-dates.html',
   'vac-transit.html',

@@ -96,6 +96,16 @@ CREATE TABLE IF NOT EXISTS referrals (
 CREATE INDEX IF NOT EXISTS idx_referrals_user ON referrals(user_id, created_at);
 CREATE INDEX IF NOT EXISTS idx_referrals_code ON referrals(code);
 
+CREATE TABLE IF NOT EXISTS referral_rewards (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  referral_id TEXT NOT NULL UNIQUE,
+  credits INTEGER NOT NULL DEFAULT 1,
+  reason TEXT NOT NULL DEFAULT 'accepted_referral',
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_referral_rewards_user ON referral_rewards(user_id, created_at);
+
 CREATE TABLE IF NOT EXISTS scheduled_exports (
   id TEXT PRIMARY KEY,
   user_id TEXT NOT NULL,

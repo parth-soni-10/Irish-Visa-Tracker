@@ -196,12 +196,11 @@ CREATE INDEX IF NOT EXISTS idx_email_pending ON email_subscriptions(verified, un
 
 CREATE TABLE IF NOT EXISTS saved_searches (
   id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
   name TEXT NOT NULL,
   params TEXT NOT NULL,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
-
-CREATE INDEX IF NOT EXISTS idx_saved_searches_name ON saved_searches(name);
 `;
 
 let schemaReady = false;

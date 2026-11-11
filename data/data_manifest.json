@@ -16,7 +16,9 @@
       "approved": 35852,
       "refused": 6620,
       "corrections": 1,
-      "added": 103
+      "added": 103,
+      "archive_decisions": 42472,
+      "historical_decisions": 0
     },
     {
       "slug": "beijing",
@@ -33,7 +35,9 @@
       "approved": 11373,
       "refused": 2351,
       "corrections": 0,
-      "added": 13724
+      "added": 13724,
+      "archive_decisions": 13724,
+      "historical_decisions": 0
     },
     {
       "slug": "abu-dhabi",
@@ -50,7 +54,9 @@
       "approved": 219,
       "refused": 31,
       "corrections": 0,
-      "added": 250
+      "added": 250,
+      "archive_decisions": 2386,
+      "historical_decisions": 2136
     },
     {
       "slug": "abuja",
@@ -67,7 +73,9 @@
       "approved": 19,
       "refused": 33,
       "corrections": 0,
-      "added": 52
+      "added": 52,
+      "archive_decisions": 2229,
+      "historical_decisions": 2177
     },
     {
       "slug": "ankara",
@@ -84,7 +92,9 @@
       "approved": 165,
       "refused": 7,
       "corrections": 0,
-      "added": 172
+      "added": 172,
+      "archive_decisions": 627,
+      "historical_decisions": 455
     },
     {
       "slug": "dublin",
@@ -101,7 +111,9 @@
       "approved": 2475,
       "refused": 1860,
       "corrections": 0,
-      "added": 4335
+      "added": 4335,
+      "archive_decisions": 4335,
+      "historical_decisions": 0
     }
   ],
   "dublin_queue": {

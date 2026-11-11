@@ -156,64 +156,6 @@ async function validateAPIToken(env, token) {
   return null;
 }
 
-// Email verification tokens
-async function createVerificationToken(env, email, type) {
-  const token = crypto.randomUUID();
-  const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
-  
-  await env.DB.prepare(`
-    INSERT INTO email_verifications (token, email, type, expires_at, created_at)
-    VALUES (?, ?, ?, ?, datetime('now'))
-  `).bind(token, email.toLowerCase(), type, expiresAt.toISOString()).run();
-  
-  return token;
-}
-
-async function verifyEmailToken(env, token) {
-  const record = await env.DB.prepare(`
-    SELECT * FROM email_verifications WHERE token = ? AND expires_at > datetime('now')
-  `).bind(token).first();
-  
-  if (!record) return null;
-  
-  await env.DB.prepare('DELETE FROM email_verifications WHERE token = ?').bind(token).run();
-  return { email: record.email, type: record.type };
-}
-
-// Password reset tokens
-async function createPasswordResetToken(env, email) {
-  const token = crypto.randomUUID();
-  const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
-  
-  await env.DB.prepare(`
-    INSERT INTO password_reset_tokens (token, email, expires_at, created_at)
-    VALUES (?, ?, ?, datetime('now'))
-  `).bind(token, email.toLowerCase(), expiresAt.toISOString()).run();
-  
-  return token;
-}
-
-async function verifyPasswordResetToken(env, token) {
-  const record = await env.DB.prepare(`
-    SELECT * FROM password_reset_tokens WHERE token = ? AND expires_at > datetime('now')
-  `).bind(token).first();
-  
-  if (!record) return null;
-  
-  await env.DB.prepare('DELETE FROM password_reset_tokens WHERE token = ?').bind(token).run();
-  return { email: record.email };
-}
-
-// Password reset tokens table (add to schema if not exists)
-const PASSWORD_RESET_SCHEMA = `
-CREATE TABLE IF NOT EXISTS password_reset_tokens (
-  token TEXT PRIMARY KEY,
-  email TEXT NOT NULL,
-  expires_at TEXT NOT NULL,
-  created_at TEXT NOT NULL DEFAULT (datetime('now'))
-);
-`;
-
 export {
   hashPassword,
   verifyPassword,
@@ -224,10 +166,5 @@ export {
   cleanupExpiredSessions,
   createAPIToken,
   validateAPIToken,
-  hashToken,
-  createVerificationToken,
-  verifyEmailToken,
-  createPasswordResetToken,
-  verifyPasswordResetToken,
-  PASSWORD_RESET_SCHEMA
+  hashToken
 };

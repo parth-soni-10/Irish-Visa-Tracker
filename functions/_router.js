@@ -35,7 +35,7 @@ const TIMELINE_FORMS = ["timelines-visa", "timelines-1g", "timelines"];
 const SUBSCRIBE_PATHS = new Set(["/api/subscribe", "/api/verify", "/api/unsubscribe"]);
 const PUSH_PATHS = new Set(["/api/push/subscribe", "/api/push/unsubscribe"]);
 const USER_PUSH_PATHS = new Set(["/api/user/push/subscribe", "/api/user/push/unsubscribe", "/api/user/push/key", "/api/user/push/test"]);
-const AUTH_PATHS = new Set(["/api/auth/register", "/api/auth/login", "/api/auth/logout", "/api/auth/me", "/api/auth/profile", "/api/auth/password", "/api/auth/delete", "/api/auth/verify", "/api/auth/password/reset", "/api/auth/password/reset/confirm"]);
+const AUTH_PATHS = new Set(["/api/auth/register", "/api/auth/login", "/api/auth/logout", "/api/auth/me", "/api/auth/profile", "/api/auth/password", "/api/auth/delete"]);
 const ADMIN_PATHS = new Set(["/api/admin/health", "/api/admin/quality", "/api/admin/metrics", "/api/admin/errors", "/api/admin/trigger", "/api/admin/tokens"]);
 const USER_PATHS = new Set(["/api/user/profile", "/api/user/watchlist", "/api/user/alerts", "/api/user/export", "/api/user/notifications", "/api/user/notifications/read"]);
 const USER_PREFIXES = ["/api/user/watchlist/"];
@@ -210,21 +210,6 @@ CREATE TABLE IF NOT EXISTS user_notifications (
 
 CREATE INDEX IF NOT EXISTS idx_user_notifications_user ON user_notifications(user_id, created_at);
 
-CREATE TABLE IF NOT EXISTS password_reset_tokens (
-  token TEXT PRIMARY KEY,
-  email TEXT NOT NULL,
-  expires_at TEXT NOT NULL,
-  created_at TEXT NOT NULL DEFAULT (datetime('now'))
-);
-
-CREATE TABLE IF NOT EXISTS email_verifications (
-  token TEXT PRIMARY KEY,
-  email TEXT NOT NULL,
-  type TEXT NOT NULL,
-  expires_at TEXT NOT NULL,
-  created_at TEXT NOT NULL DEFAULT (datetime('now'))
-);
-
 CREATE TABLE IF NOT EXISTS watchlists (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   user_id TEXT NOT NULL,
@@ -244,6 +229,7 @@ CREATE INDEX IF NOT EXISTS idx_watchlist_user ON watchlists(user_id);
 -- Saved searches for advanced search
 CREATE TABLE IF NOT EXISTS saved_searches (
   id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
   name TEXT NOT NULL,
   params TEXT NOT NULL, -- JSON
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
@@ -280,6 +266,18 @@ export async function ensureSchema(db) {
   } catch (error) {
     if (!error.message.includes("duplicate") && !error.message.includes("already exists")) throw error;
   }
+  // Saved searches created before account scoping were global. Leave those
+  // unowned rather than guessing which account they belonged to.
+  for (const statement of [
+    "ALTER TABLE saved_searches ADD COLUMN user_id TEXT",
+    "CREATE INDEX IF NOT EXISTS idx_saved_searches_user ON saved_searches(user_id, created_at)"
+  ]) {
+    try {
+      await db.prepare(statement).run();
+    } catch (error) {
+      if (!error.message.includes("duplicate") && !error.message.includes("already exists")) throw error;
+    }
+  }
   schemaReady = true;
 }
 
@@ -291,7 +289,7 @@ const REPO_RAW = "https://raw.githubusercontent.com/parth-soni/irish-visa-tracke
 // In-memory rate limit store (per-instance, not durable across restarts)
 const rateLimitStore = new Map();
 const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute
-const RATE_LIMIT_MAX = 60; // 60 requests per minute per IP
+const RATE_LIMIT_MAX = 300; // 300 API requests per minute per IP
 
 function getClientIp(request) {
   return request.headers.get("CF-Connecting-IP") || "unknown";
@@ -545,9 +543,8 @@ async function handleRequest(request, env, captureException) {
 
   // Auth routes (register, login, logout, me, profile, password, delete)
   if (AUTH_PATHS.has(pathname)) {
-    const { handleRegister, handleLogin, handleLogout, handleMe, 
-            handleUpdateProfile, handleChangePassword, handleDeleteAccount,
-            handleVerifyEmail, handlePasswordResetRequest, handlePasswordResetConfirm } = await import("./user-api.js");
+    const { handleRegister, handleLogin, handleLogout, handleMe,
+            handleUpdateProfile, handleChangePassword, handleDeleteAccount } = await import("./user-api.js");
     
     if (pathname === '/api/auth/register' && request.method === 'POST') {
       return handleRegister(request, env);
@@ -569,15 +566,6 @@ async function handleRequest(request, env, captureException) {
     }
     if (pathname === '/api/auth/delete' && request.method === 'DELETE') {
       return handleDeleteAccount(request, env);
-    }
-    if (pathname === '/api/auth/verify' && (request.method === 'GET' || request.method === 'HEAD')) {
-      return handleVerifyEmail(request, env);
-    }
-    if (pathname === '/api/auth/password/reset' && request.method === 'POST') {
-      return handlePasswordResetRequest(request, env);
-    }
-    if (pathname === '/api/auth/password/reset/confirm' && request.method === 'POST') {
-      return handlePasswordResetConfirm(request, env);
     }
     return new Response("Method not allowed", { status: 405 });
   }
@@ -851,7 +839,6 @@ async function handleRequest(request, env, captureException) {
     { path: "/visa-processing-times", file: "visa-processing-times.html" },
     { path: "/monthly-report", file: "monthly-report.html" },
     { path: "/status", file: "status.html" },
-    { path: "/reset-password", file: "reset-password.html" },
 
     { path: "/vac-transit", file: "vac-transit.html" },
   ];

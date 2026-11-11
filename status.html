@@ -76,11 +76,12 @@
               <th scope="col">Status</th>
               <th scope="col">Latest report</th>
               <th scope="col">Latest report rows</th>
+              <th scope="col">Archive rows</th>
               <th scope="col">History</th>
             </tr>
           </thead>
           <tbody id="status-rows">
-            <tr><td colspan="5" class="note2">Loading office coverage&hellip;</td></tr>
+            <tr><td colspan="6" class="note2">Loading office coverage&hellip;</td></tr>
           </tbody>
         </table>
       </div>
@@ -214,12 +215,14 @@
             return office.fetched_at && (!latest || office.fetched_at > latest) ? office.fetched_at : latest;
           }, null);
           var total = offices.reduce(function (sum, office) { return sum + (Number(office.decisions) || 0); }, 0);
+          var archiveTotal = offices.reduce(function (sum, office) { return sum + (Number(office.archive_decisions) || Number(office.decisions) || 0); }, 0);
 
           document.getElementById('status-summary').innerHTML =
             '<div class="status-card"><span class="status-kicker">Offices covered</span><strong>' + offices.length + '</strong><span>Named official sources</span></div>' +
             '<div class="status-card"><span class="status-kicker">Latest report</span><strong>' + esc(fmtDate(latestReport)) + '</strong><span>Most recent office report</span></div>' +
             '<div class="status-card"><span class="status-kicker">Last ingest</span><strong>' + esc(fmtStamp(latestFetch)) + '</strong><span>When the data was fetched</span></div>' +
-            '<div class="status-card"><span class="status-kicker">Latest report rows</span><strong>' + total.toLocaleString('en-IE') + '</strong><span>Across all offices</span></div>';
+            '<div class="status-card"><span class="status-kicker">Latest report rows</span><strong>' + total.toLocaleString('en-IE') + '</strong><span>Across all offices</span></div>' +
+            '<div class="status-card"><span class="status-kicker">Archive rows</span><strong>' + archiveTotal.toLocaleString('en-IE') + '</strong><span>All dated official history</span></div>';
 
           document.getElementById('status-rows').innerHTML = offices.map(function (office) {
             var label = office.status === 'official' ? 'Official' : esc(office.status || 'Published');
@@ -231,13 +234,14 @@
               '<td><span class="status-pill' + (thin ? ' is-thin' : '') + '">' + label + (thin ? ' &middot; small office' : '') + '</span></td>' +
               '<td>' + esc(fmtDate(office.report_date)) + '</td>' +
               '<td>' + (Number(office.decisions) || 0).toLocaleString('en-IE') + '</td>' +
+              '<td>' + (Number(office.archive_decisions) || Number(office.decisions) || 0).toLocaleString('en-IE') + '</td>' +
               '<td>' + history + '</td>' +
             '</tr>';
           }).join('');
         })
         .catch(function (error) {
           document.getElementById('status-summary').innerHTML = '<p class="note2">The data manifest could not be loaded: ' + esc(error.message) + '. <a href="/data/data_manifest.json">Open the manifest directly</a>.</p>';
-          document.getElementById('status-rows').innerHTML = '<tr><td colspan="5" class="note2">Office coverage is unavailable right now. The manifest link above remains authoritative.</td></tr>';
+          document.getElementById('status-rows').innerHTML = '<tr><td colspan="6" class="note2">Office coverage is unavailable right now. The manifest link above remains authoritative.</td></tr>';
         });
     })();
   </script>

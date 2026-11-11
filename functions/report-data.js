@@ -151,6 +151,8 @@ export async function loadReportData(env, request) {
         report_date: office.report_date || null,
         fetched_at: office.fetched_at || null,
         decisions: office.decisions || 0,
+        archive_decisions: office.archive_decisions || office.decisions || 0,
+        historical_decisions: office.historical_decisions || 0,
         reported_total: office.decisions || 0,
         reported_approved: office.approved || 0,
         reported_refused: office.refused || 0

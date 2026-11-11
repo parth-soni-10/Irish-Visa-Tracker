@@ -4,6 +4,8 @@
 **Total Violations:** 0
 **Total Incomplete (Manual Review):** 1
 
+> **Scope update (2026-11-11):** The unused reset-password page was removed. Its historical audit sections are no longer included.
+
 
 ## Home Page - desktop
 
@@ -72,26 +74,8 @@
 
 ---
 
-## Reset Password Page - desktop
-
-**Violations:** 0 | **Passes:** 19 | **Incomplete:** 0
 
 
----
-
-## Reset Password Page - tablet
-
-**Violations:** 0 | **Passes:** 19 | **Incomplete:** 0
-
-
----
-
-## Reset Password Page - mobile
-
-**Violations:** 0 | **Passes:** 19 | **Incomplete:** 0
-
-
----
 
 ## Workspace Page - desktop
 

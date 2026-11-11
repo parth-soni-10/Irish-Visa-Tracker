@@ -8,7 +8,6 @@
 
 import {
   createAPIToken,
-  createVerificationToken,
   validateAPIToken,
   validateSession
 } from './auth.js';
@@ -18,7 +17,7 @@ import { buildAnalytics } from './analytics.js';
 import { quoteFees, scanDocument } from './assistant.js';
 import { isChannelConfigured, sendChannelTest } from './notify-channels.js';
 import { buildExport, createExportJob, nextRunAt, safeFormat } from './export-service.js';
-import { isEmailConfigured, sendAccountVerificationEmail, sendEmail } from './email-send.js';
+import { isEmailConfigured, sendEmail } from './email-send.js';
 
 const DEFAULT_BASE = 'https://irishvisaupdatetracker.pages.dev';
 const MAX_BODY = 64 * 1024;
@@ -199,8 +198,7 @@ async function overview(request, env) {
       email: user.email,
       name: user.name,
       created_at: user.created_at,
-      preferences,
-      email_verified: Boolean(preferences.email_verified)
+      preferences
     },
     watchlists,
     channels,
@@ -277,20 +275,6 @@ async function profile(request, env) {
   params.push(new Date().toISOString(), user.id);
   await env.DB.prepare('UPDATE users SET ' + updates.join(', ') + ', updated_at = ? WHERE id = ?').bind(...params).run();
   return json({ success: true });
-}
-
-async function resendVerification(request, env) {
-  const auth = await requireUser(request, env);
-  if (!auth.user) return auth.response;
-  if (prefs(auth.user).email_verified) return json({ success: true, message: 'Email is already verified' });
-  if (!isEmailConfigured(env)) return json({ error: 'Email delivery is not configured' }, 503);
-  try {
-    const token = await createVerificationToken(env, auth.user.email, 'registration');
-    await sendAccountVerificationEmail(env, auth.user.email, token);
-    return json({ success: true, message: 'Verification email sent' });
-  } catch (error) {
-    return json({ error: String(error.message || 'Could not send verification email') }, 502);
-  }
 }
 
 async function channels(request, env) {
@@ -684,12 +668,17 @@ async function referrals(request, env) {
   await ensureProduct(env);
   const code = await createReferralCode(env, auth.user.id);
   if (request.method === 'GET') {
-    const rows = await safeRows(env, 'SELECT invited_email, status, created_at, accepted_at FROM referrals WHERE user_id = ? AND code = ? ORDER BY created_at DESC', [auth.user.id, code]);
+    const [rows, rewards] = await Promise.all([
+      safeRows(env, 'SELECT invited_email, status, created_at, accepted_at FROM referrals WHERE user_id = ? AND code = ? ORDER BY created_at DESC', [auth.user.id, code]),
+      safeRows(env, 'SELECT id, referral_id, credits, reason, created_at FROM referral_rewards WHERE user_id = ? ORDER BY created_at DESC', [auth.user.id])
+    ]);
     return json({
       code,
       link: baseUrl(env) + '/workspace?ref=' + encodeURIComponent(code),
       invited: rows,
-      accepted: rows.filter((row) => row.status === 'accepted').length
+      accepted: rows.filter((row) => row.status === 'accepted').length,
+      rewards,
+      credits: rewards.reduce((total, reward) => total + (Number(reward.credits) || 0), 0)
     });
   }
   if (request.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
@@ -823,7 +812,6 @@ export async function handlePortal(request, env) {
   try {
     if (url.pathname === '/api/portal/overview' && request.method === 'GET') return overview(request, env);
     if (url.pathname === '/api/portal/profile' && ['GET', 'PATCH', 'PUT'].includes(request.method)) return profile(request, env);
-    if (url.pathname === '/api/portal/verify/resend' && request.method === 'POST') return resendVerification(request, env);
     if (url.pathname === '/api/portal/channels' && ['GET', 'POST', 'DELETE'].includes(request.method)) return channels(request, env);
     if (url.pathname === '/api/portal/channels/test' && request.method === 'POST') return testChannel(request, env);
     if (url.pathname === '/api/portal/analytics' && request.method === 'GET') return analytics(request, env);

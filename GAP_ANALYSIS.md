@@ -6,13 +6,21 @@ still exist after the current tree and release checks.
 
 ## Closed gaps
 
-- Accounts, sessions, profile settings and password reset: implemented.
-- Saved watchlists, private exports and export tokens: implemented.
+- Accounts, sessions, password change and profile settings: implemented.
+  Account email verification and password reset were removed by product
+  decision; subscriber alert verification remains.
+- Saved watchlists, multiple applications, cross-device sync, private exports
+  and export tokens: implemented.
+- Account-scoped saved searches: implemented with owner-scoped list/get/delete.
 - In-app notifications, alert runner, browser push and Twilio channel code:
   implemented.
+- Referral acceptance and one-credit reward accounting: implemented.
 - Monthly report, email digest and double opt-in: implemented.
 - Scheduled export jobs and delivery endpoint: implemented.
-- Search, checklist, fee estimator, OCR scan and workspace: implemented.
+- Search, fuzzy/nearest filters, sorting, pagination, checklist, fee estimator,
+  OCR scan and workspace: implemented.
+- Archived and latest report row counts are exposed in the data manifest and
+  status page.
 - ML training artifacts and Worker tree-ensemble export: implemented and
   tracked.
 - Accessibility and agent-facing Markdown surfaces: implemented and tested.

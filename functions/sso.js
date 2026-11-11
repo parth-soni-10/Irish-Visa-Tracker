@@ -223,7 +223,6 @@ export async function handleSsoCallback(request, env) {
         JSON.stringify({
           theme: 'light',
           language: 'en',
-          email_verified: true,
           sso: true,
           notifications: { email: true, push: false }
         })

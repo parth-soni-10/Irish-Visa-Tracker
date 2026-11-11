@@ -511,6 +511,8 @@ async function ingestOffice(slug, config) {
     status,
     note,
     decisions: rows.length,
+    archive_decisions: fileRows.length,
+    historical_decisions: Math.max(0, fileRows.length - rows.length),
     approved,
     refused: rows.length - approved,
     corrections: diff.changed.length,
