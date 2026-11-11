@@ -38,6 +38,15 @@ check('comparison route serves', comparisonRoute.status === 200 && /comparison/i
 const comparisonFile = await get('/comparison.html');
 check('comparison asset serves', comparisonFile.status === 200 && /comparison/i.test(comparisonFile.text), 'HTTP ' + comparisonFile.status);
 
+const statusPage = await get('/status');
+check('data status page serves', statusPage.status === 200 && /Data status/i.test(statusPage.text), 'HTTP ' + statusPage.status);
+
+const workspace = await get('/workspace');
+check('workspace page serves', workspace.status === 200 && /workspace/i.test(workspace.text), 'HTTP ' + workspace.status);
+
+const ssoStatus = await get('/api/auth/sso/status');
+check('SSO status serves', ssoStatus.status === 200 && typeof ssoStatus.json.enabled === 'boolean', 'HTTP ' + ssoStatus.status);
+
 const manifest = await get('/manifest.json');
 check('manifest serves', manifest.status === 200 && manifest.json && Array.isArray(manifest.json.icons) && manifest.json.icons.length > 0, 'HTTP ' + manifest.status);
 

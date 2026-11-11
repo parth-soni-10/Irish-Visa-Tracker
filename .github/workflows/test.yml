@@ -33,15 +33,76 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Run agent-surface tests
-        # Content negotiation, Markdown documents, the 404 contract, and the
-        # metadata/structured data in index.html.
-        run: node --test tests/agent-docs.test.mjs
+      - name: Run agent-surface and product tests
+        # Content negotiation, Markdown documents, the 404 contract, metadata,
+        # analytics/fees/exports, auth tokens and notifications.
+        run: node --test tests/agent-docs.test.mjs tests/portal.test.mjs tests/export-tokens.test.mjs tests/email-tokens.test.mjs tests/notifications.test.mjs tests/predict.test.mjs tests/reports.test.mjs tests/channels.test.mjs tests/push.test.mjs tests/email-webhook.test.mjs tests/embassy-pdf-ingestion.test.mjs
 
-      - name: Run Ankara OCR parser tests
-        run: node --test tests/ankara-ocr.test.mjs
+      - name: Run Ankara ingestion and PDF history tests
+        run: node --test tests/ankara-ocr.test.mjs tests/ankara-checksum.test.mjs tests/decision-history.test.mjs
+
+      - name: Run weekly PDF backfill fixture tests
+        run: node --test tests/backfill-weekly-history.test.mjs
+
+      - name: Run email delivery tests
+        run: node --test tests/email-send.test.mjs
+
+      - name: Run embassy checksum tests
+        run: node --test tests/embassy-checksums.test.mjs
 
       - name: Syntax-check index.html inline scripts
         # The dashboard is one 4000-line single file; a stray brace or quote in
         # any inline block would only surface on the deployed site otherwise.
         run: python tools/check_html_scripts.py
+
+  accessibility:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Run axe accessibility gate
+        run: |
+          npx wrangler pages dev . --port 8794 > /tmp/wrangler-a11y.log 2>&1 &
+          server_pid=$!
+          trap 'kill $server_pid 2>/dev/null || true' EXIT
+          for i in $(seq 1 45); do
+            if curl -fsS http://127.0.0.1:8794/ > /dev/null; then
+              AUDIT_BASE_URL=http://127.0.0.1:8794 node accessibility-audit.js
+              exit $?
+            fi
+            sleep 2
+          done
+          cat /tmp/wrangler-a11y.log
+          exit 1
+
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Run Chromium E2E
+        run: npx playwright test --project=chromium --timeout=120000 --workers=1

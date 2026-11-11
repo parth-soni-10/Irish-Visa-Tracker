@@ -55,6 +55,9 @@ jobs:
       - name: Ingest official office decisions
         run: node tools/scrape-embassies.mjs
 
+      - name: Verify embassy checksums
+        run: node tools/verify-embassy-checksums.mjs
+
       - name: Verify Ankara OCR decisions
         run: node tools/verify-ankara.mjs
 

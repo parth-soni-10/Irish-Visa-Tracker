@@ -17,6 +17,7 @@ const OFFICE_FILES = [
 const CACHE_TTL = 5 * 60 * 1000;
 let decisionsCache = null;
 let cacheTimestamp = 0;
+const DATED_OFFICE_SLUGS = new Set(['abu-dhabi', 'abuja', 'ankara']);
 
 const FALLBACK_NAMES = {
   'new-delhi': 'New Delhi',
@@ -127,8 +128,8 @@ export async function loadReportData(env, request) {
         decision,
         office: slug,
         source: 'official',
-        dated: false,
-        report_date: reportDate,
+        dated: DATED_OFFICE_SLUGS.has(slug),
+        report_date: DATED_OFFICE_SLUGS.has(slug) ? date : reportDate,
         priority: slug === 'new-delhi' ? 0 : 1
       });
     }
@@ -311,7 +312,11 @@ export function buildWeeklyChanges(rows, endDate, officeList = [], reports = {},
     const entries = reports && reports.offices && Array.isArray(reports.offices[office.slug])
       ? reports.offices[office.slug]
       : [];
-    const latest = entries[entries.length - 1] || null;
+    const latest = entries
+      .filter((entry) => Number(entry.decisions) > 0)
+      .sort((a, b) => String(b.report_date || '').localeCompare(String(a.report_date || '')))[0]
+      || entries[0]
+      || null;
     return {
       slug: office.slug,
       name: office.name,

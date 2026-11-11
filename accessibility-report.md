@@ -1,35 +1,27 @@
 
 # Accessibility Audit Report (WCAG 2.1 AA)
-**Generated:** 2026-11-09T22:46:18.067Z
+**Generated:** 2026-11-11T11:31:33.096Z
 **Total Violations:** 0
-**Total Incomplete (Manual Review):** 3
+**Total Incomplete (Manual Review):** 1
 
 
 ## Home Page - desktop
 
-**Violations:** 0 | **Passes:** 45 | **Incomplete:** 1
-
-### ⚠️ Incomplete (1) - Manual Review Required
-
-- **color-contrast**: Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds
+**Violations:** 0 | **Passes:** 55 | **Incomplete:** 0
 
 
 ---
 
 ## Home Page - tablet
 
-**Violations:** 0 | **Passes:** 45 | **Incomplete:** 1
-
-### ⚠️ Incomplete (1) - Manual Review Required
-
-- **color-contrast**: Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds
+**Violations:** 0 | **Passes:** 55 | **Incomplete:** 0
 
 
 ---
 
 ## Home Page - mobile
 
-**Violations:** 0 | **Passes:** 46 | **Incomplete:** 1
+**Violations:** 0 | **Passes:** 56 | **Incomplete:** 1
 
 ### ⚠️ Incomplete (1) - Manual Review Required
 
@@ -40,21 +32,84 @@
 
 ## VAC/Transit Page - desktop
 
-**Violations:** 0 | **Passes:** 31 | **Incomplete:** 0
+**Violations:** 0 | **Passes:** 47 | **Incomplete:** 0
 
 
 ---
 
 ## VAC/Transit Page - tablet
 
-**Violations:** 0 | **Passes:** 31 | **Incomplete:** 0
+**Violations:** 0 | **Passes:** 47 | **Incomplete:** 0
 
 
 ---
 
 ## VAC/Transit Page - mobile
 
-**Violations:** 0 | **Passes:** 31 | **Incomplete:** 0
+**Violations:** 0 | **Passes:** 47 | **Incomplete:** 0
+
+
+---
+
+## Admin Page - desktop
+
+**Violations:** 0 | **Passes:** 43 | **Incomplete:** 0
+
+
+---
+
+## Admin Page - tablet
+
+**Violations:** 0 | **Passes:** 43 | **Incomplete:** 0
+
+
+---
+
+## Admin Page - mobile
+
+**Violations:** 0 | **Passes:** 43 | **Incomplete:** 0
+
+
+---
+
+## Reset Password Page - desktop
+
+**Violations:** 0 | **Passes:** 19 | **Incomplete:** 0
+
+
+---
+
+## Reset Password Page - tablet
+
+**Violations:** 0 | **Passes:** 19 | **Incomplete:** 0
+
+
+---
+
+## Reset Password Page - mobile
+
+**Violations:** 0 | **Passes:** 19 | **Incomplete:** 0
+
+
+---
+
+## Workspace Page - desktop
+
+**Violations:** 0 | **Passes:** 46 | **Incomplete:** 0
+
+
+---
+
+## Workspace Page - tablet
+
+**Violations:** 0 | **Passes:** 46 | **Incomplete:** 0
+
+
+---
+
+## Workspace Page - mobile
+
+**Violations:** 0 | **Passes:** 46 | **Incomplete:** 0
 
 
 
@@ -62,7 +117,7 @@
 
 ✅ **No violations found!**
 
-⚠️ **3 items need manual review**
+⚠️ **1 items need manual review**
 
 ## Next Steps
 

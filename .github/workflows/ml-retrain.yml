@@ -54,6 +54,11 @@ jobs:
         if: ${{ steps.check_data.outputs.force == 'true' }}
         run: |
           python train_model.py
+
+      - name: Regenerate the Worker tree ensemble
+        if: ${{ steps.check_data.outputs.force == 'true' }}
+        run: |
+          python export_trees.py
       
       - name: Check model performance
         if: ${{ steps.check_data.outputs.force == 'true' }}
@@ -74,7 +79,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add models/
+          git add models/ functions/api/model-trees.js
           git diff --staged --quiet || git commit -m "ML Model: retrain $(date -u +%F) - MAE: $(cat models/metrics.json | jq -r .mae) days"
           git push || echo "push failed - next scheduled run reconciles"
       

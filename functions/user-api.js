@@ -1,6 +1,6 @@
 /**
  * User API Routes
- * Handles registration, login, profile, preferences, watchlists, API tokens
+ * Handles registration, login, profile, preferences and watchlists
  */
 
 import { 
@@ -9,7 +9,6 @@ import {
   createSession, 
   validateSession, 
   deleteSession,
-  createAPIToken,
   createVerificationToken,
   verifyEmailToken,
   createPasswordResetToken,
@@ -18,6 +17,8 @@ import {
 } from './auth.js';
 
 import { ensureSchema } from './_router.js';
+import { ensurePortalSchema } from './portal-schema.js';
+import { isEmailConfigured, sendAccountVerificationEmail, sendPasswordResetEmail } from './email-send.js';
 
 // Rate limiting for auth endpoints
 const authRateLimitStore = new Map();
@@ -108,7 +109,7 @@ export async function handleRegister(request, env) {
     });
   }
 
-  const { email, password, name } = body;
+  const { email, password, name, referral_code } = body;
   
   if (!email || !password) {
     return new Response(JSON.stringify({ error: 'Email and password required' }), { 
@@ -154,7 +155,7 @@ export async function handleRegister(request, env) {
     await env.DB.prepare(`
       INSERT INTO users (id, email, email_hash, password_hash, name, preferences, created_at, updated_at)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    `).bind(
+    `    ).bind(
       userId,
       email.toLowerCase(),
       emailHash,
@@ -163,12 +164,54 @@ export async function handleRegister(request, env) {
       JSON.stringify({ 
         theme: 'light', 
         language: 'en', 
+        email_verified: false,
         notifications: { email: true, push: true },
         timezone: 'UTC'
       }),
       new Date().toISOString(),
       new Date().toISOString()
     ).run();
+
+    // Credit a referral only when the code belongs to another account. A bad
+    // code must never prevent the new account from being created.
+    if (referral_code) {
+      try {
+        await ensurePortalSchema(env);
+        const inviter = await env.DB.prepare('SELECT user_id FROM referral_codes WHERE code = ?')
+          .bind(String(referral_code).slice(0, 80)).first();
+        if (inviter && inviter.user_id !== userId) {
+          const invite = await env.DB.prepare(
+            'SELECT id FROM referrals WHERE code = ? AND invited_email = ?'
+          ).bind(String(referral_code).slice(0, 80), email.toLowerCase()).first();
+          if (invite) {
+            await env.DB.prepare(`
+              UPDATE referrals SET referred_user_id = ?, status = 'accepted', accepted_at = datetime('now')
+              WHERE id = ?
+            `).bind(userId, invite.id).run();
+          } else {
+            await env.DB.prepare(`
+              INSERT INTO referrals (id, user_id, code, referred_user_id, status, accepted_at)
+              VALUES (?, ?, ?, ?, 'accepted', datetime('now'))
+            `).bind(crypto.randomUUID(), inviter.user_id, String(referral_code).slice(0, 80), userId).run();
+          }
+        }
+      } catch (referralError) {
+        console.warn('Referral credit skipped:', referralError.message);
+      }
+    }
+
+    // Send the account-verification link when mail is configured. A registration
+    // must still succeed if the mail provider is temporarily unavailable.
+    let verificationEmailSent = false;
+    try {
+      const verificationToken = await createVerificationToken(env, email.toLowerCase(), 'registration');
+      if (isEmailConfigured(env)) {
+        await sendAccountVerificationEmail(env, email.toLowerCase(), verificationToken);
+        verificationEmailSent = true;
+      }
+    } catch (verificationError) {
+      console.warn('Account verification email failed:', verificationError.message);
+    }
 
     // Create initial session
     const sessionId = await createSession(env, userId);
@@ -182,7 +225,8 @@ export async function handleRegister(request, env) {
         id: userId, 
         email, 
         name: sanitizedName,
-        preferences: { theme: 'light', language: 'en', notifications: { email: true, push: true } }
+        email_verification_sent: verificationEmailSent,
+        preferences: { theme: 'light', language: 'en', email_verified: false, notifications: { email: true, push: true } }
       }
     }), { 
       status: 201, 
@@ -445,7 +489,7 @@ export async function handleChangePassword(request, env) {
 
   const newHash = await hashPassword(newPassword);
   await env.DB.prepare('UPDATE users SET password_hash = ?, updated_at = ? WHERE id = ?')
-    .bind(await hashPassword(newPassword), new Date().toISOString(), session.id).run();
+    .bind(newHash, new Date().toISOString(), session.id).run();
 
   // Invalidate all other sessions
   await env.DB.prepare('DELETE FROM user_sessions WHERE user_id = ? AND session_id != ?')
@@ -542,20 +586,38 @@ export async function handlePasswordResetRequest(request, env) {
     });
   }
 
-  const token = await createPasswordResetToken(env, email.toLowerCase());
-  
-  // In production, send email with reset link
-  // For now, return token in response (remove in production)
-  return new Response(JSON.stringify({ 
-    success: true, 
-    message: 'Password reset email sent',
-    // Remove in production:
-    reset_token: token,
-    reset_url: `${new URL(request.url).origin}/reset-password?token=${token}`
-  }), { 
-    status: 200, 
-    headers: { 'Content-Type': 'application/json' } 
-  });
+  const emailHash = await hashEmail(email.toLowerCase());
+  const user = await env.DB.prepare('SELECT id FROM users WHERE email_hash = ?')
+    .bind(emailHash).first();
+
+  // Always use the same response so this endpoint cannot be used to enumerate
+  // accounts. Only an existing account gets a token.
+  const generic = { success: true, message: 'If that email is registered, a reset link has been sent.' };
+  if (!user) {
+    return new Response(JSON.stringify(generic), { status: 200, headers: { 'Content-Type': 'application/json' } });
+  }
+  if (!isEmailConfigured(env)) {
+    return new Response(JSON.stringify({ error: 'Email delivery is not configured' }), {
+      status: 503, headers: { 'Content-Type': 'application/json' }
+    });
+  }
+
+  try {
+    const token = await createPasswordResetToken(env, email.toLowerCase());
+    await sendPasswordResetEmail(env, email.toLowerCase(), token);
+    // Development escape hatch only; never expose reset tokens in production.
+    if (env.ALLOW_DEV_RESET_TOKEN === '1') {
+      return new Response(JSON.stringify({ ...generic, reset_token: token, reset_url: `${new URL(request.url).origin}/reset-password?token=${token}` }), {
+        status: 200, headers: { 'Content-Type': 'application/json' }
+      });
+    }
+    return new Response(JSON.stringify(generic), { status: 200, headers: { 'Content-Type': 'application/json' } });
+  } catch (error) {
+    console.error('Password reset email failed:', error.message);
+    return new Response(JSON.stringify({ error: 'Could not send reset email' }), {
+      status: 502, headers: { 'Content-Type': 'application/json' }
+    });
+  }
 }
 
 // Password reset confirmation
@@ -598,7 +660,7 @@ export async function handlePasswordResetConfirm(request, env) {
 
   const newHash = await hashPassword(password);
   await env.DB.prepare('UPDATE users SET password_hash = ?, updated_at = ? WHERE email = ?')
-    .bind(await hashPassword(password), new Date().toISOString(), result.email).run();
+    .bind(newHash, new Date().toISOString(), result.email).run();
 
   // Invalidate all sessions
   await env.DB.prepare('DELETE FROM user_sessions WHERE user_id = (SELECT id FROM users WHERE email = ?)')
@@ -615,11 +677,12 @@ async function upsertEmailAlert(env, session, applicationNumber, embassySlug) {
   if (!session || !session.email) return;
   try {
     const emailHash = await hashEmail(session.email.toLowerCase());
+    const unsubscribeToken = crypto.randomUUID().replace(/-/g, '');
     await env.DB.prepare(`
       INSERT OR REPLACE INTO email_subscriptions
-        (user_id, email_hash, email, application_number, embassy, verified, unsubscribed)
-      VALUES (?, ?, ?, ?, ?, 1, 0)
-    `).bind(session.id, emailHash, session.email, applicationNumber, embassySlug).run();
+        (user_id, email_hash, email, application_number, embassy, verified, unsubscribed, unsubscribe_token)
+      VALUES (?, ?, ?, ?, ?, 1, 0, ?)
+    `).bind(session.id, emailHash, session.email, applicationNumber, embassySlug, unsubscribeToken).run();
   } catch (error) {
     console.warn('Email alert mirror failed:', error.message);
   }
@@ -649,7 +712,7 @@ export async function handleGetWatchlist(request, env) {
   }
 
   const results = await env.DB.prepare(`
-    SELECT id, application_number, embassy_slug, nickname, notify_email, notify_push, notify_whatsapp, created_at
+    SELECT id, application_number, embassy_slug, nickname, notify_email, notify_push, notify_whatsapp, notify_sms, created_at
     FROM watchlists WHERE user_id = ?
     ORDER BY created_at DESC
   `).bind(session.id).all();
@@ -678,7 +741,7 @@ export async function handleAddToWatchlist(request, env) {
     });
   }
 
-  const { application_number, embassy_slug, nickname, notify_email, notify_push, notify_whatsapp } = body;
+  const { application_number, embassy_slug, nickname, notify_email, notify_push, notify_whatsapp, notify_sms } = body;
   if (!application_number || !embassy_slug) {
     return new Response(JSON.stringify({ error: 'application_number and embassy_slug required' }), { 
       status: 400, headers: { 'Content-Type': 'application/json' } 
@@ -687,8 +750,8 @@ export async function handleAddToWatchlist(request, env) {
 
   try {
     const inserted = await env.DB.prepare(`
-      INSERT INTO watchlists (user_id, application_number, embassy_slug, nickname, notify_email, notify_push, notify_whatsapp)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO watchlists (user_id, application_number, embassy_slug, nickname, notify_email, notify_push, notify_whatsapp, notify_sms)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
       RETURNING id
     `).bind(
       session.id,
@@ -697,7 +760,8 @@ export async function handleAddToWatchlist(request, env) {
       nickname || null,
       notify_email !== false ? 1 : 0,
       notify_push !== false ? 1 : 0,
-      notify_whatsapp === true ? 1 : 0
+      notify_whatsapp === true ? 1 : 0,
+      notify_sms === true ? 1 : 0
     ).first();
 
     if (notify_email !== false) {
@@ -794,6 +858,14 @@ export async function handleUpdateWatchlist(request, env) {
     updates.push('notify_push = ?');
     params.push(body.notify_push ? 1 : 0);
   }
+  if (body.notify_whatsapp !== undefined) {
+    updates.push('notify_whatsapp = ?');
+    params.push(body.notify_whatsapp ? 1 : 0);
+  }
+  if (body.notify_sms !== undefined) {
+    updates.push('notify_sms = ?');
+    params.push(body.notify_sms ? 1 : 0);
+  }
   if (!updates.length) {
     return new Response(JSON.stringify({ error: 'No supported fields' }), {
       status: 400, headers: { 'Content-Type': 'application/json' }
@@ -854,6 +926,7 @@ export async function handleBulkAddToWatchlist(request, env) {
   const offices = new Set(['new-delhi', 'beijing', 'dublin', 'abu-dhabi', 'abuja', 'ankara']);
   const notifyEmail = body.notify_email !== false;
   const notifyPush = body.notify_push !== false;
+  const notifySms = body.notify_sms === true;
   let added = 0, skipped = 0;
   const rejected = [];
 
@@ -867,8 +940,8 @@ export async function handleBulkAddToWatchlist(request, env) {
     const nickname = entry && entry.nickname ? sanitizeInput(entry.nickname) : null;
     try {
       const result = await env.DB.prepare(
-        'INSERT OR IGNORE INTO watchlists (user_id, application_number, embassy_slug, nickname, notify_email, notify_push, notify_whatsapp) VALUES (?, ?, ?, ?, ?, ?, ?)'
-      ).bind(session.id, applicationNumber, embassy, nickname, notifyEmail ? 1 : 0, notifyPush ? 1 : 0, 0).run();
+        'INSERT OR IGNORE INTO watchlists (user_id, application_number, embassy_slug, nickname, notify_email, notify_push, notify_whatsapp, notify_sms) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+      ).bind(session.id, applicationNumber, embassy, nickname, notifyEmail ? 1 : 0, notifyPush ? 1 : 0, 0, notifySms ? 1 : 0).run();
       const changed = (result.meta && result.meta.changes) || result.changes || 0;
       if (changed) {
         added++;
@@ -915,7 +988,7 @@ export async function handleExportAccountData(request, env) {
       id: session.id, email: session.email, name: session.name || null,
       preferences: session.preferences || '{}', created_at: session.created_at || null
     },
-    watchlist: await safeAll('SELECT id, application_number, embassy_slug, nickname, notify_email, notify_push, notify_whatsapp, created_at FROM watchlists WHERE user_id = ? ORDER BY created_at DESC'),
+    watchlist: await safeAll('SELECT id, application_number, embassy_slug, nickname, notify_email, notify_push, notify_whatsapp, notify_sms, created_at FROM watchlists WHERE user_id = ? ORDER BY created_at DESC'),
     email_alerts: await safeAll('SELECT application_number, embassy, verified, unsubscribed, created_at, last_alert_sent FROM email_subscriptions WHERE user_id = ? ORDER BY created_at DESC')
   };
 
@@ -1007,6 +1080,20 @@ export async function handlePushKey(request, env) {
   });
 }
 
+export async function handlePushTest(request, env) {
+  const session = await validateSession(env, getSessionIdFromCookie(request));
+  if (!session) return tokenResponse({ error: 'Unauthorized' }, 401);
+  const { sendPushToUser } = await import('./push.js');
+  const result = await sendPushToUser(env, session.id, {
+    title: 'Irish Visa Tracker test',
+    body: 'Push notifications are connected for this account.',
+    url: '/?tab=watchlist'
+  });
+  if (result.disabled) return tokenResponse({ error: 'Push notifications are not configured', ...result }, 503);
+  if (!result.sent) return tokenResponse({ error: 'No active push subscription. Enable browser notifications on a watched application first.', ...result }, 409);
+  return tokenResponse({ success: true, ...result });
+}
+
 // Alerts handler (placeholder for email/push alerts)
 export async function handleGetAlerts(request, env) {
   const sessionId = getSessionIdFromCookie(request);
@@ -1034,3 +1121,10 @@ export const PASSWORD_RESET_SCHEMA = `CREATE TABLE IF NOT EXISTS password_reset_
   expires_at TEXT NOT NULL,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );`;
+
+function tokenResponse(body, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }
+  });
+}

@@ -9,6 +9,9 @@
 # Single-file app: inline scripts/styles are intrinsic, so lock down
 # everything else (objects, frames, base-uri, form-action). Data files
 # ship with the site itself, so connect-src is self-only.
+/employer
+  Cache-Control: no-store
+
 /*
   X-Frame-Options: DENY
   X-Content-Type-Options: nosniff

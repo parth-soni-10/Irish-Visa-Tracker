@@ -1,4 +1,5 @@
 import { sha256 } from './crypto.js';
+import { isEmailConfigured, sendEmail } from './email-send.js';
 import { json, ack, generateToken, invalidSubscription } from './email-utils.js';
 
 export const SUBSCRIBE_PATH = '/api/subscribe';
@@ -36,7 +37,7 @@ const EMAIL_COLUMNS = [
   ['last_alert_sent', 'TEXT']
 ];
 
-async function ensureEmailSchema(env) {
+export async function ensureEmailSchema(env) {
   await env.DB.prepare(EMAIL_SCHEMA).run();
   for (const [name, type] of EMAIL_COLUMNS) {
     try {
@@ -101,23 +102,18 @@ async function processSubscribe(env, fields) {
       .bind(email, emailHash, applicationNumber, embassy, verifyToken, verifyExpires, unsubscribeToken)
       .run();
 
-    if (!env.RESEND_API_KEY) {
+    if (!isEmailConfigured(env)) {
       return json({ error: 'Email delivery is not configured' }, 503);
     }
 
     const links = buildAlertLinks(env, verifyToken, unsubscribeToken);
-    const response = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: { 'Authorization': 'Bearer ' + env.RESEND_API_KEY, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        from: 'Irish Visa Tracker <alerts@irishvisaupdatetracker.pages.dev>',
-        to: [email],
-        subject: 'Verify your email for Irish Visa Tracker alerts (' + applicationNumber + ')',
-        html: '<p>You requested alerts for application <strong>' + applicationNumber + '</strong> at the <strong>' + embassy + '</strong> visa office.</p><p><a href="' + links.verify + '" style="background:#059669;color:white;padding:12px 24px;border-radius:6px;text-decoration:none;display:inline-block;">Verify Email &amp; Enable Alerts</a></p><p style="color:#666;font-size:12px;">This link expires in 24 hours. If you did not request this, ignore this email.</p><hr><p style="color:#999;font-size:11px;"><a href="' + links.unsubscribe + '">Unsubscribe</a></p>',
-        text: 'Verify your email for Irish Visa Tracker alerts (' + applicationNumber + '): ' + links.verify
-      })
+    await sendEmail(env, {
+      from: env.EMAIL_FROM,
+      to: email,
+      subject: 'Verify your email for Irish Visa Tracker alerts (' + applicationNumber + ')',
+      html: '<p>You requested alerts for application <strong>' + applicationNumber + '</strong> at the <strong>' + embassy + '</strong> visa office.</p><p><a href="' + links.verify + '" style="background:#059669;color:white;padding:12px 24px;border-radius:6px;text-decoration:none;display:inline-block;">Verify Email &amp; Enable Alerts</a></p><p style="color:#666;font-size:12px;">This link expires in 24 hours. If you did not request this, ignore this email.</p><hr><p style="color:#999;font-size:11px;"><a href="' + links.unsubscribe + '">Unsubscribe</a></p>',
+      text: 'Verify your email for Irish Visa Tracker alerts (' + applicationNumber + '): ' + links.verify
     });
-    if (!response.ok) throw new Error('Resend failed: ' + response.status);
     return json({ ok: true, message: 'Verification email sent' });
   } catch (e) {
     console.error('Subscribe failed:', e);

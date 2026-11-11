@@ -1,0 +1,43 @@
+name: Send Monthly Digest
+
+# Pages Functions cannot define cron triggers, so the existing secure digest
+# endpoint is driven by GitHub Actions. The endpoint is idempotent at the
+# subscription level through last_sent_at and requires SCRAPER_CRON_SECRET.
+on:
+  workflow_dispatch:
+    inputs:
+      month:
+        description: 'Report month (YYYY-MM); empty sends the previous month'
+        required: false
+        default: ''
+  schedule:
+    # First of the month at 09:00 UTC (14:30 IST), after the latest weekly data.
+    - cron: '0 9 1 * *'
+
+permissions:
+  contents: read
+
+jobs:
+  deliver:
+    name: Send the monthly report
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger digest delivery
+        env:
+          CRON_SECRET: ${{ secrets.SCRAPER_CRON_SECRET }}
+          APP_BASE_URL: ${{ vars.APP_BASE_URL || 'https://irishvisaupdatetracker.pages.dev' }}
+          INPUT_MONTH: ${{ github.event.inputs.month }}
+        run: |
+          if [ -z "$CRON_SECRET" ]; then
+            echo "::warning::SCRAPER_CRON_SECRET is not configured; skipping digest delivery."
+            exit 0
+          fi
+          MONTH="${INPUT_MONTH:-$(date -u -d "$(date -u +%Y-%m-01) -1 day" +%Y-%m)}"
+          echo "Sending digest for $MONTH"
+          curl --fail-with-body --silent --show-error \
+            --retry 3 --retry-delay 15 --max-time 120 \
+            -X POST \
+            -H "Content-Type: application/json" \
+            -H "X-Cron-Secret: $CRON_SECRET" \
+            -d "{\"month\":\"$MONTH\"}" \
+            "$APP_BASE_URL/api/digest/send"

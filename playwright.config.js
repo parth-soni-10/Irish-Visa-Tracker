@@ -2,9 +2,12 @@
  * Playwright Configuration for E2E Tests
  */
 
-const { defineConfig, devices } = require('@playwright/test');
+import { defineConfig, devices } from '@playwright/test';
 
-module.exports = defineConfig({
+const baseURL = process.env.E2E_BASE_URL || 'http://127.0.0.1:8788';
+const port = new URL(baseURL).port || '8788';
+
+export default defineConfig({
   testDir: '.',
   testMatch: 'e2e-tests.js',
   
@@ -29,7 +32,7 @@ module.exports = defineConfig({
   
   // Shared settings
   use: {
-    baseURL: 'http://127.0.0.1:8788',
+    baseURL,
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
@@ -65,8 +68,8 @@ module.exports = defineConfig({
   
   // Global setup - start dev server
   webServer: {
-    command: 'npx wrangler pages dev . --port 8788',
-    url: 'http://127.0.0.1:8788/',
+    command: `npx wrangler pages dev . --port ${port}`,
+    url: baseURL + '/',
     reuseExistingServer: !process.env.CI,
     timeout: 60000,
     stdout: 'pipe',

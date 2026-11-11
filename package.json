@@ -4,6 +4,8 @@
   "scripts": {
     "build": "node tools/deploy-pages.mjs",
     "smoke": "node tools/smoke-deploy.mjs",
+    "test:e2e": "playwright test --project=chromium",
+    "audit:a11y": "node accessibility-audit.js",
     "dev": "npx wrangler pages dev .",
     "deploy": "npm run build && npx wrangler pages deploy && npm run smoke"
   },

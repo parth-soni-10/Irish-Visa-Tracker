@@ -10,1209 +10,4394 @@
   "data_status": "official",
   "date_basis": "report_period_end",
   "note": "Scanned PDF extracted with poppler+tesseract.js at 300 DPI (5 pages).",
-  "checksum": "86a794d172ac05e3",
+  "checksum": "a39f8da055550c3a",
   "decisions": [
     {
-      "date": "2026-11-01",
-      "number": "74576782",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "81703362",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "81775942",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "82882292",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "83674562",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "83852812",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "84157522",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "85193142",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "85193892",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "85270492",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "85349472",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "85498102",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "85507292",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "85533832",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "85542422",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "85612462",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "85625802",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "85626762",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "85627052",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "85631482",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "85632192",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "85639052",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "85644132",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "85668682",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "85676732",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "85691102",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "85695452",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "85712882",
-      "decision": "Refused",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "85721502",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "85722792",
-      "decision": "Refused",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "85731692",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "85744712",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "85744742",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "85744822",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "85744882",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "85746782",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "85747002",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "85761062",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "85762732",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "85764652",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "85766102",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "85777832",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "85778512",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "85778862",
-      "decision": "Refused",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "85784882",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "85787612",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "85788192",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "85788732",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "85795832",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "85799222",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "85799492",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "85803912",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "85817152",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "85817202",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "85817282",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "85819712",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "85833782",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "85834212",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "85838122",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "85838352",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "85840752",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "85843072",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "85843462",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "85852972",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "85863082",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "85863432",
-      "decision": "Refused",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "85873952",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "85879442",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "85880462",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "85881182",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "85887192",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "85889242",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "85890302",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "85890632",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "85891752",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "85892562",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "85892592",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "85896762",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "85897002",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "85904272",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "85905522",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "85912312",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "85916622",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "85922782",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "85922982",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "85932142",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "85932282",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "85943512",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "85943642",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "85944052",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "85944982",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "85946092",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "85946302",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "85946832",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "85950102",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "85957392",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "85962562",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "85969642",
-      "decision": "Refused",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "85973002",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "85981172",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "85981262",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "85981332",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "85990612",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "85991392",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "85994252",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "85995492",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "85997452",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "86000592",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "86002632",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "86003642",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "86007782",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "86007962",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "86008952",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "86009112",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "86009972",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "86013142",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "86014132",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "86016472",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "86018212",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "86024162",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "86037562",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "86039242",
-      "decision": "Refused",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "86051722",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "86052992",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "86053072",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "86054182",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "86054522",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "86054802",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "86055012",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "86055342",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "86055452",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "86055792",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "86056092",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "86056642",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "86060972",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "86069662",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "86070482",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "86070882",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "86071252",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "86089152",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "86098082",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "86098392",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "86098602",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "86099532",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "86099972",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "86109772",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "86114022",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "86114412",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "86115112",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "86115242",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "86118422",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "86130932",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "86142902",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "86147172",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "86150292",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "86158212",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "86165722",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "86167522",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "86202822",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "86204452",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "86204882",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "86212182",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "86213342",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "86220212",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "86220752",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "86230452",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "86250422",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "86398522",
-      "decision": "Refused",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "86464752",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "86476552",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
-      "number": "86576582",
-      "decision": "Approved",
-      "embassy": "ankara",
-      "date_basis": "report_period_end"
-    },
-    {
-      "date": "2026-11-01",
       "number": "86576642",
       "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86576582",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86555792",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86555602",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86554922",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86515762",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86476552",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86464752",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86435812",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86432752",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86431832",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86429812",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86423522",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86423492",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86423382",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86423312",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86423212",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86422262",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86415492",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86398522",
+      "decision": "Refused",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86388092",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86387832",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86375932",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86374832",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86359002",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86358972",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86357542",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86356342",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86355432",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86347142",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86346592",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86340652",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86328842",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86328832",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86328192",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86326932",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86309542",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86307222",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86301172",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86300082",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86299452",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86284762",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86282502",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86282322",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86278052",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86274022",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86273842",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86265502",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86265222",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86264542",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86262772",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86262432",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86261972",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86260402",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86254602",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86254222",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86253462",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86250422",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86249372",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86249282",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86244052",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86243082",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86230452",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86230332",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86230312",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86229482",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86228982",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86228882",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86227912",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86226472",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86225412",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86220752",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86220212",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86213342",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86212182",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86205862",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86204882",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86204752",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86204452",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86202822",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86201722",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86201322",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86179232",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86178022",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86167522",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86166042",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86165722",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86164862",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86162462",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86160142",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86159092",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86158212",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86150292",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86147172",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86142902",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86138542",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86138102",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86130932",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86129222",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86119362",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86118422",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86117652",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86115242",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86115112",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86114592",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86114412",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86114022",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86109772",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86108722",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86102892",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86100892",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86099972",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86099532",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86098602",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86098592",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86098392",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86098142",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86098082",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86089152",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86088422",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86087262",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86086952",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86085772",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86085592",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86085132",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86082692",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86079452",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86079272",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86073362",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86071252",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86070882",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86070482",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86069662",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86065432",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86065312",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86064682",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86062872",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86062832",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86061992",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86061812",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86060972",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86056642",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86056322",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86056312",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86056102",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86056092",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86055792",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86055612",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86055452",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86055342",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86055012",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86054802",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86054522",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86054182",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86053072",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86052992",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86051722",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86047582",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86046532",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86039242",
+      "decision": "Refused",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86037562",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86036852",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86033452",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86032842",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86031452",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86025872",
+      "decision": "Refused",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86025252",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86024162",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86019552",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86018212",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86016472",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86014132",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86013142",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86012942",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86012702",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86012472",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86009972",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86009112",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86008952",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86007962",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86007782",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86003642",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86002632",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86001432",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "86000592",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85998772",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85998472",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85998432",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85997452",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85995492",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85994252",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85993252",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85991582",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85991392",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85991092",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85990942",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85990612",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85987162",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85986982",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85985112",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85984802",
+      "decision": "Refused",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85984482",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85981332",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85981262",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85981172",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85980792",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85974992",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85973002",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85969642",
+      "decision": "Refused",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85964212",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85964122",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85963442",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85962562",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85959512",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85958182",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85957392",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85950892",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85950102",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85946832",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85946302",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85946092",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85944982",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85944052",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85943642",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85943512",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85943342",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85941792",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85939152",
+      "decision": "Refused",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85934552",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85933562",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85933452",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85933162",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85932282",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85932142",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85931582",
+      "decision": "Refused",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85929222",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85928772",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85925922",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85925512",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85922982",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85922782",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85922562",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85920722",
+      "decision": "Refused",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85917152",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85916622",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85912312",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85912042",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85905522",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85904272",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85897002",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85896762",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85892592",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85892562",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85892462",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85891752",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85891012",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85890632",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85890302",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85889242",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85887192",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85882282",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85881392",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85881182",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85880462",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85879442",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85878192",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85874712",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85873952",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85873322",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85870692",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85869752",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85869562",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85864612",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85863432",
+      "decision": "Refused",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85863082",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85859972",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85858912",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85853722",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85852972",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85843462",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85843072",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85841672",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85840752",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85838702",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85838352",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85838122",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85837502",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85837292",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85835962",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85835242",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85835172",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85834212",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85834202",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85834142",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85833782",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85829062",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85828692",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85828492",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85828292",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85827812",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85827292",
+      "decision": "Refused",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85826122",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85825472",
+      "decision": "Refused",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85824452",
+      "decision": "Refused",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85820422",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85820362",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85819712",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85819012",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85817282",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85817202",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85817152",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85816332",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85816282",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85815692",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85811792",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85807372",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85805832",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85803912",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85803712",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85799492",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85799222",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85798522",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85795832",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85792312",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85792292",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85792202",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85791862",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85791432",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85788732",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85788192",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85787612",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85785772",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85785412",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85784882",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85783652",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85781912",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85781562",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85781222",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85780802",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85780352",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85778862",
+      "decision": "Refused",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85778512",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85778432",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85777832",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85769332",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85767172",
+      "decision": "Refused",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85766942",
+      "decision": "Refused",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85766852",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85766182",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85766102",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85765702",
+      "decision": "Refused",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85764852",
+      "decision": "Refused",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85764652",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85764502",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85763672",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85763442",
+      "decision": "Refused",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85763432",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85762732",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85762282",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85761062",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85760312",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85760062",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85759952",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85758892",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85756942",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85753002",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85750682",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85750102",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85747002",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85746782",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85746752",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85746682",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85745672",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85744882",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85744822",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85744742",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85744712",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85742182",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85740612",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85740462",
+      "decision": "Refused",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85739842",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85736622",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85736452",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85736152",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85735172",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85734182",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85733692",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85733102",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85733002",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85732382",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85731692",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85731202",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85722792",
+      "decision": "Refused",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85721502",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85719382",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85718702",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85717892",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85712882",
+      "decision": "Refused",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85712772",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85711472",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85709392",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85707882",
+      "decision": "Refused",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85706602",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85706362",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85706082",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85706072",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85704802",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85704602",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85703402",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85702972",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85701722",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85701432",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85695452",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85695292",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85693232",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85692762",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85691102",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85686732",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85680522",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85676732",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85674902",
+      "decision": "Refused",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85674222",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85673212",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85673082",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85671442",
+      "decision": "Refused",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85668682",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85667162",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85665872",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85665712",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85665312",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85662732",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85660812",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85660682",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85660122",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85657292",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85655972",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85655512",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85655252",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85648142",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85647712",
+      "decision": "Refused",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85647112",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85646592",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85645542",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85645132",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85644132",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85639342",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85639082",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85639052",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85637032",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85632192",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85631482",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85627052",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85626762",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85625802",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85625532",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85625072",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85623832",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85622692",
+      "decision": "Refused",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85622132",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85617682",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85617262",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85612462",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85611942",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85611742",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85610912",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85606852",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85605932",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85605242",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85601902",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85597782",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85595812",
+      "decision": "Refused",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85591192",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85591072",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85585612",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85575392",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85575362",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85572882",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85564232",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85554382",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85551362",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85550062",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85549512",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85544322",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85544232",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85543392",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85542422",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85538852",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85538012",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85536192",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85533832",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85531422",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85527752",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85527322",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85527242",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85526802",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85523292",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85522882",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85517722",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85516862",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85516552",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85516372",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85513122",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85511552",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85507292",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85505862",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85505852",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85505702",
+      "decision": "Refused",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85504882",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85503832",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85498102",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85496572",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85496212",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85494652",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85492142",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85491142",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85478022",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85472332",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85469172",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85458512",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85451732",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85449582",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85447752",
+      "decision": "Refused",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85447582",
+      "decision": "Refused",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85447032",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85440502",
+      "decision": "Refused",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85439892",
+      "decision": "Refused",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85438972",
+      "decision": "Refused",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85434942",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85419352",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85417982",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85413642",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85411472",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85410922",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85409842",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85401892",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85399562",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85396842",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85396282",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85395802",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85394572",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85392812",
+      "decision": "Refused",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85392642",
+      "decision": "Refused",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85390662",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85384952",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85384452",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85378052",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85373042",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85370142",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85349472",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85344912",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85339432",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85338042",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85337512",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85337082",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85320842",
+      "decision": "Refused",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85318992",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85315612",
+      "decision": "Refused",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85305902",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85305432",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85284872",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85283012",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85282682",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85280222",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85279982",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85276102",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85271522",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85270492",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85249652",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85244842",
+      "decision": "Refused",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85244742",
+      "decision": "Refused",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85244472",
+      "decision": "Refused",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85238302",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85238212",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85219472",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85218952",
+      "decision": "Approved",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85216492",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85207472",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85207102",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85203692",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85198722",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85193892",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85193142",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85186892",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85186512",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85178602",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85165022",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85163422",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85155922",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85096122",
+      "decision": "Refused",
+      "date": "2026-10-18",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85045912",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85038882",
+      "decision": "Refused",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85027802",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85022272",
+      "decision": "Refused",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85021752",
+      "decision": "Refused",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85021202",
+      "decision": "Refused",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85020722",
+      "decision": "Refused",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85012792",
+      "decision": "Refused",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85008772",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85008552",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85008172",
+      "decision": "Approved",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "85008042",
+      "decision": "Refused",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "84998462",
+      "decision": "Refused",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "84996232",
+      "decision": "Refused",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "84723522",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "84472822",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "84157522",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "84140692",
+      "decision": "Refused",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "84112152",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "83852812",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "83674562",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "83595652",
+      "decision": "Refused",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "83594762",
+      "decision": "Refused",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "83474102",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "83448652",
+      "decision": "Refused",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "83448112",
+      "decision": "Refused",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "83220282",
+      "decision": "Refused",
+      "date": "2026-10-11",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "82916232",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "82882292",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "82351742",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "82326582",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "82326452",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "82307792",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "82276712",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "81787892",
+      "decision": "Approved",
+      "date": "2026-10-25",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "81775942",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "81703362",
+      "decision": "Approved",
+      "date": "2026-11-01",
+      "embassy": "ankara",
+      "date_basis": "report_period_end"
+    },
+    {
+      "number": "74576782",
+      "decision": "Approved",
+      "date": "2026-11-01",
       "embassy": "ankara",
       "date_basis": "report_period_end"
     }

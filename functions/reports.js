@@ -6,7 +6,7 @@
  * one-click unsubscribe link; no address is sent without verification.
  */
 
-import { sendViaResend } from './email-send.js';
+import { isEmailConfigured, sendEmail } from './email-send.js';
 import { sha256 } from './crypto.js';
 import { loadReportData, buildMonthlyReport, buildWeeklyChanges } from './report-data.js';
 
@@ -98,7 +98,7 @@ function buildDigestEmail(report, changes, unsubscribeUrl, base) {
     '<table style="width:100%;border-collapse:collapse;background:#fff;border:1px solid #d9e4de">' +
     '<tr style="background:#eaf4ef"><th style="text-align:left;padding:8px">Office</th><th style="text-align:right;padding:8px">Dated</th><th style="text-align:right;padding:8px">Latest report</th><th style="text-align:right;padding:8px">Report date</th></tr>' +
     officeRows + '</table>' +
-    '<p style="font-size:12px;color:#6b7f75;margin:8px 0 0">Only New Delhi currently publishes decision-level dates. “Latest report” is the size of each office’s latest cumulative file and is not a monthly count.</p>' +
+    '<p style="font-size:12px;color:#6b7f75;margin:8px 0 0">New Delhi, Abu Dhabi, Abuja and Ankara publish dated decision history. “Latest report” is the latest published file for each office, not a monthly count.</p>' +
     '<p style="margin:24px 0"><a href="' + escapeHtml(base + '/monthly-report?month=' + report.month) + '" style="background:#067a57;color:#fff;padding:10px 16px;border-radius:6px;text-decoration:none">Read the full report</a></p>' +
     '<p style="font-size:12px;color:#6b7f75">This is an independent, unofficial tracker. It is not affiliated with the Embassy of Ireland, ISD or DETE. Counts are based on the published files and may change when an office corrects a report.</p>' +
     '<p style="font-size:12px;color:#6b7f75"><a href="' + escapeHtml(unsubscribeUrl) + '" style="color:#6b7f75">Unsubscribe from monthly reports</a></p>' +
@@ -114,7 +114,7 @@ function buildDigestEmail(report, changes, unsubscribeUrl, base) {
     '',
     'What changed this week: ' + changes.headline,
     'Window: ' + changes.window.start + ' to ' + changes.window.end,
-    'Only New Delhi currently publishes decision-level dates; other offices are cumulative report snapshots.',
+    'New Delhi, Abu Dhabi, Abuja and Ankara publish dated decision history; Beijing and Dublin are latest-report snapshots.',
     '',
     'Read the full report: ' + base + '/monthly-report?month=' + report.month,
     '',
@@ -158,7 +158,7 @@ async function subscribeResponse(request, env) {
   try { body = await request.json(); } catch { return json({ error: 'Invalid JSON' }, 400); }
   const email = String(body.email || '').trim().toLowerCase();
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return json({ error: 'Valid email required' }, 400);
-  if (!env.RESEND_API_KEY) {
+  if (!isEmailConfigured(env)) {
     return json({ error: 'Email delivery is not configured on this deployment' }, 503);
   }
 
@@ -185,7 +185,7 @@ async function subscribeResponse(request, env) {
   const verifyUrl = base + '/api/digest/verify?token=' + encodeURIComponent(verifyToken);
   const unsubscribeUrl = base + '/api/digest/unsubscribe?token=' + encodeURIComponent(unsubscribeToken);
   try {
-    await sendViaResend(env, {
+    await sendEmail(env, {
       to: email,
       subject: 'Confirm your Irish visa monthly report',
       html: '<p>Confirm that you want the monthly Irish visa decision report by email.</p>' +
@@ -255,7 +255,7 @@ async function sendResponse(request, env) {
     const email = buildDigestEmail(report, changes, baseUrl(env) + '/api/digest/unsubscribe?token=preview', baseUrl(env));
     return json({ success: true, dry_run: true, recipients: recipients.length, subject: email.subject });
   }
-  if (!env.RESEND_API_KEY) return json({ error: 'Email delivery is not configured on this deployment' }, 503);
+  if (!isEmailConfigured(env)) return json({ error: 'Email delivery is not configured on this deployment' }, 503);
 
   let sent = 0;
   const failed = [];
@@ -263,7 +263,7 @@ async function sendResponse(request, env) {
     const unsubscribeUrl = baseUrl(env) + '/api/digest/unsubscribe?token=' + encodeURIComponent(subscriber.unsubscribe_token);
     const email = buildDigestEmail(report, changes, unsubscribeUrl, baseUrl(env));
     try {
-      await sendViaResend(env, { to: subscriber.email, subject: email.subject, html: email.html, text: email.text });
+      await sendEmail(env, { to: subscriber.email, subject: email.subject, html: email.html, text: email.text });
       sent += 1;
       await env.DB.prepare('UPDATE digest_subscriptions SET last_sent_at = datetime(\'now\') WHERE email_hash = ?')
         .bind(await sha256(subscriber.email.toLowerCase())).run();

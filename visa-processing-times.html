@@ -56,24 +56,41 @@
   }
   </script>
 <meta name="google-site-verification" content="HkazW2pbKNbaIJp901Sa-uoQz8MDAvnu9Sk01uhfFCo">
+  <link rel="stylesheet" href="/site-chrome.css">
 </head>
 <body>
+  <a class="skip-link" href="#main-content">Skip to content</a>
 
-  <header class="site-header">
-    <div class="site-header-inner">
-      <a class="brand" href="/"><img src="/icon.svg" alt="" width="22" height="22"> Irish Visa Decision Tracker</a>
-      <nav class="site-nav" aria-label="Site">
-        <a href="/">Tracker</a>
-        <a href="/about">About</a>
-        <a href="/contact">Contact</a>
-        <a href="/privacy">Privacy</a> &middot; <a href="/terms">Terms</a> &middot; <a href="/refunds">Refunds</a>
-        <a href="/stamp-1g-processing-dates">Stamp 1G</a>
-        <a href="/daily-summaries">Daily summaries</a>
-      </nav>
-    </div>
-  </header>
+  <header class="sitebar">
+  <div class="sitebar-inner">
+    <a class="brand" href="/" aria-label="Irish Visa Decision Tracker home">
+      <img src="/icon.svg" alt="" width="24" height="24">
+      <span>Irish Visa Decision Tracker</span>
+    </a>
+    <nav class="sitebar-nav" aria-label="Site">
+      <a href="/">Tracker</a>
+      <a href="/comparison">Compare</a>
+      <a href="/daily-summaries">Daily summaries</a>
+      <a href="/monthly-report">Monthly report</a>
+      <a href="/visa-processing-times" aria-current="page">Processing times</a>
+      <a href="/about">About</a>
+      <details class="sitebar-more">
+        <summary>More</summary>
+        <div class="sitebar-more-panel">
+          <a href="/stamp-1g-processing-dates">Stamp 1G</a>
+          <a href="/employment-permit-processing-dates">Employment permits</a>
+          <a href="/vac-transit">VAC &amp; transit</a>
+          <a href="/contact">Contact</a>
+          <a href="/privacy">Privacy</a>
+          <a href="/terms">Terms</a>
+          <a href="/refund">Refunds</a>
+        </div>
+      </details>
+    </nav>
+  </div>
+</header>
 
-  <main class="page">
+  <main id="main-content" tabindex="-1" class="page">
     <nav class="breadcrumbs" aria-label="Breadcrumb">
       <ol>
         <li><a href="/">Tracker</a></li>
@@ -82,7 +99,7 @@
     </nav>
     <p class="page-kicker">Ireland &middot; Processing times</p>
     <h1>Irish Visa Processing Times - What the Published Data Shows</h1>
-    <p class="page-meta">Irish Visa Decision Tracker &bull; Reading of 7 November 2026 &bull; Unofficial - not immigration advice</p>
+    <p class="page-meta">Irish Visa Decision Tracker &bull; Updated 7 November 2026 &bull; Unofficial, not immigration advice</p>
 
     <p class="page-lede">
       There is no single processing time for an Irish visa, and no honest way to promise one. What
@@ -109,8 +126,9 @@
     <section>
       <h2>What the tracker currently records</h2>
       <p>
-        A snapshot from the tracker's latest run. These numbers move; the figures on the linked
-        pages and in the JSON files are the current ones.
+
+        These figures change as offices publish. The linked pages have the latest numbers.
+
       </p>
       <ul>
         <li><strong>Stamp 1G</strong> - ISD is processing applications received on
@@ -128,9 +146,10 @@
           <a href="/daily-summaries">daily decision summaries</a>.</li>
       </ul>
       <p class="small-note">
-        The approval share describes decisions already published. It is not the probability that
-        any particular application is approved, because the published file does not record the
-        applications still waiting.
+
+        The approval share covers decisions already published, not the chances for a particular
+        application.
+
       </p>
     </section>
 
@@ -189,11 +208,10 @@
         is not the same as more refusals.
       </p>
       <p class="small-note">
-        Computed from <a href="/data/stamp_1g.json">/data/stamp_1g.json</a>,
-        <a href="/data/work_permits.json">/data/work_permits.json</a> and
-        <a href="/data/visa_decisions.json">/data/visa_decisions.json</a>, and refreshed from
-        those files when the page loads. A lag that grows means the queue is falling further
-        behind. It says nothing about any particular application.
+
+        Based on the tracker's latest ISD and DETE observations. A growing lag means the queue is
+        falling further behind; it says nothing about an individual application.
+
       </p>
     </section>
 
@@ -209,21 +227,22 @@
 
     <section>
       <h2>Why keeping the history matters</h2>
+
       <p>
-        Each official publisher shows the current date and replaces it. That makes "is this moving
-        faster than last month?" unanswerable from the official page alone. This tracker keeps
-        every observation it records, which is what makes the direction of a queue visible, and it
-        publishes the underlying files so anyone can check the working:
+        Official publishers show only the current processing date, so their pages cannot show
+        whether a queue is moving faster than last month. This tracker keeps each observation,
+        which makes that direction visible. The underlying data is public:
         <a href="/data/stamp_1g.json">/data/stamp_1g.json</a>,
-        <a href="/data/work_permits.json">/data/work_permits.json</a>,
+        <a href="/data/work_permits.json">/data/work_permits.json</a> and
         <a href="/data/visa_decisions.json">/data/visa_decisions.json</a>.
       </p>
+
     </section>
 
     <section>
       <h2>Official sources</h2>
       <p>
-        This page is an independent record, not the publisher. For authoritative figures, use the
+        For authoritative figures, use the
         official pages:
       </p>
       <ul>
@@ -238,15 +257,7 @@
       </p>
     </section>
 
-    <section>
-      <h2>What this is not</h2>
-      <p>
-        This is an independent, unofficial project. It is not affiliated with the Embassy of
-        Ireland, ISD, DETE or any Irish government body. It does not give immigration advice,
-        cannot speed up an application, and cannot guarantee an outcome. For a decision on your
-        own case, contact ISD or the Embassy of Ireland in New Delhi.
-      </p>
-    </section>
+
 
     <p class="page-nav">
       <a href="/">Back to tracker</a> &middot;
@@ -257,9 +268,55 @@
     </p>
   </main>
 
-  <footer class="site-footer">
-    <p><a href="/">Tracker</a> &bull; <a href="/stamp-1g-processing-dates">Stamp 1G</a> &bull; <a href="/daily-summaries">Daily summaries</a> &bull; <a href="/employment-permit-processing-dates">Employment permits</a> &bull; <a href="/visa-processing-times">Processing times</a> &bull; <a href="/about">About</a> &bull; <a href="/contact">Contact</a> &bull; <a href="/sitemap.xml">Sitemap</a></p>
-  </footer>
+  <footer class="sitebar-footer">
+  <div class="sitebar-footer-inner">
+    <div class="sitebar-footer-brand">
+      <a class="brand" href="/" aria-label="Irish Visa Decision Tracker home">
+        <img src="/icon.svg" alt="" width="24" height="24">
+        <span>Irish Visa Decision Tracker</span>
+      </a>
+      <p>Independent and unofficial. Not affiliated with the Embassy of Ireland, ISD or DETE. Not immigration advice.</p>
+    </div>
+    <nav class="sitebar-footer-col" aria-label="Explore">
+      <h2 class="sitebar-footer-title">Explore</h2>
+      <ul>
+        <li><a href="/">Tracker</a></li>
+        <li><a href="/comparison">Compare</a></li>
+        <li><a href="/daily-summaries">Daily summaries</a></li>
+        <li><a href="/monthly-report">Monthly report</a></li>
+        <li><a href="/visa-processing-times">Processing times</a></li>
+        <li><a href="/vac-transit">VAC &amp; transit</a></li>
+      </ul>
+    </nav>
+    <nav class="sitebar-footer-col" aria-label="Data">
+      <h2 class="sitebar-footer-title">Data</h2>
+      <ul>
+        <li><a href="/stamp-1g-processing-dates">Stamp 1G</a></li>
+        <li><a href="/employment-permit-processing-dates">Employment permits</a></li>
+        <li><a href="/data/visa_decisions.json">Visa decisions JSON</a></li>
+        <li><a href="/status">Data status</a></li>
+        <li><a href="/data/data_manifest.json">Data manifest</a></li>
+        <li><a href="/sitemap.xml">Sitemap</a></li>
+        <li><a href="/llms.txt">llms.txt</a></li>
+      </ul>
+    </nav>
+    <nav class="sitebar-footer-col" aria-label="About and legal">
+      <h2 class="sitebar-footer-title">About &amp; legal</h2>
+      <ul>
+        <li><a href="/about">About the project</a></li>
+        <li><a href="/contact">Contact &amp; corrections</a></li>
+        <li><a href="/privacy">Privacy</a></li>
+        <li><a href="/terms">Terms</a></li>
+        <li><a href="/refund">Refund policy</a></li>
+        <li><a href="https://github.com/parth-soni-10/Irish-Visa-Tracker" rel="noopener">GitHub</a></li>
+      </ul>
+    </nav>
+  </div>
+  <div class="sitebar-footer-bottom">
+    <p>&copy; 2026 Parth Soni &middot; Dublin, Ireland</p>
+    <p><a href="/sitemap.xml">Sitemap</a><a href="/llms.txt">llms.txt</a><a href="https://github.com/parth-soni-10/Irish-Visa-Tracker" rel="noopener">GitHub</a></p>
+  </div>
+</footer>
 
   <script>
   /* One fetch per data file, then both the snapshot and the trend paragraphs are filled
@@ -523,5 +580,6 @@
   }
 })();
 </script>
+  <script src="/site-chrome.js" defer></script>
 </body>
 </html>

@@ -1,56 +1,107 @@
 /**
  * Web Push Notifications for Decision Alerts
- * Uses VAPID keys for authentication with push services
+ * Uses VAPID keys for authentication with push services.
  */
 
 import * as webPush from 'web-push';
 
-// VAPID keys should be generated once and stored in Cloudflare secrets
-// Generate with: npx web-push generate-vapid-keys
-// Store in Cloudflare Pages secrets: VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT
-
 let vapidConfigured = false;
 
+export function isPushConfigured(env) {
+  return Boolean(env && env.VAPID_PUBLIC_KEY && env.VAPID_PRIVATE_KEY);
+}
+
 export function configureVapid(env) {
-  if (vapidConfigured) return;
-  
-  const publicKey = env.VAPID_PUBLIC_KEY;
-  const privateKey = env.VAPID_PRIVATE_KEY;
-  const subject = env.VAPID_SUBJECT || 'mailto:soni.soni.parth@gmail.com';
-  
-  if (!publicKey || !privateKey) {
+  if (vapidConfigured) return true;
+  if (!isPushConfigured(env)) {
     console.warn('[WebPush] VAPID keys not configured, push notifications disabled');
     return false;
   }
-  
-  webPush.setVapidDetails(subject, publicKey, privateKey);
+  webPush.setVapidDetails(
+    env.VAPID_SUBJECT || 'mailto:soni.soni.parth@gmail.com',
+    env.VAPID_PUBLIC_KEY,
+    env.VAPID_PRIVATE_KEY
+  );
   vapidConfigured = true;
   return true;
 }
 
-/**
- * Subscribe a user to push notifications
- */
-export async function subscribeToPush(env, subscription, email, applicationNumber, embassy) {
-  if (!configureVapid(env)) {
-    return { success: false, error: 'Push notifications not configured' };
-  }
-  
+export async function ensurePushSchema(env) {
+  if (!env || !env.DB) return false;
   try {
-    // Store subscription in D1
+    await env.DB.prepare('SELECT last_alert_sent FROM push_subscriptions LIMIT 1').first();
+  } catch {
+    await env.DB.prepare('ALTER TABLE push_subscriptions ADD COLUMN last_alert_sent TEXT')
+      .run().catch(() => {});
+  }
+  return true;
+}
+
+function payloadFor({ applicationNumber, decision, embassy, url }) {
+  return JSON.stringify({
+    title: decision ? 'Visa decision: ' + decision : 'Irish Visa Tracker',
+    body: decision
+      ? 'Application ' + applicationNumber + ' (' + embassy + ') was ' + String(decision).toLowerCase() + '.'
+      : 'A watched application has an update.',
+    icon: '/icon-192.png',
+    badge: '/icon-192.png',
+    data: { applicationNumber: applicationNumber || null, decision: decision || null, embassy: embassy || null, url: url || '/' },
+    actions: [{ action: 'view', title: 'View details' }],
+    requireInteraction: Boolean(decision)
+  });
+}
+
+async function sendOne(env, subscription, payload) {
+  try {
+    // web-push's sendNotification() uses Node's https.request, which is not
+    // available in Cloudflare Pages Functions. Generate the encrypted request
+    // and VAPID headers with web-push, then let Workers' fetch make the call.
+    const request = webPush.generateRequestDetails({
+      endpoint: subscription.endpoint,
+      keys: { p256dh: subscription.p256dh, auth: subscription.auth }
+    }, payload);
+    const headers = Object.fromEntries(
+      Object.entries(request.headers).map(([name, value]) => [name, String(value)])
+    );
+    delete headers['Content-Length'];
+    const response = await fetch(request.endpoint, {
+      method: request.method,
+      headers,
+      body: request.body ? new Uint8Array(request.body) : undefined
+    });
+    if (!response.ok) {
+      if (response.status === 404 || response.status === 410) {
+        await env.DB.prepare('DELETE FROM push_subscriptions WHERE endpoint = ?')
+          .bind(subscription.endpoint).run().catch(() => {});
+      }
+      const detail = await response.text().catch(() => '');
+      console.warn('[WebPush] Send failed: HTTP ' + response.status + (detail ? ' ' + detail.slice(0, 200) : ''));
+      return false;
+    }
+    return true;
+  } catch (error) {
+    console.warn('[WebPush] Send failed:', error.message);
+    return false;
+  }
+}
+
+export async function subscribeToPush(env, subscription, email, applicationNumber, embassy) {
+  if (!configureVapid(env)) return { success: false, error: 'Push notifications not configured' };
+  try {
+    await ensurePushSchema(env);
     await env.DB.prepare(`
-      INSERT OR REPLACE INTO push_subscriptions 
-      (endpoint, p256dh, auth, email, application_number, embassy, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, datetime('now'))
+      INSERT OR REPLACE INTO push_subscriptions
+      (endpoint, p256dh, auth, email, application_number, embassy, embassy_slug, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))
     `).bind(
       subscription.endpoint,
       subscription.keys.p256dh,
       subscription.keys.auth,
-      email,
+      email || null,
       applicationNumber,
+      embassy,
       embassy
     ).run();
-    
     return { success: true };
   } catch (error) {
     console.error('[WebPush] Subscription failed:', error);
@@ -58,69 +109,56 @@ export async function subscribeToPush(env, subscription, email, applicationNumbe
   }
 }
 
-/**
- * Send push notification for a decision
- */
 export async function sendDecisionPush(env, applicationNumber, decision, embassy) {
-  if (!configureVapid(env)) return;
-  
+  if (!configureVapid(env)) return { sent: 0, failed: 0, disabled: true };
   try {
-    // Get all subscriptions for this application number
+    await ensurePushSchema(env);
     const { results } = await env.DB.prepare(`
-      SELECT endpoint, p256dh, auth 
-      FROM push_subscriptions 
-      WHERE application_number = ? AND embassy = ?
-    `).bind(applicationNumber, embassy).all();
-    
-    if (!results || results.length === 0) return;
-    
-    const payload = JSON.stringify({
-      title: `Visa Decision: ${decision}`,
-      body: `Application ${applicationNumber} (${embassy}) was ${decision.toLowerCase()}.`,
-      icon: '/icon-192.png',
-      badge: '/icon-72.png',
-      data: {
-        applicationNumber,
-        decision,
-        embassy,
-        url: `/?tab=home&q=${applicationNumber}`
-      },
-      actions: [
-        { action: 'view', title: 'View Details' },
-        { action: 'dismiss', title: 'Dismiss' }
-      ],
-      requireInteraction: true
-    });
-    
-    // Send to all subscriptions in parallel
-    const sendPromises = results.map(sub => 
-      webPush.sendNotification(
-        { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
-        payload
-      ).catch(err => {
-        // If subscription is invalid (410 Gone), remove it
-        if (err.statusCode === 410) {
-          env.DB.prepare('DELETE FROM push_subscriptions WHERE endpoint = ?')
-            .bind(sub.endpoint).run();
-        }
-        console.warn('[WebPush] Send failed:', err.message);
-      })
-    );
-    
-    await Promise.all(sendPromises);
-    console.log(`[WebPush] Sent ${results.length} notifications for ${applicationNumber}`);
+      SELECT endpoint, p256dh, auth
+      FROM push_subscriptions
+      WHERE application_number = ? AND (embassy_slug = ? OR embassy = ?)
+    `).bind(applicationNumber, embassy, embassy).all();
+    const subscriptions = results || [];
+    if (!subscriptions.length) return { sent: 0, failed: 0, disabled: false };
+    const payload = payloadFor({ applicationNumber, decision, embassy });
+    const outcomes = await Promise.all(subscriptions.map((sub) => sendOne(env, sub, payload)));
+    const sent = outcomes.filter(Boolean).length;
+    return { sent, failed: outcomes.length - sent, disabled: false };
   } catch (error) {
     console.error('[WebPush] Send error:', error);
+    return { sent: 0, failed: 0, error: error.message };
   }
 }
 
-/**
- * Unsubscribe from push notifications
- */
+export async function sendPushToUser(env, userId, { title, body, url } = {}) {
+  if (!configureVapid(env)) return { sent: 0, failed: 0, disabled: true };
+  try {
+    await ensurePushSchema(env);
+    const { results } = await env.DB.prepare(`
+      SELECT endpoint, p256dh, auth FROM push_subscriptions WHERE user_id = ?
+    `).bind(userId).all();
+    const subscriptions = results || [];
+    if (!subscriptions.length) return { sent: 0, failed: 0, disabled: false };
+    const payload = JSON.stringify({
+      title: title || 'Irish Visa Tracker',
+      body: body || 'Push notifications are working.',
+      icon: '/icon-192.png',
+      badge: '/icon-192.png',
+      data: { url: url || '/' },
+      actions: [{ action: 'view', title: 'Open tracker' }]
+    });
+    const outcomes = await Promise.all(subscriptions.map((sub) => sendOne(env, sub, payload)));
+    const sent = outcomes.filter(Boolean).length;
+    return { sent, failed: outcomes.length - sent, disabled: false };
+  } catch (error) {
+    console.error('[WebPush] User send error:', error);
+    return { sent: 0, failed: 0, error: error.message };
+  }
+}
+
 export async function unsubscribeFromPush(env, endpoint) {
   try {
-    await env.DB.prepare('DELETE FROM push_subscriptions WHERE endpoint = ?')
-      .bind(endpoint).run();
+    await env.DB.prepare('DELETE FROM push_subscriptions WHERE endpoint = ?').bind(endpoint).run();
     return { success: true };
   } catch (error) {
     console.error('[WebPush] Unsubscribe failed:', error);
@@ -128,68 +166,46 @@ export async function unsubscribeFromPush(env, endpoint) {
   }
 }
 
-/**
- * Handle push subscription from the client
- */
 export async function handlePushSubscribe(request, env) {
   try {
     const { subscription, email, application_number, embassy } = await request.json();
-    
-    if (!subscription || !email || !application_number || !embassy) {
+    if (!subscription || !subscription.endpoint || !subscription.keys || !application_number || !embassy) {
       return new Response(JSON.stringify({ error: 'Missing required fields' }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' }
+        status: 400, headers: { 'Content-Type': 'application/json' }
       });
     }
-    
     const result = await subscribeToPush(env, subscription, email, application_number, embassy);
-    
     return new Response(JSON.stringify(result), {
-      status: result.success ? 200 : 500,
-      headers: { 'Content-Type': 'application/json' }
+      status: result.success ? 200 : 500, headers: { 'Content-Type': 'application/json' }
     });
   } catch (error) {
     return new Response(JSON.stringify({ error: error.message }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' }
+      status: 500, headers: { 'Content-Type': 'application/json' }
     });
   }
 }
 
-/**
- * Handle push unsubscribe
- */
 export async function handlePushUnsubscribe(request, env) {
   try {
-    const url = new URL(request.url);
-    const endpoint = url.searchParams.get('endpoint');
-    
+    const endpoint = new URL(request.url).searchParams.get('endpoint');
     if (!endpoint) {
       return new Response(JSON.stringify({ error: 'Missing endpoint' }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' }
+        status: 400, headers: { 'Content-Type': 'application/json' }
       });
     }
-    
     const result = await unsubscribeFromPush(env, endpoint);
-    
     return new Response(JSON.stringify(result), {
-      status: result.success ? 200 : 500,
-      headers: { 'Content-Type': 'application/json' }
+      status: result.success ? 200 : 500, headers: { 'Content-Type': 'application/json' }
     });
   } catch (error) {
     return new Response(JSON.stringify({ error: error.message }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' }
+      status: 500, headers: { 'Content-Type': 'application/json' }
     });
   }
 }
 
-/**
- * Send push notification for decision (called from email check)
- */
 export async function notifyDecisionPush(env, applicationNumber, decision, embassy) {
-  await sendDecisionPush(env, applicationNumber, decision, embassy);
+  return sendDecisionPush(env, applicationNumber, decision, embassy);
 }
 
 export { webPush };

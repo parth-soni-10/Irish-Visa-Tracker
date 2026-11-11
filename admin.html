@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="robots" content="noindex, nofollow">
+  <meta name="description" content="Operator dashboard for scraper health, data quality and recent errors.">
   <title>Admin - Irish Visa Decision Tracker</title>
   <meta name="theme-color" content="#ffffff">
   <link rel="icon" href="/icon.svg" type="image/svg+xml">
@@ -18,16 +19,42 @@
     .admin-status { font-size: 13px; color: #5b6572; }
     .admin-status.error { color: #b91c1c; }
     .admin-status.ok { color: #047857; }
+    .admin-toolbar select { padding: 8px 10px; border: 1px solid #d1d5db; border-radius: 8px; background: #fff; }
+    .admin-token-out { background: #f8fafc; border: 1px solid #e5e7eb; padding: 12px; border-radius: 8px; overflow-wrap: anywhere; }
   </style>
+  <link rel="stylesheet" href="/site-chrome.css">
 </head>
 <body>
-  <header class="site-header">
-    <div class="site-header-inner">
-      <a class="brand" href="/"><img src="/icon.svg" alt="" width="22" height="22"> Irish Visa Decision Tracker</a>
-      <nav class="site-nav" aria-label="Site"><a href="/">Tracker</a><a href="/about">About</a><a href="/contact">Contact</a></nav>
-    </div>
-  </header>
-  <main class="page">
+  <a class="skip-link" href="#main-content">Skip to content</a>
+  <header class="sitebar">
+  <div class="sitebar-inner">
+    <a class="brand" href="/" aria-label="Irish Visa Decision Tracker home">
+      <img src="/icon.svg" alt="" width="24" height="24">
+      <span>Irish Visa Decision Tracker</span>
+    </a>
+    <nav class="sitebar-nav" aria-label="Site">
+      <a href="/">Tracker</a>
+      <a href="/comparison">Compare</a>
+      <a href="/daily-summaries">Daily summaries</a>
+      <a href="/monthly-report">Monthly report</a>
+      <a href="/visa-processing-times">Processing times</a>
+      <a href="/about">About</a>
+      <details class="sitebar-more">
+        <summary>More</summary>
+        <div class="sitebar-more-panel">
+          <a href="/stamp-1g-processing-dates">Stamp 1G</a>
+          <a href="/employment-permit-processing-dates">Employment permits</a>
+          <a href="/vac-transit">VAC &amp; transit</a>
+          <a href="/contact">Contact</a>
+          <a href="/privacy">Privacy</a>
+          <a href="/terms">Terms</a>
+          <a href="/refund">Refunds</a>
+        </div>
+      </details>
+    </nav>
+  </div>
+</header>
+  <main id="main-content" tabindex="-1" class="page">
     <p class="page-kicker">Operator &middot; Admin</p>
     <h1>Admin dashboard</h1>
     <p class="page-lede">Scraper health, data quality, system metrics and errors. Requires an admin bearer token; it is kept in this tab's session storage only.</p>
@@ -39,6 +66,34 @@
       <button class="btn" type="button" id="admin-clear">Clear token</button>
     </div>
     <p id="admin-status" class="admin-status" aria-live="polite"></p>
+    <div class="admin-card">
+      <h2>Scraper control</h2>
+      <div class="admin-toolbar" style="margin:0">
+        <label>Office
+          <select id="admin-embassy">
+            <option value="new-delhi">New Delhi</option>
+            <option value="beijing">Beijing</option>
+            <option value="dublin">Dublin</option>
+            <option value="abu-dhabi">Abu Dhabi</option>
+            <option value="abuja">Abuja</option>
+            <option value="ankara">Ankara</option>
+          </select>
+        </label>
+        <button class="btn" type="button" id="admin-trigger">Run scraper</button>
+      </div>
+      <p id="admin-action-status" class="admin-status" aria-live="polite"></p>
+    </div>
+    <div class="admin-card">
+      <h2>Admin tokens</h2>
+      <p class="admin-status">The bootstrap token can create named tokens. A new token is shown once.</p>
+      <form id="admin-token-form" class="admin-toolbar" style="margin:0">
+        <label>Token name
+          <input id="admin-token-name" required maxlength="100" placeholder="e.g. on-call laptop">
+        </label>
+        <button class="btn" type="submit" id="admin-token-create">Create token</button>
+      </form>
+      <div id="admin-token-result" class="admin-token-out" hidden></div>
+    </div>
     <div class="admin-card">
       <h2>Scraper health</h2>
       <pre id="admin-health" class="admin-pre">Not loaded.</pre>
@@ -56,7 +111,55 @@
       <pre id="admin-errors" class="admin-pre">Not loaded.</pre>
     </div>
   </main>
-  <footer class="site-footer"><p><a href="/">Tracker</a> &bull; <a href="/about">About</a> &bull; <a href="/contact">Contact</a> &bull; <a href="/privacy">Privacy</a> &bull; <a href="/terms">Terms</a> &bull; <a href="/refunds">Refunds</a></p></footer>
+  <footer class="sitebar-footer">
+  <div class="sitebar-footer-inner">
+    <div class="sitebar-footer-brand">
+      <a class="brand" href="/" aria-label="Irish Visa Decision Tracker home">
+        <img src="/icon.svg" alt="" width="24" height="24">
+        <span>Irish Visa Decision Tracker</span>
+      </a>
+      <p>Independent and unofficial. Not affiliated with the Embassy of Ireland, ISD or DETE. Not immigration advice.</p>
+    </div>
+    <nav class="sitebar-footer-col" aria-label="Explore">
+      <h2 class="sitebar-footer-title">Explore</h2>
+      <ul>
+        <li><a href="/">Tracker</a></li>
+        <li><a href="/comparison">Compare</a></li>
+        <li><a href="/daily-summaries">Daily summaries</a></li>
+        <li><a href="/monthly-report">Monthly report</a></li>
+        <li><a href="/visa-processing-times">Processing times</a></li>
+        <li><a href="/vac-transit">VAC &amp; transit</a></li>
+      </ul>
+    </nav>
+    <nav class="sitebar-footer-col" aria-label="Data">
+      <h2 class="sitebar-footer-title">Data</h2>
+      <ul>
+        <li><a href="/stamp-1g-processing-dates">Stamp 1G</a></li>
+        <li><a href="/employment-permit-processing-dates">Employment permits</a></li>
+        <li><a href="/data/visa_decisions.json">Visa decisions JSON</a></li>
+        <li><a href="/status">Data status</a></li>
+        <li><a href="/data/data_manifest.json">Data manifest</a></li>
+        <li><a href="/sitemap.xml">Sitemap</a></li>
+        <li><a href="/llms.txt">llms.txt</a></li>
+      </ul>
+    </nav>
+    <nav class="sitebar-footer-col" aria-label="About and legal">
+      <h2 class="sitebar-footer-title">About &amp; legal</h2>
+      <ul>
+        <li><a href="/about">About the project</a></li>
+        <li><a href="/contact">Contact &amp; corrections</a></li>
+        <li><a href="/privacy">Privacy</a></li>
+        <li><a href="/terms">Terms</a></li>
+        <li><a href="/refund">Refund policy</a></li>
+        <li><a href="https://github.com/parth-soni-10/Irish-Visa-Tracker" rel="noopener">GitHub</a></li>
+      </ul>
+    </nav>
+  </div>
+  <div class="sitebar-footer-bottom">
+    <p>&copy; 2026 Parth Soni &middot; Dublin, Ireland</p>
+    <p><a href="/sitemap.xml">Sitemap</a><a href="/llms.txt">llms.txt</a><a href="https://github.com/parth-soni-10/Irish-Visa-Tracker" rel="noopener">GitHub</a></p>
+  </div>
+</footer>
   <script>
   (function () {
     var token = document.getElementById('admin-token');
@@ -94,6 +197,50 @@
       });
     }
 
+    function api(path, options) {
+      var opts = options || {};
+      opts.headers = Object.assign({}, opts.headers || {}, { Authorization: 'Bearer ' + token.value.trim() });
+      return fetch(path, opts);
+    }
+
+    document.getElementById('admin-trigger').addEventListener('click', function () {
+      var action = document.getElementById('admin-action-status');
+      var button = this;
+      button.disabled = true;
+      action.textContent = 'Dispatching workflow\u2026';
+      action.className = 'admin-status';
+      api('/api/admin/trigger', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ embassy: document.getElementById('admin-embassy').value })
+      }).then(function (r) { return r.json().then(function (body) { return { ok: r.ok, body: body }; }); })
+        .then(function (result) {
+          action.textContent = result.ok ? (result.body.message || 'Dispatched.') : (result.body.error || 'Dispatch failed.');
+          action.className = 'admin-status ' + (result.ok ? 'ok' : 'error');
+        })
+        .catch(function (error) { action.textContent = error.message; action.className = 'admin-status error'; })
+        .finally(function () { button.disabled = false; });
+    });
+
+    document.getElementById('admin-token-form').addEventListener('submit', function (event) {
+      event.preventDefault();
+      var result = document.getElementById('admin-token-result');
+      var name = document.getElementById('admin-token-name');
+      if (!name.value.trim()) return;
+      api('/api/admin/tokens', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: name.value.trim(), expiresDays: 90 })
+      }).then(function (r) { return r.json().then(function (body) { return { ok: r.ok, body: body }; }); })
+        .then(function (response) {
+          result.hidden = false;
+          if (!response.ok) { result.textContent = response.body.error || 'Could not create token.'; return; }
+          result.textContent = 'Copy this token now; it is shown once:\n\n' + response.body.token;
+          name.value = '';
+        })
+        .catch(function (error) { result.hidden = false; result.textContent = error.message; });
+    });
+
     document.getElementById('admin-refresh').addEventListener('click', load);
     document.getElementById('admin-clear').addEventListener('click', function () {
       sessionStorage.removeItem('admin-token');
@@ -104,5 +251,6 @@
     if (token.value) load();
   })();
   </script>
+  <script src="/site-chrome.js" defer></script>
 </body>
 </html>

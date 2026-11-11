@@ -4,14 +4,21 @@
  * Checks WCAG 2.1 AA compliance
  */
 
-const { execSync } = require('child_process');
-const fs = require('fs');
-const path = require('path');
+import { execSync } from 'node:child_process';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const BASE_URL = process.env.AUDIT_BASE_URL || 'http://127.0.0.1:8788';
 
 // Configuration
 const PAGES_TO_TEST = [
   { url: '/', name: 'Home Page' },
   { url: '/vac-transit', name: 'VAC/Transit Page' },
+  { url: '/admin', name: 'Admin Page' },
+  { url: '/reset-password', name: 'Reset Password Page' },
+  { url: '/workspace', name: 'Workspace Page' },
 ];
 
 const VIEWPORTS = [
@@ -36,7 +43,7 @@ const AxeBuilder = require('@axe-core/playwright').default;
   const page = await context.newPage();
   
   try {
-    await page.goto('http://127.0.0.1:8788${pageUrl}', { waitUntil: 'networkidle', timeout: 30000 });
+    await page.goto('${BASE_URL}${pageUrl}', { waitUntil: 'networkidle', timeout: 30000 });
     await page.waitForTimeout(2000); // Wait for dynamic content
     
     // Run all available rules
@@ -53,7 +60,7 @@ const AxeBuilder = require('@axe-core/playwright').default;
 })();
 `;
 
-  const scriptPath = path.join(__dirname, `temp-audit-${viewport.name}.js`);
+  const scriptPath = path.join(__dirname, `temp-audit-${viewport.name}.cjs`);
   fs.writeFileSync(scriptPath, script);
   
   try {
@@ -113,13 +120,13 @@ async function main() {
   
   // Check if dev server is running
   try {
-    const response = await fetch('http://127.0.0.1:8788/');
+    const response = await fetch(BASE_URL + '/');
     if (!response.ok) {
       throw new Error('Dev server not responding');
     }
   } catch (error) {
-    console.error('❌ Dev server not running on http://127.0.0.1:8788');
-    console.log('Please run: npx wrangler pages dev . --port 8788');
+    console.error('❌ Dev server not running on ' + BASE_URL);
+    console.log('Please run: npx wrangler pages dev . --port ' + (new URL(BASE_URL).port || '8788'));
     process.exit(1);
   }
   

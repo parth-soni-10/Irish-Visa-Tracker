@@ -55,25 +55,41 @@
   }
   </script>
 <meta name="google-site-verification" content="HkazW2pbKNbaIJp901Sa-uoQz8MDAvnu9Sk01uhfFCo">
+  <link rel="stylesheet" href="/site-chrome.css">
 </head>
 <body>
+  <a class="skip-link" href="#main-content">Skip to content</a>
 
-  <header class="site-header">
-    <div class="site-header-inner">
-      <a class="brand" href="/"><img src="/icon.svg" alt="" width="22" height="22"> Irish Visa Decision Tracker</a>
-      <nav class="site-nav" aria-label="Site">
-        <a href="/">Tracker</a>
-        <a href="/comparison" aria-current="page">Compare</a>
-        <a href="/about">About</a>
-        <a href="/contact">Contact</a>
-        <a href="/privacy">Privacy</a>
-        <a href="/stamp-1g-processing-dates">Stamp 1G</a>
-        <a href="/daily-summaries">Daily summaries</a>
-      </nav>
-    </div>
-  </header>
+  <header class="sitebar">
+  <div class="sitebar-inner">
+    <a class="brand" href="/" aria-label="Irish Visa Decision Tracker home">
+      <img src="/icon.svg" alt="" width="24" height="24">
+      <span>Irish Visa Decision Tracker</span>
+    </a>
+    <nav class="sitebar-nav" aria-label="Site">
+      <a href="/">Tracker</a>
+      <a href="/comparison" aria-current="page">Compare</a>
+      <a href="/daily-summaries">Daily summaries</a>
+      <a href="/monthly-report">Monthly report</a>
+      <a href="/visa-processing-times">Processing times</a>
+      <a href="/about">About</a>
+      <details class="sitebar-more">
+        <summary>More</summary>
+        <div class="sitebar-more-panel">
+          <a href="/stamp-1g-processing-dates">Stamp 1G</a>
+          <a href="/employment-permit-processing-dates">Employment permits</a>
+          <a href="/vac-transit">VAC &amp; transit</a>
+          <a href="/contact">Contact</a>
+          <a href="/privacy">Privacy</a>
+          <a href="/terms">Terms</a>
+          <a href="/refund">Refunds</a>
+        </div>
+      </details>
+    </nav>
+  </div>
+</header>
 
-  <main class="page comparison-page">
+  <main id="main-content" tabindex="-1" class="page comparison-page">
     <nav class="breadcrumbs" aria-label="Breadcrumb">
       <ol>
         <li><a href="/">Tracker</a></li>
@@ -113,7 +129,7 @@
         on 10 November 2026. It does not mean the feature is absent. We did not create competitor
         accounts, buy paid plans or test internal accuracy claims.
       </p>
-      <div class="compare-table-wrap">
+      <div class="compare-table-wrap" role="region" aria-label="Competitor comparison table" tabindex="0">
         <table class="compare-table">
           <caption>Publicly described features, checked 10 November 2026</caption>
           <thead>
@@ -178,28 +194,19 @@
       <ul>
         <li><strong>You want the queue, not just the answer.</strong> Decision search is paired with official processing dates and planners, so a result can inform the next application rather than only confirming the last one.</li>
         <li><strong>You do not want a search quota.</strong> There is no per-application monthly cap on searches here.</li>
-        <li><strong>You want to check the working.</strong> The JSON files, source links and pipeline are public, and corrections are checked against the published source.</li>
+        <li><strong>You want to verify the data.</strong> Source files are public, and corrections are checked against the official lists.</li>
         <li><strong>You do not want another account.</strong> Search and the planning pages work without one.</li>
-      </ul>
-    </section>
-
-    <section>
-      <h2>Where another service may fit better</h2>
-      <ul>
-        <li><strong>Email alerts and agency workflows.</strong> VisaRelay publicly describes paid monitoring and an agency dashboard. If those are the priority, compare its current plans and coverage directly.</li>
-        <li><strong>A broader visa toolset or more languages.</strong> Snifox / Visastat publicly lists additional tools and language options. If that matters more than open data, it may be the better fit.</li>
-        <li><strong>A definitive answer on your own case.</strong> The Embassy, ISD or DETE remains the source of truth. Use the official page linked from the relevant tracker rather than relying on any independent summary.</li>
       </ul>
     </section>
 
     <section>
       <h2>What this comparison does not claim</h2>
       <p>
-        This is not an accuracy benchmark, a speed test or a claim that one service is best for
-        every applicant. All independent trackers republish public files and share the same
-        underlying limits: a published row is not an official confirmation, and a queue date is
-        not a promise about an individual application. The comparison records public positioning,
-        not private data or internal performance.
+
+        This is a feature comparison, not an accuracy or speed ranking. Every independent
+        tracker here republishes public files, so none can confirm an individual decision or
+        guarantee a queue date.
+
       </p>
       <p class="callout">
         <strong>Spotted something out of date?</strong> Competitor features change. Email
@@ -214,7 +221,7 @@
         <li><a href="https://www.visarelay.com/" rel="noopener">VisaRelay</a> and its <a href="https://www.visarelay.com/about" rel="noopener">About page</a> &mdash; decision search, optional paid alerts and agency dashboard.</li>
         <li><a href="https://snifox.com/" rel="noopener">Snifox</a> and its <a href="https://visastat.snifox.com/" rel="noopener">Visastat tracker</a> &mdash; six-office coverage, search quota, alerts and listed tools.</li>
         <li><a href="https://www.irishimmigration.ie/visa-decisions/" rel="noopener">ISD visa decisions</a> and <a href="https://www.ireland.ie/en/india/newdelhi/services/visas/processing-times-and-decisions/" rel="noopener">Embassy of Ireland, New Delhi</a> &mdash; official source material.</li>
-        <li><a href="https://github.com/parth-soni-10/Irish-Visa-Tracker" rel="noopener">This tracker's public repository</a> &mdash; code, data pipeline and published JSON.</li>
+        <li><a href="https://github.com/parth-soni-10/Irish-Visa-Tracker" rel="noopener">This tracker's public repository</a> &mdash; code, data and published JSON.</li>
       </ul>
       <p class="small-note">
         VisaRelay and Snifox / Visastat are named for identification only. This tracker is not
@@ -224,9 +231,56 @@
     </section>
   </main>
 
-  <footer class="site-footer">
-    <p><a href="/">Tracker</a> &bull; <a href="/comparison">Compare</a> &bull; <a href="/about">About</a> &bull; <a href="/contact">Contact</a> &bull; <a href="/privacy">Privacy</a> &bull; <a href="/stamp-1g-processing-dates">Stamp 1G</a> &bull; <a href="/daily-summaries">Daily summaries</a> &bull; <a href="/visa-processing-times">Processing times</a></p>
-  </footer>
+  <footer class="sitebar-footer">
+  <div class="sitebar-footer-inner">
+    <div class="sitebar-footer-brand">
+      <a class="brand" href="/" aria-label="Irish Visa Decision Tracker home">
+        <img src="/icon.svg" alt="" width="24" height="24">
+        <span>Irish Visa Decision Tracker</span>
+      </a>
+      <p>Independent and unofficial. Not affiliated with the Embassy of Ireland, ISD or DETE. Not immigration advice.</p>
+    </div>
+    <nav class="sitebar-footer-col" aria-label="Explore">
+      <h2 class="sitebar-footer-title">Explore</h2>
+      <ul>
+        <li><a href="/">Tracker</a></li>
+        <li><a href="/comparison">Compare</a></li>
+        <li><a href="/daily-summaries">Daily summaries</a></li>
+        <li><a href="/monthly-report">Monthly report</a></li>
+        <li><a href="/visa-processing-times">Processing times</a></li>
+        <li><a href="/vac-transit">VAC &amp; transit</a></li>
+      </ul>
+    </nav>
+    <nav class="sitebar-footer-col" aria-label="Data">
+      <h2 class="sitebar-footer-title">Data</h2>
+      <ul>
+        <li><a href="/stamp-1g-processing-dates">Stamp 1G</a></li>
+        <li><a href="/employment-permit-processing-dates">Employment permits</a></li>
+        <li><a href="/data/visa_decisions.json">Visa decisions JSON</a></li>
+        <li><a href="/status">Data status</a></li>
+        <li><a href="/data/data_manifest.json">Data manifest</a></li>
+        <li><a href="/sitemap.xml">Sitemap</a></li>
+        <li><a href="/llms.txt">llms.txt</a></li>
+      </ul>
+    </nav>
+    <nav class="sitebar-footer-col" aria-label="About and legal">
+      <h2 class="sitebar-footer-title">About &amp; legal</h2>
+      <ul>
+        <li><a href="/about">About the project</a></li>
+        <li><a href="/contact">Contact &amp; corrections</a></li>
+        <li><a href="/privacy">Privacy</a></li>
+        <li><a href="/terms">Terms</a></li>
+        <li><a href="/refund">Refund policy</a></li>
+        <li><a href="https://github.com/parth-soni-10/Irish-Visa-Tracker" rel="noopener">GitHub</a></li>
+      </ul>
+    </nav>
+  </div>
+  <div class="sitebar-footer-bottom">
+    <p>&copy; 2026 Parth Soni &middot; Dublin, Ireland</p>
+    <p><a href="/sitemap.xml">Sitemap</a><a href="/llms.txt">llms.txt</a><a href="https://github.com/parth-soni-10/Irish-Visa-Tracker" rel="noopener">GitHub</a></p>
+  </div>
+</footer>
 
+  <script src="/site-chrome.js" defer></script>
 </body>
 </html>

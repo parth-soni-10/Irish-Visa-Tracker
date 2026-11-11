@@ -1,22 +1,22 @@
 {
-  "generated_at": "2026-11-10T12:59:26.759Z",
+  "generated_at": "2026-11-11T21:57:55.581Z",
   "offices": [
     {
       "slug": "new-delhi",
       "name": "New Delhi",
       "source_url": "https://www.ireland.ie/en/india/newdelhi/services/visas/processing-times-and-decisions/",
-      "source_file": "https://www.ireland.ie/5301/20261105_NDVO_Visa_Decisions.ods",
+      "source_file": "https://www.ireland.ie/5308/20261110_NDVO_Visa_Decisions.ods",
       "source_name": "Embassy of Ireland, New Delhi",
-      "report_date": "2026-11-05",
-      "as_of": "2026-11-10",
-      "fetched_at": "2026-11-10T12:07:21.740Z",
+      "report_date": "2026-11-10",
+      "as_of": "2026-11-11",
+      "fetched_at": "2026-11-11T21:57:50.852Z",
       "status": "official",
       "note": null,
-      "decisions": 42370,
-      "approved": 35773,
-      "refused": 6597,
-      "corrections": 0,
-      "added": 42370
+      "decisions": 42472,
+      "approved": 35852,
+      "refused": 6620,
+      "corrections": 1,
+      "added": 103
     },
     {
       "slug": "beijing",

@@ -209,7 +209,10 @@ let schemaReady = false;
 async function ensureSchema(db) {
   if (schemaReady) return;
   
-  const statements = SCHEMA.split(';').map(s => s.trim()).filter(s => s.length > 0 && !s.startsWith('--'));
+  const statements = SCHEMA
+    .split(';')
+    .map(s => s.replace(/^\s*--.*$/gm, '').trim())
+    .filter(s => s.length > 0);
   for (let i = 0; i < statements.length; i++) {
     const stmt = statements[i];
     try {

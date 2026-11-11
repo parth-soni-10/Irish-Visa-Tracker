@@ -5,21 +5,24 @@ Reads the embassy's visa-decision file and upserts rows into
 data/visa_decisions.json in this repo (committed by the workflow).
 
 Every run, in priority order:
-  1. If today already has REAL data on record (not just a placeholder) -> skip.
-  2. If today is Saturday/Sunday -> upsert "Saturday/Sunday, Visa Office is
+  1. If today is Saturday/Sunday -> upsert "Saturday/Sunday, Visa Office is
      closed", dated TODAY. Also backfill any empty days since the latest real
      data, so a missed weekday run can't leave a hole. Stop (no scrape).
-  3. Else check the embassy's closure-dates page for today's date -> if listed,
+  2. Else check the embassy's closure-dates page for today's date -> if listed,
      upsert "Embassy is closed today for <holiday name>", dated TODAY. Also
      backfill empty days as above. Stop (no scrape attempted).
-  4. Else (a normal business day) -> attempt the real scrape. If a file dated
-     today (or later) is found, push new rows and clear any stale placeholder
-     for its date. Otherwise - the scrape failed, found nothing, or the site
-     is still hosting an OLDER file (the file is cumulative and named after its
-     last covered day, so an older file just means today's hasn't appeared
-     yet) - upsert "Visa office hasn't uploaded any sheet until now, check
-     back later, or come back tomorrow", dated TODAY. Every empty day after
-     the latest file's date is backfilled too, so a missed run can never
+  3. Else (a normal business day) -> attempt the real scrape. The file is
+     cumulative, so it is reconciled against the local history: corrected
+     decisions are updated, numbers no longer in the official file are
+     removed, and genuinely new numbers are appended with today's date. This
+     also runs when today already has rows, so a same-day correction is never
+     skipped. If a file dated today (or later) is found, clear any stale
+     placeholder for its date. Otherwise - the scrape failed, found nothing, or
+     the site is still hosting an OLDER file (the file is cumulative and named
+     after its last covered day, so an older file just means today's hasn't
+     appeared yet) - upsert "Visa office hasn't uploaded any sheet until now,
+     check back later, or come back tomorrow", dated TODAY. Every empty day
+     after the latest file's date is backfilled too, so a missed run can never
      silently leave a hole in the dashboard.
 
 New rows are dated with the day they were SCRAPED (today), not the date in
@@ -107,10 +110,16 @@ class HistoryError(RuntimeError):
 
 NO_UPLOAD_MESSAGE = "Visa office hasn't uploaded any sheet until now, check back later, or come back tomorrow"
 WEEKEND_MESSAGE = "Saturday/Sunday, Visa Office is closed"
+# Never prune the local year's rows when the official snapshot is this much
+# smaller than the history we already hold. That usually means a partial or
+# broken parse, not a legitimate mass removal; updating matching rows is still
+# safe, but deleting the rest is not.
+MIN_SOURCE_COVERAGE = 0.8
 
 _PLACEHOLDER_DECISIONS = {
     WEEKEND_MESSAGE,
     NO_UPLOAD_MESSAGE,
+    "Visa office didn't upload any file.",
 }  # known placeholder messages; holiday placeholders start with "Embassy is closed"
 
 BROWSER_HEADERS = {
@@ -430,6 +439,68 @@ def push_new_rows(rows, new_rows):
         rows.append([r["date"], r["irl"], r["decision"]])
 
 
+def reconcile_rows(existing_rows, source_rows, scrape_date, source_year=None):
+    """Apply a cumulative official snapshot to the local history.
+
+    The embassy file is not an append-only feed: an application can move from
+    Refused to Approved, and occasionally a number disappears from the revised
+    file. Updating only on new IRLs would preserve the old decision forever.
+
+    Only rows in ``source_year`` are compared, so importing a new year's
+    cumulative file cannot delete prior years. Placeholder rows are preserved.
+    Removals are skipped when the source looks suspiciously small (see
+    MIN_SOURCE_COVERAGE), which protects against a partial parse wiping the
+    history.
+
+    Returns ``(new_rows, corrected_count, removed_count, prune_skipped)``.
+    """
+    source_year = source_year or str(scrape_date)[:4]
+    if not re.fullmatch(r"\d{4}", str(source_year)):
+        return [], 0, 0, True
+
+    existing_in_year = [
+        r for r in existing_rows
+        if not _is_placeholder_row(r) and str(r[0]).startswith(source_year)
+    ]
+    prune = len(source_rows) >= len(existing_in_year) * MIN_SOURCE_COVERAGE
+
+    kept = []
+    corrected = 0
+    removed = 0
+    for row in existing_rows:
+        if _is_placeholder_row(row):
+            kept.append(row)
+            continue
+        if not str(row[0]).startswith(source_year):
+            kept.append(row)
+            continue
+
+        number = str(row[1]).strip()
+        if number in source_rows:
+            decision = source_rows[number]
+            if row[2] != decision:
+                row[2] = decision
+                corrected += 1
+            kept.append(row)
+        elif prune:
+            removed += 1
+        else:
+            kept.append(row)
+
+    existing_rows[:] = kept
+
+    seen = {str(r[1]).strip() for r in existing_rows if not _is_placeholder_row(r)}
+    new_rows = [
+        {"date": scrape_date, "irl": number, "decision": decision}
+        for number, decision in source_rows.items()
+        if number not in seen
+    ]
+    if new_rows:
+        push_new_rows(existing_rows, new_rows)
+
+    return new_rows, corrected, removed, not prune
+
+
 def set_no_file_placeholder(rows, date_str, message):
     """Insert-or-overwrite (never duplicates) the placeholder row for date_str."""
     key = "NO_FILE_" + date_str
@@ -530,6 +601,10 @@ def _is_placeholder_row(row):
     rather than real visa-decision data."""
     decision = (row[2] or "").strip()
     irl = (row[1] or "").strip()
+    # Legacy placeholders can contain digits in their synthetic key, e.g.
+    # NO_FILE_UPLOADED_2026-07-15. Check the key before the digit heuristic.
+    if irl.startswith("NO_FILE_"):
+        return True
     # Known placeholder messages
     if decision in _PLACEHOLDER_DECISIONS:
         return True
@@ -641,20 +716,17 @@ def _run(existing_rows):
     today_ist = today_dt.strftime("%Y-%m-%d")
 
     existing_irl = {r[1] for r in existing_rows if not _is_placeholder_row(r)}
-
-    # Only skip if today already has REAL data (not just a placeholder)
     today_real = [r for r in existing_rows if r[0] == today_ist and not _is_placeholder_row(r)]
-    if today_real:
-        print(f"Real data already present for {today_ist} ({len(today_real)} rows) - skipping this run.")
-        update_meta(_run_meta(today_dt, existing_irl))
-        return
 
     # --- Priority 1: weekend ---
     weekday = today_dt.weekday()  # Monday=0 ... Sunday=6
     if weekday in (5, 6):
         print(f"Today ({today_ist}) is a weekend - no scrape attempted.")
         if ENABLE_NO_UPLOAD_PLACEHOLDER:
-            set_no_file_placeholder(existing_rows, today_ist, WEEKEND_MESSAGE)
+            if today_real:
+                print(f"Real data already present for {today_ist} - not writing a weekend placeholder.")
+            else:
+                set_no_file_placeholder(existing_rows, today_ist, WEEKEND_MESSAGE)
             # Heal any weekday gaps left by missed runs.
             _backfill_missing_days(existing_rows, today_dt, skip_date=today_ist)
         else:
@@ -667,7 +739,10 @@ def _run(existing_rows):
     if holiday_name:
         print(f"Today ({today_ist}) is a listed closure date: {holiday_name!r} - no scrape attempted.")
         if ENABLE_NO_UPLOAD_PLACEHOLDER:
-            set_no_file_placeholder(existing_rows, today_ist, f"Embassy is closed today for {holiday_name}")
+            if today_real:
+                print(f"Real data already present for {today_ist} - not writing a holiday placeholder.")
+            else:
+                set_no_file_placeholder(existing_rows, today_ist, f"Embassy is closed today for {holiday_name}")
             # Heal any gaps left by missed runs.
             _backfill_missing_days(existing_rows, today_dt, skip_date=today_ist)
         else:
@@ -693,21 +768,35 @@ def _run(existing_rows):
 
         print(f"{len(existing_irl)} existing IRL numbers already on record.")
 
+        source_rows = {}
         for _, r in df.iterrows():
             irl = str(r[app_col]).strip()
             decision = str(r[decision_col]).strip()
-            if not irl or irl in existing_irl or irl.lower() == "nan":
+            if (not irl or irl.lower() == "nan"
+                    or not decision or decision.lower() == "nan"):
                 continue
             if looks_like_header(irl, decision):
                 continue
-            new_rows.append({"date": today_ist, "irl": irl, "decision": decision})
-            existing_irl.add(irl)
+            source_rows[irl] = decision
 
-        print(f"{len(new_rows)} new rows to push (out of {len(df)} rows in file).")
-        if new_rows:
-            push_new_rows(existing_rows, new_rows)
-        else:
-            print("File fetched fine, nothing new in it - Sheet already up to date.")
+        new_rows, corrected, removed, prune_skipped = reconcile_rows(
+            existing_rows, source_rows, today_ist,
+            source_year=(fetch_date or today_ist)[:4],
+        )
+        existing_irl = {r[1] for r in existing_rows if not _is_placeholder_row(r)}
+        existing_irl.update(r["irl"] for r in new_rows)
+        today_real = [
+            r for r in existing_rows
+            if r[0] == today_ist and not _is_placeholder_row(r)
+        ]
+
+        print(f"{len(new_rows)} new rows to push (out of {len(df)} rows in file); "
+              f"{corrected} corrected, {removed} removed.")
+        if prune_skipped and source_rows:
+            print(f"Source has only {len(source_rows)} decisions - skipping "
+                  f"removals to avoid a partial-parse wipe.")
+        if not new_rows and not corrected and not removed:
+            print("File fetched fine, history already matches the official snapshot.")
 
     except Exception as e:
         scrape_failed = True
@@ -729,9 +818,14 @@ def _run(existing_rows):
             clear_no_file_placeholder(existing_rows, today_ist)
         elif fetch_date is None:
             # Scrape failed outright - we can't see the latest file, so at
-            # minimum make sure today's placeholder exists.
-            print(f"No file found this run - upserting placeholder for {today_ist}.")
-            set_no_file_placeholder(existing_rows, today_ist, NO_UPLOAD_MESSAGE)
+            # minimum make sure today's placeholder exists. If today already
+            # has real rows, preserve them instead of adding a conflicting
+            # "no file" placeholder.
+            if today_real:
+                print(f"No file found this run, but real data already exists for {today_ist} - not adding a placeholder.")
+            else:
+                print(f"No file found this run - upserting placeholder for {today_ist}.")
+                set_no_file_placeholder(existing_rows, today_ist, NO_UPLOAD_MESSAGE)
         elif fetch_date < today_ist:
             # A stale file was scraped but had nothing new (its decisions were
             # already recorded). Today's file hasn't been published yet, so

@@ -1,76 +1,76 @@
-# Irish Visa Decision Tracker - Project Instructions
+# Irish Visa Decision Tracker — Project Instructions
 
-## Overview
-Tracks daily visa decisions published by the Embassy of Ireland in New Delhi. A GitHub Actions Python scraper fetches the embassy's `.ods` file and upserts rows into `data/visa_decisions.json` (+ `data/visa_meta.json` health object), committing them back to the repo; the dashboard (embassy-decisions tracker plus Stamp 1G, employment-permit trackers and community timelines) reads those files as one SPA. The only optional repo secret is `ALERT_WEBHOOK_URL` (gap-alert webhook); everything else runs unattended. (The old Google Sheet / Apps Script layer was removed; see git history for `Code.gs`.)
+## Architecture
 
-### Where the data on the page comes from
-`data/*.json` is written by the GitHub Actions jobs, never by hand. The Worker
-serves those five files from the repository (short edge cache, bundled asset as
-fallback - see the data-proxy block in `functions/_router.js`), so a pipeline commit shows
-up on the live site within ~5 minutes with no redeploy. A deploy freezes only
-the *fallback* copy; it is not how the dashboard gets its data.
+- Frontend: one self-contained SPA in `index.html`, plus `workspace.html`,
+  `status.html`, `monthly-report.html` and the trust pages. Shared styling lives
+  in `pages.css`, `site-chrome.css` and `workspace.css`.
+- Hosting: Cloudflare Pages project `irishvisaupdatetracker`.
+- Server: `functions/[[path]].js` catches every request and delegates to
+  `functions/_router.js`. No separate Worker.
+- D1 binding: `DB`, database `irish-visa-tracker-submissions`.
+- Static data: `data/*.json`. The Pages assets and the router serve it with a
+  short cache; generated decisions are committed by the scraper workflow.
+- Email: the app posts a provider-neutral payload to `EMAIL_WEBHOOK_URL`; the
+  deployment’s `/api/email/send` bridge authenticates that call and uses the
+  server-side Resend key. Never expose mail credentials to the browser.
+- Scheduled work: GitHub Actions, because Pages Functions do not support cron
+  triggers. Alert, digest and export endpoints require `X-Cron-Secret`.
 
-### Scheduled runs
-GitHub's scheduled runs on this repo are low priority and routinely land 6-9
-hours late (or not at all) - 2026-10-05..10-12 for the 03:00 UTC jobs, and
-2026-10-13's Stamp 1G run never fired. `track_1g.yml` / `track_permits.yml`
-therefore carry several off-the-hour attempts per day (only the first writes a
-row; the rest are no-ops) and their commit steps retry the push on top of a
-rebase, because the scrape workflow commits every ~30 minutes and a rejected
-push would otherwise drop that day's observation for good.
+## Data model
 
-## Tech Stack
-- Frontend: `index.html` - one self-contained file (inline CSS + inline SPA render). Geist fonts self-hosted in `fonts/`.
-- Icons: Lucide via vendored `lucide.min.js`. Wired with a `MutationObserver` that re-runs `lucide.createIcons()` after any render.
-- Backend/API: none - static JSON in `data/` (`visa_decisions.json` rows as `[date, irl, decision]` arrays, `visa_meta.json` run-status object).
-- Scraper: `scraper.py` (Python: requests, pandas, odfpy, python-dateutil) run by GitHub Actions cron.
-- Hosting: **Cloudflare Pages, one host** - `irishvisaupdatetracker.pages.dev`. Pages compiles `functions/` as the site's function (the catch-all `functions/[[path]].js` reaches `functions/_router.js`), which handles the three forms (POSTs land in D1, binding `DB`), serves the timeline rows back at `GET /api/community-submissions` for the nightly sync, and proxies `data/*.json` from the repo; everything else comes from the static assets staged from the repository root, with response headers in `_headers` (the only copy - the old `netlify.toml` is deleted, since Cloudflare ignored it).
+Six official offices: `new-delhi`, `beijing`, `dublin`, `abu-dhabi`, `abuja`,
+`ankara`. Weekly PDF archives preserve historical report dates. A missing
+official report is a gap; never infer or backfill invented rows.
 
-## Files
-```
-index.html          → the whole SPA (chrome, nav pills, hero, tabs, suggestion form)
-scraper.py          → daily visa-file scraper (weekend / holiday handling, JSON persistence, gap alert)
-track_1g.py         → Stamp 1G processing-date tracker
-track_permits.py    → employment-permit processing-date tracker
-sync_timelines.py   → nightly merge of the Worker's timeline submissions → data/community_timelines.json
-                      (reads GET /api/community-submissions on the site itself: no secret, nothing to set up)
-test_scraper.py, test_track_1g.py, test_permits.py, test_timelines.py → pytest suites (CI runs all four)
-tools/              → make-icons.py, check_html_scripts.py (inline-script syntax check used by CI)
-.github/workflows/  → scrape, test, timelines, track_1g, track_permits
-data/               → visa_decisions.json, visa_meta.json (scraper-owned), stamp_1g.json,
-                      work_permits.json, community_timelines.json
-requirements.txt
-functions/[[path]].js → the catch-all Pages Function: hands every request to the router
-functions/_router.js  → form POSTs → D1, /api/community-submissions (timeline rows) for the
-                      nightly sync, data/ proxied from the repo, Markdown negotiation/404s,
-                      else static assets
-functions/_agent-docs.js → the Markdown bodies, Accept negotiation, Vary/Link helpers and
-                      the 404 document; unit-tested without a Pages runtime
-tests/agent-docs.test.mjs → node:test coverage for negotiation, documents, 404s and metadata
-about.html, contact.html, privacy.html, 404.html → trust and error pages (pages.css)
-llms.txt, sitemap.xml → the agent guide and the four published URLs
-wrangler.toml       → bundle input for the Pages build only (name, main, compatibility date)
-wrangler.dev.toml   → local `wrangler dev` only (assets = repo root, D1 binding `DB`)
-wrangler.toml       → the site's one config: its Pages project, plus the D1 binding it runs on
-schema.sql          → reference copy of the `submissions` table the handler creates lazily
-_headers            → response headers (the assets layer reads this; the only copy, netlify.toml being deleted)
-.assetsignore       → what must never be published (scripts, docs, config, caches)
+Current integrity checks:
+
+```bash
+node tools/verify-embassy-checksums.mjs
+node tools/verify-ankara.mjs
+node --test tests/*.test.mjs
 ```
 
-## Code Style / Conventions
-- SPA is JS-rendered into `#visa-dash`: nav pills, hero, and stat-card labels are template strings inside functions like `render()`, `renderHomeLayout()`, `renderDailySummary()`, `renderPastLayout()`.
-- Icons: add `<i data-lucide="name"></i>` in static markup or render templates - the MutationObserver converts them to inline SVGs automatically (no manual createIcons calls). Size via the `.navpill .lucide` / `.card .label .lucide` rules.
-- Color is intentional: green/red/amber are reserved for decision states; only `--green` is used for decoration. Keep that split.
-- The dashboard must render gracefully with no data ("Awaiting data…") - don't assume rows exist.
+## Conventions
 
-## Testing
-- Python: `pytest` - runs all four `test_*.py` suites; the Tests workflow runs them on every push (pushes touching only `data/**` are skipped).
-- Frontend: serve the folder (geist fonts + lucide are local) and exercise all tabs; `python tools/check_html_scripts.py` syntax-checks every inline script block (`node --check`) - CI runs it on every push too.
-- Agent surfaces: `node --test tests/agent-docs.test.mjs` - covers Accept negotiation, the `.md`
-  aliases, the Markdown 404 contract, and the homepage metadata/JSON-LD. CI runs it alongside the
-  Python suites.
+- Plain HTML/CSS/JS, no frontend framework.
+- Green/red/amber are reserved for decision states.
+- The dashboard must render an explicit empty state with no data.
+- Keep public JSON shapes stable: the New Delhi tracker rows are
+  `[date, applicationNumber, decision]` arrays.
+- API responses that are personalized must be `Cache-Control: no-store`.
+- Never commit `.env`, `.dev.vars`, `.wrangler`, `.pages-dist`, logs, browser
+  state, OCR language data or generated test output.
 
-## Build & Run
-- Scraper: `pip install -r requirements.txt`; runs in GitHub Actions (no required secrets - `ALERT_WEBHOOK_URL` is optional for the gap-alert webhook); commits `data/*.json` back itself.
-- Deploy: a push to `main` deploys it - the repo is connected to the **Cloudflare Pages** project `irishvisaupdatetracker` (production branch `main`, preview builds off). Pages compiles `functions/`, and the build command stages the repository root into `.pages-dist` through `.assetsignore` (`node tools/deploy-pages.mjs --assets . --out .pages-dist`), with the D1 binding coming from `wrangler.toml`. A `data/*` commit therefore republishes the site, which is what keeps `data/` current: the deployment serves those files from its own upload. Nothing is deployed from a shell, and local testing is `npx wrangler pages dev . --d1 DB=irish-visa-tracker-submissions` - measured: `pages dev` did not pick this site's D1 binding up from `wrangler.toml`, so the flag is what makes the local run bind the store it writes to (the deployed project's binding is configured on the project, and the config is what a deploy reads it from).
+## Services
 
+See `docs/services.md` for variable names, current status and the safe secret
+procedure. Do not invent values for Sentry, Twilio, OCR.space or OIDC. The app
+must report those integrations as disabled rather than claiming delivery.
+
+## Workflows
+
+- `scrape.yml`: the Python/Node data ingestion and commit job.
+- `test.yml`: Python, Node, accessibility and Chromium E2E checks.
+- `alerts.yml`: hourly decision-alert safety net.
+- `digest.yml`: monthly digest.
+- `exports.yml`: due scheduled exports.
+- `ml-retrain.yml`: monthly XGBoost retraining, then regenerates
+  `functions/api/model-trees.js` and commits the artifacts.
+- `timelines.yml`, `track_1g.yml`, `track_permits.yml`: community and queue data.
+
+## Deploy
+
+```bash
+npm run build
+npx wrangler pages deploy .pages-dist --project-name=irishvisaupdatetracker --branch=main
+node tools/smoke-deploy.mjs
+```
+
+The GitHub deployment workflow also deploys on a push to `main`. Do not push,
+publish or rotate production secrets without explicit authorization.
+
+## Scope
+
+Native mobile is deferred; the PWA is the supported mobile product. Keep the
+native plan in `IMPLEMENTATION_PLAN.md` as a future option, not active work.

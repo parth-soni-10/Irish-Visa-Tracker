@@ -9,22 +9,39 @@
   <meta name="theme-color" content="#ffffff">
   <link rel="icon" href="/icon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/pages.css">
+  <link rel="stylesheet" href="/site-chrome.css">
 </head>
 <body>
-  <header class="site-header">
-    <div class="site-header-inner">
-      <a class="brand" href="/"><img src="/icon.svg" alt="" width="22" height="22"> Irish Visa Decision Tracker</a>
-      <nav class="site-nav" aria-label="Site">
-        <a href="/">Tracker</a>
-        <a href="/about">About</a>
-        <a href="/contact">Contact</a>
-        <a href="/privacy">Privacy</a>
-        <a href="/terms">Terms</a>
-        <a href="/refund">Refunds</a>
-      </nav>
-    </div>
-  </header>
-  <main class="page">
+  <a class="skip-link" href="#main-content">Skip to content</a>
+  <header class="sitebar">
+  <div class="sitebar-inner">
+    <a class="brand" href="/" aria-label="Irish Visa Decision Tracker home">
+      <img src="/icon.svg" alt="" width="24" height="24">
+      <span>Irish Visa Decision Tracker</span>
+    </a>
+    <nav class="sitebar-nav" aria-label="Site">
+      <a href="/">Tracker</a>
+      <a href="/comparison">Compare</a>
+      <a href="/daily-summaries">Daily summaries</a>
+      <a href="/monthly-report">Monthly report</a>
+      <a href="/visa-processing-times">Processing times</a>
+      <a href="/about">About</a>
+      <details class="sitebar-more is-current">
+        <summary>More</summary>
+        <div class="sitebar-more-panel">
+          <a href="/stamp-1g-processing-dates">Stamp 1G</a>
+          <a href="/employment-permit-processing-dates">Employment permits</a>
+          <a href="/vac-transit">VAC &amp; transit</a>
+          <a href="/contact">Contact</a>
+          <a href="/privacy">Privacy</a>
+          <a href="/terms" aria-current="page">Terms</a>
+          <a href="/refund">Refunds</a>
+        </div>
+      </details>
+    </nav>
+  </div>
+</header>
+  <main id="main-content" tabindex="-1" class="page">
     <p class="page-kicker">Trust &middot; Terms</p>
     <h1>Terms of use</h1>
     <p class="page-meta">Last updated 10 November 2026</p>
@@ -54,8 +71,55 @@
       <p>Questions or corrections: <a href="/contact">use the contact page</a>. Privacy: <a href="/privacy">read the privacy notice</a>.</p>
     </section>
   </main>
-  <footer class="site-footer">
-    <p><a href="/">Tracker</a> &bull; <a href="/about">About</a> &bull; <a href="/contact">Contact</a> &bull; <a href="/privacy">Privacy</a> &bull; <a href="/terms">Terms</a> &bull; <a href="/refund">Refunds</a> &bull; <a href="/sitemap.xml">Sitemap</a></p>
-  </footer>
+  <footer class="sitebar-footer">
+  <div class="sitebar-footer-inner">
+    <div class="sitebar-footer-brand">
+      <a class="brand" href="/" aria-label="Irish Visa Decision Tracker home">
+        <img src="/icon.svg" alt="" width="24" height="24">
+        <span>Irish Visa Decision Tracker</span>
+      </a>
+      <p>Independent and unofficial. Not affiliated with the Embassy of Ireland, ISD or DETE. Not immigration advice.</p>
+    </div>
+    <nav class="sitebar-footer-col" aria-label="Explore">
+      <h2 class="sitebar-footer-title">Explore</h2>
+      <ul>
+        <li><a href="/">Tracker</a></li>
+        <li><a href="/comparison">Compare</a></li>
+        <li><a href="/daily-summaries">Daily summaries</a></li>
+        <li><a href="/monthly-report">Monthly report</a></li>
+        <li><a href="/visa-processing-times">Processing times</a></li>
+        <li><a href="/vac-transit">VAC &amp; transit</a></li>
+      </ul>
+    </nav>
+    <nav class="sitebar-footer-col" aria-label="Data">
+      <h2 class="sitebar-footer-title">Data</h2>
+      <ul>
+        <li><a href="/stamp-1g-processing-dates">Stamp 1G</a></li>
+        <li><a href="/employment-permit-processing-dates">Employment permits</a></li>
+        <li><a href="/data/visa_decisions.json">Visa decisions JSON</a></li>
+        <li><a href="/status">Data status</a></li>
+        <li><a href="/data/data_manifest.json">Data manifest</a></li>
+        <li><a href="/sitemap.xml">Sitemap</a></li>
+        <li><a href="/llms.txt">llms.txt</a></li>
+      </ul>
+    </nav>
+    <nav class="sitebar-footer-col" aria-label="About and legal">
+      <h2 class="sitebar-footer-title">About &amp; legal</h2>
+      <ul>
+        <li><a href="/about">About the project</a></li>
+        <li><a href="/contact">Contact &amp; corrections</a></li>
+        <li><a href="/privacy">Privacy</a></li>
+        <li><a href="/terms">Terms</a></li>
+        <li><a href="/refund">Refund policy</a></li>
+        <li><a href="https://github.com/parth-soni-10/Irish-Visa-Tracker" rel="noopener">GitHub</a></li>
+      </ul>
+    </nav>
+  </div>
+  <div class="sitebar-footer-bottom">
+    <p>&copy; 2026 Parth Soni &middot; Dublin, Ireland</p>
+    <p><a href="/sitemap.xml">Sitemap</a><a href="/llms.txt">llms.txt</a><a href="https://github.com/parth-soni-10/Irish-Visa-Tracker" rel="noopener">GitHub</a></p>
+  </div>
+</footer>
+  <script src="/site-chrome.js" defer></script>
 </body>
 </html>

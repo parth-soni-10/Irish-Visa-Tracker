@@ -1,0 +1,32 @@
+name: Deliver Scheduled Exports
+
+# Runs once a day after the report data settles. Users choose daily, weekly or
+# monthly schedules; the endpoint selects rows whose next_run_at is due and
+# advances the schedule after each attempt.
+on:
+  workflow_dispatch: {}
+  schedule:
+    - cron: '15 7 * * *'  # daily 07:15 UTC, after the 07:00 UTC due time
+
+permissions:
+  contents: read
+
+jobs:
+  deliver:
+    name: Send due private exports
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger export delivery
+        env:
+          CRON_SECRET: ${{ secrets.SCRAPER_CRON_SECRET }}
+          APP_BASE_URL: ${{ vars.APP_BASE_URL || 'https://irishvisaupdatetracker.pages.dev' }}
+        run: |
+          if [ -z "$CRON_SECRET" ]; then
+            echo "::warning::SCRAPER_CRON_SECRET is not configured; skipping scheduled exports."
+            exit 0
+          fi
+          curl --fail-with-body --silent --show-error \
+            --retry 3 --retry-delay 15 --max-time 120 \
+            -X POST \
+            -H "X-Cron-Secret: $CRON_SECRET" \
+            "$APP_BASE_URL/api/exports/run"

@@ -1,403 +1,360 @@
 /**
  * Admin API Routes
- * Handles admin dashboard, scraper health, data quality, metrics
+ *
+ * Reads the published JSON snapshots and the D1 tables this project actually
+ * creates. The previous implementation queried scraper_logs, embassy_decisions,
+ * api_logs and error_logs, none of which exist, so every panel returned 500.
  */
 
-// Admin authentication middleware
-async function requireAdmin(request, env) {
-  const authHeader = request.headers.get('Authorization');
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return { authorized: false, response: new Response(JSON.stringify({ error: 'Admin token required' }), { status: 401, headers: { 'Content-Type': 'application/json' } }) };
+import { hashToken } from './auth.js';
+import { loadReportData } from './report-data.js';
+
+function json(body, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }
+  });
+}
+
+function tokenMatches(a, b) {
+  const left = String(a || '');
+  const right = String(b || '');
+  if (!left || !right || left.length !== right.length) return false;
+  let diff = 0;
+  for (let i = 0; i < left.length; i++) diff |= left.charCodeAt(i) ^ right.charCodeAt(i);
+  return diff === 0;
+}
+
+async function ensureAdminSchema(env) {
+  if (!env.DB) return false;
+  await env.DB.prepare(`
+    CREATE TABLE IF NOT EXISTS admin_tokens (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      token_hash TEXT NOT NULL UNIQUE,
+      expires_at TEXT,
+      revoked INTEGER DEFAULT 0,
+      last_used_at TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    )
+  `).run().catch(() => {});
+  try {
+    await env.DB.prepare('SELECT last_used_at FROM admin_tokens LIMIT 1').first();
+  } catch {
+    await env.DB.prepare('ALTER TABLE admin_tokens ADD COLUMN last_used_at TEXT').run().catch(() => {});
   }
-  
-  const token = authHeader.substring(7);
-  const isValid = await validateAdminToken(env, token);
-  
-  if (!isValid) {
-    return { authorized: false, response: new Response(JSON.stringify({ error: 'Invalid admin token' }), { status: 401, headers: { 'Content-Type': 'application/json' } }) };
-  }
-  
-  return { authorized: true };
+  return true;
 }
 
 async function validateAdminToken(env, token) {
-  const tokenHash = await hashPassword(token);
+  if (!token) return false;
+  // Bootstrap access. Rotate this after creating a named token.
+  if (env.ADMIN_DASHBOARD_TOKEN && tokenMatches(token, env.ADMIN_DASHBOARD_TOKEN)) return true;
+  if (!env.DB) return false;
+
+  const tokenHash = await hashToken(token);
   const record = await env.DB.prepare(`
-    SELECT 1 FROM admin_tokens WHERE token_hash = ? AND expires_at > datetime('now') AND revoked = 0
+    SELECT id FROM admin_tokens
+    WHERE token_hash = ? AND revoked = 0
+      AND (expires_at IS NULL OR expires_at > datetime('now'))
   `).bind(tokenHash).first();
-  
-  return !!record;
+  if (record) {
+    env.DB.prepare("UPDATE admin_tokens SET last_used_at = datetime('now') WHERE id = ?")
+      .bind(record.id).run().catch(() => {});
+  }
+  return Boolean(record);
 }
 
-// Get scraper health status
+async function requireAdmin(request, env) {
+  const authHeader = request.headers.get('Authorization') || '';
+  if (!authHeader.startsWith('Bearer ')) {
+    return { authorized: false, response: json({ error: 'Admin token required' }, 401) };
+  }
+  if (!(await ensureAdminSchema(env))) {
+    return { authorized: false, response: json({ error: 'Database not configured' }, 503) };
+  }
+  if (!(await validateAdminToken(env, authHeader.slice(7).trim()))) {
+    return { authorized: false, response: json({ error: 'Invalid admin token' }, 401) };
+  }
+  return { authorized: true };
+}
+
+function daysSince(dateString) {
+  if (!dateString) return null;
+  const date = new Date(String(dateString).slice(0, 10) + 'T00:00:00Z');
+  return Number.isNaN(date.getTime()) ? null : Math.round((Date.now() - date.getTime()) / 86400000);
+}
+
+async function safeCount(env, sql) {
+  try {
+    const row = await env.DB.prepare(sql).first();
+    return Number(row && row.count) || 0;
+  } catch {
+    return 0;
+  }
+}
+
 export async function handleScraperHealth(request, env) {
   const auth = await requireAdmin(request, env);
   if (!auth.authorized) return auth.response;
 
   try {
-    const now = new Date();
-    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-    const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-
-    // Get last run times for each embassy
-    const embassies = ['new-delhi', 'beijing', 'dublin', 'abu-dhabi', 'abuja', 'ankara'];
-    const health = {};
-
-    for (const slug of embassies) {
-      // Get latest data timestamp
-      const latest = await env.DB.prepare(`
-        SELECT MAX(last_run_at) as last_run FROM scraper_logs WHERE embassy_slug = ?
-      `).bind(slug).first();
-
-      // Get recent runs
-      const recent = await env.DB.prepare(`
-        SELECT * FROM scraper_logs WHERE embassy_slug = ? AND started_at > ? ORDER BY started_at DESC LIMIT 10
-      `).bind(slug, oneWeekAgo).all();
-
-      const successCount = recent.results?.filter(r => r.status === 'success').length || 0;
-      const totalCount = recent.results?.length || 0;
-      const successRate = totalCount > 0 ? (successCount / totalCount * 100).toFixed(1) : 0;
-
-      // Get data freshness
-      const latestData = await env.DB.prepare(`
-        SELECT MAX(lastUpdated) as latest FROM embassy_data WHERE embassy_slug = ?
-      `).bind(slug).first();
-
-      const hoursSinceRun = latest?.last_run 
-        ? ((Date.now() - new Date(latest.last_run).getTime()) / (1000 * 60 * 60)).toFixed(1)
-        : null;
-      
-      const hoursSinceData = latestData?.latest 
-        ? ((Date.now() - new Date(latestData.latest).getTime()) / (1000 * 60 * 60)).toFixed(1)
-        : null;
-
-      health[slug] = {
-        status: successRate >= 80 ? 'healthy' : successRate > 0 ? 'degraded' : 'down',
-        lastRun: latest?.last_run || null,
-        hoursSinceRun: hoursSinceRun ? parseFloat(hoursSinceRun) : null,
-        hoursSinceData: hoursSinceData ? parseFloat(hoursSinceData) : null,
-        recentRuns: totalCount,
-        successRate: parseFloat(successRate),
-        recentErrors: recent.results?.filter(r => r.status !== 'success').map(r => ({
-          time: r.started_at,
-          error: r.error_message
-        })).slice(0, 5) || []
+    const report = await loadReportData(env, request);
+    const embassies = {};
+    for (const office of report.officeList) {
+      const rows = report.rows.filter((row) => row.office === office.slug);
+      const ageDays = daysSince(office.report_date);
+      const status = ageDays == null
+        ? (rows.length ? 'healthy' : 'down')
+        : ageDays <= 2 ? 'healthy' : ageDays <= 7 ? 'stale' : 'down';
+      const fetched = office.fetched_at || null;
+      embassies[office.slug] = {
+        status,
+        lastRun: fetched,
+        hoursSinceRun: fetched ? Math.round((Date.now() - new Date(fetched).getTime()) / 360000) / 10 : null,
+        reportDate: office.report_date,
+        hoursSinceData: ageDays == null ? null : ageDays * 24,
+        decisions: rows.length,
+        reportedTotal: Number(office.reported_total) || 0,
+        successRate: rows.length ? 100 : 0,
+        recentErrors: []
       };
     }
-
-    // Overall health
-    const allHealthy = Object.values(health).every(h => h.status === 'healthy');
-    const anyDown = Object.values(health).some(h => h.status === 'down');
-
-    return new Response(JSON.stringify({
-      overall: allHealthy ? 'healthy' : anyDown ? 'degraded' : 'degraded',
+    const values = Object.values(embassies);
+    return json({
+      overall: values.some((item) => item.status === 'down') ? 'degraded'
+        : values.every((item) => item.status === 'healthy') ? 'healthy' : 'degraded',
       timestamp: new Date().toISOString(),
-      embassies: health
-    }), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' }
+      source: 'published snapshots + data_manifest.json',
+      embassies
     });
   } catch (error) {
     console.error('Scraper health error:', error);
-    return new Response(JSON.stringify({ error: 'Failed to fetch health' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' }
-    });
+    return json({ error: 'Failed to fetch health' }, 500);
   }
 }
 
-// Get data quality metrics
 export async function handleDataQuality(request, env) {
   const auth = await requireAdmin(request, env);
   if (!auth.authorized) return auth.response;
 
   try {
-    const embassies = ['new-delhi', 'beijing', 'dublin', 'abu-dhabi', 'abuja', 'ankara'];
-    const quality = {};
-
-    for (const slug of embassies) {
-      // Total decisions
-      const total = await env.DB.prepare(
-        'SELECT COUNT(*) as count FROM embassy_decisions WHERE embassy = ?'
-      ).bind(slug).first();
-
-      // Decisions with all fields
-      const complete = await env.DB.prepare(
-        'SELECT COUNT(*) as count FROM embassy_decisions WHERE embassy = ? AND number IS NOT NULL AND decision IS NOT NULL AND date IS NOT NULL'
-      ).bind(slug).first();
-
-      // Duplicate check
-      const duplicates = await env.DB.prepare(`
-        SELECT number, COUNT(*) as cnt FROM embassy_decisions 
-        WHERE embassy = ? GROUP BY number HAVING COUNT(*) > 1
-      `).bind(slug).all();
-
-      // Date range
-      const range = await env.DB.prepare(`
-        SELECT MIN(date) as min_date, MAX(date) as max_date 
-        FROM embassy_decisions WHERE embassy = ?
-      `).bind(slug).first();
-
-      // Decisions per month (last 12 months)
-      const monthly = await env.DB.prepare(`
-        SELECT strftime('%Y-%m', date) as month, COUNT(*) as count
-        FROM embassy_decisions 
-        WHERE embassy = ? AND date >= date('now', '-12 months')
-        GROUP BY month ORDER BY month
-      `).bind(slug).all();
-
-      quality[slug] = {
-        totalDecisions: total?.count || 0,
-        completeness: total?.count ? ((complete?.count || 0) / total.count * 100).toFixed(1) : 0,
-        duplicateCount: duplicates?.results?.length || 0,
-        dateRange: range ? { min: range.min_date, max: range.max_date } : null,
-        monthlyTrend: monthly?.results || [],
-        avgPerMonth: monthly?.results?.length 
-          ? (monthly.results.reduce((sum, r) => sum + r.count, 0) / monthly.results.length).toFixed(1) 
+    const report = await loadReportData(env, request);
+    const embassies = {};
+    for (const office of report.officeList) {
+      const rows = report.rows.filter((row) => row.office === office.slug);
+      const seen = new Map();
+      const monthly = new Map();
+      let complete = 0;
+      let min = null;
+      let max = null;
+      for (const row of rows) {
+        if (row.number && row.decision && row.date) complete += 1;
+        seen.set(String(row.number || ''), (seen.get(String(row.number || '')) || 0) + 1);
+        if (row.date) {
+          if (!min || row.date < min) min = row.date;
+          if (!max || row.date > max) max = row.date;
+          const key = String(row.date).slice(0, 7);
+          monthly.set(key, (monthly.get(key) || 0) + 1);
+        }
+      }
+      const trend = [...monthly.entries()].sort(([a], [b]) => a.localeCompare(b)).slice(-12)
+        .map(([month, count]) => ({ month, count }));
+      embassies[office.slug] = {
+        totalDecisions: rows.length,
+        reportedTotal: Number(office.reported_total) || 0,
+        completeness: rows.length ? Number(((complete / rows.length) * 100).toFixed(1)) : 0,
+        duplicateCount: [...seen.values()].filter((count) => count > 1).length,
+        dateRange: min ? { min, max } : null,
+        monthlyTrend: trend,
+        avgPerMonth: trend.length
+          ? Number((trend.reduce((sum, item) => sum + item.count, 0) / trend.length).toFixed(1))
           : 0
       };
     }
-
-    return new Response(JSON.stringify({
-      timestamp: new Date().toISOString(),
-      embassies: quality
-    }), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' }
-    });
+    return json({ timestamp: new Date().toISOString(), embassies });
   } catch (error) {
     console.error('Data quality error:', error);
-    return new Response(JSON.stringify({ error: 'Failed to fetch quality metrics' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' }
-    });
+    return json({ error: 'Failed to fetch quality metrics' }, 500);
   }
 }
 
-// Get system metrics
 export async function handleSystemMetrics(request, env) {
   const auth = await requireAdmin(request, env);
   if (!auth.authorized) return auth.response;
 
   try {
-    // User metrics
-    const users = await env.DB.prepare(`
-      SELECT 
-        COUNT(*) as total,
-        COUNT(CASE WHEN created_at > datetime('now', '-7 days') THEN 1 END) as last_week,
-        COUNT(CASE WHEN created_at > datetime('now', '-30 days') THEN 1 END) as last_month
-      FROM users
-    `).first();
-
-    // Session metrics
-    const sessions = await env.DB.prepare(`
-      SELECT COUNT(*) as active_sessions FROM user_sessions WHERE expires_at > datetime('now')
-    `).first();
-
-    // Alert subscriptions
-    const alerts = await env.DB.prepare(`
-      SELECT 
-        COUNT(*) as total,
-        COUNT(CASE WHEN verified = 1 AND unsubscribed = 0 THEN 1 END) as active
-      FROM email_subscriptions
-    `).first();
-
-    // Push subscriptions
-    const push = await env.DB.prepare(`
-      SELECT COUNT(*) as total FROM push_subscriptions
-    `).first();
-
-    // Data volume
-    const dataVolume = await env.DB.prepare(`
-      SELECT 
-        (SELECT COUNT(*) FROM embassy_decisions) as visa_decisions,
-        (SELECT COUNT(*) FROM stamp_1g_data) as stamp_1g,
-        (SELECT COUNT(*) FROM work_permits) as work_permits,
-        (SELECT COUNT(*) FROM community_timelines) as community_timelines
-    `).first();
-
-    // API usage (last 24h)
-    const apiUsage = await env.DB.prepare(`
-      SELECT 
-        endpoint,
-        COUNT(*) as requests,
-        AVG(duration_ms) as avg_duration,
-        MAX(duration_ms) as max_duration
-      FROM api_logs 
-      WHERE timestamp > datetime('now', '-24 hours')
-      GROUP BY endpoint
-      ORDER BY requests DESC
-      LIMIT 20
-    `).all();
-
-    // Error rates
-    const errors = await env.DB.prepare(`
-      SELECT 
-        endpoint,
-        COUNT(*) as errors,
-        AVG(duration_ms) as avg_duration
-      FROM api_logs 
-      WHERE timestamp > datetime('now', '-24 hours') AND status >= 400
-      GROUP BY endpoint
-      ORDER BY errors DESC
-      LIMIT 20
-    `).all();
-
-    return new Response(JSON.stringify({
+    const [users, sessions, email, push, watchlists, apiTokens, notifications, submissions,
+      smsChannels, whatsappChannels, communityPosts, organizations, scheduledExports, exportJobs] = await Promise.all([
+      env.DB.prepare(`SELECT COUNT(*) AS count,
+        COUNT(CASE WHEN created_at > datetime('now', '-7 days') THEN 1 END) AS last_week,
+        COUNT(CASE WHEN created_at > datetime('now', '-30 days') THEN 1 END) AS last_month
+        FROM users`).first(),
+      safeCount(env, "SELECT COUNT(*) AS count FROM user_sessions WHERE expires_at > datetime('now')"),
+      env.DB.prepare(`SELECT COUNT(*) AS total,
+        COUNT(CASE WHEN verified = 1 AND unsubscribed = 0 THEN 1 END) AS active
+        FROM email_subscriptions`).first().catch(() => ({ total: 0, active: 0 })),
+      safeCount(env, 'SELECT COUNT(*) AS count FROM push_subscriptions'),
+      safeCount(env, 'SELECT COUNT(*) AS count FROM watchlists'),
+      safeCount(env, 'SELECT COUNT(*) AS count FROM api_tokens WHERE revoked = 0'),
+      safeCount(env, 'SELECT COUNT(*) AS count FROM user_notifications WHERE read_at IS NULL'),
+      safeCount(env, 'SELECT COUNT(*) AS count FROM submissions'),
+      safeCount(env, "SELECT COUNT(*) AS count FROM user_channels WHERE channel = 'sms' AND verified = 1"),
+      safeCount(env, "SELECT COUNT(*) AS count FROM user_channels WHERE channel = 'whatsapp' AND verified = 1"),
+      safeCount(env, "SELECT COUNT(*) AS count FROM community_posts WHERE status = 'published'"),
+      safeCount(env, 'SELECT COUNT(*) AS count FROM organizations'),
+      safeCount(env, 'SELECT COUNT(*) AS count FROM scheduled_exports WHERE enabled = 1'),
+      safeCount(env, "SELECT COUNT(*) AS count FROM export_jobs WHERE status = 'ready'")
+    ]);
+    const report = await loadReportData(env, request);
+    const offices = {};
+    for (const office of report.officeList) {
+      offices[office.slug] = report.rows.filter((row) => row.office === office.slug).length;
+    }
+    return json({
       timestamp: new Date().toISOString(),
       users: {
-        total: users?.total || 0,
-        lastWeek: users?.last_week || 0,
-        lastMonth: users?.last_month || 0,
-        activeSessions: sessions?.active_sessions || 0
+        total: Number(users && users.count) || 0,
+        lastWeek: Number(users && users.last_week) || 0,
+        lastMonth: Number(users && users.last_month) || 0,
+        activeSessions: sessions
       },
       subscriptions: {
-        email: { total: alerts?.total || 0, active: alerts?.active || 0 },
-        push: { total: push?.total || 0 }
+        email: { total: Number(email && email.total) || 0, active: Number(email && email.active) || 0 },
+        push: { total: push }
       },
-      dataVolume: dataVolume || {},
+      watchlists,
+      exportTokens: apiTokens,
+      unreadNotifications: notifications,
+      submissions,
+      product: {
+        smsChannels,
+        whatsappChannels,
+        communityPosts,
+        organizations,
+        scheduledExports,
+        readyExports: exportJobs
+      },
+      dataVolume: { visa_decisions: report.rows.length, offices, latest_date: report.latestDate },
       api: {
-        requests: apiUsage?.results || [],
-        errors: errors?.results || []
+        requests: [],
+        errors: [],
+        note: 'API request logging is not enabled; use Cloudflare analytics for request counts.'
       }
-    }), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' }
     });
   } catch (error) {
     console.error('Metrics error:', error);
-    return new Response(JSON.stringify({ error: 'Failed to fetch metrics' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' }
-    });
+    return json({ error: 'Failed to fetch metrics' }, 500);
   }
 }
 
-// Get error logs
 export async function handleErrorLogs(request, env) {
   const auth = await requireAdmin(request, env);
   if (!auth.authorized) return auth.response;
-
-  const url = new URL(request.url);
-  const limit = Math.min(parseInt(url.searchParams.get('limit') || '100'), 1000);
-  const hours = Math.min(parseInt(url.searchParams.get('hours') || '24'), 168);
-  const level = url.searchParams.get('level') || 'error';
-
-  try {
-    let query = `
-      SELECT * FROM error_logs 
-      WHERE timestamp > datetime('now', ?) 
-      AND level = ?
-      ORDER BY timestamp DESC LIMIT ?
-    `;
-    const params = [`-${hours} hours`, level, limit];
-    
-    const logs = await env.DB.prepare(query).bind(...params).all();
-    
-    return new Response(JSON.stringify({
-      logs: logs?.results || [],
-      count: logs?.results?.length || 0
-    }), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' }
-    });
-  } catch (error) {
-    console.error('Error logs error:', error);
-    return new Response(JSON.stringify({ error: 'Failed to fetch error logs' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' }
-    });
-  }
+  return json({
+    logs: [],
+    count: 0,
+    source: 'sentry',
+    configured: Boolean(env.SENTRY_DSN),
+    note: env.SENTRY_DSN
+      ? 'Open the Sentry project for the error stream. This dashboard does not mirror Sentry events.'
+      : 'SENTRY_DSN is not configured. Set it to collect server errors.'
+  });
 }
 
-// Manual scraper trigger
 export async function handleTriggerScraper(request, env) {
   const auth = await requireAdmin(request, env);
   if (!auth.authorized) return auth.response;
-
-  if (request.method !== 'POST') {
-    return new Response(JSON.stringify({ error: 'Method not allowed' }), { 
-      status: 405, headers: { 'Content-Type': 'application/json' } 
-    });
-  }
+  if (request.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
 
   let body;
   try {
     body = await request.json();
   } catch {
-    return new Response(JSON.stringify({ error: 'Invalid JSON' }), { 
-      status: 400, headers: { 'Content-Type': 'application/json' } 
-    });
+    return json({ error: 'Invalid JSON' }, 400);
+  }
+  const embassy = String(body.embassy || '').trim();
+  if (!embassy) return json({ error: 'Embassy required' }, 400);
+
+  const token = env.GITHUB_DISPATCH_TOKEN || env.GITHUB_TOKEN;
+  if (!token) {
+    return json({
+      error: 'GitHub Actions dispatch is not configured',
+      hint: 'Set GITHUB_DISPATCH_TOKEN (repo:actions write) to enable the dashboard trigger.'
+    }, 503);
   }
 
-  const { embassy } = body;
-  if (!embassy) {
-    return new Response(JSON.stringify({ error: 'Embassy required' }), { 
-      status: 400, headers: { 'Content-Type': 'application/json' } 
-    });
+  const repo = env.GITHUB_REPO || 'parth-soni-10/Irish-Visa-Tracker';
+  const workflow = env.GITHUB_SCRAPE_WORKFLOW || 'scrape.yml';
+  const response = await fetch(
+    'https://api.github.com/repos/' + repo + '/actions/workflows/' + workflow + '/dispatches',
+    {
+      method: 'POST',
+      headers: {
+        Authorization: 'Bearer ' + token,
+        Accept: 'application/vnd.github+json',
+        'X-GitHub-Api-Version': '2022-11-28',
+        'User-Agent': 'irish-visa-tracker-admin'
+      },
+      body: JSON.stringify({ ref: env.GITHUB_DISPATCH_REF || 'main' })
+    }
+  );
+  if (!response.ok) {
+    const detail = await response.text().catch(() => '');
+    return json({
+      error: 'GitHub Actions rejected the dispatch',
+      status: response.status,
+      detail: detail.slice(0, 500)
+    }, 502);
   }
-
-  // This would trigger the scraper - in production you'd use a queue
-  return new Response(JSON.stringify({ 
-    success: true, 
-    message: `Scraper triggered for ${embassy}`,
-    note: 'In production, this would trigger a background job'
-  }), {
-    status: 200,
-    headers: { 'Content-Type': 'application/json' }
-  });
+  return json({
+    success: true,
+    message: 'Scraper workflow dispatched for ' + embassy + '.',
+    workflow,
+    repo
+  }, 202);
 }
 
-// Manage admin tokens
 export async function handleAdminTokens(request, env) {
   const auth = await requireAdmin(request, env);
   if (!auth.authorized) return auth.response;
 
   if (request.method === 'GET') {
     const tokens = await env.DB.prepare(`
-      SELECT id, name, created_at, expires_at, last_used, revoked 
+      SELECT id, name, created_at, expires_at, last_used_at, revoked
       FROM admin_tokens ORDER BY created_at DESC
     `).all();
-    return new Response(JSON.stringify({ tokens: tokens?.results || [] }), {
-      status: 200, headers: { 'Content-Type': 'application/json' }
-    });
+    return json({ tokens: tokens.results || [] });
   }
 
   if (request.method === 'POST') {
     let body;
-    try { body = await request.json(); } catch { return new Response(JSON.stringify({ error: 'Invalid JSON' }), { status: 400, headers: { 'Content-Type': 'application/json' } }); }
-    
-    const { name, expiresDays } = body;
-    if (!name) return new Response(JSON.stringify({ error: 'Name required' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
-
+    try {
+      body = await request.json();
+    } catch {
+      return json({ error: 'Invalid JSON' }, 400);
+    }
+    const name = String(body.name || '').trim().slice(0, 100);
+    if (!name) return json({ error: 'Name required' }, 400);
+    const days = Math.max(1, Math.min(Number(body.expiresDays) || 90, 3650));
     const token = 'admin_' + crypto.randomUUID().replace(/-/g, '') + crypto.randomUUID().replace(/-/g, '');
-    const tokenHash = await hashPassword(token);
-    const expiresAt = new Date(Date.now() + (expiresDays || 90) * 24 * 60 * 60 * 1000).toISOString();
-
+    const tokenHash = await hashToken(token);
+    const id = crypto.randomUUID();
+    const expiresAt = new Date(Date.now() + days * 86400000).toISOString();
     await env.DB.prepare(`
-      INSERT INTO admin_tokens (token_hash, name, expires_at, created_at)
-      VALUES (?, ?, ?, datetime('now'))
-    `).bind(tokenHash, name, expiresAt).run();
-
-    return new Response(JSON.stringify({ 
-      success: true, 
-      token, // Only shown once
-      name,
-      expiresAt
-    }), { status: 201, headers: { 'Content-Type': 'application/json' } });
+      INSERT INTO admin_tokens (id, token_hash, name, expires_at, created_at)
+      VALUES (?, ?, ?, ?, datetime('now'))
+    `).bind(id, tokenHash, name, expiresAt).run();
+    return json({ success: true, id, token, name, expiresAt }, 201);
   }
 
   if (request.method === 'DELETE') {
-    const url = new URL(request.url);
-    const id = url.searchParams.get('id');
-    if (!id) return new Response(JSON.stringify({ error: 'ID required' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
-    
-    await env.DB.prepare('UPDATE admin_tokens SET revoked = 1 WHERE id = ?').bind(id).run();
-    return new Response(JSON.stringify({ success: true }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    const id = new URL(request.url).searchParams.get('id');
+    if (!id) return json({ error: 'ID required' }, 400);
+    const result = await env.DB.prepare('UPDATE admin_tokens SET revoked = 1 WHERE id = ?').bind(id).run();
+    if (!result.meta || result.meta.changes === 0) return json({ error: 'Token not found' }, 404);
+    return json({ success: true });
   }
 
-  return new Response(JSON.stringify({ error: 'Method not allowed' }), { status: 405, headers: { 'Content-Type': 'application/json' } });
+  return json({ error: 'Method not allowed' }, 405);
 }
-
-// All handlers are already exported individually above
-// This file uses named exports - no need for a collective export

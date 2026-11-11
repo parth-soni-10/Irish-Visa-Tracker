@@ -18,3 +18,41 @@ perf/raw/
 .dev.vars.*
 .env
 .env.*
+
+# Local dependencies and generated build/test output
+node_modules/
+.functions-build/
+test-functions/
+playwright-report/
+test-results/
+/test-results.json
+
+# Local logs and scratch output
+*.log
+/wrangler-output.txt
+/build_log.txt
+/log_output.txt
+
+# Local browser state and downloaded OCR data
+/cookies.txt
+*.traineddata
+
+# Debug screenshots
+/*-debug.png
+/*-check.png
+
+# Ad-hoc root-level repair/check scripts
+/debug_*.js
+/check_*.py
+/check_*.js
+/fix_*.py
+/add_*.py
+/inline_*.py
+/find_*.py
+/find_*.js
+/IMPLEMENT_ALL_GAPS.py
+/test_final.py
+/test_predict.js
+/update_landing.py
+/landing-page-update.js
+/orphan_landing.js

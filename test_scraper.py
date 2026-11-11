@@ -75,6 +75,74 @@ class PlaceholderOpsTests(unittest.TestCase):
         scraper.clear_no_file_placeholder(rows, "2026-08-12")  # no-op, must not raise
 
 
+class ReconcileRowsTests(unittest.TestCase):
+    """The cumulative official file is authoritative, not append-only."""
+
+    def test_updates_corrected_decision_and_adds_new_rows(self):
+        rows = [
+            ["2026-07-12", "100", "Refused"],
+            ["2026-07-12", "101", "Refused"],
+            ["2026-07-12", "NO_FILE_2026-07-12", scraper.NO_UPLOAD_MESSAGE],
+        ]
+        source = {"100": "Approved", "101": "Refused", "102": "Approved"}
+        new_rows, corrected, removed, prune_skipped = scraper.reconcile_rows(
+            rows, source, "2026-11-11")
+
+        self.assertEqual(rows[0], ["2026-07-12", "100", "Approved"])
+        self.assertEqual(rows[1], ["2026-07-12", "101", "Refused"])
+        self.assertEqual(rows[2][1], "NO_FILE_2026-07-12")
+        self.assertEqual(rows[3], ["2026-11-11", "102", "Approved"])
+        self.assertEqual(new_rows, [{"date": "2026-11-11", "irl": "102", "decision": "Approved"}])
+        self.assertEqual(corrected, 1)
+        self.assertEqual(removed, 0)
+        self.assertFalse(prune_skipped)
+
+    def test_removes_numbers_absent_from_current_source(self):
+        rows = [["2026-07-12", str(number), "Approved"] for number in range(10)]
+        source = {str(number): "Approved" for number in range(9)}
+
+        new_rows, corrected, removed, prune_skipped = scraper.reconcile_rows(
+            rows, source, "2026-11-11")
+
+        self.assertEqual(removed, 1)
+        self.assertFalse(prune_skipped)
+        self.assertNotIn("9", {row[1] for row in rows})
+        self.assertEqual(len(rows), 9)
+        self.assertEqual(new_rows, [])
+        self.assertEqual(corrected, 0)
+
+    def test_skips_removals_when_source_looks_partial(self):
+        rows = [["2026-07-12", str(number), "Approved"] for number in range(10)]
+        source = {"0": "Approved"}
+
+        new_rows, corrected, removed, prune_skipped = scraper.reconcile_rows(
+            rows, source, "2026-11-11")
+
+        self.assertEqual(removed, 0)
+        self.assertTrue(prune_skipped)
+        self.assertEqual(len(rows), 10)
+        self.assertEqual(new_rows, [])
+        self.assertEqual(corrected, 0)
+
+    def test_preserves_other_years_and_legacy_placeholders(self):
+        rows = [
+            ["2025-12-31", "100", "Refused"],
+            ["2026-07-12", "100", "Refused"],
+            ["2026-07-15", "NO_FILE_UPLOADED_2026-07-15",
+             "Visa office didn't upload any file."],
+        ]
+        new_rows, corrected, removed, prune_skipped = scraper.reconcile_rows(
+            rows, {"100": "Approved"}, "2026-11-11")
+
+        self.assertEqual(rows[0], ["2025-12-31", "100", "Refused"])
+        self.assertEqual(rows[1], ["2026-07-12", "100", "Approved"])
+        self.assertEqual(rows[2][1], "NO_FILE_UPLOADED_2026-07-15")
+        self.assertEqual(corrected, 1)
+        self.assertEqual(removed, 0)
+        self.assertFalse(prune_skipped)
+        self.assertEqual(new_rows, [])
+
+
 class UpdateMetaTests(unittest.TestCase):
     def test_update_meta_writes_json_file(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -132,8 +200,16 @@ class MainPlaceholderTests(unittest.TestCase):
                  new_irls=(), fail_scrape=False, holiday=None, closure_dates=None):
         """Run main() with everything mocked except the decision logic.
         Returns (push, set_ph, clear_ph, exit_code, meta, save)."""
+        # The real ODS is cumulative, so include the rows already on record in
+        # the mocked source file as well as the newly published ones.
+        source_irls = [
+            row[1] for row in existing_rows
+            if not scraper._is_placeholder_row(row)
+        ]
+        source_irls.extend("IRL" + irl for irl in new_irls)
+        source_irls = list(dict.fromkeys(source_irls))
         df = scraper.pd.DataFrame(
-            [["IRL" + irl, "Granted"] for irl in new_irls],
+            [[irl, "Granted"] for irl in source_irls],
             columns=["IRL Number", "Decision"],
         )
         with patch("scraper.now_ist", return_value=now), \
@@ -275,14 +351,20 @@ class MainPlaceholderTests(unittest.TestCase):
         self.assertEqual(len(calls), 6)
         push.assert_not_called()
 
-    def test_today_real_data_skips_entirely(self):
+    def test_today_real_data_is_still_reconciled(self):
+        # A correction can arrive after the first run of the day. Do not skip
+        # the scrape just because today's rows already exist: apply the new
+        # decision in place, without appending a duplicate or a placeholder.
         now = ist("2026-08-12")
-        existing = [["2026-08-12", "IRL100", "Granted"]]
-        push, set_ph, clear_ph, exited, upd_meta, save = self.run_main(now, existing)
+        existing = [["2026-08-12", "IRL100", "Refused"]]
+        push, set_ph, clear_ph, exited, upd_meta, save = self.run_main(
+            now, existing, new_irls=("100",))
         self.assertIsNone(exited)
+        self.assertEqual(existing[0], ["2026-08-12", "IRL100", "Granted"])
         push.assert_not_called()
         set_ph.assert_not_called()
         clear_ph.assert_not_called()
+        upd_meta.assert_called_once()
 
     def test_backfill_skips_dates_that_already_have_rows(self):
         # Second run of the day: Aug 12 placeholder already exists -> only
@@ -306,6 +388,9 @@ class MainPlaceholderTests(unittest.TestCase):
             ["2026-08-08", "NO_FILE_2026-08-08", scraper.WEEKEND_MESSAGE]))
         self.assertTrue(scraper._is_placeholder_row(
             ["2026-08-13", "NO_FILE_2026-08-13", "Embassy is closed today for X"]))
+        self.assertTrue(scraper._is_placeholder_row(
+            ["2026-07-15", "NO_FILE_UPLOADED_2026-07-15",
+             "Visa office didn't upload any file."]))
         self.assertFalse(scraper._is_placeholder_row(["2026-08-11", "IRL100", "Granted"]))
 
 
@@ -655,9 +740,10 @@ class RunMetaTests(unittest.TestCase):
         self.assertFalse(upd_meta.call_args.args[0]["ok"])
         self.assertIsNone(upd_meta.call_args.args[0]["fileRows"])
 
-    def test_main_records_meta_on_skip_path(self):
-        # A run that skips because today's data already exists still records
-        # its status, so the health card shows the pipeline is alive.
+    def test_main_records_meta_when_today_has_real_data(self):
+        # A run that already has today's data still records its status after
+        # the reconciliation attempt, so the health card shows the pipeline is
+        # alive.
         now = ist("2026-08-12")
         existing = [["2026-08-12", "IRL100", "Granted"]]
         push, set_ph, clear_ph, exited, upd_meta, save = MainPlaceholderTests.run_main(

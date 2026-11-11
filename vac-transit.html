@@ -6,7 +6,7 @@
     <title>VAC & Transit Guidance | Irish Visa Decision Tracker</title>
     <meta name="theme-color" content="#059669">
     <meta name="description" content="Visa Application Centre (VAC) locations, transit visa requirements, and travel guidance for Irish visa applicants.">
-    <link rel="canonical" href="https://irishvisaupdatetracker.pages.dev/vac-transit.html">
+    <link rel="canonical" href="https://irishvisaupdatetracker.pages.dev/vac-transit">
     <link rel="manifest" href="/manifest.json">
     <link rel="stylesheet" href="pages.css">
     <link rel="stylesheet" href="analytics-chart.css">
@@ -19,66 +19,104 @@
     <link rel="stylesheet" href="squish-switch.css">
     <link rel="stylesheet" href="time-undo.css">
     <link rel="stylesheet" href="glide-select.css">
+    <link rel="stylesheet" href="site-chrome.css">
 </head>
 <body>
-    <div id="visa-dash">
-        <a class="skip-link" href="#main-content">Skip to content</a>
-        <button class="btn" id="theme-toggle" aria-label="Toggle theme">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                <circle cx="12" cy="12" r="5"></circle>
-                <line x1="12" y1="1" x2="12" y2="3"></line>
-                <line x1="12" y1="21" x2="12" y2="23"></line>
-                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
-                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
-                <line x1="1" y1="12" x2="3" y2="12"></line>
-                <line x1="21" y1="12" x2="23" y2="12"></line>
-                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
-                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
-            </svg>
-        </button>
-        <main id="main-content">
-            <div class="eyebrow">Ireland · Visa Application Centres & Transit</div>
-            <div class="titlerow">
-                <h1>VAC & Transit Guidance</h1>
-                <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-                    <button type="button" class="btn" id="theme-toggle" aria-label="Toggle theme">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                            <circle cx="12" cy="12" r="5"></circle>
-                            <line x1="12" y1="1" x2="12" y2="3"></line>
-                            <line x1="12" y1="21" x2="12" y2="23"></line>
-                            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
-                            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
-                            <line x1="1" y1="12" x2="3" y2="12"></line>
-                            <line x1="21" y1="12" x2="23" y2="12"></line>
-                            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
-                            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
-                        </svg>
-                    </button>
-                </div>
-            </div>
-            <div class="sub">Find your nearest Visa Application Centre, check transit visa requirements, and plan your travel to Ireland.</div>
-
-            <div class="navpills" data-gooey-nav>
-                <button type="button" class="navpill active" data-tab="overview"><i data-lucide="map-pin"></i> Overview</button>
-                <button type="button" class="navpill" data-tab="new-delhi"><i data-lucide="flag"></i> New Delhi</button>
-                <button type="button" class="navpill" data-tab="beijing"><i data-lucide="flag"></i> Beijing</button>
-                <button type="button" class="navpill" data-tab="dublin"><i data-lucide="flag"></i> Dublin</button>
-                <button type="button" class="navpill" data-tab="abu-dhabi"><i data-lucide="flag"></i> Abu Dhabi</button>
-                <button type="button" class="navpill" data-tab="abuja"><i data-lucide="flag"></i> Abuja</button>
-                <button type="button" class="navpill" data-tab="ankara"><i data-lucide="flag"></i> Ankara</button>
-                <button type="button" class="navpill" data-tab="transit"><i data-lucide="plane"></i> Transit Visas</button>
-            </div>
-
-            <div id="tab-body"></div>
-        </main>
-        <footer class="site-foot">
-            <p>Data sourced from <a href="https://www.ireland.ie/" target="_blank" rel="noopener">ireland.ie</a> and <a href="https://www.vfsglobal.com/" target="_blank" rel="noopener">VFS Global</a>.</p>
-            <p>This is an unofficial tracker. Always verify requirements with official sources before travel.</p>
-            <p><a href="/">← Back to Visa Decision Tracker</a></p>
-        </footer>
+  <a class="skip-link" href="#main-content">Skip to content</a>
+<header class="sitebar">
+  <div class="sitebar-inner">
+    <a class="brand" href="/" aria-label="Irish Visa Decision Tracker home">
+      <img src="/icon.svg" alt="" width="24" height="24">
+      <span>Irish Visa Decision Tracker</span>
+    </a>
+    <nav class="sitebar-nav" aria-label="Site">
+      <a href="/">Tracker</a>
+      <a href="/comparison">Compare</a>
+      <a href="/daily-summaries">Daily summaries</a>
+      <a href="/monthly-report">Monthly report</a>
+      <a href="/visa-processing-times">Processing times</a>
+      <a href="/about">About</a>
+      <details class="sitebar-more is-current">
+        <summary>More</summary>
+        <div class="sitebar-more-panel">
+          <a href="/stamp-1g-processing-dates">Stamp 1G</a>
+          <a href="/employment-permit-processing-dates">Employment permits</a>
+          <a href="/vac-transit" aria-current="page">VAC &amp; transit</a>
+          <a href="/contact">Contact</a>
+          <a href="/privacy">Privacy</a>
+          <a href="/terms">Terms</a>
+          <a href="/refund">Refunds</a>
+        </div>
+      </details>
+    </nav>
+  </div>
+</header>
+<main id="main-content" tabindex="-1" class="vac-page">
+  <p class="eyebrow">Ireland &middot; Visa Application Centres &amp; Transit</p>
+  <div class="titlerow"><h1>VAC &amp; Transit Guidance</h1></div>
+  <p class="sub">Find your nearest Visa Application Centre, check transit visa requirements, and plan your travel to Ireland.</p>
+  <div class="navpills" role="tablist" aria-label="VAC destinations" data-gooey-nav>
+            <button type="button" class="navpill active" id="tab-overview" data-tab="overview" role="tab" aria-selected="true" aria-controls="tab-body" tabindex="0"><i data-lucide="map-pin"></i> Overview</button>
+            <button type="button" class="navpill" id="tab-new-delhi" data-tab="new-delhi" role="tab" aria-selected="false" aria-controls="tab-body" tabindex="-1"><i data-lucide="flag"></i> New Delhi</button>
+            <button type="button" class="navpill" id="tab-beijing" data-tab="beijing" role="tab" aria-selected="false" aria-controls="tab-body" tabindex="-1"><i data-lucide="flag"></i> Beijing</button>
+            <button type="button" class="navpill" id="tab-dublin" data-tab="dublin" role="tab" aria-selected="false" aria-controls="tab-body" tabindex="-1"><i data-lucide="flag"></i> Dublin</button>
+            <button type="button" class="navpill" id="tab-abu-dhabi" data-tab="abu-dhabi" role="tab" aria-selected="false" aria-controls="tab-body" tabindex="-1"><i data-lucide="flag"></i> Abu Dhabi</button>
+            <button type="button" class="navpill" id="tab-abuja" data-tab="abuja" role="tab" aria-selected="false" aria-controls="tab-body" tabindex="-1"><i data-lucide="flag"></i> Abuja</button>
+            <button type="button" class="navpill" id="tab-ankara" data-tab="ankara" role="tab" aria-selected="false" aria-controls="tab-body" tabindex="-1"><i data-lucide="flag"></i> Ankara</button>
+            <button type="button" class="navpill" id="tab-transit" data-tab="transit" role="tab" aria-selected="false" aria-controls="tab-body" tabindex="-1"><i data-lucide="plane"></i> Transit Visas</button>
+  </div>
+  <div id="tab-body" role="tabpanel" aria-labelledby="tab-overview" aria-live="polite"></div>
+</main>
+<footer class="sitebar-footer">
+  <div class="sitebar-footer-inner">
+    <div class="sitebar-footer-brand">
+      <a class="brand" href="/" aria-label="Irish Visa Decision Tracker home">
+        <img src="/icon.svg" alt="" width="24" height="24">
+        <span>Irish Visa Decision Tracker</span>
+      </a>
+      <p>Independent and unofficial. Not affiliated with the Embassy of Ireland, ISD or DETE. Not immigration advice.</p>
     </div>
-
-    <script src="lucide.min.js"></script>
+    <nav class="sitebar-footer-col" aria-label="Explore">
+      <h2 class="sitebar-footer-title">Explore</h2>
+      <ul>
+        <li><a href="/">Tracker</a></li>
+        <li><a href="/comparison">Compare</a></li>
+        <li><a href="/daily-summaries">Daily summaries</a></li>
+        <li><a href="/monthly-report">Monthly report</a></li>
+        <li><a href="/visa-processing-times">Processing times</a></li>
+        <li><a href="/vac-transit">VAC &amp; transit</a></li>
+      </ul>
+    </nav>
+    <nav class="sitebar-footer-col" aria-label="Data">
+      <h2 class="sitebar-footer-title">Data</h2>
+      <ul>
+        <li><a href="/stamp-1g-processing-dates">Stamp 1G</a></li>
+        <li><a href="/employment-permit-processing-dates">Employment permits</a></li>
+        <li><a href="/data/visa_decisions.json">Visa decisions JSON</a></li>
+        <li><a href="/status">Data status</a></li>
+        <li><a href="/data/data_manifest.json">Data manifest</a></li>
+        <li><a href="/sitemap.xml">Sitemap</a></li>
+        <li><a href="/llms.txt">llms.txt</a></li>
+      </ul>
+    </nav>
+    <nav class="sitebar-footer-col" aria-label="About and legal">
+      <h2 class="sitebar-footer-title">About &amp; legal</h2>
+      <ul>
+        <li><a href="/about">About the project</a></li>
+        <li><a href="/contact">Contact &amp; corrections</a></li>
+        <li><a href="/privacy">Privacy</a></li>
+        <li><a href="/terms">Terms</a></li>
+        <li><a href="/refund">Refund policy</a></li>
+        <li><a href="https://github.com/parth-soni-10/Irish-Visa-Tracker" rel="noopener">GitHub</a></li>
+      </ul>
+    </nav>
+  </div>
+  <div class="sitebar-footer-bottom">
+    <p>&copy; 2026 Parth Soni &middot; Dublin, Ireland</p>
+    <p><a href="/sitemap.xml">Sitemap</a><a href="/llms.txt">llms.txt</a><a href="https://github.com/parth-soni-10/Irish-Visa-Tracker" rel="noopener">GitHub</a></p>
+  </div>
+</footer>
+  <script src="lucide.min.js"></script>
     <script src="gooey-nav.js" defer></script>
     <script>
     (function() {
@@ -256,7 +294,7 @@
         let activeTab = 'overview';
         
         function escapeHtml(s) {
-            return String(s).replace(/[&<>"]/g, c => ({ '&': '&', '<': '<', '>': '>', '"': '"' }[c]));
+            return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
         }
         
         function renderOverview() {
@@ -358,11 +396,15 @@
             else if (tabId === 'transit') html = renderTransit();
             else html = renderEmbassyTab(tabId);
             
+            tabBody.setAttribute('aria-labelledby', 'tab-' + tabId);
             tabBody.innerHTML = html;
             
             // Update active pill
             document.querySelectorAll('.navpill').forEach(p => {
-                p.classList.toggle('active', p.dataset.tab === tabId);
+                const selected = p.dataset.tab === tabId;
+                p.classList.toggle('active', selected);
+                p.setAttribute('aria-selected', selected ? 'true' : 'false');
+                p.tabIndex = selected ? 0 : -1;
             });
             
             if (window.lucide) lucide.createIcons({ nameAttr: 'data-lucide', attrs: { 'aria-hidden': 'true' } });
@@ -372,6 +414,20 @@
         document.querySelectorAll('.navpill').forEach(pill => {
             pill.addEventListener('click', () => switchTab(pill.dataset.tab));
         });
+
+        document.querySelectorAll('.navpill').forEach(function (pill, index, all) {
+            pill.addEventListener('keydown', function (event) {
+                var next = null;
+                if (event.key === 'ArrowRight') next = (index + 1) % all.length;
+                else if (event.key === 'ArrowLeft') next = (index - 1 + all.length) % all.length;
+                else if (event.key === 'Home') next = 0;
+                else if (event.key === 'End') next = all.length - 1;
+                if (next === null) return;
+                event.preventDefault();
+                all[next].focus();
+                switchTab(all[next].dataset.tab);
+            });
+        });
         
         // Initial render
         switchTab('overview');
@@ -379,18 +435,30 @@
     </script>
 
     <style>
-    .vac-item {
-        background: var(--surface-raised);
-        border: 1px solid var(--border);
-        border-radius: var(--r-container);
-        padding: 16px;
-        margin-bottom: 12px;
-    }
-    .vac-name { font-weight: 600; margin-bottom: 4px; color: var(--ink); }
-    .vac-address { font-size: 13px; color: var(--ink-soft); margin-bottom: 4px; }
-    .vac-hours { font-size: 12px; color: var(--green); font-weight: 500; margin-bottom: 4px; }
-    .vac-contact { font-size: 12px; color: var(--ink-muted); }
-    .vac-item + .vac-item { margin-top: 12px; }
+    .vac-page{max-width:1120px;margin:0 auto;padding:36px 24px 56px}
+    .vac-page .eyebrow{font-size:12px;line-height:16px;letter-spacing:.18em;text-transform:uppercase;color:var(--green-deep);font-weight:650;margin:0 0 6px}
+    .vac-page .titlerow{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap}
+    .vac-page h1{font-size:clamp(30px,4vw,46px);line-height:1.08;letter-spacing:-.03em;margin:0 0 8px}
+    .vac-page .sub{font-size:17px;line-height:1.6;color:var(--ink-soft);max-width:760px;margin:0 0 22px}
+    .vac-page .navpills{display:flex;gap:6px;flex-wrap:wrap;margin:22px 0 24px;padding:4px;border:1px solid var(--border);border-radius:10px;background:var(--raised);width:fit-content;max-width:100%}
+    .vac-page .navpill{display:inline-flex;align-items:center;gap:6px;min-height:34px;padding:7px 11px;border:0;border-radius:7px;background:transparent;color:var(--ink-soft);font:inherit;font-size:12.5px;font-weight:650;cursor:pointer}
+    .vac-page .navpill:hover{color:var(--ink);background:#fff}
+    .vac-page .navpill.active{color:var(--green-deep);background:#fff;box-shadow:0 1px 3px rgba(15,23,42,.1)}
+    .vac-page .navpill:focus-visible{outline:2px solid var(--green);outline-offset:2px}
+    .vac-page .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;margin:16px 0}
+    .vac-page .card{padding:16px;border:1px solid var(--border);border-radius:12px;background:var(--surface);min-width:0}
+    .vac-page .card h2,.vac-page .card h3{margin:0 0 10px;font-size:17px;line-height:1.3;letter-spacing:-.01em}
+    .vac-page .card .label{display:flex;align-items:center;gap:6px;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-muted);font-weight:750}
+    .vac-page .card .value{margin-top:7px;font-size:15px;line-height:1.45;color:var(--ink)}
+    .vac-page .note{padding:14px 16px;border:1px solid var(--border);border-radius:10px;background:var(--raised);color:var(--ink-soft);font-size:13.5px;line-height:1.6}
+    .vac-page .note2{color:var(--ink-muted);font-size:13px;line-height:1.6}
+    .vac-page .empty{padding:16px;border:1px dashed var(--border);border-radius:10px;color:var(--ink-muted)}
+    .vac-page .vac-item{padding:14px 16px;border:1px solid var(--border);border-radius:10px;background:var(--raised);margin-bottom:10px}
+    .vac-page .vac-name{display:flex;align-items:center;gap:6px;font-weight:700;color:var(--ink);margin-bottom:4px}
+    .vac-page .vac-address,.vac-page .vac-hours,.vac-page .vac-contact{font-size:13px;line-height:1.55;color:var(--ink-soft);margin-top:4px}
+    .vac-page .vac-hours{color:var(--green-deep);font-weight:600}
+    @media(max-width:640px){.vac-page{padding:28px 18px 44px}.vac-page .navpills{width:100%}.vac-page .navpill{flex:1 1 auto;justify-content:center}}
     </style>
+  <script src="/site-chrome.js" defer></script>
 </body>
 </html>

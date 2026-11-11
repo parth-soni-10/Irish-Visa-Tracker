@@ -7,16 +7,35 @@
  * the timeline rows back at `GET /api/community-submissions`, proxies `data/`
  * from the repository, and hands everything else to `env.ASSETS`.
  *
- * Why two files rather than one: Pages compiles every file in this directory as
- * a route, and only the entry needs to be one. `_router.js` carries the
- * underscore prefix Pages treats as private - a module, never a path of its own
- * - so the routing table is exactly the one catch-all below.
- *
- * This is what replaced the Workers deployment: the same handler used to be
- * bundled into a Worker script and staged as the deployment's `_worker.js`.
- * Pages compiles it itself now, which is where the site was already being
- * served from, minus the bundle step and the second config.
+ * Sentry is initialized by wrapping the handler with withSentry. The
+ * @sentry/cloudflare package deliberately does not expose a Node-style init();
+ * its entry-point wrapper owns client setup and request scope.
  * ------------------------------------------------------------------------ */
+import { withSentry } from '@sentry/cloudflare';
 import router from './_router.js';
 
-export const onRequest = (context) => router.fetch(context.request, context.env, context);
+const handler = {
+  async fetch(request, env, ctx) {
+    return router.fetch(request, env, ctx);
+  }
+};
+
+const wrapped = withSentry((env) => {
+  const dsn = env && env.SENTRY_DSN;
+  if (!dsn || dsn.includes('dummy') || !/^https?:\/\//.test(dsn)) return undefined;
+  return {
+    dsn,
+    environment: env.SENTRY_ENVIRONMENT || (env.CF_PAGES_BRANCH === 'main' ? 'production' : 'preview'),
+    release: env.COMMIT_SHA || env.CF_PAGES_COMMIT_SHA || undefined,
+    tracesSampleRate: Number(env.SENTRY_TRACES_SAMPLE_RATE || 0.1),
+    sendDefaultPii: false,
+    beforeSend(event) {
+      const value = event.exception && event.exception.values && event.exception.values[0]
+        && event.exception.values[0].value;
+      if (value && /Network request failed|Failed to fetch/i.test(value)) return null;
+      return event;
+    }
+  };
+}, handler);
+
+export const onRequest = (context) => wrapped.fetch(context.request, context.env, context);

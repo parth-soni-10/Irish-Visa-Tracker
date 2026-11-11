@@ -1,0 +1,37 @@
+name: Decision Alerts
+
+on:
+  workflow_dispatch: {}
+  workflow_run:
+    workflows: ["Deploy to Cloudflare Pages"]
+    types: [completed]
+  schedule:
+    - cron: '15 * * * *'  # hourly safety net; the runner is idempotent
+
+concurrency:
+  group: decision-alerts
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  run-alerts:
+    name: Re-check watched applications and send alerts
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger alert runner
+        env:
+          ALERT_SECRET: ${{ secrets.ALERTS_CRON_SECRET || secrets.SCRAPER_CRON_SECRET }}
+          APP_BASE_URL: ${{ vars.APP_BASE_URL || 'https://irishvisaupdatetracker.pages.dev' }}
+        run: |
+          if [ -z "$ALERT_SECRET" ]; then
+            echo "::warning::ALERTS_CRON_SECRET / SCRAPER_CRON_SECRET is not configured; skipping."
+            exit 0
+          fi
+          curl --fail-with-body --silent --show-error \
+            --retry 3 --retry-delay 10 --max-time 60 \
+            -X POST \
+            -H "X-Cron-Secret: $ALERT_SECRET" \
+            "$APP_BASE_URL/api/alerts/run"

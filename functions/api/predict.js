@@ -34,6 +34,8 @@ const MODEL_METADATA = {
   ],
   trained_on: '2026-11-09',
   training_samples: 35839,
+  training_data: 'synthetic-illustrative',
+  disclaimer: 'Illustrative estimate only; trained on synthetic data, not a prediction of an individual application.',
   inference: 'xgboost-tree-ensemble'
 };
 

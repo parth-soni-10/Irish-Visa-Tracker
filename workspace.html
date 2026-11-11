@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="description" content="Private workspace for your Irish visa watchlist, alerts, analytics, exports, application assistant, community and organization.">
+  <title>Workspace - Irish Visa Decision Tracker</title>
+  <meta name="theme-color" content="#ffffff">
+  <link rel="icon" href="/icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/pages.css">
+  <link rel="stylesheet" href="/site-chrome.css">
+  <link rel="stylesheet" href="/workspace.css">
+</head>
+<body>
+  <a class="skip-link" href="#main-content">Skip to content</a>
+  <header class="sitebar">
+    <div class="sitebar-inner">
+      <a class="brand" href="/" aria-label="Irish Visa Decision Tracker home">
+        <img src="/icon.svg" alt="" width="24" height="24">
+        <span>Irish Visa Decision Tracker</span>
+      </a>
+      <nav class="sitebar-nav" aria-label="Site">
+        <a href="/">Tracker</a>
+        <a href="/comparison">Compare</a>
+        <a href="/daily-summaries">Daily summaries</a>
+        <a href="/monthly-report">Monthly report</a>
+        <a href="/visa-processing-times">Processing times</a>
+        <a href="/about">About</a>
+        <details class="sitebar-more">
+          <summary>More</summary>
+          <div class="sitebar-more-panel">
+            <a href="/stamp-1g-processing-dates">Stamp 1G</a>
+            <a href="/employment-permit-processing-dates">Employment permits</a>
+            <a href="/vac-transit">VAC &amp; transit</a>
+            <a href="/contact">Contact</a>
+            <a href="/privacy">Privacy</a>
+            <a href="/terms">Terms</a>
+          </div>
+        </details>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main-content" tabindex="-1" class="workspace-page">
+    <header class="workspace-hero">
+      <p class="workspace-kicker">Account &middot; Workspace</p>
+      <h1>Your application workspace</h1>
+      <p class="workspace-lede">Personal alerts, deeper analytics, private exports, fee and document tools, community answers, referrals and organization branding. One private place, built on the same published data as the tracker.</p>
+    </header>
+
+    <p id="workspace-status" class="workspace-status" role="status" aria-live="polite" hidden></p>
+    <div id="workspace-loading" class="workspace-loading" role="status">Loading your workspace&hellip;</div>
+
+    <section id="workspace-auth" class="workspace-auth" aria-labelledby="workspace-auth-title" hidden>
+      <div class="workspace-auth-card">
+        <h2 id="workspace-auth-title">Sign in to your workspace</h2>
+        <p class="workspace-muted">Accounts are free. Your watchlist and notification preferences stay on this deployment.</p>
+        <div class="workspace-tabs" role="tablist" aria-label="Account access">
+          <button type="button" role="tab" id="auth-tab-signin" aria-controls="auth-signin" aria-selected="true" data-auth-tab="signin">Sign in</button>
+          <button type="button" role="tab" id="auth-tab-register" aria-controls="auth-register" aria-selected="false" data-auth-tab="register">Create account</button>
+        </div>
+        <form id="auth-signin" aria-labelledby="auth-tab-signin">
+          <label>Email <input type="email" name="email" autocomplete="email" required></label>
+          <label>Password <input type="password" name="password" autocomplete="current-password" required minlength="8"></label>
+          <button class="btn primary" type="submit">Sign in</button>
+          <p class="workspace-muted"><a href="/reset-password">Forgot your password?</a></p>
+          <p class="form-status" id="auth-signin-status" aria-live="polite"></p>
+        </form>
+        <form id="auth-register" aria-labelledby="auth-tab-register" hidden>
+          <label>Name <input type="text" name="name" autocomplete="name" maxlength="120" placeholder="Your name"></label>
+          <label>Email <input type="email" name="email" autocomplete="email" required></label>
+          <label>Password <input type="password" name="password" autocomplete="new-password" required minlength="8" placeholder="At least 8 characters"></label>
+          <p class="workspace-muted">Use at least 8 characters with uppercase, lowercase and a number.</p>
+          <button class="btn primary" type="submit">Create account</button>
+          <p class="form-status" id="auth-register-status" aria-live="polite"></p>
+        </form>
+        <div id="auth-sso" class="workspace-sso" hidden>
+          <span class="workspace-divider">or</span>
+          <a class="btn" id="auth-sso-link" href="/api/auth/sso/start">Continue with single sign-on</a>
+        </div>
+      </div>
+    </section>
+
+    <div id="workspace-app" class="workspace-grid" hidden>
+      <aside class="workspace-side" aria-label="Workspace sections">
+        <div class="workspace-person">
+          <p class="workspace-eyebrow">Signed in as</p>
+          <strong id="workspace-user-name">Applicant</strong>
+          <span id="workspace-user-email" class="workspace-muted"></span>
+          <span id="workspace-org-badge" class="workspace-badge" hidden></span>
+        </div>
+        <nav id="workspace-nav" class="workspace-nav" aria-label="Workspace">
+          <button type="button" data-view="overview" aria-current="page">Overview</button>
+          <button type="button" data-view="profile">Profile</button>
+          <button type="button" data-view="notifications">Notifications</button>
+          <button type="button" data-view="analytics">Analytics depth</button>
+          <button type="button" data-view="exports">Exports</button>
+          <button type="button" data-view="assistant">Application assistant</button>
+          <button type="button" data-view="community">Community</button>
+          <button type="button" data-view="organization">Organization</button>
+        </nav>
+        <div class="workspace-side-links">
+          <a href="/">Open the decision tracker</a>
+          <a href="/status">Data status</a>
+          <a href="/admin">Admin dashboard</a>
+          <button type="button" id="workspace-signout">Sign out</button>
+        </div>
+      </aside>
+      <section id="workspace-panel" class="workspace-panel" tabindex="-1" aria-live="polite"></section>
+    </div>
+
+    <noscript><p class="workspace-card">The workspace needs JavaScript for sign-in and private tools. The public decision tracker still works without it.</p></noscript>
+  </main>
+
+  <footer class="sitebar-footer">
+    <div class="sitebar-footer-inner">
+      <div class="sitebar-footer-brand">
+        <a class="brand" href="/" aria-label="Irish Visa Decision Tracker home">
+          <img src="/icon.svg" alt="" width="24" height="24">
+          <span>Irish Visa Decision Tracker</span>
+        </a>
+        <p>Independent tracker. Not affiliated with the Embassy of Ireland, ISD or DETE.</p>
+      </div>
+      <nav class="sitebar-footer-links" aria-label="Footer">
+        <a href="/about">About</a>
+        <a href="/contact">Contact</a>
+        <a href="/privacy">Privacy</a>
+        <a href="/terms">Terms</a>
+        <a href="/refund">Refunds</a>
+      </nav>
+    </div>
+  </footer>
+
+  <script src="/site-chrome.js" defer></script>
+  <script src="/workspace.js" defer></script>
+</body>
+</html>

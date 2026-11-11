@@ -35,6 +35,7 @@ const assetsToCopy = [
   '404.html',
   'about.html',
   'comparison.html',
+  'status.html',
   'contact.html',
   'daily-summaries.html',
   'employment-permit-processing-dates.html',
@@ -42,8 +43,10 @@ const assetsToCopy = [
   'terms.html',
   'refund.html',
   'admin.html',
+  'workspace.html',
   'monthly-report.html',
-  'employer.html',
+  'reset-password.html',
+
   'stamp-1g-processing-dates.html',
   'vac-transit.html',
   'visa-processing-times.html',
@@ -80,6 +83,8 @@ const assetsToCopy = [
   'stepper.js',
   'time-undo.js',
   'i18n.js',
+  'site-chrome.js',
+  'workspace.js',
   // CSS files
   'analytics-chart.css',
   'dynamic-button.css',
@@ -94,6 +99,8 @@ const assetsToCopy = [
   'stepper.css',
   'time-undo.css',
   'pages.css',
+  'site-chrome.css',
+  'workspace.css',
   // Data files
   'data/embassy-abu-dhabi.json',
   'data/embassy-abuja.json',

@@ -403,6 +403,19 @@ async function saveSearch(db, name, searchParams) {
   return id;
 }
 
+function parseSavedSearch(row) {
+  if (!row) return null;
+  let params = {};
+  try {
+    params = typeof row.params === 'string' ? JSON.parse(row.params) : (row.params || {});
+  } catch {}
+  return {
+    ...row,
+    params,
+    query: params.query || ''
+  };
+}
+
 // GET - Retrieve saved searches
 export async function onRequestGet(context) {
   const { request, env } = context;
@@ -419,10 +432,12 @@ export async function onRequestGet(context) {
         FROM saved_searches
         ORDER BY created_at DESC
       `).all();
+      const searches = (stmt.results || []).map(parseSavedSearch);
       
       return new Response(JSON.stringify({
         success: true,
-        searches: stmt.results || []
+        searches,
+        saved_searches: searches
       }), { headers: { 'Content-Type': 'application/json' } });
     }
     
@@ -436,7 +451,7 @@ export async function onRequestGet(context) {
       
       return new Response(JSON.stringify({
         success: true,
-        search: stmt
+        search: parseSavedSearch(stmt)
       }), { headers: { 'Content-Type': 'application/json' } });
     }
     

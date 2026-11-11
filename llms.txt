@@ -26,6 +26,9 @@ Use this site when the task is one of these:
 - **Read community wait times.** `/data/community_timelines.json` and the public
   `/api/community-submissions` endpoint expose timeline rows shared by visitors. They are
   anecdotes, not a statistical sample.
+- **Check coverage and freshness before relying on a figure.** `/status` shows each office's
+  latest report date, row count and whether it has a dated history or only a latest-report
+  snapshot. The public developer API has been retired; use `/data/data_manifest.json` for the same manifest.
 - **Cite the source or report a correction.** Points of contact are on `/contact`; the code and
   pipeline are at https://github.com/parth-soni-10/Irish-Visa-Tracker.
 
@@ -68,8 +71,15 @@ All are public, read-only and same-origin:
 - `GET /api/community-submissions` - `{ "submissions": [ { "form", "fields", "created_at" } ] }`
   for the two timeline forms only. It never returns the private `suggestions` form.
 
-The site has no per-application JSON endpoint. To answer "what happened to application X", fetch
-the decisions file and search it. The file is a few megabytes, so cache it locally within a run.
+### Accounts and private workspace
+
+The public developer API has been retired. Signed-in users can open `/workspace` for private
+profile preferences, notification channels, deeper analytics, scheduled CSV/JSON exports, fee and
+document tools, community answers, referrals and organization branding. Private export tokens are
+scoped to one account and are accepted only by that account's export download. There is no
+account-lookup endpoint, and the site never exposes private case data. To answer "what happened to
+application X", use the published decision files or the tracker search; a published row is a
+convenience layer over the official source, not an official confirmation.
 
 ## Pages
 
@@ -85,6 +95,8 @@ the decisions file and search it. The file is a few megabytes, so cache it local
   - what the published queues show, and what they cannot tell you.
 - [Compare Irish visa trackers](https://irishvisaupdatetracker.pages.dev/comparison) - a sourced
   comparison with VisaRelay, Snifox/Visastat and the official sources, including where each fits.
+- [Data status](https://irishvisaupdatetracker.pages.dev/status) - office coverage, report dates,
+  freshness and known snapshot limits.
 - [About](https://irishvisaupdatetracker.pages.dev/about) - what is tracked, sources, limits.
 - [Contact](https://irishvisaupdatetracker.pages.dev/contact) - corrections, bug reports, scope.
 - [Privacy](https://irishvisaupdatetracker.pages.dev/privacy) - browser storage and form data.

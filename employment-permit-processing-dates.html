@@ -63,24 +63,41 @@
   }
   </script>
 <meta name="google-site-verification" content="HkazW2pbKNbaIJp901Sa-uoQz8MDAvnu9Sk01uhfFCo">
+  <link rel="stylesheet" href="/site-chrome.css">
 </head>
 <body>
+  <a class="skip-link" href="#main-content">Skip to content</a>
 
-  <header class="site-header">
-    <div class="site-header-inner">
-      <a class="brand" href="/"><img src="/icon.svg" alt="" width="22" height="22"> Irish Visa Decision Tracker</a>
-      <nav class="site-nav" aria-label="Site">
-        <a href="/">Tracker</a>
-        <a href="/about">About</a>
-        <a href="/contact">Contact</a>
-        <a href="/privacy">Privacy</a>
-        <a href="/stamp-1g-processing-dates">Stamp 1G</a>
-        <a href="/daily-summaries">Daily summaries</a>
-      </nav>
-    </div>
-  </header>
+  <header class="sitebar">
+  <div class="sitebar-inner">
+    <a class="brand" href="/" aria-label="Irish Visa Decision Tracker home">
+      <img src="/icon.svg" alt="" width="24" height="24">
+      <span>Irish Visa Decision Tracker</span>
+    </a>
+    <nav class="sitebar-nav" aria-label="Site">
+      <a href="/">Tracker</a>
+      <a href="/comparison">Compare</a>
+      <a href="/daily-summaries">Daily summaries</a>
+      <a href="/monthly-report">Monthly report</a>
+      <a href="/visa-processing-times">Processing times</a>
+      <a href="/about">About</a>
+      <details class="sitebar-more is-current">
+        <summary>More</summary>
+        <div class="sitebar-more-panel">
+          <a href="/stamp-1g-processing-dates">Stamp 1G</a>
+          <a href="/employment-permit-processing-dates" aria-current="page">Employment permits</a>
+          <a href="/vac-transit">VAC &amp; transit</a>
+          <a href="/contact">Contact</a>
+          <a href="/privacy">Privacy</a>
+          <a href="/terms">Terms</a>
+          <a href="/refund">Refunds</a>
+        </div>
+      </details>
+    </nav>
+  </div>
+</header>
 
-  <main class="page">
+  <main id="main-content" tabindex="-1" class="page">
     <nav class="breadcrumbs" aria-label="Breadcrumb">
       <ol>
         <li><a href="/">Tracker</a></li>
@@ -89,22 +106,22 @@
     </nav>
     <p class="page-kicker">Employment permits &middot; Ireland</p>
     <h1>Employment Permit Processing Dates - Ireland</h1>
-    <p class="page-meta">Irish Visa Decision Tracker &bull; Updated from the tracker's daily scraper run &bull; Unofficial - not immigration advice</p>
+    <p class="page-meta">Irish Visa Decision Tracker &bull; Unofficial, not immigration advice</p>
 
     <p class="page-lede">
       Each published employment-permit category has its own queue. This page records the
       application date <strong>DETE (Department of Enterprise, Tourism and Employment)</strong> has
       reached in every category it publishes, the lag in days and weeks, and how each queue has
-      moved over time. Figures come from the processing dates DETE publishes and are refreshed by
-      the tracker's scheduled scraper.
+      moved over time. Figures come from the processing dates DETE publishes.
     </p>
 
     <p class="page-data-freshness">
       <strong>Observation of:</strong>
       <time id="perm-as-of" datetime="2026-11-07">7 November 2026</time> &middot;
-      <strong>Scraper status:</strong> <span id="perm-status">OK</span> &middot;
-      <strong>Source:</strong> DETE-published processing dates, mirrored in
-      <a href="/data/work_permits.json">/data/work_permits.json</a>
+
+      <strong>Data status:</strong> <span id="perm-status">OK</span> &middot;
+      <strong>Source:</strong> DETE-published processing dates
+
     </p>
 
     <section>
@@ -137,9 +154,10 @@
           <span data-perm-lag="Reviews">192 days</span> behind.</li>
       </ul>
       <p class="small-note">
-        Figures are updated when the scraper runs and commits to the public repository. Always
-        check <a href="/data/work_permits.json">/data/work_permits.json</a> for the most recent
-        observation before making decisions.
+
+        Dates can move when DETE publishes an update. Check the current official date before
+        relying on a queue.
+
       </p>
     </section>
 
@@ -152,17 +170,17 @@
         <li><strong>Direction matters more than one number</strong> - a lag that grows between observations means the queue is falling further behind; one that shrinks means it is catching up.</li>
       </ul>
       <p class="small-note">
-        The published date covers the category as a whole. It is not a promise about when an
-        individual application will be decided, and a case can be decided earlier or later than
-        the published date suggests.
+
+        The published date covers the whole category, not your individual application.
+
       </p>
     </section>
 
     <section>
       <h2>Official sources</h2>
       <p>
-        This page is an independent record, not the publisher. DETE publishes the processing dates
-        this page mirrors; ISD publishes visa decisions and the list of Irish visa offices.
+        DETE publishes the processing dates
+        shown here; ISD publishes visa decisions and the list of Irish visa offices.
       </p>
       <ul>
         <li><a href="https://www.irishimmigration.ie/visa-decisions/">ISD visa decisions and processing times</a> - the official published dates for visa applications and appeals.</li>
@@ -176,15 +194,7 @@
       </p>
     </section>
 
-    <section>
-      <h2>What this is not</h2>
-      <p>
-        This is an independent, unofficial project. It is not affiliated with the Embassy of
-        Ireland, ISD, DETE or any Irish government body. It does not give immigration advice,
-        cannot speed up an application, and cannot guarantee an outcome. For a decision on your
-        own case, contact ISD or the Embassy of Ireland in New Delhi.
-      </p>
-    </section>
+
 
     <p class="page-nav">
       <a href="/">Back to tracker</a> &middot;
@@ -195,9 +205,55 @@
     </p>
   </main>
 
-  <footer class="site-footer">
-    <p><a href="/">Tracker</a> &bull; <a href="/stamp-1g-processing-dates">Stamp 1G</a> &bull; <a href="/daily-summaries">Daily summaries</a> &bull; <a href="/employment-permit-processing-dates">Employment permits</a> &bull; <a href="/visa-processing-times">Processing times</a> &bull; <a href="/about">About</a> &bull; <a href="/contact">Contact</a> &bull; <a href="/sitemap.xml">Sitemap</a></p>
-  </footer>
+  <footer class="sitebar-footer">
+  <div class="sitebar-footer-inner">
+    <div class="sitebar-footer-brand">
+      <a class="brand" href="/" aria-label="Irish Visa Decision Tracker home">
+        <img src="/icon.svg" alt="" width="24" height="24">
+        <span>Irish Visa Decision Tracker</span>
+      </a>
+      <p>Independent and unofficial. Not affiliated with the Embassy of Ireland, ISD or DETE. Not immigration advice.</p>
+    </div>
+    <nav class="sitebar-footer-col" aria-label="Explore">
+      <h2 class="sitebar-footer-title">Explore</h2>
+      <ul>
+        <li><a href="/">Tracker</a></li>
+        <li><a href="/comparison">Compare</a></li>
+        <li><a href="/daily-summaries">Daily summaries</a></li>
+        <li><a href="/monthly-report">Monthly report</a></li>
+        <li><a href="/visa-processing-times">Processing times</a></li>
+        <li><a href="/vac-transit">VAC &amp; transit</a></li>
+      </ul>
+    </nav>
+    <nav class="sitebar-footer-col" aria-label="Data">
+      <h2 class="sitebar-footer-title">Data</h2>
+      <ul>
+        <li><a href="/stamp-1g-processing-dates">Stamp 1G</a></li>
+        <li><a href="/employment-permit-processing-dates">Employment permits</a></li>
+        <li><a href="/data/visa_decisions.json">Visa decisions JSON</a></li>
+        <li><a href="/status">Data status</a></li>
+        <li><a href="/data/data_manifest.json">Data manifest</a></li>
+        <li><a href="/sitemap.xml">Sitemap</a></li>
+        <li><a href="/llms.txt">llms.txt</a></li>
+      </ul>
+    </nav>
+    <nav class="sitebar-footer-col" aria-label="About and legal">
+      <h2 class="sitebar-footer-title">About &amp; legal</h2>
+      <ul>
+        <li><a href="/about">About the project</a></li>
+        <li><a href="/contact">Contact &amp; corrections</a></li>
+        <li><a href="/privacy">Privacy</a></li>
+        <li><a href="/terms">Terms</a></li>
+        <li><a href="/refund">Refund policy</a></li>
+        <li><a href="https://github.com/parth-soni-10/Irish-Visa-Tracker" rel="noopener">GitHub</a></li>
+      </ul>
+    </nav>
+  </div>
+  <div class="sitebar-footer-bottom">
+    <p>&copy; 2026 Parth Soni &middot; Dublin, Ireland</p>
+    <p><a href="/sitemap.xml">Sitemap</a><a href="/llms.txt">llms.txt</a><a href="https://github.com/parth-soni-10/Irish-Visa-Tracker" rel="noopener">GitHub</a></p>
+  </div>
+</footer>
 
   <script>
   /* Fill each category from the permit file. Static text above is the truth as of this
@@ -250,5 +306,6 @@
   })();
   </script>
 
+  <script src="/site-chrome.js" defer></script>
 </body>
 </html>

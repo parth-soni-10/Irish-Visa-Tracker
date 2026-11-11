@@ -2,7 +2,8 @@
  * Real Irish visa decision ingestion.
  *
  * Replaces the old 500-row synthetic `data/embassy-*.json` fixtures with the
- * latest official publication for each office:
+ * latest official publication for each office. Weekly PDF offices keep prior
+ * report dates in their cumulative archives:
  *
  *   new-delhi  ireland.ie ODS        (cumulative year-to-date)
  *   beijing    ireland.ie ODS        (cumulative year-to-date)
@@ -22,12 +23,13 @@
 
 import fs from 'fs';
 import path from 'path';
-import crypto from 'crypto';
 import { fileURLToPath } from 'url';
 import * as cheerio from 'cheerio';
 import XLSX from 'xlsx';
 import { PDFParse } from 'pdf-parse';
 import { ocrPdfBuffer, parseOcrDecisionText } from './ankara-ocr.mjs';
+import { decisionChecksum } from './embassy-checksum.mjs';
+import { mergeDecisionHistory } from './decision-history.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const DATA = path.join(ROOT, 'data');
@@ -53,12 +55,16 @@ const OFFICES = {
     name: 'Abu Dhabi',
     page: 'https://www.ireland.ie/en/uae/abudhabi/services/visas/weekly-decision-reports/',
     kind: 'pdf',
+    // The weekly PDF is merged into the checked-in archive.
+    preserveHistory: true,
     official: 'Embassy of Ireland, Abu Dhabi',
   },
   abuja: {
     name: 'Abuja',
     page: 'https://www.ireland.ie/en/nigeria/abuja/services/visas/weekly-decision-reports/',
     kind: 'pdf',
+    // The weekly PDF is merged into the checked-in archive.
+    preserveHistory: true,
     official: 'Embassy of Ireland, Abuja',
   },
   ankara: {
@@ -66,6 +72,8 @@ const OFFICES = {
     page: 'https://www.ireland.ie/en/turkiye/ankara/services/visas/weekly-decision-report/',
     kind: 'pdf',
     ocr: true,
+    // The weekly PDF is merged into the checked-in archive.
+    preserveHistory: true,
     official: 'Embassy of Ireland, Ankara',
   },
   dublin: {
@@ -102,7 +110,9 @@ function readJSON(file, fallback) {
 
 function writeJSON(file, value) {
   ensureDir(path.dirname(file));
-  fs.writeFileSync(file, JSON.stringify(value, null, 2) + '\n');
+  const existing = fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : '';
+  const newline = existing.includes('\r\n') ? '\r\n' : '\n';
+  fs.writeFileSync(file, JSON.stringify(value, null, 2).replace(/\n/g, newline) + newline);
 }
 
 async function fetchText(url, referer = 'https://www.ireland.ie/') {
@@ -171,10 +181,6 @@ function validDecision(value) {
   if (v === 'approved' || v === 'granted') return 'Approved';
   if (v === 'refused' || v === 'rejected') return 'Refused';
   return null;
-}
-
-function sha256(value) {
-  return crypto.createHash('sha256').update(value).digest('hex').slice(0, 16);
 }
 
 function decisionMap(rows) {
@@ -259,6 +265,49 @@ async function parsePdf(buffer) {
     return { text: result.text || '', decisions: parsePdfText(result.text || '') };
   } finally {
     await parser.destroy().catch(() => {});
+  }
+}
+
+/**
+ * Parse a weekly PDF, using OCR only when the text layer does not contain
+ * enough decision rows and the office is configured for OCR. The OCR
+ * implementation is injectable so the fallback can be tested without relying
+ * on a system Tesseract binary.
+ */
+export async function parsePdfReport(buffer, options = {}) {
+  const parsed = await parsePdf(buffer);
+  const decisions = parsed.decisions;
+  const text = parsed.text;
+
+  if (decisions.length >= 10 || !options.ocr) {
+    return { decisions, text, note: null, ocrUsed: false, ocrError: null };
+  }
+
+  try {
+    const ocr = await (options.ocrImpl || ocrPdfBuffer)(buffer);
+    const ocrDecisions = parseOcrDecisionText(ocr.text);
+    if (ocrDecisions.length < 10) {
+      throw new Error(`OCR found only ${ocrDecisions.length} decision rows`);
+    }
+    if (options.log) {
+      options.log(`[${options.slug || 'pdf'}] OCR extracted ${ocrDecisions.length} decisions with ${ocr.engine}`);
+    }
+    return {
+      decisions: ocrDecisions,
+      text: ocr.text || '',
+      note: `Scanned PDF extracted with ${ocr.engine} at ${ocr.dpi} DPI (${ocr.pages} pages).`,
+      ocrUsed: true,
+      ocrError: null
+    };
+  } catch (error) {
+    if (options.warn) options.warn(`[${options.slug || 'pdf'}] OCR failed: ${error.message}`);
+    return {
+      decisions,
+      text,
+      note: `The published PDF is scanned; OCR failed: ${error.message}`,
+      ocrUsed: false,
+      ocrError: error
+    };
   }
 }
 
@@ -368,35 +417,25 @@ async function ingestOffice(slug, config) {
       const periodText2 = periodRow ? periodRow.join(' ') : '';
       reportDate = periodEnd(periodText2) || periodEnd(link.text) || fetchedAt.slice(0, 10);
     } else {
-      const parsed = await parsePdf(buffer);
+      const parsed = await parsePdfReport(buffer, {
+        ocr: Boolean(config.ocr),
+        slug,
+        log: console.log,
+        warn: console.error
+      });
       decisions = parsed.decisions;
-      let text = parsed.text;
-      let ocrNote = null;
-
-      if (decisions.length < 10 && config.ocr) {
-        try {
-          const ocr = await ocrPdfBuffer(buffer);
-          const ocrDecisions = parseOcrDecisionText(ocr.text);
-          if (ocrDecisions.length < 10) {
-            throw new Error(`OCR found only ${ocrDecisions.length} decision rows`);
-          }
-          decisions = ocrDecisions;
-          text = ocr.text;
-          ocrNote = `Scanned PDF extracted with ${ocr.engine} at ${ocr.dpi} DPI (${ocr.pages} pages).`;
-          console.log(`[${slug}] OCR extracted ${decisions.length} decisions with ${ocr.engine}`);
-        } catch (error) {
-          status = 'ocr_required';
-          note = `The published PDF is scanned; OCR failed: ${error.message}`;
-          console.error(`[${slug}] OCR failed: ${error.message}`);
-        }
+      const text = parsed.text;
+      if (parsed.ocrError) {
+        status = 'ocr_required';
+        note = parsed.note;
+      } else if (parsed.ocrUsed) {
+        note = parsed.note;
       }
 
       reportDate = periodEnd(text) || periodEnd(link.text) || fetchedAt.slice(0, 10);
       if (decisions.length < 10) {
         status = 'ocr_required';
         note = note || 'The published PDF is scanned; text extraction found no decision rows. OCR is required.';
-      } else if (ocrNote) {
-        note = ocrNote;
       }
     }
   }
@@ -416,9 +455,13 @@ async function ingestOffice(slug, config) {
     date_basis: config.kind === 'html' ? 'fetched' : 'report_period_end',
   }));
 
+  const fileRows = config.preserveHistory
+    ? mergeDecisionHistory(previous.decisions || [], rows)
+    : rows;
   const approved = rows.filter((r) => r.decision === 'Approved').length;
-  const diff = diffDecisions(previous.decisions || [], rows);
-  const checksum = sha256(JSON.stringify([...byNumber.entries()].sort()));
+  const diff = diffDecisions(previous.decisions || [], fileRows);
+  const officeChecksum = decisionChecksum(fileRows);
+  const reportChecksum = decisionChecksum(rows);
 
   const officeFile = {
     office: slug,
@@ -432,26 +475,29 @@ async function ingestOffice(slug, config) {
     data_status: status,
     date_basis: config.kind === 'html' ? 'fetched' : 'report_period_end',
     note,
-    checksum,
-    decisions: rows,
+    checksum: officeChecksum,
+    decisions: fileRows,
   };
   writeJSON(path.join(DATA, `embassy-${slug}.json`), officeFile);
 
   // Provenance / corrections log.
   const entries = reportIndex.offices[slug] || [];
-  entries.unshift({
+  const entry = {
     report_date: reportDate,
     fetched_at: fetchedAt,
     decisions: rows.length,
     approved,
     refused: rows.length - approved,
     source_file: sourceFile,
-    checksum,
+    checksum: reportChecksum,
     added: diff.added,
     removed: diff.removed,
     changed: diff.changed.slice(0, 200),
-  });
-  reportIndex.offices[slug] = entries.slice(0, 24);
+  };
+  const existingEntry = entries.findIndex((candidate) => candidate.report_date === reportDate);
+  if (existingEntry >= 0) entries[existingEntry] = entry;
+  else entries.unshift(entry);
+  reportIndex.offices[slug] = entries.slice(0, 100);
 
   const summary = {
     slug,
@@ -472,8 +518,9 @@ async function ingestOffice(slug, config) {
   };
   manifestBySlug.set(slug, summary);
   console.log(
-    `${slug.padEnd(11)} ${String(rows.length).padStart(6)} decisions  ` +
+    `${slug.padEnd(11)} ${String(rows.length).padStart(6)} current decisions  ` +
       `report ${reportDate}  ${status}` +
+      (fileRows.length !== rows.length ? `  ${fileRows.length} archived` : '') +
       (diff.changed.length ? `  ${diff.changed.length} correction(s)` : '')
   );
   return summary;
@@ -537,7 +584,9 @@ async function main() {
   console.log(`\nWrote data/data_manifest.json and data/reports/index.json`);
 }
 
-main().catch((error) => {
-  console.error(error);
-  process.exit(1);
-});
+if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(fileURLToPath(import.meta.url))) {
+  main().catch((error) => {
+    console.error(error);
+    process.exit(1);
+  });
+}

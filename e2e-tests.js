@@ -9,9 +9,9 @@
  * page has no dedicated server-rendered route.
  */
 
-const { test, expect } = require('@playwright/test');
+import { test, expect } from '@playwright/test';
 
-const BASE_URL = 'http://127.0.0.1:8788';
+const BASE_URL = process.env.E2E_BASE_URL || 'http://127.0.0.1:8788';
 
 const TEST_USER = {
   email: `e2e_${Date.now()}@example.com`,
@@ -67,6 +67,17 @@ test.describe('SPA shell', () => {
     // Switch back to sign-in tab
     await page.locator('#account-tab-signin').click();
     await expect(page.locator('#account-form-signin')).toBeVisible({ timeout: 5000 });
+  });
+
+  test('closes the account modal with Escape and returns focus', async ({ page }) => {
+    await gotoHome(page);
+    await page.locator('.tracker-card').first().click();
+    await page.waitForTimeout(1000);
+    await page.locator('#account-btn').click();
+    await expect(page.locator('#account-modal')).not.toHaveAttribute('hidden');
+    await page.keyboard.press('Escape');
+    await expect(page.locator('#account-modal')).toHaveAttribute('hidden');
+    await expect(page.locator('#account-btn')).toBeFocused();
   });
 });
 
@@ -188,6 +199,31 @@ test.describe('Document Checklist API', () => {
     const json = await res.json();
     // The checklist endpoint returns items; be lenient about shape.
     expect(json).toBeDefined();
+  });
+});
+
+test.describe('Workspace shell', () => {
+  test('serves the private workspace sign-in without exposing app data', async ({ page }) => {
+    await page.goto(`${BASE_URL}/workspace`, { waitUntil: 'networkidle' });
+    await expect(page.locator('h1').first()).toContainText('Your application workspace');
+    await expect(page.locator('#workspace-auth')).toBeVisible();
+    await expect(page.locator('#workspace-app')).toHaveAttribute('hidden');
+    await page.locator('#auth-tab-register').click();
+    await expect(page.locator('#auth-register')).toBeVisible();
+    await expect(page.locator('#auth-register input[name="email"]')).toBeVisible();
+  });
+
+  test('signs in through the workspace form and renders the private overview', async ({ page, request }) => {
+    await request.post(`${BASE_URL}/api/auth/register`, {
+      data: { email: TEST_USER.email, password: TEST_USER.password, name: TEST_USER.name },
+    }).catch(() => { /* the shared test user may already exist */ });
+    await page.goto(`${BASE_URL}/workspace`, { waitUntil: 'networkidle' });
+    await page.fill('#auth-signin input[name="email"]', TEST_USER.email);
+    await page.fill('#auth-signin input[name="password"]', TEST_USER.password);
+    await page.click('#auth-signin button[type="submit"]');
+    await expect(page.locator('#workspace-app')).toBeVisible({ timeout: 15000 });
+    await expect(page.locator('#workspace-user-email')).toHaveText(TEST_USER.email);
+    await expect(page.locator('#workspace-panel h2')).toContainText('Welcome back');
   });
 });
 

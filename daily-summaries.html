@@ -62,24 +62,41 @@
   }
   </script>
 <meta name="google-site-verification" content="HkazW2pbKNbaIJp901Sa-uoQz8MDAvnu9Sk01uhfFCo">
+  <link rel="stylesheet" href="/site-chrome.css">
 </head>
 <body>
+  <a class="skip-link" href="#main-content">Skip to content</a>
 
-  <header class="site-header">
-    <div class="site-header-inner">
-      <a class="brand" href="/"><img src="/icon.svg" alt="" width="22" height="22"> Irish Visa Decision Tracker</a>
-      <nav class="site-nav" aria-label="Site">
-        <a href="/">Tracker</a>
-        <a href="/about">About</a>
-        <a href="/contact">Contact</a>
-        <a href="/privacy">Privacy</a>
-        <a href="/stamp-1g-processing-dates">Stamp 1G</a>
-        <a href="/daily-summaries" aria-current="page">Daily summaries</a>
-      </nav>
-    </div>
-  </header>
+  <header class="sitebar">
+  <div class="sitebar-inner">
+    <a class="brand" href="/" aria-label="Irish Visa Decision Tracker home">
+      <img src="/icon.svg" alt="" width="24" height="24">
+      <span>Irish Visa Decision Tracker</span>
+    </a>
+    <nav class="sitebar-nav" aria-label="Site">
+      <a href="/">Tracker</a>
+      <a href="/comparison">Compare</a>
+      <a href="/daily-summaries" aria-current="page">Daily summaries</a>
+      <a href="/monthly-report">Monthly report</a>
+      <a href="/visa-processing-times">Processing times</a>
+      <a href="/about">About</a>
+      <details class="sitebar-more">
+        <summary>More</summary>
+        <div class="sitebar-more-panel">
+          <a href="/stamp-1g-processing-dates">Stamp 1G</a>
+          <a href="/employment-permit-processing-dates">Employment permits</a>
+          <a href="/vac-transit">VAC &amp; transit</a>
+          <a href="/contact">Contact</a>
+          <a href="/privacy">Privacy</a>
+          <a href="/terms">Terms</a>
+          <a href="/refund">Refunds</a>
+        </div>
+      </details>
+    </nav>
+  </div>
+</header>
 
-  <main class="page">
+  <main id="main-content" tabindex="-1" class="page">
     <nav class="breadcrumbs" aria-label="Breadcrumb">
       <ol>
         <li><a href="/">Tracker</a></li>
@@ -88,7 +105,7 @@
     </nav>
     <p class="page-kicker">Visa decisions &middot; Embassy of Ireland New Delhi</p>
     <h1>Daily Visa Decision Summaries</h1>
-    <p class="page-meta">Irish Visa Decision Tracker &bull; Updated from the tracker's daily scraper run &bull; Unofficial - not immigration advice</p>
+    <p class="page-meta">Irish Visa Decision Tracker &bull; Unofficial, not immigration advice</p>
 
     <p class="page-lede">
       Every business day the Embassy of Ireland in New Delhi publishes a spreadsheet of visa
@@ -100,10 +117,12 @@
     <p class="page-data-freshness">
       <strong>Data as of:</strong>
       <time id="visa-as-of" datetime="2026-11-07">7 November 2026</time> &middot;
-      <strong>Scraper status:</strong> <span id="visa-status">OK</span> &middot;
+
+      <strong>Data status:</strong> <span id="visa-status">OK</span> &middot;
       <strong>Decisions on record:</strong> <span id="visa-rows">42,382</span> &middot;
       <strong>Source:</strong>
-      <a href="/data/visa_decisions.json">/data/visa_decisions.json</a>
+      <a href="https://www.irishimmigration.ie/visa-decisions/">Official visa decisions</a>
+
     </p>
 
     <section>
@@ -115,20 +134,20 @@
         <li><strong>Closures</strong> - a day with no embassy file is a closure or placeholder, not a day with zero decisions.</li>
       </ul>
       <p class="small-note">
-        Counts describe what the embassy has published. They are not an approval rate for
-        applications submitted on that day, and they say nothing about a case that has not
-        appeared in a published file yet.
+
+        Counts reflect decisions the embassy published that day, not the approval rate for
+        applications submitted then.
+
       </p>
     </section>
 
     <section>
       <h2>Why a daily summary is useful</h2>
       <p>
-        The embassy's file is a single flat list with no history and no totals. Reading it tells
-        you what was published that day; it does not tell you how decision volume has moved, which
-        days were closures, or whether a quiet week was a slow week or a holiday. Keeping every
-        published day in one running record is what makes those comparisons possible, and it is
-        why this archive keeps days that the current file no longer contains.
+
+        The embassy publishes only the current file; older daily lists are replaced. This archive
+        keeps every published day, so you can compare decision volume and see closures.
+
       </p>
       <p>
         Because the record is complete, a missing application number means one of three things:
@@ -141,7 +160,7 @@
     <section>
       <h2>Official sources</h2>
       <p>
-        This page is an independent record, not the publisher. For the authoritative list, use the
+        For the authoritative list, use the
         official pages:
       </p>
       <ul>
@@ -159,24 +178,15 @@
     <section>
       <h2>Raw data</h2>
       <p>
+
         The complete decision history is available as a public JSON file:
-        <a href="/data/visa_decisions.json">/data/visa_decisions.json</a>, shaped as
-        <code>[date, application number, decision]</code> rows. Scraper health - last run, row
-        count and whether the last run succeeded - is at
-        <a href="/data/visa_meta.json">/data/visa_meta.json</a>. The figures above are read from
-        that health file when this page loads, so they follow the pipeline without a redeploy.
+        <a href="/data/visa_decisions.json">/data/visa_decisions.json</a>, with the published date,
+        application number and decision for each row. It is updated automatically.
+
       </p>
     </section>
 
-    <section>
-      <h2>What this is not</h2>
-      <p>
-        This is an independent, unofficial project. It is not affiliated with the Embassy of
-        Ireland, ISD, DETE or any Irish government body. It does not give immigration advice,
-        cannot speed up an application, and cannot guarantee an outcome. For a decision on your
-        own case, contact ISD or the Embassy of Ireland in New Delhi.
-      </p>
-    </section>
+
 
     <p class="page-nav">
       <a href="/">Back to tracker</a> &middot;
@@ -186,9 +196,55 @@
     </p>
   </main>
 
-  <footer class="site-footer">
-    <p><a href="/">Tracker</a> &bull; <a href="/stamp-1g-processing-dates">Stamp 1G</a> &bull; <a href="/daily-summaries">Daily summaries</a> &bull; <a href="/about">About</a> &bull; <a href="/contact">Contact</a> &bull; <a href="/sitemap.xml">Sitemap</a> &bull; <a href="/employment-permit-processing-dates">Employment permits</a> &bull; <a href="/visa-processing-times">Processing times</a></p>
-  </footer>
+  <footer class="sitebar-footer">
+  <div class="sitebar-footer-inner">
+    <div class="sitebar-footer-brand">
+      <a class="brand" href="/" aria-label="Irish Visa Decision Tracker home">
+        <img src="/icon.svg" alt="" width="24" height="24">
+        <span>Irish Visa Decision Tracker</span>
+      </a>
+      <p>Independent and unofficial. Not affiliated with the Embassy of Ireland, ISD or DETE. Not immigration advice.</p>
+    </div>
+    <nav class="sitebar-footer-col" aria-label="Explore">
+      <h2 class="sitebar-footer-title">Explore</h2>
+      <ul>
+        <li><a href="/">Tracker</a></li>
+        <li><a href="/comparison">Compare</a></li>
+        <li><a href="/daily-summaries">Daily summaries</a></li>
+        <li><a href="/monthly-report">Monthly report</a></li>
+        <li><a href="/visa-processing-times">Processing times</a></li>
+        <li><a href="/vac-transit">VAC &amp; transit</a></li>
+      </ul>
+    </nav>
+    <nav class="sitebar-footer-col" aria-label="Data">
+      <h2 class="sitebar-footer-title">Data</h2>
+      <ul>
+        <li><a href="/stamp-1g-processing-dates">Stamp 1G</a></li>
+        <li><a href="/employment-permit-processing-dates">Employment permits</a></li>
+        <li><a href="/data/visa_decisions.json">Visa decisions JSON</a></li>
+        <li><a href="/status">Data status</a></li>
+        <li><a href="/data/data_manifest.json">Data manifest</a></li>
+        <li><a href="/sitemap.xml">Sitemap</a></li>
+        <li><a href="/llms.txt">llms.txt</a></li>
+      </ul>
+    </nav>
+    <nav class="sitebar-footer-col" aria-label="About and legal">
+      <h2 class="sitebar-footer-title">About &amp; legal</h2>
+      <ul>
+        <li><a href="/about">About the project</a></li>
+        <li><a href="/contact">Contact &amp; corrections</a></li>
+        <li><a href="/privacy">Privacy</a></li>
+        <li><a href="/terms">Terms</a></li>
+        <li><a href="/refund">Refund policy</a></li>
+        <li><a href="https://github.com/parth-soni-10/Irish-Visa-Tracker" rel="noopener">GitHub</a></li>
+      </ul>
+    </nav>
+  </div>
+  <div class="sitebar-footer-bottom">
+    <p>&copy; 2026 Parth Soni &middot; Dublin, Ireland</p>
+    <p><a href="/sitemap.xml">Sitemap</a><a href="/llms.txt">llms.txt</a><a href="https://github.com/parth-soni-10/Irish-Visa-Tracker" rel="noopener">GitHub</a></p>
+  </div>
+</footer>
 
   <script>
   /* Fill the freshness line from the scraper health file. The static text above is the
@@ -225,5 +281,6 @@
   })();
   </script>
 
+  <script src="/site-chrome.js" defer></script>
 </body>
 </html>

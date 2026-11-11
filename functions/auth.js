@@ -1,7 +1,9 @@
 /**
  * Authentication Module
- * Handles user registration, login, session management, JWT tokens
+ * Handles user registration, login, session management and private export tokens
  */
+
+import { sha256 } from './crypto.js';
 
 // Password hashing using Web Crypto API (PBKDF2) - randomized with salt
 async function hashPassword(password) {
@@ -111,32 +113,45 @@ async function cleanupExpiredSessions(env) {
   await env.DB.prepare('DELETE FROM user_sessions WHERE expires_at < datetime("now")').run();
 }
 
-// JWT token for API access
-async function createAPIToken(env, userId, name, scopes = ['read']) {
+// Private export tokens use a deterministic SHA-256 digest so a presented token can be
+// looked up without storing it. Passwords must not use this helper: those use
+// PBKDF2 with a random salt above.
+async function hashToken(token) {
+  return sha256(String(token || ''));
+}
+
+// Create a token for API v1. The plaintext value is returned exactly once.
+async function createAPIToken(env, userId, name, scopes = ['read'], expiresDays = 365) {
   const token = 'vt_' + crypto.randomUUID().replace(/-/g, '') + crypto.randomUUID().replace(/-/g, '');
-  const tokenHash = await hashPassword(token);
-  const expiresAt = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000); // 1 year
-  
+  const tokenHash = await hashToken(token);
+  const id = crypto.randomUUID();
+  const expiresAt = new Date(Date.now() + expiresDays * 24 * 60 * 60 * 1000).toISOString();
+
   await env.DB.prepare(`
-    INSERT INTO api_tokens (token_hash, user_id, name, scopes, expires_at, created_at)
-    VALUES (?, ?, ?, ?, ?, datetime('now'))
-  `).bind(tokenHash, userId, name, JSON.stringify(scopes), expiresAt.toISOString()).run();
-  
-  return token; // Only returned once
+    INSERT INTO api_tokens (id, token_hash, user_id, name, scopes, expires_at, created_at)
+    VALUES (?, ?, ?, ?, ?, ?, datetime('now'))
+  `).bind(id, tokenHash, userId, name, JSON.stringify(scopes), expiresAt).run();
+
+  return { id, token, name, scopes, expiresAt };
 }
 
 async function validateAPIToken(env, token) {
-  const tokenHash = await hashPassword(token);
+  if (!token || !/^vt_[A-Za-z0-9]+$/.test(token)) return null;
+  const tokenHash = await hashToken(token);
   const record = await env.DB.prepare(`
-    SELECT t.*, u.id, u.email, u.name
+    SELECT t.id, t.user_id, t.name, t.scopes, t.expires_at, u.email, u.name AS user_name
     FROM api_tokens t
     JOIN users u ON t.user_id = u.id
-    WHERE t.token_hash = ? AND t.expires_at > datetime('now') AND t.revoked = 0
+    WHERE t.token_hash = ?
+      AND (t.expires_at IS NULL OR datetime(t.expires_at) > datetime('now'))
+      AND t.revoked = 0
   `).bind(tokenHash).first();
-  
+
   if (record) {
-    await env.DB.prepare('UPDATE api_tokens SET last_used = datetime("now") WHERE id = ?').bind(record.id).run();
-    return { userId: record.user_id, email: record.email, name: record.name };
+    await env.DB.prepare('UPDATE api_tokens SET last_used_at = datetime("now") WHERE id = ?').bind(record.id).run();
+    let scopes = ['read'];
+    try { scopes = JSON.parse(record.scopes || '["read"]'); } catch {}
+    return { id: record.id, userId: record.user_id, email: record.email, name: record.user_name, scopes };
   }
   return null;
 }
@@ -209,6 +224,7 @@ export {
   cleanupExpiredSessions,
   createAPIToken,
   validateAPIToken,
+  hashToken,
   createVerificationToken,
   verifyEmailToken,
   createPasswordResetToken,

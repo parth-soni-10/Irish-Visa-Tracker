@@ -21,6 +21,10 @@ LICENSE
 README.md
 requirements.txt
 scraper.py
+models/
+train_model.py
+generate_training_data.py
+export_trees.py
 sync_timelines.py
 track_1g.py
 track_permits.py

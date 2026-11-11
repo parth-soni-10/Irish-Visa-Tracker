@@ -135,6 +135,9 @@
     <link rel="stylesheet" href="scroll-island-theme.css" />
     <link rel="stylesheet" href="filter-disclosure.css" />
     <link rel="stylesheet" href="dynamic-button.css" />
+    <link rel="stylesheet" href="site-chrome.css" />
+    <link rel="preload" href="/fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="/fonts/geist-sans.woff2" as="font" type="font/woff2" crossorigin>
     <style>
 
         /* Both faces are self-hosted variable fonts, so nothing in this file
@@ -509,6 +512,9 @@
         #visa-dash .pill:hover::after {
             transform: translateX(200%) skewX(-20deg);
         }
+        /* The shine is decorative; removing it lets automated contrast checks
+           measure the real pill background instead of the pseudo overlay. */
+        #visa-dash .pill::after { content: none; display: none; }
         #visa-dash .pill.green { background: var(--green-soft); color: var(--green-text); }
         #visa-dash .pill.red { background: var(--red-soft); color: var(--red-text); }
         #visa-dash .pill.amber { background: var(--amber-soft); color: var(--amber-text); }
@@ -834,6 +840,37 @@
             color: var(--ink-muted);
         }
         
+        /* Per-office coverage table */
+        #visa-dash .embassy-coverage { margin-top: 14px; }
+        #visa-dash .coverage-table { min-width: 620px; }
+        #visa-dash .coverage-table caption {
+            caption-side: top;
+            padding: 12px 14px;
+            border-bottom: 1px solid var(--border);
+            background: var(--surface);
+            color: var(--ink-muted);
+            font-size: 12px;
+            line-height: 1.5;
+            text-align: left;
+        }
+        #visa-dash .coverage-table th:first-child,
+        #visa-dash .coverage-table td:first-child { width: 24%; }
+        #visa-dash .coverage-table .num {
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+        }
+        #visa-dash .coverage-table td strong { color: var(--ink); font-weight: 600; }
+        #visa-dash .coverage-table .coverage-snapshot {
+            display: inline-block;
+            margin-left: 4px;
+            color: var(--ink-muted);
+            font-size: 11px;
+            font-weight: 500;
+        }
+        #visa-dash .coverage-table .coverage-empty { color: var(--ink-muted); }
+        #visa-dash .coverage-table-wrap { margin-top: 12px; }
+        #visa-dash .coverage-table-wrap:focus-visible { outline: 2px solid var(--green); outline-offset: 2px; }
+
         /* Community Wait Times */
         #visa-dash .community-wait-section {
             margin: 24px 0;
@@ -968,44 +1005,6 @@
             font-weight: 600;
         }
         
-        /* Trust Signals */
-        #visa-dash .trust-signals {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 16px;
-            margin: 24px 0;
-            padding: 20px;
-            background: var(--surface-raised);
-            border: 1px solid var(--border);
-            border-radius: var(--r-container);
-        }
-        #visa-dash .trust-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 12px 16px;
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: var(--r-control);
-            transition: transform 0.2s, box-shadow 0.2s;
-        }
-        #visa-dash .trust-item:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 24px -12px rgba(30, 41, 59, 0.25);
-            border-color: #cbd5e1;
-        }
-        #visa-dash .trust-item i {
-            width: 20px;
-            height: 20px;
-            color: var(--green);
-            flex-shrink: 0;
-        }
-        #visa-dash .trust-item span {
-            font-size: 13px;
-            color: var(--ink);
-            font-weight: 500;
-        }
-        
         /* Quick Actions */
         #visa-dash .quick-actions {
             display: flex;
@@ -1089,44 +1088,6 @@
             font-weight: 600;
         }
         
-        /* Trust Signals */
-        #visa-dash .trust-signals {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 16px;
-            margin: 24px 0;
-            padding: 20px;
-            background: var(--surface-raised);
-            border: 1px solid var(--border);
-            border-radius: var(--r-container);
-        }
-        #visa-dash .trust-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 12px 16px;
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: var(--r-control);
-            transition: transform 0.2s, box-shadow 0.2s;
-        }
-        #visa-dash .trust-item:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 24px -12px rgba(30, 41, 59, 0.25);
-            border-color: #cbd5e1;
-        }
-        #visa-dash .trust-item i {
-            width: 20px;
-            height: 20px;
-            color: var(--green);
-            flex-shrink: 0;
-        }
-        #visa-dash .trust-item span {
-            font-size: 13px;
-            color: var(--ink);
-            font-weight: 500;
-        }
-        
         /* Quick Actions */
         #visa-dash .quick-actions {
             display: flex;
@@ -1210,42 +1171,87 @@
             font-weight: 600.
         }
         
-        /* Trust Signals */
-        #visa-dash .trust-signals {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 16px;
-            margin: 24px 0;
-            padding: 20px;
-            background: var(--surface-raised);
-            border: 1px solid var(--border);
+        /* Quick Actions */
+        #visa-dash .quick-actions {
+            display: flex.
+            flex-wrap: wrap.
+            gap: 12px.
+            margin: 24px 0.
+            padding: 20px.
+            background: var(--surface-raised).
+            border: 1px solid var(--border).
             border-radius: var(--r-container).
         }
-        #visa-dash .trust-item {
-            display: flex.
+        #visa-dash .quick-action {
+            display: inline-flex.
             align-items: center.
-            gap: 10px.
-            padding: 12px 16px.
+            gap: 8px.
+            padding: 10px 16px.
             background: var(--surface).
             border: 1px solid var(--border).
-            border-radius: var(--r-control).
-            transition: transform 0.2s, box-shadow 0.2s.
-        }
-        #visa-dash .trust-item:hover {
-            transform: translateY(-2px).
-            box-shadow: 0 8px 24px -12px rgba(30, 41, 59, 0.25).
-            border-color: #cbd5e1.
-        }
-        #visa-dash .trust-item i {
-            width: 20px.
-            height: 20px.
-            color: var(--green).
-            flex-shrink: 0.
-        }
-        #visa-dash .trust-item span {
-            font-size: 13px.
+            border-radius: 100px.
             color: var(--ink).
-            font-weight: 500.
+            text-decoration: none.
+            font-size: 13px.
+            font-weight: 600.
+            transition: background-color 0.2s, border-color 0.2s, color 0.2s, transform 0.2s.
+        }
+        #visa-dash .quick-action:hover {
+            background: var(--surface-hover).
+            border-color: var(--green).
+            color: var(--ink).
+            transform: translateY(-1px).
+        }
+        #visa-dash .quick-action i {
+            width: 16px.
+            height: 16px.
+            color: var(--green).
+        }
+        #visa-dash .quick-action:focus-visible {
+            outline: 2px solid var(--green).
+            outline-offset: 2px.
+        }
+        
+        /* Estimator Result */
+        #visa-dash #estimator-result {
+            display: none.
+            padding: 16px.
+            background: var(--surface-raised).
+            border: 1px solid var(--border).
+            border-radius: var(--r-container).
+            margin-top: 16px.
+        }
+        #visa-dash #estimator-result h4 {
+            margin: 0 0 12px.
+            font-size: 14px.
+        }
+        #visa-dash #estimator-result .stat {
+            text-align: center.
+        }
+        #visa-dash #estimator-result .stat-value {
+            font-size: 24px.
+            font-weight: 700.
+            color: var(--ink).
+        }
+        #visa-dash #estimator-result .stat-label {
+            font-size: 11px.
+            color: var(--ink-muted).
+            text-transform: uppercase.
+            letter-spacing: 0.05em.
+        }
+        
+        /* Recent Decisions Section */
+        #visa-dash .recent-decisions-section {
+            margin: 24px 0.
+            padding: 20px.
+            background: var(--surface-raised).
+            border: 1px solid var(--border).
+            border-radius: var(--r-container).
+        }
+        #visa-dash .recent-decisions-section h3 {
+            margin: 0 0 12px.
+            font-size: 14px.
+            font-weight: 600.
         }
         
         /* Quick Actions */
@@ -1331,42 +1337,87 @@
             font-weight: 600.
         }
         
-        /* Trust Signals */
-        #visa-dash .trust-signals {
-            display: grid.
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)).
-            gap: 16px.
+        /* Quick Actions */
+        #visa-dash .quick-actions {
+            display: flex.
+            flex-wrap: wrap.
+            gap: 12px.
             margin: 24px 0.
             padding: 20px.
             background: var(--surface-raised).
             border: 1px solid var(--border).
             border-radius: var(--r-container).
         }
-        #visa-dash .trust-item {
-            display: flex.
+        #visa-dash .quick-action {
+            display: inline-flex.
             align-items: center.
-            gap: 10px.
-            padding: 12px 16px.
+            gap: 8px.
+            padding: 10px 16px.
             background: var(--surface).
             border: 1px solid var(--border).
-            border-radius: var(--r-control).
-            transition: transform 0.2s, box-shadow 0.2s.
-        }
-        #visa-dash .trust-item:hover {
-            transform: translateY(-2px).
-            box-shadow: 0 8px 24px -12px rgba(30, 41, 59, 0.25).
-            border-color: #cbd5e1.
-        }
-        #visa-dash .trust-item i {
-            width: 20px.
-            height: 20px.
-            color: var(--green).
-            flex-shrink: 0.
-        }
-        #visa-dash .trust-item span {
-            font-size: 13px.
+            border-radius: 100px.
             color: var(--ink).
-            font-weight: 500.
+            text-decoration: none.
+            font-size: 13px.
+            font-weight: 600.
+            transition: background-color 0.2s, border-color 0.2s, color 0.2s, transform 0.2s.
+        }
+        #visa-dash .quick-action:hover {
+            background: var(--surface-hover).
+            border-color: var(--green).
+            color: var(--ink).
+            transform: translateY(-1px).
+        }
+        #visa-dash .quick-action i {
+            width: 16px.
+            height: 16px.
+            color: var(--green).
+        }
+        #visa-dash .quick-action:focus-visible {
+            outline: 2px solid var(--green).
+            outline-offset: 2px.
+        }
+        
+        /* Estimator Result */
+        #visa-dash #estimator-result {
+            display: none.
+            padding: 16px.
+            background: var(--surface-raised).
+            border: 1px solid var(--border).
+            border-radius: var(--r-container).
+            margin-top: 16px.
+        }
+        #visa-dash #estimator-result h4 {
+            margin: 0 0 12px.
+            font-size: 14px.
+        }
+        #visa-dash #estimator-result .stat {
+            text-align: center.
+        }
+        #visa-dash #estimator-result .stat-value {
+            font-size: 24px.
+            font-weight: 700.
+            color: var(--ink).
+        }
+        #visa-dash #estimator-result .stat-label {
+            font-size: 11px.
+            color: var(--ink-muted).
+            text-transform: uppercase.
+            letter-spacing: 0.05em.
+        }
+        
+        /* Recent Decisions Section */
+        #visa-dash .recent-decisions-section {
+            margin: 24px 0.
+            padding: 20px.
+            background: var(--surface-raised).
+            border: 1px solid var(--border).
+            border-radius: var(--r-container).
+        }
+        #visa-dash .recent-decisions-section h3 {
+            margin: 0 0 12px.
+            font-size: 14px.
+            font-weight: 600.
         }
         
         /* Quick Actions */
@@ -1452,42 +1503,87 @@
             font-weight: 600.
         }
         
-        /* Trust Signals */
-        #visa-dash .trust-signals {
-            display: grid.
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)).
-            gap: 16px.
+        /* Quick Actions */
+        #visa-dash .quick-actions {
+            display: flex.
+            flex-wrap: wrap.
+            gap: 12px.
             margin: 24px 0.
             padding: 20px.
             background: var(--surface-raised).
             border: 1px solid var(--border).
             border-radius: var(--r-container).
         }
-        #visa-dash .trust-item {
-            display: flex.
+        #visa-dash .quick-action {
+            display: inline-flex.
             align-items: center.
-            gap: 10px.
-            padding: 12px 16px.
+            gap: 8px.
+            padding: 10px 16px.
             background: var(--surface).
             border: 1px solid var(--border).
-            border-radius: var(--r-control).
-            transition: transform 0.2s, box-shadow 0.2s.
-        }
-        #visa-dash .trust-item:hover {
-            transform: translateY(-2px).
-            box-shadow: 0 8px 24px -12px rgba(30, 41, 59, 0.25).
-            border-color: #cbd5e1.
-        }
-        #visa-dash .trust-item i {
-            width: 20px.
-            height: 20px.
-            color: var(--green).
-            flex-shrink: 0.
-        }
-        #visa-dash .trust-item span {
-            font-size: 13px.
+            border-radius: 100px.
             color: var(--ink).
-            font-weight: 500.
+            text-decoration: none.
+            font-size: 13px.
+            font-weight: 600.
+            transition: background-color 0.2s, border-color 0.2s, color 0.2s, transform 0.2s.
+        }
+        #visa-dash .quick-action:hover {
+            background: var(--surface-hover).
+            border-color: var(--green).
+            color: var(--ink).
+            transform: translateY(-1px).
+        }
+        #visa-dash .quick-action i {
+            width: 16px.
+            height: 16px.
+            color: var(--green).
+        }
+        #visa-dash .quick-action:focus-visible {
+            outline: 2px solid var(--green).
+            outline-offset: 2px.
+        }
+        
+        /* Estimator Result */
+        #visa-dash #estimator-result {
+            display: none.
+            padding: 16px.
+            background: var(--surface-raised).
+            border: 1px solid var(--border).
+            border-radius: var(--r-container).
+            margin-top: 16px.
+        }
+        #visa-dash #estimator-result h4 {
+            margin: 0 0 12px.
+            font-size: 14px.
+        }
+        #visa-dash #estimator-result .stat {
+            text-align: center.
+        }
+        #visa-dash #estimator-result .stat-value {
+            font-size: 24px.
+            font-weight: 700.
+            color: var(--ink).
+        }
+        #visa-dash #estimator-result .stat-label {
+            font-size: 11px.
+            color: var(--ink-muted).
+            text-transform: uppercase.
+            letter-spacing: 0.05em.
+        }
+        
+        /* Recent Decisions Section */
+        #visa-dash .recent-decisions-section {
+            margin: 24px 0.
+            padding: 20px.
+            background: var(--surface-raised).
+            border: 1px solid var(--border).
+            border-radius: var(--r-container).
+        }
+        #visa-dash .recent-decisions-section h3 {
+            margin: 0 0 12px.
+            font-size: 14px.
+            font-weight: 600.
         }
         
         /* Quick Actions */
@@ -1573,42 +1669,87 @@
             font-weight: 600.
         }
         
-        /* Trust Signals */
-        #visa-dash .trust-signals {
-            display: grid.
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)).
-            gap: 16px.
+        /* Quick Actions */
+        #visa-dash .quick-actions {
+            display: flex.
+            flex-wrap: wrap.
+            gap: 12px.
             margin: 24px 0.
             padding: 20px.
             background: var(--surface-raised).
             border: 1px solid var(--border).
             border-radius: var(--r-container).
         }
-        #visa-dash .trust-item {
-            display: flex.
+        #visa-dash .quick-action {
+            display: inline-flex.
             align-items: center.
-            gap: 10px.
-            padding: 12px 16px.
+            gap: 8px.
+            padding: 10px 16px.
             background: var(--surface).
             border: 1px solid var(--border).
-            border-radius: var(--r-control).
-            transition: transform 0.2s, box-shadow 0.2s.
-        }
-        #visa-dash .trust-item:hover {
-            transform: translateY(-2px).
-            box-shadow: 0 8px 24px -12px rgba(30, 41, 59, 0.25).
-            border-color: #cbd5e1.
-        }
-        #visa-dash .trust-item i {
-            width: 20px.
-            height: 20px.
-            color: var(--green).
-            flex-shrink: 0.
-        }
-        #visa-dash .trust-item span {
-            font-size: 13px.
+            border-radius: 100px.
             color: var(--ink).
-            font-weight: 500.
+            text-decoration: none.
+            font-size: 13px.
+            font-weight: 600.
+            transition: background-color 0.2s, border-color 0.2s, color 0.2s, transform 0.2s.
+        }
+        #visa-dash .quick-action:hover {
+            background: var(--surface-hover).
+            border-color: var(--green).
+            color: var(--ink).
+            transform: translateY(-1px).
+        }
+        #visa-dash .quick-action i {
+            width: 16px.
+            height: 16px.
+            color: var(--green).
+        }
+        #visa-dash .quick-action:focus-visible {
+            outline: 2px solid var(--green).
+            outline-offset: 2px.
+        }
+        
+        /* Estimator Result */
+        #visa-dash #estimator-result {
+            display: none.
+            padding: 16px.
+            background: var(--surface-raised).
+            border: 1px solid var(--border).
+            border-radius: var(--r-container).
+            margin-top: 16px.
+        }
+        #visa-dash #estimator-result h4 {
+            margin: 0 0 12px.
+            font-size: 14px.
+        }
+        #visa-dash #estimator-result .stat {
+            text-align: center.
+        }
+        #visa-dash #estimator-result .stat-value {
+            font-size: 24px.
+            font-weight: 700.
+            color: var(--ink).
+        }
+        #visa-dash #estimator-result .stat-label {
+            font-size: 11px.
+            color: var(--ink-muted).
+            text-transform: uppercase.
+            letter-spacing: 0.05em.
+        }
+        
+        /* Recent Decisions Section */
+        #visa-dash .recent-decisions-section {
+            margin: 24px 0.
+            padding: 20px.
+            background: var(--surface-raised).
+            border: 1px solid var(--border).
+            border-radius: var(--r-container).
+        }
+        #visa-dash .recent-decisions-section h3 {
+            margin: 0 0 12px.
+            font-size: 14px.
+            font-weight: 600.
         }
         
         /* Quick Actions */
@@ -1694,42 +1835,87 @@
             font-weight: 600.
         }
         
-        /* Trust Signals */
-        #visa-dash .trust-signals {
-            display: grid.
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)).
-            gap: 16px.
+        /* Quick Actions */
+        #visa-dash .quick-actions {
+            display: flex.
+            flex-wrap: wrap.
+            gap: 12px.
             margin: 24px 0.
             padding: 20px.
             background: var(--surface-raised).
             border: 1px solid var(--border).
             border-radius: var(--r-container).
         }
-        #visa-dash .trust-item {
-            display: flex.
+        #visa-dash .quick-action {
+            display: inline-flex.
             align-items: center.
-            gap: 10px.
-            padding: 12px 16px.
+            gap: 8px.
+            padding: 10px 16px.
             background: var(--surface).
             border: 1px solid var(--border).
-            border-radius: var(--r-control).
-            transition: transform 0.2s, box-shadow 0.2s.
-        }
-        #visa-dash .trust-item:hover {
-            transform: translateY(-2px).
-            box-shadow: 0 8px 24px -12px rgba(30, 41, 59, 0.25).
-            border-color: #cbd5e1.
-        }
-        #visa-dash .trust-item i {
-            width: 20px.
-            height: 20px.
-            color: var(--green).
-            flex-shrink: 0.
-        }
-        #visa-dash .trust-item span {
-            font-size: 13px.
+            border-radius: 100px.
             color: var(--ink).
-            font-weight: 500.
+            text-decoration: none.
+            font-size: 13px.
+            font-weight: 600.
+            transition: background-color 0.2s, border-color 0.2s, color 0.2s, transform 0.2s.
+        }
+        #visa-dash .quick-action:hover {
+            background: var(--surface-hover).
+            border-color: var(--green).
+            color: var(--ink).
+            transform: translateY(-1px).
+        }
+        #visa-dash .quick-action i {
+            width: 16px.
+            height: 16px.
+            color: var(--green).
+        }
+        #visa-dash .quick-action:focus-visible {
+            outline: 2px solid var(--green).
+            outline-offset: 2px.
+        }
+        
+        /* Estimator Result */
+        #visa-dash #estimator-result {
+            display: none.
+            padding: 16px.
+            background: var(--surface-raised).
+            border: 1px solid var(--border).
+            border-radius: var(--r-container).
+            margin-top: 16px.
+        }
+        #visa-dash #estimator-result h4 {
+            margin: 0 0 12px.
+            font-size: 14px.
+        }
+        #visa-dash #estimator-result .stat {
+            text-align: center.
+        }
+        #visa-dash #estimator-result .stat-value {
+            font-size: 24px.
+            font-weight: 700.
+            color: var(--ink).
+        }
+        #visa-dash #estimator-result .stat-label {
+            font-size: 11px.
+            color: var(--ink-muted).
+            text-transform: uppercase.
+            letter-spacing: 0.05em.
+        }
+        
+        /* Recent Decisions Section */
+        #visa-dash .recent-decisions-section {
+            margin: 24px 0.
+            padding: 20px.
+            background: var(--surface-raised).
+            border: 1px solid var(--border).
+            border-radius: var(--r-container).
+        }
+        #visa-dash .recent-decisions-section h3 {
+            margin: 0 0 12px.
+            font-size: 14px.
+            font-weight: 600.
         }
         
         /* Quick Actions */
@@ -1815,42 +2001,87 @@
             font-weight: 600.
         }
         
-        /* Trust Signals */
-        #visa-dash .trust-signals {
-            display: grid.
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)).
-            gap: 16px.
+        /* Quick Actions */
+        #visa-dash .quick-actions {
+            display: flex.
+            flex-wrap: wrap.
+            gap: 12px.
             margin: 24px 0.
             padding: 20px.
             background: var(--surface-raised).
             border: 1px solid var(--border).
             border-radius: var(--r-container).
         }
-        #visa-dash .trust-item {
-            display: flex.
+        #visa-dash .quick-action {
+            display: inline-flex.
             align-items: center.
-            gap: 10px.
-            padding: 12px 16px.
+            gap: 8px.
+            padding: 10px 16px.
             background: var(--surface).
             border: 1px solid var(--border).
-            border-radius: var(--r-control).
-            transition: transform 0.2s, box-shadow 0.2s.
-        }
-        #visa-dash .trust-item:hover {
-            transform: translateY(-2px).
-            box-shadow: 0 8px 24px -12px rgba(30, 41, 59, 0.25).
-            border-color: #cbd5e1.
-        }
-        #visa-dash .trust-item i {
-            width: 20px.
-            height: 20px.
-            color: var(--green).
-            flex-shrink: 0.
-        }
-        #visa-dash .trust-item span {
-            font-size: 13px.
+            border-radius: 100px.
             color: var(--ink).
-            font-weight: 500.
+            text-decoration: none.
+            font-size: 13px.
+            font-weight: 600.
+            transition: background-color 0.2s, border-color 0.2s, color 0.2s, transform 0.2s.
+        }
+        #visa-dash .quick-action:hover {
+            background: var(--surface-hover).
+            border-color: var(--green).
+            color: var(--ink).
+            transform: translateY(-1px).
+        }
+        #visa-dash .quick-action i {
+            width: 16px.
+            height: 16px.
+            color: var(--green).
+        }
+        #visa-dash .quick-action:focus-visible {
+            outline: 2px solid var(--green).
+            outline-offset: 2px.
+        }
+        
+        /* Estimator Result */
+        #visa-dash #estimator-result {
+            display: none.
+            padding: 16px.
+            background: var(--surface-raised).
+            border: 1px solid var(--border).
+            border-radius: var(--r-container).
+            margin-top: 16px.
+        }
+        #visa-dash #estimator-result h4 {
+            margin: 0 0 12px.
+            font-size: 14px.
+        }
+        #visa-dash #estimator-result .stat {
+            text-align: center.
+        }
+        #visa-dash #estimator-result .stat-value {
+            font-size: 24px.
+            font-weight: 700.
+            color: var(--ink).
+        }
+        #visa-dash #estimator-result .stat-label {
+            font-size: 11px.
+            color: var(--ink-muted).
+            text-transform: uppercase.
+            letter-spacing: 0.05em.
+        }
+        
+        /* Recent Decisions Section */
+        #visa-dash .recent-decisions-section {
+            margin: 24px 0.
+            padding: 20px.
+            background: var(--surface-raised).
+            border: 1px solid var(--border).
+            border-radius: var(--r-container).
+        }
+        #visa-dash .recent-decisions-section h3 {
+            margin: 0 0 12px.
+            font-size: 14px.
+            font-weight: 600.
         }
         
         /* Quick Actions */
@@ -1936,44 +2167,6 @@
             font-weight: 600.
         }
         
-        /* Trust Signals */
-        #visa-dash .trust-signals {
-            display: grid.
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)).
-            gap: 16px.
-            margin: 24px 0.
-            padding: 20px.
-            background: var(--surface-raised).
-            border: 1px solid var(--border).
-            border-radius: var(--r-container).
-        }
-        #visa-dash .trust-item {
-            display: flex.
-            align-items: center.
-            gap: 10px.
-            padding: 12px 16px.
-            background: var(--surface).
-            border: 1px solid var(--border).
-            border-radius: var(--r-control).
-            transition: transform 0.2s, box-shadow 0.2s.
-        }
-        #visa-dash .trust-item:hover {
-            transform: translateY(-2px).
-            box-shadow: 0 8px 24px -12px rgba(30, 41, 59, 0.25).
-            border-color: #cbd5e1.
-        }
-        #visa-dash .trust-item i {
-            width: 20px.
-            height: 20px.
-            color: var(--green).
-            flex-shrink: 0.
-        }
-        #visa-dash .trust-item span {
-            font-size: 13px.
-            color: var(--ink).
-            font-weight: 500.
-        }
-        
         /* Quick Actions */
         #visa-dash .quick-actions {
             display: flex.
@@ -2057,44 +2250,6 @@
             font-weight: 600.
         }
         
-        /* Trust Signals */
-        #visa-dash .trust-signals {
-            display: grid.
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)).
-            gap: 16px.
-            margin: 24px 0.
-            padding: 20px.
-            background: var(--surface-raised).
-            border: 1px solid var(--border).
-            border-radius: var(--r-container).
-        }
-        #visa-dash .trust-item {
-            display: flex.
-            align-items: center.
-            gap: 10px.
-            padding: 12px 16px.
-            background: var(--surface).
-            border: 1px solid var(--border).
-            border-radius: var(--r-control).
-            transition: transform 0.2s, box-shadow 0.2s.
-        }
-        #visa-dash .trust-item:hover {
-            transform: translateY(-2px).
-            box-shadow: 0 8px 24px -12px rgba(30, 41, 59, 0.25).
-            border-color: #cbd5e1.
-        }
-        #visa-dash .trust-item i {
-            width: 20px.
-            height: 20px.
-            color: var(--green).
-            flex-shrink: 0.
-        }
-        #visa-dash .trust-item span {
-            font-size: 13px.
-            color: var(--ink).
-            font-weight: 500.
-        }
-        
         /* Quick Actions */
         #visa-dash .quick-actions {
             display: flex.
@@ -2176,770 +2331,6 @@
             margin: 0 0 12px.
             font-size: 14px.
             font-weight: 600.
-        }
-        
-        /* Trust Signals */
-        #visa-dash .trust-signals {
-            display: grid.
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)).
-            gap: 16px.
-            margin: 24px 0.
-            padding: 20px.
-            background: var(--surface-raised).
-            border: 1px solid var(--border).
-            border-radius: var(--r-container).
-        }
-        #visa-dash .trust-item {
-            display: flex.
-            align-items: center.
-            gap: 10px.
-            padding: 12px 16px.
-            background: var(--surface).
-            border: 1px solid var(--border).
-            border-radius: var(--r-control).
-            transition: transform 0.2s, box-shadow 0.2s.
-        }
-        #visa-dash .trust-item:hover {
-            transform: translateY(-2px).
-            box-shadow: 0 8px 24px -12px rgba(30, 41, 59, 0.25).
-            border-color: #cbd5e1.
-        }
-        #visa-dash .trust-item i {
-            width: 20px.
-            height: 20px.
-            color: var(--green).
-            flex-shrink: 0.
-        }
-        #visa-dash .trust-item span {
-            font-size: 13px.
-            color: var(--ink).
-            font-weight: 500.
-        }
-        
-        /* Quick Actions */
-        #visa-dash .quick-actions {
-            display: flex.
-            flex-wrap: wrap.
-            gap: 12px.
-            margin: 24px 0.
-            padding: 20px.
-            background: var(--surface-raised).
-            border: 1px solid var(--border).
-            border-radius: var(--r-container).
-        }
-        #visa-dash .quick-action {
-            display: inline-flex.
-            align-items: center.
-            gap: 8px.
-            padding: 10px 16px.
-            background: var(--surface).
-            border: 1px solid var(--border).
-            border-radius: 100px.
-            color: var(--ink).
-            text-decoration: none.
-            font-size: 13px.
-            font-weight: 600.
-            transition: background-color 0.2s, border-color 0.2s, color 0.2s, transform 0.2s.
-        }
-        #visa-dash .quick-action:hover {
-            background: var(--surface-hover).
-            border-color: var(--green).
-            color: var(--ink).
-            transform: translateY(-1px).
-        }
-        #visa-dash .quick-action i {
-            width: 16px.
-            height: 16px.
-            color: var(--green).
-        }
-        #visa-dash .quick-action:focus-visible {
-            outline: 2px solid var(--green).
-            outline-offset: 2px.
-        }
-        
-        /* Estimator Result */
-        #visa-dash #estimator-result {
-            display: none.
-            padding: 16px.
-            background: var(--surface-raised).
-            border: 1px solid var(--border).
-            border-radius: var(--r-container).
-            margin-top: 16px.
-        }
-        #visa-dash #estimator-result h4 {
-            margin: 0 0 12px.
-            font-size: 14px.
-        }
-        #visa-dash #estimator-result .stat {
-            text-align: center.
-        }
-        #visa-dash #estimator-result .stat-value {
-            font-size: 24px.
-            font-weight: 700.
-            color: var(--ink).
-        }
-        #visa-dash #estimator-result .stat-label {
-            font-size: 11px.
-            color: var(--ink-muted).
-            text-transform: uppercase.
-            letter-spacing: 0.05em.
-        }
-        
-        /* Recent Decisions Section */
-        #visa-dash .recent-decisions-section {
-            margin: 24px 0.
-            padding: 20px.
-            background: var(--surface-raised).
-            border: 1px solid var(--border).
-            border-radius: var(--r-container).
-        }
-        #visa-dash .recent-decisions-section h3 {
-            margin: 0 0 12px.
-            font-size: 14px.
-            font-weight: 600.
-        }
-        
-        /* Trust Signals */
-        #visa-dash .trust-signals {
-            display: grid.
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)).
-            gap: 16px.
-            margin: 24px 0.
-            padding: 20px.
-            background: var(--surface-raised).
-            border: 1px solid var(--border).
-            border-radius: var(--r-container).
-        }
-        #visa-dash .trust-item {
-            display: flex.
-            align-items: center.
-            gap: 10px.
-            padding: 12px 16px.
-            background: var(--surface).
-            border: 1px solid var(--border).
-            border-radius: var(--r-control).
-            transition: transform 0.2s, box-shadow 0.2s.
-        }
-        #visa-dash .trust-item:hover {
-            transform: translateY(-2px).
-            box-shadow: 0 8px 24px -12px rgba(30, 41, 59, 0.25).
-            border-color: #cbd5e1.
-        }
-        #visa-dash .trust-item i {
-            width: 20px.
-            height: 20px.
-            color: var(--green).
-            flex-shrink: 0.
-        }
-        #visa-dash .trust-item span {
-            font-size: 13px.
-            color: var(--ink).
-            font-weight: 500.
-        }
-        
-        /* Quick Actions */
-        #visa-dash .quick-actions {
-            display: flex.
-            flex-wrap: wrap.
-            gap: 12px.
-            margin: 24px 0.
-            padding: 20px.
-            background: var(--surface-raised).
-            border: 1px solid var(--border).
-            border-radius: var(--r-container).
-        }
-        #visa-dash .quick-action {
-            display: inline-flex.
-            align-items: center.
-            gap: 8px.
-            padding: 10px 16px.
-            background: var(--surface).
-            border: 1px solid var(--border).
-            border-radius: 100px.
-            color: var(--ink).
-            text-decoration: none.
-            font-size: 13px.
-            font-weight: 600.
-            transition: background-color 0.2s, border-color 0.2s, color 0.2s, transform 0.2s.
-        }
-        #visa-dash .quick-action:hover {
-            background: var(--surface-hover).
-            border-color: var(--green).
-            color: var(--ink).
-            transform: translateY(-1px).
-        }
-        #visa-dash .quick-action i {
-            width: 16px.
-            height: 16px.
-            color: var(--green).
-        }
-        #visa-dash .quick-action:focus-visible {
-            outline: 2px solid var(--green).
-            outline-offset: 2px.
-        }
-        
-        /* Estimator Result */
-        #visa-dash #estimator-result {
-            display: none.
-            padding: 16px.
-            background: var(--surface-raised).
-            border: 1px solid var(--border).
-            border-radius: var(--r-container).
-            margin-top: 16px.
-        }
-        #visa-dash #estimator-result h4 {
-            margin: 0 0 12px.
-            font-size: 14px.
-        }
-        #visa-dash #estimator-result .stat {
-            text-align: center.
-        }
-        #visa-dash #estimator-result .stat-value {
-            font-size: 24px.
-            font-weight: 700.
-            color: var(--ink).
-        }
-        #visa-dash #estimator-result .stat-label {
-            font-size: 11px.
-            color: var(--ink-muted).
-            text-transform: uppercase.
-            letter-spacing: 0.05em.
-        }
-        
-        /* Recent Decisions Section */
-        #visa-dash .recent-decisions-section {
-            margin: 24px 0.
-            padding: 20px.
-            background: var(--surface-raised).
-            border: 1px solid var(--border).
-            border-radius: var(--r-container).
-        }
-        #visa-dash .recent-decisions-section h3 {
-            margin: 0 0 12px.
-            font-size: 14px.
-            font-weight: 600.
-        }
-        
-        /* Trust Signals */
-        #visa-dash .trust-signals {
-            display: grid.
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)).
-            gap: 16px.
-            margin: 24px 0.
-            padding: 20px.
-            background: var(--surface-raised).
-            border: 1px solid var(--border).
-            border-radius: var(--r-container).
-        }
-        #visa-dash .trust-item {
-            display: flex.
-            align-items: center.
-            gap: 10px.
-            padding: 12px 16px.
-            background: var(--surface).
-            border: 1px solid var(--border).
-            border-radius: var(--r-control).
-            transition: transform 0.2s, box-shadow 0.2s.
-        }
-        #visa-dash .trust-item:hover {
-            transform: translateY(-2px).
-            box-shadow: 0 8px 24px -12px rgba(30, 41, 59, 0.25).
-            border-color: #cbd5e1.
-        }
-        #visa-dash .trust-item i {
-            width: 20px.
-            height: 20px.
-            color: var(--green).
-            flex-shrink: 0.
-        }
-        #visa-dash .trust-item span {
-            font-size: 13px.
-            color: var(--ink).
-            font-weight: 500.
-        }
-        
-        /* Quick Actions */
-        #visa-dash .quick-actions {
-            display: flex.
-            flex-wrap: wrap.
-            gap: 12px.
-            margin: 24px 0.
-            padding: 20px.
-            background: var(--surface-raised).
-            border: 1px solid var(--border).
-            border-radius: var(--r-container).
-        }
-        #visa-dash .quick-action {
-            display: inline-flex.
-            align-items: center.
-            gap: 8px.
-            padding: 10px 16px.
-            background: var(--surface).
-            border: 1px solid var(--border).
-            border-radius: 100px.
-            color: var(--ink).
-            text-decoration: none.
-            font-size: 13px.
-            font-weight: 600.
-            transition: background-color 0.2s, border-color 0.2s, color 0.2s, transform 0.2s.
-        }
-        #visa-dash .quick-action:hover {
-            background: var(--surface-hover).
-            border-color: var(--green).
-            color: var(--ink).
-            transform: translateY(-1px).
-        }
-        #visa-dash .quick-action i {
-            width: 16px.
-            height: 16px.
-            color: var(--green).
-        }
-        #visa-dash .quick-action:focus-visible {
-            outline: 2px solid var(--green).
-            outline-offset: 2px.
-        }
-        
-        /* Estimator Result */
-        #visa-dash #estimator-result {
-            display: none.
-            padding: 16px.
-            background: var(--surface-raised).
-            border: 1px solid var(--border).
-            border-radius: var(--r-container).
-            margin-top: 16px.
-        }
-        #visa-dash #estimator-result h4 {
-            margin: 0 0 12px.
-            font-size: 14px.
-        }
-        #visa-dash #estimator-result .stat {
-            text-align: center.
-        }
-        #visa-dash #estimator-result .stat-value {
-            font-size: 24px.
-            font-weight: 700.
-            color: var(--ink).
-        }
-        #visa-dash #estimator-result .stat-label {
-            font-size: 11px.
-            color: var(--ink-muted).
-            text-transform: uppercase.
-            letter-spacing: 0.05em.
-        }
-        
-        /* Recent Decisions Section */
-        #visa-dash .recent-decisions-section {
-            margin: 24px 0.
-            padding: 20px.
-            background: var(--surface-raised).
-            border: 1px solid var(--border).
-            border-radius: var(--r-container).
-        }
-        #visa-dash .recent-decisions-section h3 {
-            margin: 0 0 12px.
-            font-size: 14px.
-            font-weight: 600.
-        }
-        
-        /* Trust Signals */
-        #visa-dash .trust-signals {
-            display: grid.
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)).
-            gap: 16px.
-            margin: 24px 0.
-            padding: 20px.
-            background: var(--surface-raised).
-            border: 1px solid var(--border).
-            border-radius: var(--r-container).
-        }
-        #visa-dash .trust-item {
-            display: flex.
-            align-items: center.
-            gap: 10px.
-            padding: 12px 16px.
-            background: var(--surface).
-            border: 1px solid var(--border).
-            border-radius: var(--r-control).
-            transition: transform 0.2s, box-shadow 0.2s.
-        }
-        #visa-dash .trust-item:hover {
-            transform: translateY(-2px).
-            box-shadow: 0 8px 24px -12px rgba(30, 41, 59, 0.25).
-            border-color: #cbd5e1.
-        }
-        #visa-dash .trust-item i {
-            width: 20px.
-            height: 20px.
-            color: var(--green).
-            flex-shrink: 0.
-        }
-        #visa-dash .trust-item span {
-            font-size: 13px.
-            color: var(--ink).
-            font-weight: 500.
-        }
-        
-        /* Quick Actions */
-        #visa-dash .quick-actions {
-            display: flex.
-            flex-wrap: wrap.
-            gap: 12px.
-            margin: 24px 0.
-            padding: 20px.
-            background: var(--surface-raised).
-            border: 1px solid var(--border).
-            border-radius: var(--r-container).
-        }
-        #visa-dash .quick-action {
-            display: inline-flex.
-            align-items: center.
-            gap: 8px.
-            padding: 10px 16px.
-            background: var(--surface).
-            border: 1px solid var(--border).
-            border-radius: 100px.
-            color: var(--ink).
-            text-decoration: none.
-            font-size: 13px.
-            font-weight: 600.
-            transition: background-color 0.2s, border-color 0.2s, color 0.2s, transform 0.2s.
-        }
-        #visa-dash .quick-action:hover {
-            background: var(--surface-hover).
-            border-color: var(--green).
-            color: var(--ink).
-            transform: translateY(-1px).
-        }
-        #visa-dash .quick-action i {
-            width: 16px.
-            height: 16px.
-            color: var(--green).
-        }
-        #visa-dash .quick-action:focus-visible {
-            outline: 2px solid var(--green).
-            outline-offset: 2px.
-        }
-        
-        /* Estimator Result */
-        #visa-dash #estimator-result {
-            display: none.
-            padding: 16px.
-            background: var(--surface-raised).
-            border: 1px solid var(--border).
-            border-radius: var(--r-container).
-            margin-top: 16px.
-        }
-        #visa-dash #estimator-result h4 {
-            margin: 0 0 12px.
-            font-size: 14px.
-        }
-        #visa-dash #estimator-result .stat {
-            text-align: center.
-        }
-        #visa-dash #estimator-result .stat-value {
-            font-size: 24px.
-            font-weight: 700.
-            color: var(--ink).
-        }
-        #visa-dash #estimator-result .stat-label {
-            font-size: 11px.
-            color: var(--ink-muted).
-            text-transform: uppercase.
-            letter-spacing: 0.05em.
-        }
-        
-        /* Recent Decisions Section */
-        #visa-dash .recent-decisions-section {
-            margin: 24px 0.
-            padding: 20px.
-            background: var(--surface-raised).
-            border: 1px solid var(--border).
-            border-radius: var(--r-container).
-        }
-        #visa-dash .recent-decisions-section h3 {
-            margin: 0 0 12px.
-            font-size: 14px.
-            font-weight: 600.
-        }
-        
-        /* Trust Signals */
-        #visa-dash .trust-signals {
-            display: grid.
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)).
-            gap: 16px.
-            margin: 24px 0.
-            padding: 20px.
-            background: var(--surface-raised).
-            border: 1px solid var(--border).
-            border-radius: var(--r-container).
-        }
-        #visa-dash .trust-item {
-            display: flex.
-            align-items: center.
-            gap: 10px.
-            padding: 12px 16px.
-            background: var(--surface).
-            border: 1px solid var(--border).
-            border-radius: var(--r-control).
-            transition: transform 0.2s, box-shadow 0.2s.
-        }
-        #visa-dash .trust-item:hover {
-            transform: translateY(-2px).
-            box-shadow: 0 8px 24px -12px rgba(30, 41, 59, 0.25).
-            border-color: #cbd5e1.
-        }
-        #visa-dash .trust-item i {
-            width: 20px.
-            height: 20px.
-            color: var(--green).
-            flex-shrink: 0.
-        }
-        #visa-dash .trust-item span {
-            font-size: 13px.
-            color: var(--ink).
-            font-weight: 500.
-        }
-        
-        /* Quick Actions */
-        #visa-dash .quick-actions {
-            display: flex.
-            flex-wrap: wrap.
-            gap: 12px.
-            margin: 24px 0.
-            padding: 20px.
-            background: var(--surface-raised).
-            border: 1px solid var(--border).
-            border-radius: var(--r-container).
-        }
-        #visa-dash .quick-action {
-            display: inline-flex.
-            align-items: center.
-            gap: 8px.
-            padding: 10px 16px.
-            background: var(--surface).
-            border: 1px solid var(--border).
-            border-radius: 100px.
-            color: var(--ink).
-            text-decoration: none.
-            font-size: 13px.
-            font-weight: 600.
-            transition: background-color 0.2s, border-color 0.2s, color 0.2s, transform 0.2s.
-        }
-        #visa-dash .quick-action:hover {
-            background: var(--surface-hover).
-            border-color: var(--green).
-            color: var(--ink).
-            transform: translateY(-1px).
-        }
-        #visa-dash .quick-action i {
-            width: 16px.
-            height: 16px.
-            color: var(--green).
-        }
-        #visa-dash .quick-action:focus-visible {
-            outline: 2px solid var(--green).
-            outline-offset: 2px.
-        }
-        
-        /* Estimator Result */
-        #visa-dash #estimator-result {
-            display: none.
-            padding: 16px.
-            background: var(--surface-raised).
-            border: 1px solid var(--border).
-            border-radius: var(--r-container).
-            margin-top: 16px.
-        }
-        #visa-dash #estimator-result h4 {
-            margin: 0 0 12px.
-            font-size: 14px.
-        }
-        #visa-dash #estimator-result .stat {
-            text-align: center.
-        }
-        #visa-dash #estimator-result .stat-value {
-            font-size: 24px.
-            font-weight: 700.
-            color: var(--ink).
-        }
-        #visa-dash #estimator-result .stat-label {
-            font-size: 11px.
-            color: var(--ink-muted).
-            text-transform: uppercase.
-            letter-spacing: 0.05em.
-        }
-        
-        /* Recent Decisions Section */
-        #visa-dash .recent-decisions-section {
-            margin: 24px 0.
-            padding: 20px.
-            background: var(--surface-raised).
-            border: 1px solid var(--border).
-            border-radius: var(--r-container).
-        }
-        #visa-dash .recent-decisions-section h3 {
-            margin: 0 0 12px.
-            font-size: 14px.
-            font-weight: 600.
-        }
-        
-        /* Trust Signals */
-        #visa-dash .trust-signals {
-            display: grid.
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)).
-            gap: 16px.
-            margin: 24px 0.
-            padding: 20px.
-            background: var(--surface-raised).
-            border: 1px solid var(--border).
-            border-radius: var(--r-container).
-        }
-        #visa-dash .trust-item {
-            display: flex.
-            align-items: center.
-            gap: 10px.
-            padding: 12px 16px.
-            background: var(--surface).
-            border: 1px solid var(--border).
-            border-radius: var(--r-control).
-            transition: transform 0.2s, box-shadow 0.2s.
-        }
-        #visa-dash .trust-item:hover {
-            transform: translateY(-2px).
-            box-shadow: 0 8px 24px -12px rgba(30, 41, 59, 0.25).
-            border-color: #cbd5e1.
-        }
-        #visa-dash .trust-item i {
-            width: 20px.
-            height: 20px.
-            color: var(--green).
-            flex-shrink: 0.
-        }
-        #visa-dash .trust-item span {
-            font-size: 13px.
-            color: var(--ink).
-            font-weight: 500.
-        }
-        
-        /* Quick Actions */
-        #visa-dash .quick-actions {
-            display: flex.
-            flex-wrap: wrap.
-            gap: 12px.
-            margin: 24px 0.
-            padding: 20px.
-            background: var(--surface-raised).
-            border: 1px solid var(--border).
-            border-radius: var(--r-container).
-        }
-        #visa-dash .quick-action {
-            display: inline-flex.
-            align-items: center.
-            gap: 8px.
-            padding: 10px 16px.
-            background: var(--surface).
-            border: 1px solid var(--border).
-            border-radius: 100px.
-            color: var(--ink).
-            text-decoration: none.
-            font-size: 13px.
-            font-weight: 600.
-            transition: background-color 0.2s, border-color 0.2s, color 0.2s, transform 0.2s.
-        }
-        #visa-dash .quick-action:hover {
-            background: var(--surface-hover).
-            border-color: var(--green).
-            color: var(--ink).
-            transform: translateY(-1px).
-        }
-        #visa-dash .quick-action i {
-            width: 16px.
-            height: 16px.
-            color: var(--green).
-        }
-        #visa-dash .quick-action:focus-visible {
-            outline: 2px solid var(--green).
-            outline-offset: 2px.
-        }
-        
-        /* Estimator Result */
-        #visa-dash #estimator-result {
-            display: none.
-            padding: 16px.
-            background: var(--surface-raised).
-            border: 1px solid var(--border).
-            border-radius: var(--r-container).
-            margin-top: 16px.
-        }
-        #visa-dash #estimator-result h4 {
-            margin: 0 0 12px.
-            font-size: 14px.
-        }
-        #visa-dash #estimator-result .stat {
-            text-align: center.
-        }
-        #visa-dash #estimator-result .stat-value {
-            font-size: 24px.
-            font-weight: 700.
-            color: var(--ink).
-        }
-        #visa-dash #estimator-result .stat-label {
-            font-size: 11px.
-            color: var(--ink-muted).
-            text-transform: uppercase.
-            letter-spacing: 0.05em.
-        }
-        
-        /* Recent Decisions Section */
-        #visa-dash .recent-decisions-section {
-            margin: 24px 0.
-            padding: 20px.
-            background: var(--surface-raised).
-            border: 1px solid var(--border).
-            border-radius: var(--r-container).
-        }
-        #visa-dash .recent-decisions-section h3 {
-            margin: 0 0 12px.
-            font-size: 14px.
-            font-weight: 600.
-        }
-        
-        /* Trust Signals */
-        #visa-dash .trust-signals {
-            display: grid.
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)).
-            gap: 16px.
-            margin: 24px 0.
-            padding: 20px.
-            background: var(--surface-raised).
-            border: 1px solid var(--border).
-            border-radius: var(--r-container).
-        }
-        #visa-dash .trust-item {
-            display: flex.
-            align-items: center.
-            gap: 10px.
-            padding: 12px 16px.
-            background: var(--surface).
-            border: 1px solid var(--border).
-            border-radius: var(--r-control).
-            transition: transform 0.2s, box-shadow 0.2s.
-        }
-        #visa-dash .trust-item:hover {
-            transform: translateY(-2px).
-            box-shadow: 0 8px 24px -12px rgba(30, 41, 59, 0.25).
-            border-color: #cbd5e1.
-        }
-        #visa-dash .trust-item i {
-            width: 20px.
-            height: 20px.
-            color: var(--green).
-            flex-shrink: 0.
-        }
-        #visa-dash .trust-item span {
-            font-size: 13px.
-            color: var(--ink).
-            font-weight: 500.
         }
         
         /* Quick Actions */
@@ -4078,36 +3469,50 @@
         }
         .glide-select__option { font-family: "Inter", sans-serif; font-size: 12.5px; }
     </style>
-    <!-- Sentry error tracking: inert unless a real DSN is configured. -->
-    <meta name="sentry-dsn" content="">
-    <script src="https://browser.sentry-cdn.com/8.35.0/bundle.min.js" crossorigin="anonymous"></script>
+    <!-- Sentry: the DSN comes from /api/config. No third-party script is
+         requested when the endpoint has no DSN configured. -->
     <script>
       (function () {
-        var meta = document.querySelector('meta[name="sentry-dsn"]');
-        var dsn = meta ? meta.getAttribute('content') : '';
-        if (!dsn || !/^https?:\/\//.test(dsn) || dsn.indexOf('YOUR_SENTRY_DSN') !== -1) return;
-        if (!window.Sentry) return;
-        window.Sentry.init({
-          dsn: dsn,
-          environment: location.hostname.indexOf('pages.dev') !== -1 ? 'production' : 'development',
-          tracesSampleRate: 0.1,
-          sendDefaultPii: false,
-          beforeSend: function (event) {
-            var ex = event.exception && event.exception.values && event.exception.values[0];
-            if (ex && ex.value && /Network request failed|Failed to fetch/.test(ex.value)) return null;
-            return event;
+        function boot(config) {
+          var dsn = config && config.sentry_dsn;
+          if (!dsn || !/^https?:\/\//.test(dsn) || dsn.indexOf('YOUR_SENTRY_DSN') !== -1) return;
+          function init() {
+            if (!window.Sentry) return;
+            window.Sentry.init({
+              dsn: dsn,
+              environment: config.sentry_environment || 'production',
+              tracesSampleRate: 0.1,
+              sendDefaultPii: false,
+              beforeSend: function (event) {
+                var ex = event.exception && event.exception.values && event.exception.values[0];
+                if (ex && ex.value && /Network request failed|Failed to fetch/.test(ex.value)) return null;
+                return event;
+              }
+            });
+            window.addEventListener('error', function (e) {
+              if (e.error) window.Sentry.captureException(e.error);
+            });
+            window.addEventListener('unhandledrejection', function (e) {
+              window.Sentry.captureException(e.reason);
+            });
           }
-        });
-        window.addEventListener('error', function (e) {
-          if (e.error) window.Sentry.captureException(e.error);
-        });
-        window.addEventListener('unhandledrejection', function (e) {
-          window.Sentry.captureException(e.reason);
-        });
+          if (window.Sentry) { init(); return; }
+          var script = document.createElement('script');
+          script.src = 'https://browser.sentry-cdn.com/11.11.0/bundle.min.js';
+          script.crossOrigin = 'anonymous';
+          script.onload = init;
+          script.onerror = function () { /* fail open; tracking never blocks the app */ };
+          document.head.appendChild(script);
+        }
+        fetch('/api/config', { headers: { Accept: 'application/json' } })
+          .then(function (response) { return response.ok ? response.json() : null; })
+          .then(boot)
+          .catch(function () { /* configuration is optional */ });
       })();
     </script>
-    <style>
-    /* Account modal + watchlist tab (item 1). */
+    <style>        /* Account modal + watchlist tab (item 1). */
+        .watch-channel-cell { white-space: nowrap; }
+        .watch-channel { display: inline-flex; align-items: center; gap: 3px; margin-right: 8px; font-size: 12px; }
     #account-modal { position: fixed; inset: 0; z-index: 60; }
     #account-modal[hidden] { display: none !important; }
     #account-modal:not([hidden]) { display: block; }
@@ -4179,8 +3584,11 @@
     .search-pagination { margin-top: 16px; text-align: center; }
     .saved-searches { list-style: none; padding: 0; margin: 12px 0 0; }
     .saved-searches li { padding: 8px 0; border-bottom: 1px solid var(--border); }
+    .saved-search-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
     .saved-search-btn { background: transparent; border: none; color: var(--green); cursor: pointer; font-size: 13px; padding: 0; text-align: left; width: 100%; }
     .saved-search-btn:hover { color: var(--green-deep); text-decoration: underline; }
+    .saved-search-delete { flex: none; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); color: var(--ink-muted); cursor: pointer; font: inherit; font-size: 11px; padding: 4px 8px; }
+    .saved-search-delete:hover { border-color: var(--red); color: var(--red); }
 
     @media (max-width: 480px) {
       .modal-panel { top: 8%; width: 94vw; padding: 16px; }
@@ -4188,38 +3596,110 @@
     }
     </style>
 
-    <!-- Web Push VAPID config -->
-    <meta name="vapid-public-key" content="">
+    <!-- Web Push: the public VAPID key is supplied by /api/config. The
+         subscription is created only from a user gesture, then posted to the
+         authenticated per-user endpoint. -->
     <script>
       (function() {
-        var meta = document.querySelector('meta[name="vapid-public-key"]');
-        var key = meta ? meta.getAttribute('content') : '';
-        if (key && 'serviceWorker' in navigator && 'PushManager' in window) {
-          navigator.serviceWorker.ready.then(function(reg) {
-            return reg.pushManager.subscribe({
-              userVisibleOnly: true,
-              applicationServerKey: urlBase64ToUint8Array(key)
-            });
-          }).catch(function(err) {
-            console.warn('Push subscription failed:', err.message);
-          });
-        }
         function urlBase64ToUint8Array(base64String) {
           var padding = '='.repeat((4 - base64String.length % 4) % 4);
           var base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
           var rawData = window.atob(base64);
           var outputArray = new Uint8Array(rawData.length);
-          for (var i = 0; i < rawData.length; ++i) {
-            outputArray[i] = rawData.charCodeAt(i);
-          }
+          for (var i = 0; i < rawData.length; ++i) outputArray[i] = rawData.charCodeAt(i);
           return outputArray;
         }
+        function arrayBufferToBase64(buffer) {
+          if (!buffer) return '';
+          var bytes = new Uint8Array(buffer);
+          var binary = '';
+          for (var i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+          return window.btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+        }
+        async function getVapidKey() {
+          if (window.__vapidPublicKey) return window.__vapidPublicKey;
+          var response = await fetch('/api/config', { headers: { Accept: 'application/json' } });
+          var config = response.ok ? await response.json() : null;
+          if (config && config.vapid_public_key) window.__vapidPublicKey = config.vapid_public_key;
+          return window.__vapidPublicKey || '';
+        }
+        window.enablePushNotifications = async function(appNumber, embassy) {
+          if (!appNumber) return { ok: false, error: 'Add a watch first.' };
+          if (!('Notification' in window) || !('serviceWorker' in navigator) || !('PushManager' in window)) {
+            return { ok: false, error: 'This browser does not support Web Push.' };
+          }
+          try {
+            var permission = Notification.permission === 'granted' ? 'granted' : await Notification.requestPermission();
+            if (permission !== 'granted') return { ok: false, error: 'Notification permission was not granted.' };
+            var key = await getVapidKey();
+            if (!key) return { ok: false, error: 'Push is not configured on this deployment.' };
+            var registration = await navigator.serviceWorker.ready;
+            var subscription = await registration.pushManager.getSubscription();
+            if (!subscription) {
+              subscription = await registration.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: urlBase64ToUint8Array(key)
+              });
+            }
+            var response = await fetch('/api/user/push/subscribe', {
+              method: 'POST',
+              credentials: 'include',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                endpoint: subscription.endpoint,
+                p256dh: arrayBufferToBase64(subscription.getKey('p256dh')),
+                auth: arrayBufferToBase64(subscription.getKey('auth')),
+                application_number: appNumber,
+                embassy_slug: embassy
+              })
+            });
+            var data = await response.json().catch(function() { return {}; });
+            return { ok: response.ok, error: data.error || '' };
+          } catch (error) {
+            return { ok: false, error: error.message || 'Could not enable browser notifications.' };
+          }
+        };
+        fetch('/api/config', { headers: { Accept: 'application/json' } })
+          .then(function(response) { return response.ok ? response.json() : null; })
+          .then(function(config) {
+            if (config && config.vapid_public_key) window.__vapidPublicKey = config.vapid_public_key;
+          })
+          .catch(function() { /* push is optional */ });
       })();
     </script>
 
 </head>
 <body>
-    <main id="visa-dash">
+  <a class="skip-link" href="#visa-dash">Skip to tracker</a>
+<header class="sitebar">
+  <div class="sitebar-inner">
+    <a class="brand" href="/" aria-label="Irish Visa Decision Tracker home">
+      <img src="/icon.svg" alt="" width="24" height="24">
+      <span>Irish Visa Decision Tracker</span>
+    </a>
+    <nav class="sitebar-nav" aria-label="Site">
+      <a href="/" aria-current="page">Tracker</a>
+      <a href="/comparison">Compare</a>
+      <a href="/daily-summaries">Daily summaries</a>
+      <a href="/monthly-report">Monthly report</a>
+      <a href="/visa-processing-times">Processing times</a>
+      <a href="/about">About</a>
+      <details class="sitebar-more">
+        <summary>More</summary>
+        <div class="sitebar-more-panel">
+          <a href="/stamp-1g-processing-dates">Stamp 1G</a>
+          <a href="/employment-permit-processing-dates">Employment permits</a>
+          <a href="/vac-transit">VAC &amp; transit</a>
+          <a href="/contact">Contact</a>
+          <a href="/privacy">Privacy</a>
+          <a href="/terms">Terms</a>
+          <a href="/refund">Refunds</a>
+        </div>
+      </details>
+    </nav>
+  </div>
+</header>
+    <main id="visa-dash" tabindex="-1">
       <!-- Static summary: what an agent or a no-JavaScript reader gets before the
            dashboard hydrates. render() replaces this node's contents with the app,
            so it is never shown twice; it is real content, not a noscript shim. -->
@@ -4242,19 +3722,18 @@
           <li><strong>Community timelines</strong> &mdash; waits shared by visitors and merged nightly. They are anecdotes, not a statistical sample.</li>
         </ul>
         <h2>Data, sources and limits</h2>
+
         <p>
-          Decision rows come from the embassy's published spreadsheet. Stamp 1G and permit figures
-          come from the processing dates published by ISD and DETE. A scheduled scraper commits new
-          rows to the public GitHub repository, and this page reads those JSON files, so a pipeline
-          run appears without a redeploy. Check <a href="/data/visa_meta.json">visa_meta.json</a>
-          for scraper health before treating the figures as current.
+          Decision rows come from the Embassy of Ireland in New Delhi's published decisions.
+          Stamp 1G and employment permit dates come from ISD and DETE. Each dashboard shows when
+          its figures were last updated.
         </p>
         <p>
-          This project is not affiliated with the Embassy of Ireland, ISD, DETE or any Irish
-          government body. It does not give immigration advice, predict an individual outcome or
-          see private case data. For a decision on your own application, contact the official body
-          handling it.
+          This project is not affiliated with the Embassy of Ireland, ISD or DETE and does not
+          provide immigration advice. For a decision on your own application, contact the
+          official body handling it.
         </p>
+
         <p class="static-nav">
           <a href="/about">About the project</a> &middot;
           <a href="/contact">Contact and corrections</a> &middot;
@@ -4266,24 +3745,25 @@
       </article>
     </main>
 
-    <div class="modal" id="account-modal" role="dialog" aria-modal="true" aria-label="Account" hidden>
+    <div class="modal" id="account-modal" role="dialog" aria-modal="true" aria-labelledby="account-modal-title" hidden>
       <div class="modal-backdrop" onclick="closeAccountModal()"></div>
       <div class="modal-panel">
         <button type="button" class="modal-close" onclick="closeAccountModal()" aria-label="Close">&times;</button>
         <h3 id="account-modal-title">Sign in</h3>
         <div class="modal-tabs" role="tablist">
-          <button type="button" role="tab" aria-selected="true" id="account-tab-signin" onclick="showAccountTab('signin')">Sign in</button>
-          <button type="button" role="tab" aria-selected="false" id="account-tab-register" onclick="showAccountTab('register')">Create account</button>
+          <button type="button" role="tab" aria-selected="true" aria-controls="account-form-signin" id="account-tab-signin" onclick="showAccountTab('signin')">Sign in</button>
+          <button type="button" role="tab" aria-selected="false" aria-controls="account-form-register" id="account-tab-register" onclick="showAccountTab('register')">Create account</button>
         </div>
-        <form id="account-form-signin" novalidate>
+        <form id="account-form-signin" aria-labelledby="account-tab-signin" novalidate>
           <p><label>Email <input type="email" name="email" required placeholder="you@example.com"></label></p>
           <p><label>Password <input type="password" name="password" required minlength="8"></label></p>
           <p class="note" id="account-remember"><label><input type="checkbox" name="remember"> Remember me for 30 days</label></p>
           <button class="btn" type="submit" id="account-signin-btn">Sign in</button>
+          <p class="note2" style="margin-top:8px;"><button type="button" class="link-btn" onclick="requestPasswordReset()">Forgot password?</button></p>
           <p class="note2" style="margin-top:8px;">No account? <button type="button" class="link-btn" onclick="showAccountTab('register')">Create one</button></p>
           <div class="note" id="account-signin-status" aria-live="polite"></div>
         </form>
-        <form id="account-form-register" novalidate hidden>
+        <form id="account-form-register" aria-labelledby="account-tab-register" novalidate hidden>
           <p><label>Name <input type="text" name="name" placeholder="Your name"></label></p>
           <p><label>Email <input type="email" name="email" required placeholder="you@example.com"></label></p>
           <p><label>Password <input type="password" name="password" required minlength="8"></label></p>
@@ -4291,15 +3771,68 @@
           <p class="note2" style="margin-top:8px;">Already have an account? <button type="button" class="link-btn" onclick="showAccountTab('signin')">Sign in</button></p>
           <div class="note" id="account-register-status" aria-live="polite"></div>
         </form>
+        <div id="account-tools" hidden>
+          <h4 class="watch-h3">Browser notifications</h4>
+          <p class="note2">Enable notifications per watched application in the Watchlist tab, then send a test from this account.</p>
+          <button type="button" class="btn secondary" id="push-test-btn" onclick="sendPushTest()">Send test notification</button>
+          <div class="note" id="push-test-status" aria-live="polite"></div>
+          <h4 class="watch-h3">Workspace</h4>
+          <p class="note2">Manage private exports, scheduled downloads, notification channels, analytics and community from your workspace. The public developer API has been retired.</p>
+          <a class="btn secondary" href="/workspace#exports">Open workspace exports</a>
+        </div>
       </div>
     </div>
 
-    <footer class="site-foot">
-      <p><strong>Irish Visa Decision Tracker</strong> &mdash; independent, unofficial, and not affiliated with any Irish government body.</p>
-      <p><a href="/">Tracker</a> &middot; <a href="/comparison">Compare</a> &middot; <a href="/daily-summaries">Daily summaries</a> &middot; <a href="/stamp-1g-processing-dates">Stamp 1G processing dates</a> &middot; <a href="/employment-permit-processing-dates">Employment permits</a> &middot; <a href="/monthly-report">Monthly report</a> &middot; <a href="/employer">Employer compliance</a> &middot; <a href="/visa-processing-times">Processing times</a> &middot; <a href="/about">About</a> &middot; <a href="/contact">Contact</a> &middot; <a href="/privacy">Privacy</a> &middot; <a href="/terms">Terms</a> &middot; <a href="/refund">Refunds</a> &middot; <a href="/sitemap.xml">Sitemap</a> &middot; <a href="/llms.txt">llms.txt</a> &middot; <a href="https://github.com/parth-soni-10/Irish-Visa-Tracker">GitHub</a></p>
-      <p>&copy; 2026 Parth Soni &middot; Dublin, Ireland</p>
-    </footer>
-    <script src="lucide.min.js"></script>
+<footer class="sitebar-footer">
+  <div class="sitebar-footer-inner">
+    <div class="sitebar-footer-brand">
+      <a class="brand" href="/" aria-label="Irish Visa Decision Tracker home">
+        <img src="/icon.svg" alt="" width="24" height="24">
+        <span>Irish Visa Decision Tracker</span>
+      </a>
+      <p>Independent and unofficial. Not affiliated with the Embassy of Ireland, ISD or DETE. Not immigration advice.</p>
+    </div>
+    <nav class="sitebar-footer-col" aria-label="Explore">
+      <h2 class="sitebar-footer-title">Explore</h2>
+      <ul>
+        <li><a href="/">Tracker</a></li>
+        <li><a href="/comparison">Compare</a></li>
+        <li><a href="/daily-summaries">Daily summaries</a></li>
+        <li><a href="/monthly-report">Monthly report</a></li>
+        <li><a href="/visa-processing-times">Processing times</a></li>
+        <li><a href="/vac-transit">VAC &amp; transit</a></li>
+      </ul>
+    </nav>
+    <nav class="sitebar-footer-col" aria-label="Data">
+      <h2 class="sitebar-footer-title">Data</h2>
+      <ul>
+        <li><a href="/stamp-1g-processing-dates">Stamp 1G</a></li>
+        <li><a href="/employment-permit-processing-dates">Employment permits</a></li>
+        <li><a href="/data/visa_decisions.json">Visa decisions JSON</a></li>
+        <li><a href="/status">Data status</a></li>
+        <li><a href="/data/data_manifest.json">Data manifest</a></li>
+        <li><a href="/sitemap.xml">Sitemap</a></li>
+        <li><a href="/llms.txt">llms.txt</a></li>
+      </ul>
+    </nav>
+    <nav class="sitebar-footer-col" aria-label="About and legal">
+      <h2 class="sitebar-footer-title">About &amp; legal</h2>
+      <ul>
+        <li><a href="/about">About the project</a></li>
+        <li><a href="/contact">Contact &amp; corrections</a></li>
+        <li><a href="/privacy">Privacy</a></li>
+        <li><a href="/terms">Terms</a></li>
+        <li><a href="/refund">Refund policy</a></li>
+        <li><a href="https://github.com/parth-soni-10/Irish-Visa-Tracker" rel="noopener">GitHub</a></li>
+      </ul>
+    </nav>
+  </div>
+  <div class="sitebar-footer-bottom">
+    <p>&copy; 2026 Parth Soni &middot; Dublin, Ireland</p>
+    <p><a href="/sitemap.xml">Sitemap</a><a href="/llms.txt">llms.txt</a><a href="https://github.com/parth-soni-10/Irish-Visa-Tracker" rel="noopener">GitHub</a></p>
+  </div>
+</footer>
+    <script src="lucide.min.js" defer></script>
     <script src="glide-select.js" defer></script>
     <script src="jelly-radio.js" defer></script>
     <script src="rubber-segment.js" defer></script>
@@ -4986,28 +4519,68 @@ document.addEventListener('click', function(e) {
                 return '<button type="button" class="export-btn tu-btn" id="account-btn" title="Sign in"><i data-lucide="user" aria-hidden="true"></i> Sign in</button>';
             }
 
+            var _modalReturnFocus = null;
+            var _modalKeyHandlerBound = false;
+            function modalFocusable(m) {
+                return Array.prototype.filter.call(
+                    m.querySelectorAll('a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'),
+                    function(el) { return el.offsetParent !== null && !el.hidden; }
+                );
+            }
+            function bindModalKeyboard() {
+                if (_modalKeyHandlerBound) return;
+                _modalKeyHandlerBound = true;
+                document.addEventListener('keydown', function(e) {
+                    var m = document.getElementById('account-modal');
+                    if (!m || m.hidden) return;
+                    if (e.key === 'Escape') { e.preventDefault(); closeAccountModal(); return; }
+                    if (e.key !== 'Tab') return;
+                    var items = modalFocusable(m);
+                    if (!items.length) return;
+                    var first = items[0];
+                    var last = items[items.length - 1];
+                    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+                    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+                });
+            }
+
             async function openAccountModal() {
                 var m = document.getElementById('account-modal');
+                _modalReturnFocus = document.activeElement;
                 m.hidden = false;
                 m.setAttribute('aria-hidden', 'false');
-                showAccountTab(currentUser ? 'signin' : 'signin');
+                bindModalKeyboard();
+                showAccountTab('signin');
+                setTimeout(function() {
+                    var first = modalFocusable(m)[0];
+                    if (first) first.focus();
+                }, 0);
                 // Resolve sign-in state in the background so the modal opens
                 // immediately even if the auth fetch is slow.
                 await fetchAuth();
+                var tools = document.getElementById('account-tools');
+                var tabs = document.querySelector('#account-modal .modal-tabs');
                 if (currentUser) {
-                    document.getElementById('account-modal-title').textContent = 'Account';
                     document.getElementById('account-form-signin').hidden = true;
                     document.getElementById('account-form-register').hidden = true;
+                    if (tools) tools.hidden = false;
+                    if (tabs) tabs.hidden = true;
                     document.getElementById('account-modal-title').textContent =
                         'Signed in as ' + escapeHtml(currentUser.email);
                     var status = document.getElementById('account-signin-status');
                     if (status) status.textContent = '';
+                    loadAPITokens();
+                } else {
+                    if (tools) tools.hidden = true;
+                    if (tabs) tabs.hidden = false;
                 }
             }
 
             function closeAccountModal() {
                 var m = document.getElementById('account-modal');
                 if (m) { m.hidden = true; m.setAttribute('aria-hidden', 'true'); }
+                if (_modalReturnFocus && typeof _modalReturnFocus.focus === 'function') _modalReturnFocus.focus();
+                _modalReturnFocus = null;
             }
 
             function showAccountTab(tab) {
@@ -5015,14 +4588,16 @@ document.addEventListener('click', function(e) {
                 var register = document.getElementById('account-form-register');
                 var tSignin = document.getElementById('account-tab-signin');
                 var tRegister = document.getElementById('account-tab-register');
+                var tools = document.getElementById('account-tools');
+                if (tools) tools.hidden = true;
                 if (tab === 'register') {
-                    if (signin) signin.hidden = true;
-                    if (register) register.hidden = false;
+                    if (signin) { signin.hidden = true; signin.setAttribute('aria-hidden', 'true'); }
+                    if (register) { register.hidden = false; register.setAttribute('aria-hidden', 'false'); }
                     if (tSignin) tSignin.setAttribute('aria-selected', 'false');
                     if (tRegister) tRegister.setAttribute('aria-selected', 'true');
                 } else {
-                    if (signin) signin.hidden = false;
-                    if (register) register.hidden = true;
+                    if (signin) { signin.hidden = false; signin.setAttribute('aria-hidden', 'false'); }
+                    if (register) { register.hidden = true; register.setAttribute('aria-hidden', 'true'); }
                     if (tSignin) tSignin.setAttribute('aria-selected', 'true');
                     if (tRegister) tRegister.setAttribute('aria-selected', 'false');
                 }
@@ -5033,6 +4608,51 @@ document.addEventListener('click', function(e) {
             // this the Create account tab, close button and backdrop were dead.
             window.showAccountTab = showAccountTab;
             window.closeAccountModal = closeAccountModal;
+
+            async function requestPasswordReset() {
+                var emailInput = document.querySelector('#account-form-signin input[name="email"]');
+                var status = document.getElementById('account-signin-status');
+                var email = emailInput ? emailInput.value.trim() : '';
+                if (!email) { status.textContent = 'Enter your email first.'; return; }
+                status.style.color = '';
+                status.textContent = 'Sending reset link…';
+                try {
+                    var response = await fetch('/api/auth/password/reset', {
+                        method: 'POST', headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email: email })
+                    });
+                    var data = await response.json();
+                    status.textContent = data.message || data.error || 'Check your email.';
+                    if (!response.ok) status.style.color = 'var(--red)';
+                } catch (error) {
+                    status.textContent = 'Network error.';
+                    status.style.color = 'var(--red)';
+                }
+            }
+
+            async function sendPushTest() {
+                var status = document.getElementById('push-test-status');
+                var button = document.getElementById('push-test-btn');
+                if (!status) return;
+                if (button) button.disabled = true;
+                status.style.color = '';
+                status.textContent = 'Sending test notification\u2026';
+                try {
+                    var response = await fetch('/api/user/push/test', { method: 'POST', credentials: 'include' });
+                    var data = await response.json().catch(function() { return {}; });
+                    if (!response.ok) throw new Error(data.error || 'Test notification failed');
+                    status.textContent = 'Test sent to ' + (data.sent || 0) + ' subscription(s).';
+                    status.style.color = 'var(--green)';
+                } catch (error) {
+                    status.textContent = error.message;
+                    status.style.color = 'var(--red)';
+                } finally {
+                    if (button) button.disabled = false;
+                }
+            }
+
+            window.sendPushTest = sendPushTest;
+            window.requestPasswordReset = requestPasswordReset;
 
             async function handleAccountForm(e) {
                 e.preventDefault();
@@ -6371,46 +5991,73 @@ document.addEventListener('click', function(e) {
 
             async function loadSavedSearches() {
                 try {
-                    var res = await fetch('/api/search', { method: 'GET', credentials: 'include' });
+                    var res = await fetch('/api/search?action=list', { method: 'GET', credentials: 'include' });
                     var data = await res.json();
-                    if (res.ok && data.saved_searches && data.saved_searches.length) {
-                        var container = document.getElementById('search-saved');
-                        if (container) {
-                            container.hidden = false;
-                            var html = '<h3>Saved Searches</h3><ul class="saved-searches">';
-                            data.saved_searches.forEach(function(s) {
-                                html += '<li><button type="button" class="saved-search-btn" data-id="' + s.id + '">' +
-                                    escapeHtml(s.name) + ' <span class="note2">(' + escapeHtml(s.query) + ')</span></button></li>';
-                            });
-                            html += '</ul>';
-                            container.innerHTML = html;
-                            container.querySelectorAll('.saved-search-btn').forEach(function(btn) {
-                                btn.addEventListener('click', function() {
-                                    // Load the saved search parameters
-                                    var id = btn.getAttribute('data-id');
-                                    loadSavedSearch(id);
-                                });
-                            });
-                        }
+                    var searches = (data && (data.searches || data.saved_searches)) || [];
+                    var container = document.getElementById('search-saved');
+                    if (!container) return;
+                    if (!res.ok || !searches.length) {
+                        container.hidden = true;
+                        container.innerHTML = '';
+                        return;
                     }
+                    container.hidden = false;
+                    var html = '<h3>Saved Searches</h3><ul class="saved-searches">';
+                    searches.forEach(function(s) {
+                        var query = s.query || (s.params && s.params.query) || 'Saved search';
+                        html += '<li class="saved-search-row"><button type="button" class="saved-search-btn" data-id="' + s.id + '">' +
+                            escapeHtml(s.name) + ' <span class="note2">(' + escapeHtml(query) + ')</span></button>' +
+                            '<button type="button" class="saved-search-delete" data-id="' + s.id + '" aria-label="Delete saved search ' + escapeHtml(s.name) + '">Delete</button></li>';
+                    });
+                    html += '</ul>';
+                    container.innerHTML = html;
+                    container.querySelectorAll('.saved-search-btn').forEach(function(btn) {
+                        btn.addEventListener('click', function() {
+                            loadSavedSearch(btn.getAttribute('data-id'));
+                        });
+                    });
+                    container.querySelectorAll('.saved-search-delete').forEach(function(btn) {
+                        btn.addEventListener('click', function() {
+                            deleteSavedSearch(btn.getAttribute('data-id'));
+                        });
+                    });
                 } catch (e) { /* ignore */ }
+            }
+
+            async function deleteSavedSearch(id) {
+                if (!id || !confirm('Delete this saved search?')) return;
+                try {
+                    var res = await fetch('/api/search?id=' + encodeURIComponent(id), { method: 'DELETE', credentials: 'include' });
+                    if (!res.ok) throw new Error('delete failed');
+                    await loadSavedSearches();
+                } catch (e) {
+                    alert('Could not delete that saved search.');
+                }
             }
 
             async function loadSavedSearch(id) {
                 try {
-                    var res = await fetch('/api/search?id=' + encodeURIComponent(id), { method: 'GET', credentials: 'include' });
+                    var res = await fetch('/api/search?action=get&id=' + encodeURIComponent(id), { method: 'GET', credentials: 'include' });
                     var data = await res.json();
-                    if (res.ok && data) {
-                        // Populate form with saved search
-                        var form = document.getElementById('search-form');
-                        for (var key in data) {
-                            if (data[key] && form.elements[key]) {
-                                form.elements[key].value = data[key];
-                            }
-                        }
-                        // Trigger search
-                        form.dispatchEvent(new Event('submit'));
+                    var saved = data && data.search;
+                    if (!res.ok || !saved) return;
+                    var params = saved.params;
+                    if (typeof params === 'string') {
+                        try { params = JSON.parse(params); } catch (e) { params = {}; }
                     }
+                    if (!params || typeof params !== 'object') params = {};
+                    var values = {};
+                    var filters = params.filters && typeof params.filters === 'object' ? params.filters : {};
+                    Object.keys(filters).forEach(function(key) { values[key] = filters[key]; });
+                    Object.keys(params).forEach(function(key) { if (key !== 'filters') values[key] = params[key]; });
+                    var form = document.getElementById('search-form');
+                    if (!form) return;
+                    Object.keys(values).forEach(function(key) {
+                        if (form.elements[key] && values[key] !== null && values[key] !== undefined) {
+                            form.elements[key].value = values[key];
+                        }
+                    });
+                    form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
                 } catch (e) { /* ignore */ }
             }
 
@@ -6523,10 +6170,14 @@ document.addEventListener('click', function(e) {
                     '<option value="ahmedabad">Ahmedabad</option>' +
                     '<option value="jalandhar">Jalandhar</option>' +
                     '</select></div>' +
+                    '<div class="vfs-actions" style="display:flex;gap:8px;flex-wrap:wrap">' +
                     '<button class="btn" type="submit">Track on VFS Global</button>' +
+                    '<button class="btn secondary" type="button" id="vfs-check-btn">Check appointment availability</button>' +
+                    '</div>' +
                     '</form>' +
                     '<div id="vfs-result" class="vfs-result" hidden></div>' +
-                    '<p class="note2">This opens the official VFS Global tracking page in a new tab.</p>' +
+                    '<div id="vfs-appointment-result" class="vfs-result" aria-live="polite" hidden></div>' +
+                    '<p class="note2">Tracking opens the official VFS page. The appointment check reads the public VFS booking page and reports a signal, not a held slot.</p>' +
                     '</div>';
             }
 
@@ -6537,14 +6188,39 @@ document.addEventListener('click', function(e) {
                     e.preventDefault();
                     var ref = document.getElementById('vfs-ref').value.trim();
                     var lname = document.getElementById('vfs-lname').value.trim();
-                    var vac = document.getElementById('vfs-vac').value;
                     if (!ref || !lname) return;
-                    
-                    // VFS Global tracking URL pattern
                     var url = 'https://visa.vfsglobal.com/ind/en/irl/track-application.html' +
                         '?reference=' + encodeURIComponent(ref) +
                         '&lastName=' + encodeURIComponent(lname);
                     window.open(url, '_blank', 'noopener,noreferrer');
+                });
+                var check = document.getElementById('vfs-check-btn');
+                if (!check) return;
+                check.addEventListener('click', async function() {
+                    var out = document.getElementById('vfs-appointment-result');
+                    var vac = document.getElementById('vfs-vac').value;
+                    if (!out) return;
+                    out.hidden = false;
+                    out.textContent = 'Checking the official VFS booking page\u2026';
+                    check.disabled = true;
+                    try {
+                        var response = await fetch('/api/vfs/appointments?office=' + encodeURIComponent(vac), {
+                            headers: { Accept: 'application/json' }
+                        });
+                        var data = await response.json();
+                        if (!response.ok) throw new Error(data.error || 'Could not check VFS');
+                        var label = ({ available: 'Appointments may be available', unavailable: 'No appointments reported', maintenance: 'VFS maintenance', challenge: 'VFS bot challenge', unknown: 'Availability unknown' })[data.availability] || 'Availability unknown';
+                        out.innerHTML = '<strong>' + escapeHtml(label) + '</strong> \u00b7 ' + escapeHtml(data.office_name || vac) +
+                            '<div class="note2" style="margin-top:6px">' + escapeHtml(data.message || '') + '</div>' +
+                            '<div class="note2" style="margin-top:6px">Checked ' + escapeHtml(new Date(data.checked_at).toLocaleString()) +
+                            ' \u00b7 confidence: ' + escapeHtml(data.confidence || 'none') + '</div>' +
+                            '<p style="margin:10px 0 0"><a class="link-btn" href="' + escapeHtml(data.booking_url) + '" target="_blank" rel="noopener noreferrer">Open official VFS booking page</a></p>' +
+                            '<p class="note2" style="margin:8px 0 0">' + escapeHtml(data.disclaimer || '') + '</p>';
+                    } catch (error) {
+                        out.innerHTML = '<strong>Could not check availability.</strong><div class="note2" style="margin-top:6px">' + escapeHtml(error.message) + '</div>';
+                    } finally {
+                        check.disabled = false;
+                    }
                 });
             }
 
@@ -6624,20 +6300,35 @@ document.addEventListener('click', function(e) {
                     var html = '<table class="results-table"><thead><tr>' +
                         '<th scope="col">Application</th><th scope="col">Office</th>' +
                         '<th scope="col">Nickname</th><th scope="col">Latest decision</th>' +
-                        '<th scope="col">Date</th><th scope="col">&nbsp;</th>' +
+                        '<th scope="col">Date</th><th scope="col">Channels</th><th scope="col">&nbsp;</th>' +
                         '</tr></thead><tbody>';
                     wl.forEach(function(w) {
                         var r = byIrl[w.application_number];
                         var decision = r ? escapeHtml(r.decision || '-') : '\u2014';
                         var date = r ? escapeHtml(r.date) : '\u2014';
                         var pill = r ? ('<span class="pill ' + (r._pillClass || 'amber') + '">' + decision + '</span>') : decision;
+                        var channelControls = [
+                            ['email', 'Email', w.notify_email],
+                            ['push', 'Push', w.notify_push],
+                            ['sms', 'SMS', w.notify_sms],
+                            ['whatsapp', 'WhatsApp', w.notify_whatsapp]
+                        ].map(function(item) {
+                            return '<label class="watch-channel"><input type="checkbox" data-watch-id="' +
+                                escapeHtml(w.id) + '" data-watch-field="notify_' + item[0] + '"' +
+                                (item[2] ? ' checked' : '') + '> ' + item[1] + '</label>';
+                        }).join('');
                         html += '<tr>' +
                             '<td class="mono">' + escapeHtml(w.application_number) + '</td>' +
                             '<td>' + escapeHtml(w.embassy_slug || 'new-delhi') + '</td>' +
                             '<td>' + escapeHtml(w.nickname || '\u2014') + '</td>' +
                             '<td>' + pill + '</td>' +
                             '<td>' + date + '</td>' +
-                            '<td><button type="button" class="export-btn tu-btn" data-watch-remove="' +
+                            '<td class="watch-channel-cell">' + channelControls + '</td>' +
+                            '<td><button type="button" class="export-btn tu-btn" data-watch-push="' +
+                            escapeHtml(w.application_number) + '" data-watch-office="' + escapeHtml(w.embassy_slug || 'new-delhi') +
+                            '" title="Enable browser notifications" aria-label="Enable browser notifications for ' +
+                            escapeHtml(w.application_number) + '">Enable push</button> ' +
+                            '<button type="button" class="export-btn tu-btn" data-watch-remove="' +
                             escapeHtml(w.id) + '" title="Remove">Remove</button></td>' +
                             '</tr>';
                     });
@@ -6646,8 +6337,49 @@ document.addEventListener('click', function(e) {
                     if (status) status.textContent = 'Could not load watchlist.';
                     box.innerHTML = '';
                 }
-                // Delegate remove clicks.
+                // Persist per-application channel switches. SMS/WhatsApp also
+                // require a consented channel in the workspace.
+                box.onchange = function(e) {
+                    var input = e.target && e.target.closest ? e.target.closest('[data-watch-field]') : null;
+                    if (!input) return;
+                    var id = input.getAttribute('data-watch-id');
+                    var field = input.getAttribute('data-watch-field');
+                    var value = input.checked;
+                    var status = document.getElementById('watch-server-status');
+                    input.disabled = true;
+                    var patch = {};
+                    patch[field] = value;
+                    fetch('/api/user/watchlist/' + encodeURIComponent(id), {
+                        method: 'PATCH',
+                        credentials: 'include',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(patch)
+                    }).then(function(res) {
+                        if (!res.ok) throw new Error('Could not update alert settings');
+                        if (status) status.textContent = 'Alert settings updated.';
+                    }).catch(function() {
+                        input.checked = !value;
+                        if (status) status.textContent = 'Could not update alert settings.';
+                    }).finally(function() {
+                        input.disabled = false;
+                    });
+                };
+                // Delegate push and remove clicks.
                 box.onclick = function(e) {
+                    var pushBtn = e.target && e.target.closest ? e.target.closest('[data-watch-push]') : null;
+                    if (pushBtn) {
+                        var app = pushBtn.getAttribute('data-watch-push');
+                        var office = pushBtn.getAttribute('data-watch-office');
+                        var status = document.getElementById('watch-server-status');
+                        pushBtn.disabled = true;
+                        if (status) status.textContent = 'Requesting notification permission\u2026';
+                        window.enablePushNotifications(app, office).then(function(result) {
+                            if (status) status.textContent = result.ok
+                                ? 'Browser notifications enabled for ' + app + '.'
+                                : (result.error || 'Could not enable notifications.');
+                        }).finally(function() { pushBtn.disabled = false; });
+                        return;
+                    }
                     var btn = e.target && e.target.closest ? e.target.closest('[data-watch-remove]') : null;
                     if (!btn) return;
                     var id = btn.getAttribute('data-watch-remove');
@@ -9201,6 +8933,7 @@ document.addEventListener('click', function(e) {
             // section paints independently: a failed fetch can never stop the
             // landing page (or the tracker behind it) from rendering.
             var _landingDataRequested = false;
+            var _embassyManifest = null;
             var _pwaPromptBound = false;
 
             function initLandingComponents() {
@@ -9222,6 +8955,7 @@ document.addEventListener('click', function(e) {
                         try { updateLandingStats(); } catch (e) { /* noop */ }
                         try { renderProcessingEstimator(); } catch (e) { /* noop */ }
                         try { renderRecentDecisionsFeed(); } catch (e) { /* noop */ }
+                        try { renderEmbassyCoverageTable(); } catch (e) { /* noop */ }
                     }).catch(function() { /* offline: empty states are fine */ });
                 }
             }
@@ -9305,7 +9039,14 @@ document.addEventListener('click', function(e) {
                         '<div class="embassy-meta" id="embassy-meta-' + emb.slug + '">Loading\u2026</div>' +
                         '</div>';
                 });
-                container.innerHTML = html + '</div>';
+                container.innerHTML = html + '</div>' +
+                    '<div class="embassy-coverage">' +
+                    '<div class="table-wrap coverage-table-wrap" role="region" aria-label="Per-office coverage" tabindex="0">' +
+                    '<table class="coverage-table">' +
+                    '<caption>Latest published total and report date for each office.</caption>' +
+                    '<thead><tr><th scope="col">Office</th><th scope="col" class="num">Decisions</th><th scope="col">Report date</th><th scope="col">History range</th></tr></thead>' +
+                    '<tbody id="embassy-coverage-body"><tr><td colspan="4" class="coverage-empty">Loading coverage\u2026</td></tr></tbody>' +
+                    '</table></div></div>';
 
                 function paint(office) {
                     var el = document.getElementById('embassy-meta-' + office.slug);
@@ -9328,8 +9069,13 @@ document.addEventListener('click', function(e) {
                         var bySlug = {};
                         offices.forEach(function(o) { bySlug[o.slug] = o; });
                         embassies.forEach(function(emb) { if (bySlug[emb.slug]) paint(bySlug[emb.slug]); });
+                        _embassyManifest = offices;
+                        renderEmbassyCoverageTable();
                     })
                     .catch(function() {
+                        _embassyManifest = null;
+                        var coverageBody = document.getElementById('embassy-coverage-body');
+                        if (coverageBody) coverageBody.innerHTML = '<tr><td colspan="4" class="coverage-empty">Coverage data is unavailable right now.</td></tr>';
                         embassies.forEach(function(emb) {
                             fetch('data/embassy-' + emb.slug + '.json', { cache: 'no-store' })
                                 .then(function(r) { return r.ok ? r.json() : null; })
@@ -9343,6 +9089,63 @@ document.addEventListener('click', function(e) {
                                 });
                         });
                     });
+            }
+
+            // Latest manifest counts and report dates, with New Delhi history
+            // derived from the decision cache already used by the landing page.
+            function renderEmbassyCoverageTable() {
+                var body = document.getElementById('embassy-coverage-body');
+                if (!body || !_embassyManifest) return;
+
+                var order = ['new-delhi', 'beijing', 'dublin', 'abu-dhabi', 'abuja', 'ankara'];
+                var bySlug = {};
+                _embassyManifest.forEach(function(office) { bySlug[office.slug] = office; });
+
+                var ndRange = null;
+                if (Array.isArray(cache) && cache.length) {
+                    var min = '', max = '';
+                    cache.forEach(function(row) {
+                        var date = row && row.date;
+                        if (!/^\d{4}-\d{2}-\d{2}$/.test(String(date || ''))) return;
+                        if (!/^(Approved|Refused)$/i.test(String(row.decision || ''))) return;
+                        if (!min || date < min) min = date;
+                        if (!max || date > max) max = date;
+                    });
+                    if (min && max) ndRange = { start: min, end: max };
+                }
+
+                var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                function monthName(value) { return months[Number(value) - 1] || ''; }
+                function formatDate(value) {
+                    var match = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(value || ''));
+                    if (!match) return '\u2014';
+                    return Number(match[3]) + ' ' + monthName(match[2]) + ' ' + match[1];
+                }
+                function formatRange(range) {
+                    if (!range) return 'Loading decision history\u2026';
+                    if (range.start === range.end) return formatDate(range.start);
+                    var start = range.start.split('-'), end = range.end.split('-');
+                    if (start[0] === end[0]) {
+                        return Number(start[2]) + ' ' + monthName(start[1]) + ' \u2013 ' + Number(end[2]) + ' ' + monthName(end[1]) + ' ' + end[0];
+                    }
+                    return formatDate(range.start) + ' \u2013 ' + formatDate(range.end);
+                }
+
+                body.innerHTML = order.map(function(slug) {
+                    var office = bySlug[slug];
+                    if (!office) {
+                        return '<tr><td><strong>' + escapeHtml(slug.replace(/-/g, ' ')) + '</strong></td><td class="num">\u2014</td><td>\u2014</td><td class="coverage-empty">Not published</td></tr>';
+                    }
+                    var history = slug === 'new-delhi'
+                        ? formatRange(ndRange)
+                        : formatDate(office.report_date) + ' <span class="coverage-snapshot">snapshot</span>';
+                    return '<tr>' +
+                        '<td><strong>' + escapeHtml(office.name || slug) + '</strong></td>' +
+                        '<td class="num">' + Number(office.decisions || 0).toLocaleString() + '</td>' +
+                        '<td>' + formatDate(office.report_date) + '</td>' +
+                        '<td>' + history + '</td>' +
+                        '</tr>';
+                }).join('');
             }
 
             // Community-reported wait times for embassy visas. The JSON is an
@@ -9438,7 +9241,7 @@ document.addEventListener('click', function(e) {
                     '<div class="est-submit"><button class="btn" type="submit" id="estimator-calc-btn">Calculate</button></div>' +
                     '</form>' +
                     '<div id="estimator-result" class="estimator-result" hidden></div>' +
-                    '<p class="note2 est-note">Estimate only, not an official processing time. Use the official queue dates for planning.</p>';
+                    '<p class="note2 est-note">Illustrative estimate from a model trained on synthetic historical data. Not a prediction of your case and not an official processing time.</p>';
 
                 var form = document.getElementById('estimator-form');
                 if (form) form.addEventListener('submit', function(e) {
@@ -9611,7 +9414,7 @@ async function renderLandingPage() {
                     '</div>' +
                     // New: Embassy Status Cards
                     '<div class="embassy-status-grid" role="region" id="embassy-status-grid" aria-label="Embassy Status"></div>' +
-                    '<p class="note2" id="embassy-coverage-note">All six offices are loaded from their official published decision reports, not synthetic fixtures. Each card shows that office\u2019s own report date and coverage varies: New Delhi\u2019s decision-level history currently starts on 12 July 2026, while the other five offices show their latest official report snapshot. <a href="/visa-processing-times">See Dublin queue dates by category and the submit-by planner</a>.</p>' +
+                    '<p class="note2" id="embassy-coverage-note">Latest report dates vary by office. New Delhi, Abu Dhabi, Abuja and Ankara include dated decision history; Beijing and Dublin show their latest published snapshot. <a href="/visa-processing-times">See Dublin queue dates by category and the submit-by planner</a>.</p>' +
                     // New: Community Wait Times
                     '<div class="community-wait-section" role="region" id="community-wait-section" aria-label="Community Wait Times"></div>' +
                     // New: Processing Estimator
@@ -9625,7 +9428,7 @@ async function renderLandingPage() {
                     '<a class="quick-action" href="/?tracker=1g" data-tracker="1g"><i data-lucide="calendar"></i><span>Check IRP Expiry</span></a>' +
                     '<a class="quick-action" href="#" id="pwa-install-btn"><i data-lucide="download"></i><span>Install as App</span></a>' +
                     '</div>' +
-                    '<div class="landing-foot">Data: official decision reports from six Irish visa offices \u00b7 ISD \u00b7 DETE \u00b7 Updated when sources publish \u00b7 Unofficial tracker, not affiliated with the Irish government.</div></div>';
+                    '<div class="landing-foot">Source: official Irish visa office reports. Updated when sources publish.</div></div>';
                 wireChrome();
                 var cards = root.querySelectorAll('.tracker-card');
                 for (var i = 0; i < cards.length; i++) {
@@ -9740,7 +9543,6 @@ async function renderLandingPage() {
                 const heroState = buildHeroHTML(activeTab, cache || []);
 
                 root.innerHTML =
-                    '<a class="skip-link" href="#tab-body" target="_self">Skip to content</a>' +
                     BACK_BTN_HTML +
                     '<div class="eyebrow">Ireland \u00b7 New Delhi Visa Section</div>' +
                     '<div class="titlerow"><h1>Irish Visa Decision Tracker</h1>' +
@@ -9881,5 +9683,6 @@ async function renderLandingPage() {
     });
   }
 </script>
+  <script src="/site-chrome.js" defer></script>
 </body>
 </html>
