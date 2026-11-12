@@ -10,8 +10,8 @@ on:
     - cron: '30 4 * * 1-5'  # Mon–Fri 10:00 IST
     - cron: '0 5 * * 1-5'   # Mon–Fri 10:30 IST
     - cron: '30 5 * * 1-5'  # Mon–Fri 11:00 IST
-    - cron: '30 6 * * 6,0'  # Sat–Sun 08:00 IST - weekend placeholder (run 1)
-    - cron: '30 6 * * 6,0'  # Sat–Sun 12:00 IST - weekend placeholder (run 2)
+    - cron: '30 2 * * 6,0'  # Sat–Sun 08:00 IST
+    - cron: '30 6 * * 6,0'  # Sat–Sun 12:00 IST
 
 jobs:
   scrape:
@@ -20,10 +20,10 @@ jobs:
       contents: write   # needed to commit data/*.json back to the repo
     steps:
       - name: Check out repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: '3.11'
 
@@ -45,7 +45,7 @@ jobs:
           ALERT_WEBHOOK_URL: ${{ secrets.ALERT_WEBHOOK_URL }}
 
       - name: Set up Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: '20'
 

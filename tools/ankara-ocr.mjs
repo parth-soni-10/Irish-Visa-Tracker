@@ -40,8 +40,19 @@ function commandAvailable(command, args) {
 
 function resolvePoppler() {
   if (process.env.PDFTOPPM) return process.env.PDFTOPPM;
-  const bundled = path.resolve(process.cwd(), 'node_modules', 'pdf-poppler', 'lib', 'win', 'poppler-0.51', 'bin', 'pdftoppm.exe');
-  return fs.existsSync(bundled) ? bundled : 'pdftoppm';
+  // pdf-poppler ships Windows and macOS builds only, and the package includes
+  // both on every platform. Selecting the bundled binary without checking the
+  // host made Linux CI try to exec a Windows PE file (EACCES), so the poppler
+  // that poppler-utils installs is the correct choice there.
+  if (process.platform === 'win32') {
+    const bundled = path.resolve(process.cwd(), 'node_modules', 'pdf-poppler', 'lib', 'win', 'poppler-0.51', 'bin', 'pdftoppm.exe');
+    if (fs.existsSync(bundled)) return bundled;
+  }
+  if (process.platform === 'darwin') {
+    const bundled = path.resolve(process.cwd(), 'node_modules', 'pdf-poppler', 'lib', 'osx', 'poppler-0.66', 'bin', 'pdftoppm');
+    if (fs.existsSync(bundled)) return bundled;
+  }
+  return 'pdftoppm';
 }
 
 function cliTools() {

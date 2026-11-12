@@ -466,6 +466,52 @@ async function ingestOffice(slug, config) {
     date_basis: config.kind === 'html' ? 'fetched' : 'report_period_end',
   }));
 
+  // A scanned PDF we could not read must not replace the last good snapshot:
+  // writing a zero-decision report would fail checksum verification and block
+  // every other office from committing. Keep the previous report instead and
+  // surface the OCR status in the manifest.
+  if (!rows.length && status === 'ocr_required') {
+    const archived = Array.isArray(previous.decisions) ? previous.decisions : [];
+    const counts = new Map();
+    for (const row of archived) {
+      if (!row || !row.date) continue;
+      counts.set(row.date, (counts.get(row.date) || 0) + 1);
+    }
+    const archiveReports = [...counts.entries()]
+      .sort(([a], [b]) => b.localeCompare(a))
+      .map(([report_date, decisions]) => ({ report_date, decisions }));
+    const keptReportDate = previous.report_date || null;
+    const keptRows = archived.filter((row) => row.date === keptReportDate);
+    const approved = keptRows.filter((row) => row.decision === 'Approved').length;
+    const summary = {
+      slug,
+      name: config.name,
+      source_url: config.page,
+      source_file: sourceFile,
+      source_name: config.official,
+      report_date: keptReportDate,
+      as_of: fetchedAt.slice(0, 10),
+      fetched_at: fetchedAt,
+      status,
+      note: `${note || 'The published PDF is scanned; OCR is required.'} Kept the previous snapshot.`,
+      decisions: keptRows.length,
+      archive_decisions: archived.length,
+      historical_decisions: Math.max(0, archived.length - keptRows.length),
+      archive_reports: archiveReports,
+      approved,
+      refused: keptRows.length - approved,
+      corrections: 0,
+      added: 0,
+      preserved_from: keptReportDate,
+    };
+    manifestBySlug.set(slug, summary);
+    console.warn(
+      `${slug.padEnd(11)} OCR unavailable - kept report ${keptReportDate || '(none)'} ` +
+        `(${archived.length} archived decisions)`
+    );
+    return summary;
+  }
+
   const fileRows = config.preserveHistory
     ? mergeDecisionHistory(previous.decisions || [], rows)
     : rows;
