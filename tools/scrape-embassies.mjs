@@ -380,10 +380,16 @@ function noCacheUrl(url) {
   return parsed.href;
 }
 
-async function ingestOffice(slug, config) {
-  const previous = readJSON(path.join(DATA, `embassy-${slug}.json`), { decisions: [] });
+export async function ingestOffice(slug, config, context = {}) {
+  const dataDir = context.dataDir || DATA;
+  const manifestState = context.manifest || manifest;
+  const reportIndexState = context.reportIndex || reportIndex;
+  const manifestBySlugState = context.manifestBySlug || manifestBySlug;
+  const fetchPage = context.fetchPage || fetchText;
+  const fetchFile = context.fetchFile || fetchBuffer;
+  const previous = readJSON(path.join(dataDir, `embassy-${slug}.json`), { decisions: [] });
   const fetchedAt = new Date().toISOString();
-  const pageResponse = await fetchText(noCacheUrl(config.page));
+  const pageResponse = await fetchPage(noCacheUrl(config.page));
   const html = await pageResponse.text();
   const $ = cheerio.load(html);
 
@@ -406,8 +412,8 @@ async function ingestOffice(slug, config) {
       source_url: DUBLIN_QUEUE_URL,
       categories: parsed.queue,
     };
-    writeJSON(path.join(DATA, 'dublin_queues.json'), queue);
-    manifest.dublin_queue = {
+    writeJSON(path.join(dataDir, 'dublin_queues.json'), queue);
+    manifestState.dublin_queue = {
       as_of: queue.as_of,
       source_url: queue.source_url,
       categories: queue.categories.length,
@@ -416,7 +422,7 @@ async function ingestOffice(slug, config) {
     const link = findLatestFileLink($, config.page, config.kind);
     if (!link) throw new Error('No decision file link found');
     sourceFile = link.url;
-    const buffer = await fetchBuffer(link.url, config.page);
+    const buffer = await fetchFile(link.url, config.page);
 
     if (config.kind === 'ods') {
       decisions = parseOds(buffer);
@@ -430,6 +436,7 @@ async function ingestOffice(slug, config) {
     } else {
       const parsed = await parsePdfReport(buffer, {
         ocr: Boolean(config.ocr),
+        ocrImpl: context.ocrImpl,
         slug,
         log: console.log,
         warn: console.error
@@ -504,7 +511,7 @@ async function ingestOffice(slug, config) {
       added: 0,
       preserved_from: keptReportDate,
     };
-    manifestBySlug.set(slug, summary);
+    manifestBySlugState.set(slug, summary);
     console.warn(
       `${slug.padEnd(11)} OCR unavailable - kept report ${keptReportDate || '(none)'} ` +
         `(${archived.length} archived decisions)`
@@ -543,10 +550,10 @@ async function ingestOffice(slug, config) {
     checksum: officeChecksum,
     decisions: fileRows,
   };
-  writeJSON(path.join(DATA, `embassy-${slug}.json`), officeFile);
+  writeJSON(path.join(dataDir, `embassy-${slug}.json`), officeFile);
 
   // Provenance / corrections log.
-  const entries = reportIndex.offices[slug] || [];
+  const entries = reportIndexState.offices[slug] || [];
   const entry = {
     report_date: reportDate,
     fetched_at: fetchedAt,
@@ -562,7 +569,7 @@ async function ingestOffice(slug, config) {
   const existingEntry = entries.findIndex((candidate) => candidate.report_date === reportDate);
   if (existingEntry >= 0) entries[existingEntry] = entry;
   else entries.unshift(entry);
-  reportIndex.offices[slug] = entries.slice(0, 100);
+  reportIndexState.offices[slug] = entries.slice(0, 100);
 
   const summary = {
     slug,
@@ -584,7 +591,7 @@ async function ingestOffice(slug, config) {
     corrections: diff.changed.length,
     added: diff.added,
   };
-  manifestBySlug.set(slug, summary);
+  manifestBySlugState.set(slug, summary);
   console.log(
     `${slug.padEnd(11)} ${String(rows.length).padStart(6)} current decisions  ` +
       `report ${reportDate}  ${status}` +
