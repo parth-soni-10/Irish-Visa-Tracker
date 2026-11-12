@@ -15,7 +15,7 @@ import { isEmailConfigured, sendEmail } from './email-send.js';
 import { loadReportData } from './report-data.js';
 import { createNotification } from './notifications.js';
 import { ensurePortalSchema } from './portal-schema.js';
-import { isChannelConfigured, sendChannel } from './notify-channels.js';
+import { anyChannelConfigured, isChannelConfigured, sendChannel } from './notify-channels.js';
 
 const MAX_ALERTS = 250;
 const DEFAULT_BASE = 'https://irishvisaupdatetracker.pages.dev';
