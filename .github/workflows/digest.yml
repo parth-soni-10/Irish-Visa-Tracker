@@ -2,9 +2,10 @@ name: Send Monthly Digest
 
 # Pages Functions cannot define cron triggers, so the secure digest endpoint is
 # driven by GitHub Actions. Two triggers feed it:
-#   - the monthly cron (the intended slot), and
-#   - every completed scrape run as a fallback, because GitHub treats scheduled
-#     events as best-effort and can drop a single monthly slot.
+#   - the monthly cron (the intended slot),
+#   - a retry on the 2nd in case the 1st is dropped, and
+#   - every completed scrape run, because GitHub treats scheduled events as
+#     best-effort and a missed monthly slot would otherwise skip a month.
 # The endpoint only messages subscribers whose last_sent_at is before the
 # current month, so extra triggers are no-ops rather than duplicate mail.
 on:
@@ -17,6 +18,7 @@ on:
   schedule:
     # First of the month at 09:00 UTC (14:30 IST), after the latest weekly data.
     - cron: '0 9 1 * *'
+    - cron: '0 9 2 * *'  # next-day retry; the month guard makes this a no-op if the 1st sent
   workflow_run:
     workflows: ["Scrape Visa Decisions"]
     types: [completed]

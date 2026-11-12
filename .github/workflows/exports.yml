@@ -1,13 +1,14 @@
 name: Deliver Scheduled Exports
 
-# Runs once a day after the report data settles, and again after every scrape as
-# a fallback: GitHub's scheduler is best-effort and can drop a daily slot. The
-# endpoint selects only rows whose next_run_at is due, so extra triggers are
-# no-ops.
+# Runs after the report data settles, with three layers of redundancy: the
+# 07:15 UTC slot, a 12:15 UTC retry in case that slot is dropped, and a run
+# after every completed scrape. The endpoint selects only rows whose next_run_at
+# is due, so extra triggers are no-ops.
 on:
   workflow_dispatch: {}
   schedule:
     - cron: '15 7 * * *'  # daily 07:15 UTC, after the 07:00 UTC due time
+    - cron: '15 12 * * *'  # same-day retry if the 07:15 slot is dropped
   workflow_run:
     workflows: ["Scrape Visa Decisions"]
     types: [completed]
