@@ -3,7 +3,7 @@ name: Decision Alerts
 on:
   workflow_dispatch: {}
   workflow_run:
-    workflows: ["Deploy to Cloudflare Pages"]
+    workflows: ["Build verification"]
     types: [completed]
   schedule:
     - cron: '15 * * * *'  # hourly safety net; the runner is idempotent
