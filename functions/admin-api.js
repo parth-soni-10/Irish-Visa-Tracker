@@ -184,7 +184,7 @@ export async function handleSystemMetrics(request, env) {
   if (!auth.authorized) return auth.response;
 
   try {
-    const [users, sessions, email, push, watchlists, apiTokens, notifications, submissions,
+    const [users, sessions, email, telegram, push, watchlists, apiTokens, notifications, submissions,
       smsChannels, whatsappChannels, communityPosts, organizations, scheduledExports, exportJobs] = await Promise.all([
       env.DB.prepare(`SELECT COUNT(*) AS count,
         COUNT(CASE WHEN created_at > datetime('now', '-7 days') THEN 1 END) AS last_week,
@@ -194,6 +194,9 @@ export async function handleSystemMetrics(request, env) {
       env.DB.prepare(`SELECT COUNT(*) AS total,
         COUNT(CASE WHEN verified = 1 AND unsubscribed = 0 THEN 1 END) AS active
         FROM email_subscriptions`).first().catch(() => ({ total: 0, active: 0 })),
+      env.DB.prepare(`SELECT COUNT(*) AS total,
+        COUNT(CASE WHEN active = 1 THEN 1 END) AS active
+        FROM telegram_subscriptions`).first().catch(() => ({ total: 0, active: 0 })),
       safeCount(env, 'SELECT COUNT(*) AS count FROM push_subscriptions'),
       safeCount(env, 'SELECT COUNT(*) AS count FROM watchlists'),
       safeCount(env, 'SELECT COUNT(*) AS count FROM api_tokens WHERE revoked = 0'),
@@ -221,7 +224,11 @@ export async function handleSystemMetrics(request, env) {
       },
       subscriptions: {
         email: { total: Number(email && email.total) || 0, active: Number(email && email.active) || 0 },
-        push: { total: push }
+        push: { total: push },
+        telegram: {
+          total: Number(telegram && telegram.total) || 0,
+          active: Number(telegram && telegram.active) || 0
+        }
       },
       watchlists,
       exportTokens: apiTokens,
@@ -230,6 +237,7 @@ export async function handleSystemMetrics(request, env) {
       product: {
         smsChannels,
         whatsappChannels,
+        telegramChannels: Number(telegram && telegram.active) || 0,
         communityPosts,
         organizations,
         scheduledExports,
