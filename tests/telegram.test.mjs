@@ -248,6 +248,15 @@ test('webhook /start consumes a valid token and links the chat', async () => {
     assert.equal(api.sent.length, 1);
     assert.equal(api.sent[0].chat_id, '123456789');
     assert.match(api.sent[0].text, /Alerts enabled for 85444062 \(new-delhi\)/);
+
+    // The token is single-use: replaying it must not create a second link.
+    const replay = await handleTelegramWebhook(
+      webhookRequest(123456789, '/start valid-token'),
+      telegramEnv(db)
+    );
+    assert.equal(replay.status, 200);
+    assert.equal(subscriptionRows.length, 1);
+    assert.match(api.sent[1].text, /invalid or has expired/);
   } finally {
     api.restore();
   }
