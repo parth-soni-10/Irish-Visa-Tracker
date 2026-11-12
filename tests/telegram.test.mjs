@@ -92,6 +92,38 @@ test('start link reports that Telegram is not configured', async () => {
   assert.match(await response.text(), /not configured/);
 });
 
+test('start link returns a t.me URL and stores a 15-minute link', async () => {
+  const { db, linkRows } = makeTelegramDb();
+  const before = Date.now();
+  const request = new Request('https://tracker.test/api/telegram/start', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ application_number: '85444062', embassy: 'new-delhi' })
+  });
+
+  const response = await handleTelegramStart(request, {
+    DB: db,
+    TELEGRAM_BOT_TOKEN: '123:abc',
+    TELEGRAM_BOT_USERNAME: '@Visa_Tracker_test_bot'
+  });
+
+  assert.equal(response.status, 200);
+  const body = await response.json();
+  assert.equal(body.ok, true);
+  assert.match(body.url, /^https:\/\/t\.me\/Visa_Tracker_test_bot\?start=[0-9a-f-]{36}$/);
+
+  const token = body.url.split('start=')[1];
+  assert.deepEqual(linkRows.get(token), {
+    token,
+    application_number: '85444062',
+    embassy: 'new-delhi',
+    expires_at: body.expires_at
+  });
+
+  const ttl = new Date(body.expires_at).getTime() - before;
+  assert.ok(ttl > 14 * 60 * 1000 && ttl <= 16 * 60 * 1000, 'link TTL should be about 15 minutes');
+});
+
 test('webhook rejects a wrong secret', async () => {
   const request = new Request('https://tracker.test/api/telegram/webhook', {
     method: 'POST',
@@ -197,8 +229,20 @@ function makeTelegramDb({ links = [], subscriptions = [] } = {}) {
             for (const row of subscriptionRows) {
               if (row.chat_id === statement.args[0]) row.active = 0;
             }
+          } else if (/INSERT INTO telegram_links/i.test(sql)) {
+            const [token, applicationNumber, embassy, expiresAt] = statement.args;
+            linkRows.set(token, {
+              token,
+              application_number: applicationNumber,
+              embassy,
+              expires_at: expiresAt
+            });
           } else if (/DELETE FROM telegram_links WHERE token = \?/i.test(sql)) {
             linkRows.delete(statement.args[0]);
+          } else if (/DELETE FROM telegram_links WHERE datetime\(expires_at\)/i.test(sql)) {
+            for (const [token, link] of linkRows) {
+              if (new Date(link.expires_at).getTime() <= Date.now()) linkRows.delete(token);
+            }
           }
           return { success: true };
         },
