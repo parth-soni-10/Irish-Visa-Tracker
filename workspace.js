@@ -166,7 +166,6 @@
   function renderOverview() {
     var data = state.overview;
     var user = data.user || {};
-    var prefs = user.preferences || {};
     var capabilities = data.capabilities || {};
     var channels = data.channels || [];
     var notifications = data.notifications || [];

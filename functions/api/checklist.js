@@ -171,7 +171,7 @@ const TB_TEST_COUNTRIES = [
 ];
 
 export async function onRequestPost(context) {
-  const { request, env } = context;
+  const { request } = context;
   
   try {
     const body = await request.json();

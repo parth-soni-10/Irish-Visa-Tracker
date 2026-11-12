@@ -426,7 +426,6 @@ export async function ingestOffice(slug, config, context = {}) {
 
     if (config.kind === 'ods') {
       decisions = parseOds(buffer);
-      const periodText = (XLSX.read(buffer, { type: 'buffer' }) && '') || '';
       // Re-read the first rows for the period sentence (cheap, already in memory).
       const wb = XLSX.read(buffer, { type: 'buffer' });
       const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1, raw: false, defval: '' });

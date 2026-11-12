@@ -12,7 +12,7 @@
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, resolve } from 'path';
-import { parseODSCumulative, discoverODSUrl } from './functions/parsers/ods-cumulative.js';
+import { parseODSCumulative } from './functions/parsers/ods-cumulative.js';
 import { parseHTMLPaginated } from './functions/parsers/html-paginated.js';
 import { ocrPdfBuffer, parseOcrDecisionText, parseReportPeriodEnd } from './tools/ankara-ocr.mjs';
 import { decisionChecksum } from './tools/embassy-checksum.mjs';
@@ -46,35 +46,6 @@ if (ONLY_OFFICE && !embassyConfig.embassies.some((office) => office.slug === ONL
   console.error(`Unknown office: ${ONLY_OFFICE}`);
   process.exit(1);
 }
-
-// Historical URL patterns for each embassy
-const HISTORICAL_URLS = {
-  'new-delhi': {
-    baseUrl: 'https://www.ireland.ie/en/india/newdelhi/services/visas/processing-times-and-decisions/',
-    // ODS files follow pattern: YYYYMMDD_NDVO_Visa_Decisions.ods
-    // Archive pages may list older files
-  },
-  'beijing': {
-    baseUrl: 'https://www.ireland.ie/en/china/beijing/services/visas/visa-decisions/',
-    // Pattern: YYYYMMDD_BVO_visa_decisions.ods
-  },
-  'dublin': {
-    baseUrl: 'https://www.irishimmigration.ie/visa-decisions/',
-    // Paginated HTML table - may have year filter
-  },
-  'abu-dhabi': {
-    baseUrl: 'https://www.ireland.ie/en/uae/abudhabi/services/visas/weekly-decision-reports/',
-    // PDF archives
-  },
-  'abuja': {
-    baseUrl: 'https://www.ireland.ie/en/nigeria/abuja/services/visas/weekly-decision-reports/',
-    // PDF archives
-  },
-  'ankara': {
-    baseUrl: 'https://www.ireland.ie/en/turkiye/ankara/services/visas/weekly-decision-report/',
-    // PDF archives (scanned/vector-path; use the Ankara OCR path)
-  }
-};
 
 async function fetchWithCache(url) {
   const response = await fetch(url, {

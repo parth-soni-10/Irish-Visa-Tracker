@@ -9,21 +9,6 @@
 import * as XLSX from 'xlsx';
 import * as cheerio from 'cheerio';
 
-const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
-
-function parseDate(val) {
-  if (!val) return null;
-  const s = String(val).trim();
-  if (DATE_RE.test(s)) return s;
-  // Try Excel serial date
-  const num = Number(s);
-  if (!isNaN(num) && num > 25569 && num < 50000) {
-    const date = XLSX.SSF.parse_date_code(num);
-    return `${date.y}-${String(date.m).padStart(2, '0')}-${String(date.d).padStart(2, '0')}`;
-  }
-  return null;
-}
-
 function parseDecision(val) {
   if (!val) return null;
   const s = String(val).trim().toLowerCase();
@@ -51,12 +36,10 @@ export async function parseODSCumulative(buffer, embassySlug) {
 
   // Header is at row 9: ["", "Application Number", "Decision"]
   const headerRowIdx = 9;
-  const headers = rows[headerRowIdx].map(h => String(h).trim().toLowerCase());
   
   // Column 1 = Application Number, Column 2 = Decision
   const numberCol = 1;
   const decisionCol = 2;
-  const dateCol = -1; // No date column in data
 
   const dataRows = rows.slice(headerRowIdx + 2); // Skip header + duplicate header
   const decisions = [];

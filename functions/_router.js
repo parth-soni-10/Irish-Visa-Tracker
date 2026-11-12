@@ -58,7 +58,6 @@ const REPORT_PATHS = new Set([
   "/api/digest/subscribe", "/api/digest/verify", "/api/digest/unsubscribe", "/api/digest/send"
 ]);
 
-const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const MAX_BODY = 16 * 1024;
 const NOT_FOUND_PATHS = new Set(["/404", "/404/", "/404.html"]);
 
@@ -353,16 +352,6 @@ function mergeVary(headers) {
   varies.add("Accept");
   varies.add("Accept-Encoding");
   headers.set("Vary", Array.from(varies).join(", "));
-}
-
-function withVary(response) {
-  const headers = new Headers(response.headers);
-  mergeVary(headers);
-  return addSecurityHeaders(new Response(response.body, {
-    status: response.status,
-    statusText: response.statusText,
-    headers,
-  }));
 }
 
 /** Success response shaped for either caller: the page's fetch, or a plain form submit. */

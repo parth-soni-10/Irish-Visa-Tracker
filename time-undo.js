@@ -37,10 +37,6 @@
     commitMessage: 'Change kept.'
   };
 
-  function reduced() {
-    return !!(global.matchMedia && global.matchMedia('(prefers-reduced-motion: reduce)').matches);
-  }
-
   function status(button, text) {
     var node = button[STATE] && button[STATE].status;
     if (!node || !text) return;

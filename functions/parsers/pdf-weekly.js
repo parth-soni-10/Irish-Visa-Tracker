@@ -11,25 +11,6 @@ import * as cheerio from 'cheerio';
 import { createWorker } from 'tesseract.js';
 import { createCanvas } from 'canvas';
 
-const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
-
-function parseDate(val) {
-  if (!val) return null;
-  const s = String(val).trim();
-  if (DATE_RE.test(s)) return s;
-  const parsed = new Date(s);
-  if (!isNaN(parsed.getTime())) return parsed.toISOString().slice(0, 10);
-  return null;
-}
-
-function parseDecision(val) {
-  if (!val) return null;
-  const s = String(val).trim().toLowerCase();
-  if (s.includes('approv') || s.includes('grant') || s.includes('accept') || s.includes('issu')) return 'Approved';
-  if (s.includes('refus') || s.includes('reject') || s.includes('deny')) return 'Refused';
-  return s.charAt(0).toUpperCase() + s.slice(1);
-}
-
 function extractWeekFromFilename(filename) {
   // Try to extract date from filename like "visa-decisions-2026-11-01.pdf"
   const match = filename.match(/(\d{4}-\d{2}-\d{2})/);

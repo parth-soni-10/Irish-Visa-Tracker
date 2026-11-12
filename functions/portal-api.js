@@ -16,7 +16,7 @@ import { loadReportData } from './report-data.js';
 import { buildAnalytics } from './analytics.js';
 import { quoteFees, scanDocument } from './assistant.js';
 import { isChannelConfigured, sendChannelTest } from './notify-channels.js';
-import { buildExport, createExportJob, nextRunAt, safeFormat } from './export-service.js';
+import { buildExport, nextRunAt, safeFormat } from './export-service.js';
 import { isEmailConfigured, sendEmail } from './email-send.js';
 
 const DEFAULT_BASE = 'https://irishvisaupdatetracker.pages.dev';

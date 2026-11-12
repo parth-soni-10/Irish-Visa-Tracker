@@ -137,7 +137,3 @@ export function scanDocument(text) {
     text_length: raw.length
   };
 }
-
-export function allowedFeeOffice(value) {
-  return Boolean(OFFICE_FEES[value]);
-}

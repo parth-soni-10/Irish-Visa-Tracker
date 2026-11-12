@@ -99,10 +99,6 @@ function monthlySeries(rows) {
     }));
 }
 
-function dayCountsMap(daily) {
-  return new Map(daily.map((day) => [day.date, day.total]));
-}
-
 function buildForecast(daily, horizon = 14) {
   if (daily.length < 7) {
     return {

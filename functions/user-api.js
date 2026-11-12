@@ -18,7 +18,6 @@ import { ensureEmailSchema } from './email4.js';
 
 // Rate limiting for auth endpoints
 const authRateLimitStore = new Map();
-const AUTH_RATE_LIMIT_WINDOW = 15 * 60 * 1000; // 15 minutes
 const AUTH_RATE_LIMIT_MAX = 50; // bounded attempts per client IP per window
 
 function checkAuthRateLimit(ip, env) {
@@ -147,7 +146,6 @@ export async function handleRegister(request, env) {
 
     const passwordHash = await hashPassword(password);
     const userId = crypto.randomUUID();
-    const now = new Date().toISOString();
 
     await env.DB.prepare(`
       INSERT INTO users (id, email, email_hash, password_hash, name, preferences, created_at, updated_at)

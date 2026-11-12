@@ -63,15 +63,6 @@ async function hashEmail(email) {
   return btoa(String.fromCharCode(...new Uint8Array(hash)));
 }
 
-// Generate secure random token
-function generateToken(length = 32) {
-  const bytes = crypto.getRandomValues(new Uint8Array(length));
-  return btoa(String.fromCharCode(...bytes))
-    .replace(/\+/g, '-')
-    .replace(/\//g, '_')
-    .replace(/=/g, '');
-}
-
 // Session management
 async function createSession(env, userId) {
   const sessionId = crypto.randomUUID();

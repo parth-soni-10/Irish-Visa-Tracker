@@ -21,14 +21,6 @@ function parseDate(val) {
   return null;
 }
 
-function parseDecision(val) {
-  if (!val) return null;
-  const s = String(val).trim().toLowerCase();
-  if (s.includes('approv') || s.includes('grant') || s.includes('accept') || s.includes('issu')) return 'Approved';
-  if (s.includes('refus') || s.includes('reject') || s.includes('deny')) return 'Refused';
-  return s.charAt(0).toUpperCase() + s.slice(1);
-}
-
 async function fetchPage(url) {
   const response = await fetch(url, {
     headers: {

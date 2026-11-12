@@ -36,12 +36,6 @@
     return !!(global.matchMedia && global.matchMedia('(prefers-reduced-motion: reduce)').matches);
   }
 
-  function esc(s) {
-    return String(s).replace(/[&<>"]/g, function (c) {
-      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
-    });
-  }
-
   function svg(name, attrs) {
     var node = doc.createElementNS(NS, name);
     if (attrs) Object.keys(attrs).forEach(function (key) { node.setAttribute(key, attrs[key]); });
@@ -168,7 +162,6 @@
     }
 
     var geom = null;
-    var dots = [];
 
     function pointLabel(point) {
       return xLabel(point) || (label + ' ' + data.indexOf(point) + 1);

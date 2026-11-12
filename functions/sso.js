@@ -6,7 +6,7 @@
  * never stores ID tokens, access tokens or client secrets in D1.
  */
 
-import { createSession, hashEmail, hashPassword, validateSession } from './auth.js';
+import { createSession, hashEmail, hashPassword } from './auth.js';
 import { ensurePortalSchema } from './portal-schema.js';
 
 const DEFAULT_BASE = 'https://irishvisaupdatetracker.pages.dev';

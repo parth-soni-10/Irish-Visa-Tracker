@@ -12,10 +12,6 @@ import { parsePDFWeekly, discoverLatestPDF } from './functions/parsers/pdf-weekl
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-const DATA_DIR = resolve('.', 'data');
-
-const REPO_RAW = 'https://raw.githubusercontent.com/parth-soni-10/Irish-Visa-Tracker/main';
-
 const embassyConfig = JSON.parse(readFileSync('./embassy-config.json', 'utf-8'));
 
 async function fetchWithCache(url) {

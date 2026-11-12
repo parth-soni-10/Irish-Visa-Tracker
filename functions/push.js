@@ -204,8 +204,4 @@ export async function handlePushUnsubscribe(request, env) {
   }
 }
 
-export async function notifyDecisionPush(env, applicationNumber, decision, embassy) {
-  return sendDecisionPush(env, applicationNumber, decision, embassy);
-}
-
 export { webPush };

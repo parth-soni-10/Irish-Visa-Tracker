@@ -157,10 +157,6 @@
     }, 280);
   }
 
-  function setBusy(s, busy) {
-    s.root.setAttribute('data-stp-busy', busy ? 'true' : 'false');
-  }
-
   function columnFor(ch) {
     var col = makeEl('span', 'stp-col');
     col.setAttribute('data-d', ch);

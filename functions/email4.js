@@ -5,7 +5,6 @@ import { json, ack, generateToken, invalidSubscription } from './email-utils.js'
 export const SUBSCRIBE_PATH = '/api/subscribe';
 export const VERIFY_PATH = '/api/verify';
 export const UNSUBSCRIBE_PATH = '/api/unsubscribe';
-const MAX_BODY = 16 * 1024;
 
 // `email_subscriptions` is shared with the account API, so keep these names in
 // sync with `_router.js` / `db-schema.cjs`. Older deployments may have been
