@@ -6,11 +6,11 @@
   "source_name": "Embassy of Ireland, Abuja",
   "report_date": "2026-10-18",
   "as_of": "2026-11-12",
-  "fetched_at": "2026-11-12T09:28:04.780Z",
+  "fetched_at": "2026-11-12T09:55:37.779Z",
   "data_status": "official",
   "date_basis": "report_period_end",
   "note": null,
-  "checksum": "b53ee202860dcb2c",
+  "checksum": "c392efb952977e28",
   "decisions": [
     {
       "date": "2026-10-18",
@@ -2421,7 +2421,7 @@
       "date_basis": "report_period_end"
     },
     {
-      "date": "2026-08-30",
+      "date": "2026-09-06",
       "number": "83157652",
       "decision": "Refused",
       "embassy": "abuja",
@@ -7902,7 +7902,7 @@
       "date_basis": "report_period_end"
     },
     {
-      "date": "2026-05-10",
+      "date": "2026-09-06",
       "number": "82738922",
       "decision": "Refused",
       "embassy": "abuja",
@@ -15611,6 +15611,391 @@
     {
       "date": "2026-01-04",
       "number": "80742742",
+      "decision": "Approved",
+      "embassy": "abuja",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-09-06",
+      "number": "63543852",
+      "decision": "Refused",
+      "embassy": "abuja",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-09-06",
+      "number": "63545162",
+      "decision": "Refused",
+      "embassy": "abuja",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-09-06",
+      "number": "74570802",
+      "decision": "Refused",
+      "embassy": "abuja",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-09-06",
+      "number": "74720692",
+      "decision": "Refused",
+      "embassy": "abuja",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-09-06",
+      "number": "79269592",
+      "decision": "Refused",
+      "embassy": "abuja",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-09-06",
+      "number": "79272662",
+      "decision": "Refused",
+      "embassy": "abuja",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-09-06",
+      "number": "79272952",
+      "decision": "Refused",
+      "embassy": "abuja",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-09-06",
+      "number": "79602392",
+      "decision": "Refused",
+      "embassy": "abuja",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-09-06",
+      "number": "81992302",
+      "decision": "Approved",
+      "embassy": "abuja",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-09-06",
+      "number": "82570712",
+      "decision": "Refused",
+      "embassy": "abuja",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-09-06",
+      "number": "82589172",
+      "decision": "Approved",
+      "embassy": "abuja",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-09-06",
+      "number": "82591972",
+      "decision": "Approved",
+      "embassy": "abuja",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-09-06",
+      "number": "82717282",
+      "decision": "Approved",
+      "embassy": "abuja",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-09-06",
+      "number": "82969692",
+      "decision": "Refused",
+      "embassy": "abuja",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-09-06",
+      "number": "82993142",
+      "decision": "Refused",
+      "embassy": "abuja",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-09-06",
+      "number": "83004072",
+      "decision": "Approved",
+      "embassy": "abuja",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-09-06",
+      "number": "83052672",
+      "decision": "Refused",
+      "embassy": "abuja",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-09-06",
+      "number": "83052822",
+      "decision": "Refused",
+      "embassy": "abuja",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-09-06",
+      "number": "83086112",
+      "decision": "Approved",
+      "embassy": "abuja",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-09-06",
+      "number": "83101752",
+      "decision": "Approved",
+      "embassy": "abuja",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-09-06",
+      "number": "83106982",
+      "decision": "Refused",
+      "embassy": "abuja",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-09-06",
+      "number": "83124352",
+      "decision": "Approved",
+      "embassy": "abuja",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-09-06",
+      "number": "83230832",
+      "decision": "Refused",
+      "embassy": "abuja",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-09-06",
+      "number": "83296062",
+      "decision": "Approved",
+      "embassy": "abuja",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-09-06",
+      "number": "83299442",
+      "decision": "Approved",
+      "embassy": "abuja",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-09-06",
+      "number": "83333052",
+      "decision": "Refused",
+      "embassy": "abuja",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-09-06",
+      "number": "83355642",
+      "decision": "Approved",
+      "embassy": "abuja",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-09-06",
+      "number": "83395692",
+      "decision": "Refused",
+      "embassy": "abuja",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-09-06",
+      "number": "83651152",
+      "decision": "Approved",
+      "embassy": "abuja",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-09-06",
+      "number": "84259042",
+      "decision": "Refused",
+      "embassy": "abuja",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-09-06",
+      "number": "84325592",
+      "decision": "Approved",
+      "embassy": "abuja",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-09-06",
+      "number": "84353642",
+      "decision": "Approved",
+      "embassy": "abuja",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-09-06",
+      "number": "84418642",
+      "decision": "Approved",
+      "embassy": "abuja",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-09-06",
+      "number": "84456602",
+      "decision": "Approved",
+      "embassy": "abuja",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-09-06",
+      "number": "84502252",
+      "decision": "Approved",
+      "embassy": "abuja",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-09-06",
+      "number": "84502432",
+      "decision": "Approved",
+      "embassy": "abuja",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-09-06",
+      "number": "84565472",
+      "decision": "Approved",
+      "embassy": "abuja",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-09-06",
+      "number": "84586352",
+      "decision": "Approved",
+      "embassy": "abuja",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-09-06",
+      "number": "84657792",
+      "decision": "Approved",
+      "embassy": "abuja",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-09-06",
+      "number": "84665702",
+      "decision": "Approved",
+      "embassy": "abuja",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-09-06",
+      "number": "84777272",
+      "decision": "Approved",
+      "embassy": "abuja",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-09-06",
+      "number": "84859262",
+      "decision": "Approved",
+      "embassy": "abuja",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-09-06",
+      "number": "84925632",
+      "decision": "Approved",
+      "embassy": "abuja",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-09-06",
+      "number": "85030132",
+      "decision": "Approved",
+      "embassy": "abuja",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-09-06",
+      "number": "85182172",
+      "decision": "Approved",
+      "embassy": "abuja",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-09-06",
+      "number": "85243692",
+      "decision": "Approved",
+      "embassy": "abuja",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-09-06",
+      "number": "85349352",
+      "decision": "Refused",
+      "embassy": "abuja",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-09-06",
+      "number": "85352192",
+      "decision": "Refused",
+      "embassy": "abuja",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-09-06",
+      "number": "85353572",
+      "decision": "Refused",
+      "embassy": "abuja",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-09-06",
+      "number": "85463982",
+      "decision": "Approved",
+      "embassy": "abuja",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-09-06",
+      "number": "85485902",
+      "decision": "Approved",
+      "embassy": "abuja",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-09-06",
+      "number": "85502772",
+      "decision": "Approved",
+      "embassy": "abuja",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-09-06",
+      "number": "85529992",
+      "decision": "Approved",
+      "embassy": "abuja",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-09-06",
+      "number": "85532782",
+      "decision": "Approved",
+      "embassy": "abuja",
+      "date_basis": "report_period_end"
+    },
+    {
+      "date": "2026-09-06",
+      "number": "85533262",
       "decision": "Approved",
       "embassy": "abuja",
       "date_basis": "report_period_end"

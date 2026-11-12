@@ -9,10 +9,10 @@ A public, unofficial tracker for Irish visa decisions, with a searchable archive
 - **New Delhi, Beijing, Abu Dhabi, Abuja, Ankara and Dublin** official decision publications.
 - **61,005 latest-report rows** across the six offices; the dated archives contain **65,773 rows**.
 - New Delhi’s daily tracker contains **42,472 decisions plus 50 dated placeholders**.
-- Weekly PDF offices keep their historical report dates: Abu Dhabi has 9 dated reports, Abuja 26 and Ankara 4.
+- Weekly PDF offices keep their historical report dates: Abu Dhabi has 9 dated reports, Abuja 27 and Ankara 4.
 - Only official public files are ingested. A missing official file is left as a gap, never filled with inferred decisions.
 
-The one known unavailable report is Abuja **31 August–6 September 2026**. The official copy cannot be found on the embassy page, the asset archive or Wayback; the archive therefore jumps from 30 August to 13 September.
+The Abuja **31 August–6 September 2026** report, long listed as missing, was recovered from the office's own asset archive (`ApplicationDecisionReport_30.08__06.09.pdf`) and is now in the history. The dated series runs continuously from 30 August through 13 September.
 
 ## Product surface
 
