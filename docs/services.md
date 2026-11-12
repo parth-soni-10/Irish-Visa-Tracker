@@ -29,7 +29,6 @@ npx wrangler pages secret put NAME --project-name=irishvisaupdatetracker < path/
 | `EMAIL_WEBHOOK_SECRET` | Configured (deployment secret) | Email bridge rejects requests |
 | `EMAIL_FROM` | Configured from the existing Resend sender | Resend bridge cannot choose a sender |
 | `RESEND_API_KEY` | Existing production secret | Resend bridge returns 503 |
-| `SENTRY_DSN` | **Not configured** — no Sentry project/DSN supplied | Sentry is a no-op |
 | `TWILIO_ACCOUNT_SID` / `TWILIO_AUTH_TOKEN` / `TWILIO_SMS_FROM` / `TWILIO_WHATSAPP_FROM` | **Not configured** — no Twilio account supplied | SMS and WhatsApp channels report disabled |
 | `TELEGRAM_BOT_TOKEN` | Configured (deployment secret) | Telegram alerts report disabled |
 | `TELEGRAM_WEBHOOK_SECRET` | Configured (deployment secret) | The Telegram webhook rejects every update with 503 |
@@ -111,12 +110,6 @@ with a workflow warning when the repository’s `SCRAPER_CRON_SECRET` secret is
 absent. Add that repository secret (Actions → Secrets and variables → Actions)
 with the same value as the Pages secret, then run each workflow once with
 `workflow_dispatch` to verify it.
-
-## Sentry
-
-When a project and DSN are available, set `SENTRY_DSN` as a Pages secret and
-optionally `SENTRY_ENVIRONMENT`. The existing `/api/config` exposes the DSN to the
-browser bundle only when it is a valid HTTPS/HTTP DSN. Do not use a dummy value.
 
 ## Twilio
 

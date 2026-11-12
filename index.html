@@ -3477,47 +3477,6 @@
         }
         .glide-select__option { font-family: "Inter", sans-serif; font-size: 12.5px; }
     </style>
-    <!-- Sentry: the DSN comes from /api/config. No third-party script is
-         requested when the endpoint has no DSN configured. -->
-    <script>
-      (function () {
-        function boot(config) {
-          var dsn = config && config.sentry_dsn;
-          if (!dsn || !/^https?:\/\//.test(dsn) || dsn.indexOf('YOUR_SENTRY_DSN') !== -1) return;
-          function init() {
-            if (!window.Sentry) return;
-            window.Sentry.init({
-              dsn: dsn,
-              environment: config.sentry_environment || 'production',
-              tracesSampleRate: 0.1,
-              sendDefaultPii: false,
-              beforeSend: function (event) {
-                var ex = event.exception && event.exception.values && event.exception.values[0];
-                if (ex && ex.value && /Network request failed|Failed to fetch/.test(ex.value)) return null;
-                return event;
-              }
-            });
-            window.addEventListener('error', function (e) {
-              if (e.error) window.Sentry.captureException(e.error);
-            });
-            window.addEventListener('unhandledrejection', function (e) {
-              window.Sentry.captureException(e.reason);
-            });
-          }
-          if (window.Sentry) { init(); return; }
-          var script = document.createElement('script');
-          script.src = 'https://browser.sentry-cdn.com/11.11.0/bundle.min.js';
-          script.crossOrigin = 'anonymous';
-          script.onload = init;
-          script.onerror = function () { /* fail open; tracking never blocks the app */ };
-          document.head.appendChild(script);
-        }
-        fetch('/api/config', { headers: { Accept: 'application/json' } })
-          .then(function (response) { return response.ok ? response.json() : null; })
-          .then(boot)
-          .catch(function () { /* configuration is optional */ });
-      })();
-    </script>
     <style>        /* Account modal + watchlist tab (item 1). */
         .watch-channel-cell { white-space: nowrap; }
         .watch-channel { display: inline-flex; align-items: center; gap: 3px; margin-right: 8px; font-size: 12px; }

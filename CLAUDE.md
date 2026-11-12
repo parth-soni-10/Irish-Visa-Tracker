@@ -45,7 +45,7 @@ node --test tests/*.test.mjs
 ## Services
 
 See `docs/services.md` for variable names, current status and the safe secret
-procedure. Do not invent values for Sentry, Twilio, OCR.space or OIDC. The app
+procedure. Do not invent values for Twilio, OCR.space or OIDC. The app
 must report those integrations as disabled rather than claiming delivery.
 
 ## Workflows

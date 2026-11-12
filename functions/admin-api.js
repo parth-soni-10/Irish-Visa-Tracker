@@ -262,11 +262,9 @@ export async function handleErrorLogs(request, env) {
   return json({
     logs: [],
     count: 0,
-    source: 'sentry',
-    configured: Boolean(env.SENTRY_DSN),
-    note: env.SENTRY_DSN
-      ? 'Open the Sentry project for the error stream. This dashboard does not mirror Sentry events.'
-      : 'SENTRY_DSN is not configured. Set it to collect server errors.'
+    source: 'cloudflare',
+    configured: false,
+    note: 'No remote error tracker is configured. Use Cloudflare Pages Function logs for server errors.'
   });
 }
 

@@ -331,11 +331,11 @@ function addSecurityHeaders(response) {
   headers.set(
     "Content-Security-Policy",
     "default-src 'self'; " +
-    "script-src 'self' 'unsafe-inline' https://browser.sentry-cdn.com https://cdn.jsdelivr.net https://static.cloudflareinsights.com; " +
+    "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://static.cloudflareinsights.com; " +
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
     "font-src 'self' https://fonts.gstatic.com; " +
     "img-src 'self' data: https:; " +
-    "connect-src 'self' https://fcm.googleapis.com https://*.sentry.io https://cloudflareinsights.com; " +
+    "connect-src 'self' https://fcm.googleapis.com https://cloudflareinsights.com; " +
     "frame-ancestors 'none'; " +
     "base-uri 'self'; " +
     "form-action 'self';"
@@ -490,8 +490,8 @@ async function agentDocumentResponse(request, env, document) {
   return fetchDocument(env, request, { file: document.file, alternate: document.alternate });
 }
 
-// Main request handler with error tracking
-async function handleRequest(request, env, captureException) {
+// Main request handler
+async function handleRequest(request, env) {
   const { pathname } = new URL(request.url);
 
   // Health check endpoint (no rate limiting)
@@ -500,11 +500,9 @@ async function handleRequest(request, env, captureException) {
   }
 
   // Public browser configuration. Only publishable values belong here; the
-  // VAPID private key and every mail/Sentry secret stay server-side.
+  // VAPID private key and every mail secret stay server-side.
   if (pathname === CONFIG_PATH && (request.method === 'GET' || request.method === 'HEAD')) {
     return json({
-      sentry_dsn: env.SENTRY_DSN || '',
-      sentry_environment: env.SENTRY_ENVIRONMENT || (env.CF_PAGES_BRANCH === 'main' ? 'production' : 'preview'),
       vapid_public_key: env.VAPID_PUBLIC_KEY || '',
       brand_name: env.BRAND_NAME || 'Irish Visa Decision Tracker',
       brand_color: env.BRAND_COLOR || '#047857',
@@ -970,14 +968,10 @@ export async function handleVFSAppointments(request, env) {
 
 export default {
   async fetch(request, env) {
-    // Initialize Sentry
-    const { initSentry, captureException } = await import("./sentry.js");
-    initSentry(env);
-    
     try {
-      return await handleRequest(request, env, captureException);
+      return await handleRequest(request, env);
     } catch (error) {
-      captureException(error, { url: request.url, method: request.method });
+      console.error('Unhandled request error:', error);
       return new Response(JSON.stringify({ error: 'Internal server error' }), {
         status: 500,
         headers: { 'Content-Type': 'application/json' }

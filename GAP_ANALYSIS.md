@@ -30,7 +30,6 @@ still exist after the current tree and release checks.
 
 | Gap | Impact | Resolution |
 |---|---|---|
-| Sentry project/DSN absent | Server/browser exceptions are not remotely tracked | Create a Sentry project and set `SENTRY_DSN` |
 | Twilio credentials absent | SMS/WhatsApp alerts are disabled | Set the four Twilio variables and test one recipient |
 | OCR.space key absent | Uploaded-document OCR is disabled | Set `OCR_SPACE_API_KEY` |
 | OIDC credentials absent | SSO is disabled; password auth still works | Register an OIDC client and set the three variables |
@@ -44,3 +43,6 @@ Native iOS/Android apps are deferred. The installable PWA is the mobile product;
 it already covers offline shell, account sync, push and alerts. Revisit native
 only after a measured mobile acquisition/retention need justifies a second
 client and release pipeline.
+
+Sentry was removed by product decision on 2026-11-12. Cloudflare Pages
+Function logs and the admin error endpoint remain the server error surfaces.

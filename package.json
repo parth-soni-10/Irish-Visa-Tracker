@@ -10,7 +10,6 @@
     "deploy": "npm run build && npx wrangler pages deploy && npm run smoke"
   },
   "dependencies": {
-    "@sentry/cloudflare": "^11.11.0",
     "canvas": "^3.2.3",
     "cheerio": "^1.2.0",
     "pdf-parse": "^2.4.5",

@@ -82,10 +82,12 @@ Configured: `APP_BASE_URL`, `SCRAPER_CRON_SECRET`, VAPID keys, `RESEND_API_KEY`,
 plus the email bridge URL/secret and `EMAIL_FROM`. The production email bridge
 was verified with a real delivery on 2026-11-11.
 
-Still blocked on account-specific values: **Sentry DSN/project**, **Twilio SMS
-and WhatsApp**, **OCR.space key**, and **OIDC provider/client credentials**. The
-application reports these as disabled instead of simulating success. See
-`docs/services.md`.
+Still blocked on account-specific values: **Twilio SMS and WhatsApp**,
+**OCR.space key**, and **OIDC provider/client credentials**. The application
+reports these as disabled instead of simulating success. See `docs/services.md`.
+
+Sentry was removed by product decision on 2026-11-12. Cloudflare Pages
+Function logs and the admin error endpoint remain the server error surfaces.
 
 ## Schedulers and ML
 

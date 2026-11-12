@@ -1,6 +1,6 @@
 # Implementation Plan: Features 1, 4, 5 + Detailed Plan for 6
 
-> **Status — 2026-11-11.** Features 1, 4 and 5 are implemented and verified in the current tree. Native mobile (section 6) is **deferred**: the installable PWA is the supported mobile product. The detailed section is retained as a future option, not current scope. Account email verification and password reset were also **removed by product decision**; references to them below are historical design context, not current routes. See `COMPLETION_REPORT.md` and `GAP_ANALYSIS.md` for the live record.
+> **Status — 2026-11-12.** Features 1 and 5 are implemented and verified in the current tree. Sentry (section 4) was **removed by product decision** on 2026-11-12; its section is historical design context only. Native mobile (section 6) is **deferred**: the installable PWA is the supported mobile product. The detailed section is retained as a future option, not current scope. Account email verification and password reset were also **removed by product decision**; references to them below are historical design context, not current routes. See `COMPLETION_REPORT.md` and `GAP_ANALYSIS.md` for the live record.
 
 ## 1. User Accounts + Saved Watchlists (Medium)
 
@@ -939,7 +939,7 @@ jobs:
 
 ### Phase 1 (Weeks 1-4): Foundation
 1. ✅ **User Accounts + Watchlists** - D1 schema, auth routes, frontend auth UI
-2. ✅ **Sentry Integration** - Worker + frontend, source maps, alerts
+2. ❌ **Sentry Integration** - removed by product decision (2026-11-12)
 3. 🔄 **ML Timeline Predictor** - Data export → Colab training → ONNX export → Worker endpoint
 
 ### Phase 2 (Weeks 5-8): Mobile Foundation
@@ -958,7 +958,7 @@ jobs:
 1. ML Timeline Predictor (ONNX + Worker endpoint)
 2. Native iOS/Android builds (EAS)
 3. App Store / Play Store submission
-3. Monitoring (Sentry + analytics)
+3. Monitoring (analytics; Sentry removed)
 
 ### Phase 5 (Post-Launch)
 1. ML model retraining pipeline
