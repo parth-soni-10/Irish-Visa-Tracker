@@ -248,8 +248,17 @@ async function sendResponse(request, env) {
   const report = buildMonthlyReport(data.rows, month, data.officeList);
   const changes = buildWeeklyChanges(data.rows, data.latestDate, data.officeList, data.reports, 7);
   const dryRun = body.dry_run === true || url.searchParams.get('dry_run') === '1';
-  const subscribers = await env.DB.prepare('SELECT email, unsubscribe_token FROM digest_subscriptions WHERE verified = 1').all();
+  // One report per subscriber per calendar month. The workflow is triggered by
+  // both its cron and every scrape, so this guard makes retries safe: a run
+  // after a dropped slot sends to nobody instead of mailing everyone again.
+  const subscribers = await env.DB.prepare(
+    "SELECT email, unsubscribe_token FROM digest_subscriptions WHERE verified = 1 " +
+    "AND (last_sent_at IS NULL OR datetime(last_sent_at) < datetime('now','start of month'))"
+  ).all();
   const recipients = subscribers.results || [];
+  if (!dryRun && !recipients.length) {
+    return json({ success: true, sent: 0, failed: 0, recipients: 0, skipped: 'already_sent_this_month' });
+  }
 
   if (dryRun) {
     const email = buildDigestEmail(report, changes, baseUrl(env) + '/api/digest/unsubscribe?token=preview', baseUrl(env));

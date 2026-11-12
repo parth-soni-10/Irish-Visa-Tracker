@@ -1,8 +1,12 @@
 name: Send Monthly Digest
 
-# Pages Functions cannot define cron triggers, so the existing secure digest
-# endpoint is driven by GitHub Actions. The endpoint is idempotent at the
-# subscription level through last_sent_at and requires SCRAPER_CRON_SECRET.
+# Pages Functions cannot define cron triggers, so the secure digest endpoint is
+# driven by GitHub Actions. Two triggers feed it:
+#   - the monthly cron (the intended slot), and
+#   - every completed scrape run as a fallback, because GitHub treats scheduled
+#     events as best-effort and can drop a single monthly slot.
+# The endpoint only messages subscribers whose last_sent_at is before the
+# current month, so extra triggers are no-ops rather than duplicate mail.
 on:
   workflow_dispatch:
     inputs:
@@ -13,9 +17,17 @@ on:
   schedule:
     # First of the month at 09:00 UTC (14:30 IST), after the latest weekly data.
     - cron: '0 9 1 * *'
+  workflow_run:
+    workflows: ["Scrape Visa Decisions"]
+    types: [completed]
 
 permissions:
   contents: read
+
+# A queued fallback must not overlap the monthly run and claim the same month.
+concurrency:
+  group: monthly-digest
+  cancel-in-progress: false
 
 jobs:
   deliver:
@@ -29,15 +41,21 @@ jobs:
           INPUT_MONTH: ${{ github.event.inputs.month }}
         run: |
           if [ -z "$CRON_SECRET" ]; then
-            echo "::warning::SCRAPER_CRON_SECRET is not configured; skipping digest delivery."
-            exit 0
+            echo "::error::SCRAPER_CRON_SECRET is not configured; digest delivery cannot run."
+            exit 1
           fi
           MONTH="${INPUT_MONTH:-$(date -u -d "$(date -u +%Y-%m-01) -1 day" +%Y-%m)}"
           echo "Sending digest for $MONTH"
-          curl --fail-with-body --silent --show-error \
+          response=$(curl --fail-with-body --silent --show-error \
             --retry 3 --retry-delay 15 --max-time 120 \
             -X POST \
             -H "Content-Type: application/json" \
             -H "X-Cron-Secret: $CRON_SECRET" \
             -d "{\"month\":\"$MONTH\"}" \
-            "$APP_BASE_URL/api/digest/send"
+            "$APP_BASE_URL/api/digest/send")
+          echo "$response"
+          # HTTP 200 can still carry per-recipient failures; make those red.
+          printf '%s' "$response" | jq -e '.success == true' > /dev/null || {
+            echo "::error::Digest delivery reported failed sends"
+            exit 1
+          }

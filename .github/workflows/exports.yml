@@ -1,15 +1,24 @@
 name: Deliver Scheduled Exports
 
-# Runs once a day after the report data settles. Users choose daily, weekly or
-# monthly schedules; the endpoint selects rows whose next_run_at is due and
-# advances the schedule after each attempt.
+# Runs once a day after the report data settles, and again after every scrape as
+# a fallback: GitHub's scheduler is best-effort and can drop a daily slot. The
+# endpoint selects only rows whose next_run_at is due, so extra triggers are
+# no-ops.
 on:
   workflow_dispatch: {}
   schedule:
     - cron: '15 7 * * *'  # daily 07:15 UTC, after the 07:00 UTC due time
+  workflow_run:
+    workflows: ["Scrape Visa Decisions"]
+    types: [completed]
 
 permissions:
   contents: read
+
+# Two triggers must not process the same due export twice.
+concurrency:
+  group: scheduled-exports
+  cancel-in-progress: false
 
 jobs:
   deliver:
@@ -22,11 +31,17 @@ jobs:
           APP_BASE_URL: ${{ vars.APP_BASE_URL || 'https://irishvisaupdatetracker.pages.dev' }}
         run: |
           if [ -z "$CRON_SECRET" ]; then
-            echo "::warning::SCRAPER_CRON_SECRET is not configured; skipping scheduled exports."
-            exit 0
+            echo "::error::SCRAPER_CRON_SECRET is not configured; scheduled exports cannot run."
+            exit 1
           fi
-          curl --fail-with-body --silent --show-error \
+          response=$(curl --fail-with-body --silent --show-error \
             --retry 3 --retry-delay 15 --max-time 120 \
             -X POST \
             -H "X-Cron-Secret: $CRON_SECRET" \
-            "$APP_BASE_URL/api/exports/run"
+            "$APP_BASE_URL/api/exports/run")
+          echo "$response"
+          # HTTP 200 can still carry failed deliveries; make those red.
+          printf '%s' "$response" | jq -e '.ok == true' > /dev/null || {
+            echo "::error::Scheduled export delivery reported failures"
+            exit 1
+          }
