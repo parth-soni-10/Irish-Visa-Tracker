@@ -9,8 +9,8 @@ never stored in this repository and must not be pasted into chat or committed.
 - Production origin: `https://irishvisaupdatetracker.pages.dev`
 - D1 binding: `DB`
 - Existing production secrets (names only): `APP_BASE_URL`, `RESEND_API_KEY`,
-  `SCRAPER_CRON_SECRET`, `VAPID_PRIVATE_KEY`, `VAPID_PUBLIC_KEY`,
-  `VAPID_SUBJECT`.
+  `SCRAPER_CRON_SECRET`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_WEBHOOK_SECRET`,
+  `VAPID_PRIVATE_KEY`, `VAPID_PUBLIC_KEY`, `VAPID_SUBJECT`.
 
 Set or rotate a Pages secret with a local value file. The value is piped to
 Wrangler and is not printed by the command:
@@ -31,8 +31,8 @@ npx wrangler pages secret put NAME --project-name=irishvisaupdatetracker < path/
 | `RESEND_API_KEY` | Existing production secret | Resend bridge returns 503 |
 | `SENTRY_DSN` | **Not configured** — no Sentry project/DSN supplied | Sentry is a no-op |
 | `TWILIO_ACCOUNT_SID` / `TWILIO_AUTH_TOKEN` / `TWILIO_SMS_FROM` / `TWILIO_WHATSAPP_FROM` | **Not configured** — no Twilio account supplied | SMS and WhatsApp channels report disabled |
-| `TELEGRAM_BOT_TOKEN` | **Not configured** — create a bot with @BotFather | Telegram alerts report disabled |
-| `TELEGRAM_WEBHOOK_SECRET` | **Not configured** | The Telegram webhook rejects every update with 503 |
+| `TELEGRAM_BOT_TOKEN` | Configured (deployment secret) | Telegram alerts report disabled |
+| `TELEGRAM_WEBHOOK_SECRET` | Configured (deployment secret) | The Telegram webhook rejects every update with 503 |
 | `TELEGRAM_BOT_USERNAME` | Optional | The worker calls `getMe` to resolve the bot handle |
 | `OCR_SPACE_API_KEY` | **Not configured** — no OCR.space key supplied | File OCR returns a clear “not configured” error |
 | `OIDC_ISSUER` / `OIDC_CLIENT_ID` / `OIDC_CLIENT_SECRET` | **Not configured** — no identity provider supplied | Password auth works; SSO status reports disabled |
@@ -58,6 +58,11 @@ npx wrangler pages secret put TELEGRAM_BOT_TOKEN --project-name=irishvisaupdatet
 npx wrangler pages secret put TELEGRAM_WEBHOOK_SECRET --project-name=irishvisaupdatetracker < path/to/secret
 TELEGRAM_BOT_TOKEN=... TELEGRAM_WEBHOOK_SECRET=... node tools/setup-telegram-webhook.mjs set
 ```
+
+After adding or rotating `TELEGRAM_WEBHOOK_SECRET`, re-run
+`node tools/setup-telegram-webhook.mjs set` with the new value so Telegram is
+told about it. If you skip that step, Telegram keeps sending the old secret (or
+no secret header), and the webhook rejects every update with 401.
 
 A visitor enters an application number on the tracker and presses “Get alerts on
 Telegram”. The site creates a single-use token that expires in 15 minutes and
