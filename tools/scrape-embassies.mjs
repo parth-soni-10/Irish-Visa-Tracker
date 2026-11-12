@@ -371,10 +371,19 @@ const manifest = readJSON(path.join(DATA, 'data_manifest.json'), { generated_at:
 const reportIndex = readJSON(path.join(REPORTS, 'index.json'), { offices: {} });
 const manifestBySlug = new Map((manifest.offices || []).map((o) => [o.slug, o]));
 
+// The office pages sit behind a CDN that can serve a copy hours old. A unique
+// query string forces an origin fetch so a lagging edge cannot hand this run an
+// older file than the one already recorded.
+function noCacheUrl(url) {
+  const parsed = new URL(url);
+  parsed.searchParams.set('_cb', Date.now().toString());
+  return parsed.href;
+}
+
 async function ingestOffice(slug, config) {
   const previous = readJSON(path.join(DATA, `embassy-${slug}.json`), { decisions: [] });
   const fetchedAt = new Date().toISOString();
-  const pageResponse = await fetchText(config.page);
+  const pageResponse = await fetchText(noCacheUrl(config.page));
   const html = await pageResponse.text();
   const $ = cheerio.load(html);
 

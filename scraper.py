@@ -63,6 +63,7 @@ import re
 import io
 import os
 import sys
+import time
 from pathlib import Path
 from datetime import datetime, timedelta, timezone
 from urllib.parse import parse_qs, urlsplit
@@ -148,7 +149,11 @@ DECISION_FILE_EXTENSIONS = ("ods", "xlsx")
 
 
 def find_decisions_link():
-    resp = requests.get(PAGE_URL, headers=BROWSER_HEADERS, timeout=30)
+    # The page sits behind a CDN that can serve a copy hours old. A unique
+    # query string forces an origin fetch so a lagging edge can never hand a
+    # run an older decision file than the one already on record.
+    resp = requests.get(PAGE_URL, headers=BROWSER_HEADERS,
+                        params={"_cb": int(time.time())}, timeout=30)
     print(f"Page fetch status: {resp.status_code} | length: {len(resp.text)}")
     if resp.status_code != 200:
         raise RuntimeError(f"Blocked fetching page - status {resp.status_code}")
