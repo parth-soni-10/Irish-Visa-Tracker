@@ -161,11 +161,11 @@ class CorruptHistoryTests(unittest.TestCase):
             if content is not None:
                 Path(tmp, "visa_decisions.json").write_text(content, encoding="utf-8")
             with patch("scraper.DATA_DIR", Path(tmp)), \
-                 patch("scraper.find_ods_link") as find_ods_link:
+                 patch("scraper.find_decisions_link") as find_decisions_link:
                 with self.assertRaises(SystemExit) as exited:
                     scraper.main()
                 self.assertEqual(exited.exception.code, 1)
-                find_ods_link.assert_not_called()
+                find_decisions_link.assert_not_called()
 
     def test_main_exits_1_on_corrupt_history(self):
         self._run_with_history("{not json")
@@ -216,10 +216,10 @@ class MainPlaceholderTests(unittest.TestCase):
              patch("scraper.load_history", return_value=existing_rows), \
              patch("scraper.check_holiday", return_value=holiday), \
              patch("scraper._closure_dates", return_value=set(closure_dates or ())), \
-             patch("scraper.find_ods_link",
+             patch("scraper.find_decisions_link",
                    side_effect=RuntimeError("site down") if fail_scrape
                    else lambda: "https://example.org/decisions.ods"), \
-             patch("scraper.download_and_parse_ods", return_value=(filename, df)), \
+             patch("scraper.download_and_parse_decisions", return_value=(filename, df)), \
              patch("scraper.detect_columns", return_value=("IRL Number", "Decision")), \
              patch("scraper.push_new_rows") as push, \
              patch("scraper.set_no_file_placeholder") as set_ph, \

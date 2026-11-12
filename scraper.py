@@ -139,26 +139,36 @@ def now_ist() -> datetime:
 
 
 
-# ---------------- .ods scraping (unchanged from before) ----------------
+# ---------------- decision-file scraping (.ods / .xlsx) ----------------
 
-def find_ods_link():
+# The office published a cumulative .ods for years and switched to .xlsx in
+# November 2026. Both are accepted so a format change on the official page
+# never silently stops ingestion.
+DECISION_FILE_EXTENSIONS = ("ods", "xlsx")
+
+
+def find_decisions_link():
     resp = requests.get(PAGE_URL, headers=BROWSER_HEADERS, timeout=30)
     print(f"Page fetch status: {resp.status_code} | length: {len(resp.text)}")
     if resp.status_code != 200:
         raise RuntimeError(f"Blocked fetching page - status {resp.status_code}")
 
-    match = re.search(r'href=["\']([^"\']+\.ods)["\']', resp.text, re.IGNORECASE)
+    match = re.search(
+        r'href=["\']([^"\']+\.(?:ods|xlsx))["\']', resp.text, re.IGNORECASE)
     if not match:
-        match = re.search(r'(https?://[^\s"\'<>]+\.ods)', resp.text, re.IGNORECASE)
+        match = re.search(
+            r'(https?://[^\s"\'<>]+\.(?:ods|xlsx))', resp.text, re.IGNORECASE)
     if not match:
-        raise RuntimeError("No .ods link found in page HTML - site markup may have changed.")
+        raise RuntimeError(
+            "No .ods/.xlsx decision file link found in page HTML - "
+            "site markup may have changed.")
 
     href = match.group(1)
     if href.startswith("//"):
         href = "https:" + href
     elif href.startswith("/"):
         href = "https://www.ireland.ie" + href
-    print(f"Found ODS link: {href}")
+    print(f"Found decision file: {href}")
     return href
 
 
@@ -178,14 +188,18 @@ def parse_date_from_filename(filename: str) -> str:
     return now_ist().strftime("%Y-%m-%d")
 
 
-def download_and_parse_ods(ods_url: str):
-    filename = ods_url.split("/")[-1].split("?")[0]
-    resp = requests.get(ods_url, headers=BROWSER_HEADERS, timeout=60)
-    print(f"ODS fetch status: {resp.status_code} | bytes: {len(resp.content)}")
+def download_and_parse_decisions(file_url: str):
+    filename = file_url.split("/")[-1].split("?")[0]
+    resp = requests.get(file_url, headers=BROWSER_HEADERS, timeout=60)
+    print(f"Decision-file fetch status: {resp.status_code} | bytes: {len(resp.content)}")
     if resp.status_code != 200:
-        raise RuntimeError(f"Blocked fetching .ods - status {resp.status_code}")
+        raise RuntimeError(
+            f"Blocked fetching decision file - status {resp.status_code}")
 
-    raw = pd.read_excel(io.BytesIO(resp.content), engine="odf", header=None)
+    # pandas needs a different engine per container: odf for .ods, openpyxl
+    # for .xlsx. Picking it from the filename keeps both formats working.
+    engine = "openpyxl" if filename.lower().endswith(".xlsx") else "odf"
+    raw = pd.read_excel(io.BytesIO(resp.content), engine=engine, header=None)
     header_row_idx = find_header_row(raw)
     print(f"Detected header row at index {header_row_idx}: {list(raw.iloc[header_row_idx])}")
 
@@ -757,8 +771,8 @@ def _run(existing_rows):
                        # staleness/placeholder decisions only; rows are dated today
     file_rows = None   # decision rows in the latest file - for the reconciliation line
     try:
-        ods_url = find_ods_link()
-        filename, df = download_and_parse_ods(ods_url)
+        decisions_url = find_decisions_link()
+        filename, df = download_and_parse_decisions(decisions_url)
         fetch_date = parse_date_from_filename(filename)
         file_rows = len(df)
 
@@ -849,21 +863,21 @@ def _run(existing_rows):
     # --- Gap alert: a site change or publication outage can make the scraper
     # quietly write "no file yet" every day while the run still reports
     # success. Fail loudly instead once no genuinely-new file has appeared for
-    # 3+ consecutive business days, so a broken .ods-link pattern or an
-    # unreachable embassy page shows up as a red run instead of silent gaps.
+    # 3+ consecutive business days, so a broken decision-file link pattern or
+    # an unreachable embassy page shows up as a red run instead of silent gaps.
     if GAP_ALERT_BUSINESS_DAYS > 0:
         latest_file_date = _latest_file_date(existing_rows, fetch_date)
         if latest_file_date:
             stale_days = _count_stale_business_days(latest_file_date, today_dt, closure_dates)
             if stale_days >= GAP_ALERT_BUSINESS_DAYS:
                 # Say what this run actually observed: if we reached the page and
-                # downloaded its newest .ods fine, the diagnosis is a late upload,
+                # downloaded its newest decision file fine, the diagnosis is a late upload,
                 # not a broken scraper - don't send the maintainer hunting for a
                 # markup change that isn't there (embassy late upload, 2026-10-08).
                 if fetch_date is not None and not scrape_failed:
                     diagnosis = (
                         f"The embassy page was reachable this run and its latest "
-                        f".ods file downloaded fine - the office simply hasn't "
+                        f"decision file downloaded fine - the office simply hasn't "
                         f"published a newer file since. A late upload usually "
                         f"resolves itself; if this persists, check the visa-"
                         f"decisions page manually."
@@ -871,8 +885,8 @@ def _run(existing_rows):
                 else:
                     diagnosis = (
                         "This usually means the embassy page markup changed or "
-                        "the site is unreachable. Verify the .ods link pattern in "
-                        "find_ods_link() and the live page."
+                        "the site is unreachable. Verify the decision-file link "
+                        "pattern in find_decisions_link() and the live page."
                     )
                 message = (
                     f"ALERT: no new visa-decisions file has appeared for {stale_days} "

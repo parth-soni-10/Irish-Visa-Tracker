@@ -93,10 +93,10 @@ export async function discoverODSUrl(baseUrl, embassySlug) {
   const html = await response.text();
   const $ = cheerio.load(html);
 
-  // Look for ODS links
-  const odsLinks = $('a[href$=".ods"]').toArray()
+  // Spreadsheet links: .ods historically, .xlsx since November 2026.
+  const odsLinks = $('a').toArray()
     .map(a => $(a).attr('href'))
-    .filter(h => h);
+    .filter(h => h && /\.(?:ods|xlsx)(\?|$)/i.test(h));
   
   const visaOdsLinks = odsLinks.filter(h => h.includes('visa-decision') || h.includes('Visa_Decision') || h.includes('visa_decisions'));
 

@@ -212,7 +212,9 @@ function diffDecisions(previous, next) {
 /* ------------------------------------------------------------------ */
 
 function findLatestFileLink($, pageUrl, kind) {
-  const pattern = kind === 'ods' ? /\.ods(\?|$)/i : /\.pdf(\?|$)/i;
+  // 'ods' covers every spreadsheet format the offices publish: .ods and,
+  // since November 2026, .xlsx.
+  const pattern = kind === 'ods' ? /\.(?:ods|xlsx)(\?|$)/i : /\.pdf(\?|$)/i;
   let found = null;
   $('a').each((_, el) => {
     if (found) return;
@@ -233,11 +235,11 @@ function parseOds(buffer) {
   const headerIndex = rows.findIndex((row) =>
     row.some((cell) => /application\s*(number|no|id)/i.test(String(cell)))
   );
-  if (headerIndex < 0) throw new Error('ODS header not found');
+  if (headerIndex < 0) throw new Error('Spreadsheet header not found');
   const header = rows[headerIndex];
   const numberCol = header.findIndex((cell) => /application\s*(number|no|id)/i.test(String(cell)));
   const decisionCol = header.findIndex((cell) => /^decision$/i.test(String(cell).trim()));
-  if (numberCol < 0 || decisionCol < 0) throw new Error('ODS columns not found');
+  if (numberCol < 0 || decisionCol < 0) throw new Error('Spreadsheet columns not found');
 
   const decisions = [];
   for (let i = headerIndex + 1; i < rows.length; i++) {

@@ -128,8 +128,8 @@ async function discoverAllODSUrls(baseUrl) {
   });
   const html = await response.text();
   
-  // Look for all ODS links
-  const odsMatches = html.match(/href="([^"]*\.ods)"/g);
+  // Look for all spreadsheet links (.ods historically, .xlsx since Nov 2026)
+  const odsMatches = html.match(/href="([^"]*\.(?:ods|xlsx))"/g);
   if (!odsMatches) return [];
   
   return odsMatches
