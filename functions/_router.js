@@ -32,6 +32,11 @@ import {
 
 const FORM_NAMES = new Set(["suggestions", "timelines-visa", "timelines-1g", "timelines"]);
 const TIMELINE_FORMS = ["timelines-visa", "timelines-1g", "timelines"];
+// Read-only feed for the nightly community sync. Deliberately narrow: only the
+// three timeline form names are ever returned, never `suggestions`, which holds
+// a visitor's name and free text.
+const SUBMISSIONS_PATH = "/api/community-submissions";
+const MAX_TIMELINE_ROWS = 5000;
 const SUBSCRIBE_PATHS = new Set(["/api/subscribe", "/api/verify", "/api/unsubscribe"]);
 const PUSH_PATHS = new Set(["/api/push/subscribe", "/api/push/unsubscribe"]);
 const USER_PUSH_PATHS = new Set(["/api/user/push/subscribe", "/api/user/push/unsubscribe", "/api/user/push/key", "/api/user/push/test"]);
@@ -388,6 +393,25 @@ const json = (body, status = 200) =>
     headers: { "Content-Type": "application/json", "Cache-Control": "no-store" },
   }));
 
+/** Serve the timeline rows the sync job reads. No credential: the same rows are
+ *  committed to a public data file, so this exposes nothing the pipeline does
+ *  not already publish. */
+async function serveTimelineSubmissions(env) {
+  const placeholders = TIMELINE_FORMS.map(() => "?").join(", ");
+  try {
+    await ensureSchema(env.DB);
+    const { results } = await env.DB
+      .prepare(`SELECT form, fields, created_at FROM submissions `
+               + `WHERE form IN (${placeholders}) ORDER BY id LIMIT ?`)
+      .bind(...TIMELINE_FORMS, MAX_TIMELINE_ROWS)
+      .all();
+    return json({ submissions: results || [] });
+  } catch (error) {
+    console.error("timeline submissions read failed:", error);
+    return json({ error: "Could not read submissions" }, 500);
+  }
+}
+
 /** Fetch a negotiated HTML document, falling back to its .html file if the
  *  assets layer does not resolve the clean URL itself. */
 async function fetchDocument(env, request, document) {
@@ -506,6 +530,17 @@ async function handleRequest(request, env, captureException) {
         headers: { 'Content-Type': 'application/json', 'Retry-After': '60' }
       });
     }
+  }
+
+  // Community timeline rows for the nightly sync job. Public and read-only,
+  // like the data files it replaces the need for a credential with.
+  if (pathname === SUBMISSIONS_PATH) {
+    if (request.method === "HEAD") {
+      const head = await serveTimelineSubmissions(env);
+      return new Response(null, { status: head.status, headers: head.headers });
+    }
+    if (request.method !== "GET") return new Response("Method not allowed", { status: 405 });
+    return serveTimelineSubmissions(env);
   }
 
   // Scheduled decision-alert runner. This is deliberately separate from the
