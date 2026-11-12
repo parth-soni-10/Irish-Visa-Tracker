@@ -7482,8 +7482,6 @@ document.addEventListener('click', function(e) {
 
             // ====== DECISION TRENDS VISUALIZATION ======
             function renderDecisionTrendsChart(rows) {
-                if (typeof Chart === 'undefined') return '<div class="chart-placeholder">Chart.js not loaded</div>';
-                
                 const real = realRows(rows);
                 if (!real.length) return '<p class="note2">No data for trends</p>';
                 
@@ -7511,7 +7509,7 @@ document.addEventListener('click', function(e) {
                 const rate = weeks.map(w => w.total ? Math.round((byWeek[w].accepted / w.total) * 100) : 0);
                 
                 const canvasId = 'trends-chart-' + Math.random().toString(36).slice(2);
-                setTimeout(() => {
+                const draw = () => {
                     const ctx = document.getElementById(canvasId);
                     if (ctx && !ctx.chart) {
                         ctx.chart = new Chart(ctx, {
@@ -7536,7 +7534,17 @@ document.addEventListener('click', function(e) {
                             }
                         });
                     }
-                }, 0);
+                };
+                if (typeof Chart !== 'undefined') {
+                    setTimeout(draw, 0);
+                } else {
+                    // Render the canvas first, then draw once the lazy loader resolves.
+                    LazyLoader.chart().then(() => setTimeout(draw, 0)).catch((err) => {
+                        console.error('Failed to load Chart.js for trends:', err);
+                        const host = document.getElementById(canvasId);
+                        if (host && host.parentNode) host.parentNode.innerHTML = '<div class="chart-placeholder">Chart.js not loaded</div>';
+                    });
+                }
                 
                 return '<div class="chart-container" style="height:300px;"><canvas id="' + canvasId + '"></canvas></div>';
             }
