@@ -32,7 +32,7 @@ npx wrangler pages secret put NAME --project-name=irishvisaupdatetracker < path/
 | `SENTRY_DSN` | **Not configured** — no Sentry project/DSN supplied | Sentry is a no-op |
 | `TWILIO_ACCOUNT_SID` / `TWILIO_AUTH_TOKEN` / `TWILIO_SMS_FROM` / `TWILIO_WHATSAPP_FROM` | **Not configured** — no Twilio account supplied | SMS and WhatsApp channels report disabled |
 | `TELEGRAM_BOT_TOKEN` | **Not configured** — create a bot with @BotFather | Telegram alerts report disabled |
-| `TELEGRAM_WEBHOOK_SECRET` | **Not configured** | The Telegram webhook accepts unsigned updates |
+| `TELEGRAM_WEBHOOK_SECRET` | **Not configured** | The Telegram webhook rejects every update with 503 |
 | `TELEGRAM_BOT_USERNAME` | Optional | The worker calls `getMe` to resolve the bot handle |
 | `OCR_SPACE_API_KEY` | **Not configured** — no OCR.space key supplied | File OCR returns a clear “not configured” error |
 | `OIDC_ISSUER` / `OIDC_CLIENT_ID` / `OIDC_CLIENT_SECRET` | **Not configured** — no identity provider supplied | Password auth works; SSO status reports disabled |
@@ -49,7 +49,8 @@ then set the deployment secrets:
 
 - `TELEGRAM_BOT_TOKEN` — the token BotFather returns.
 - `TELEGRAM_WEBHOOK_SECRET` — any high-entropy string; Telegram echoes it in
-  `X-Telegram-Bot-Api-Secret-Token` and the webhook rejects mismatches.
+  `X-Telegram-Bot-Api-Secret-Token` and the webhook rejects mismatches. If the
+  secret is unset, the webhook fails closed and processes nothing.
 - `TELEGRAM_BOT_USERNAME` — optional; when absent the worker calls `getMe`.
 
 ```bash

@@ -167,7 +167,13 @@ export async function handleTelegramStart(request, env) {
 export async function handleTelegramWebhook(request, env) {
   if (!env.DB) return json({ error: 'Database not configured' }, 503);
   const secret = String(env.TELEGRAM_WEBHOOK_SECRET || '').trim();
-  if (secret && request.headers.get('X-Telegram-Bot-Api-Secret-Token') !== secret) {
+  // Fail closed: without a secret there is no way to tell Telegram from an
+  // arbitrary caller, so refuse every update instead of trusting the body.
+  if (!secret) {
+    console.error('Telegram webhook rejected: TELEGRAM_WEBHOOK_SECRET is not configured');
+    return json({ error: 'Telegram webhook is not configured' }, 503);
+  }
+  if (request.headers.get('X-Telegram-Bot-Api-Secret-Token') !== secret) {
     return json({ error: 'Unauthorized' }, 401);
   }
 

@@ -37,11 +37,11 @@ async function call(method, payload) {
 
 if (action === 'set') {
   if (!secret) {
-    console.warn('TELEGRAM_WEBHOOK_SECRET is empty; the webhook will accept unsigned updates.');
+    console.error('TELEGRAM_WEBHOOK_SECRET is required: without it the webhook rejects every update.');
+    process.exit(1);
   }
   const url = base + '/api/telegram/webhook';
-  const payload = { url, allowed_updates: ['message'], drop_pending_updates: true };
-  if (secret) payload.secret_token = secret;
+  const payload = { url, allowed_updates: ['message'], drop_pending_updates: true, secret_token: secret };
   const result = await call('setWebhook', payload);
   console.log('Webhook set:', url, result && result.description ? '(' + result.description + ')' : '');
 } else if (action === 'delete') {

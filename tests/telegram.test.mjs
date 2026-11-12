@@ -108,6 +108,54 @@ test('webhook rejects a wrong secret', async () => {
   assert.equal(response.status, 401);
 });
 
+test('webhook fails closed when the webhook secret is not configured', async () => {
+  const original = globalThis.fetch;
+  let fetchCalls = 0;
+  globalThis.fetch = async () => {
+    fetchCalls++;
+    return new Response(JSON.stringify({ ok: true }), { status: 200 });
+  };
+  try {
+    const request = new Request('https://tracker.test/api/telegram/webhook', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        update_id: 1,
+        message: { message_id: 1, chat: { id: 123456789, type: 'private' }, text: '/start forged-token' }
+      })
+    });
+    const response = await handleTelegramWebhook(request, {
+      DB: {
+        prepare() {
+          throw new Error('the database must not be touched without a webhook secret');
+        }
+      }
+    });
+
+    assert.equal(response.status, 503);
+    assert.match(await response.text(), /not configured/);
+    assert.equal(fetchCalls, 0, 'no bot message may be sent for an unauthenticated update');
+  } finally {
+    globalThis.fetch = original;
+  }
+});
+
+test('webhook rejects an unsigned update when a secret is configured', async () => {
+  const request = new Request('https://tracker.test/api/telegram/webhook', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      update_id: 1,
+      message: { message_id: 1, chat: { id: 123456789, type: 'private' }, text: '/stop' }
+    })
+  });
+  const response = await handleTelegramWebhook(request, {
+    DB: {},
+    TELEGRAM_WEBHOOK_SECRET: 'right'
+  });
+  assert.equal(response.status, 401);
+});
+
 const WEBHOOK_SECRET = 'webhook-secret';
 
 /**
