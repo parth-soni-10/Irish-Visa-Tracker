@@ -98,7 +98,7 @@ function buildDigestEmail(report, changes, unsubscribeUrl, base) {
     '<table style="width:100%;border-collapse:collapse;background:#fff;border:1px solid #d9e4de">' +
     '<tr style="background:#eaf4ef"><th style="text-align:left;padding:8px">Office</th><th style="text-align:right;padding:8px">Dated</th><th style="text-align:right;padding:8px">Latest report</th><th style="text-align:right;padding:8px">Report date</th></tr>' +
     officeRows + '</table>' +
-    '<p style="font-size:12px;color:#6b7f75;margin:8px 0 0">New Delhi, Abu Dhabi, Abuja and Ankara publish dated decision history. “Latest report” is the latest published file for each office, not a monthly count.</p>' +
+    '<p style="font-size:12px;color:#6b7f75;margin:8px 0 0">Abu Dhabi, Abuja and Ankara publish dated decision history. New Delhi’s tracker additions are observation-dated, so New Delhi, Beijing and Dublin are represented by their latest cumulative report, not a monthly count.</p>' +
     '<p style="margin:24px 0"><a href="' + escapeHtml(base + '/monthly-report?month=' + report.month) + '" style="background:#067a57;color:#fff;padding:10px 16px;border-radius:6px;text-decoration:none">Read the full report</a></p>' +
     '<p style="font-size:12px;color:#6b7f75">This is an independent, unofficial tracker. It is not affiliated with the Embassy of Ireland, ISD or DETE. Counts are based on the published files and may change when an office corrects a report.</p>' +
     '<p style="font-size:12px;color:#6b7f75"><a href="' + escapeHtml(unsubscribeUrl) + '" style="color:#6b7f75">Unsubscribe from monthly reports</a></p>' +
@@ -114,7 +114,7 @@ function buildDigestEmail(report, changes, unsubscribeUrl, base) {
     '',
     'What changed this week: ' + changes.headline,
     'Window: ' + changes.window.start + ' to ' + changes.window.end,
-    'New Delhi, Abu Dhabi, Abuja and Ankara publish dated decision history; Beijing and Dublin are latest-report snapshots.',
+    'Abu Dhabi, Abuja and Ankara publish dated decision history. New Delhi tracker additions are observation-dated; New Delhi, Beijing and Dublin are represented by their latest cumulative report, not a monthly count.',
     '',
     'Read the full report: ' + base + '/monthly-report?month=' + report.month,
     '',

@@ -3,6 +3,11 @@
  *
  * The source files are the same public JSON files the tracker uses. Nothing
  * here is a synthetic estimate: every count comes from a dated decision row.
+ *
+ * New Delhi tracker rows are stamped with the scrape date, not an official
+ * decision date. They remain available to the tracker, but are excluded from
+ * dated monthly/weekly report totals; New Delhi's latest cumulative report is
+ * reported separately with the other snapshot offices.
  */
 
 const OFFICE_FILES = [
@@ -17,6 +22,7 @@ const OFFICE_FILES = [
 const CACHE_TTL = 5 * 60 * 1000;
 let decisionsCache = null;
 let cacheTimestamp = 0;
+// Offices whose row dates are official decision or report-period dates.
 const DATED_OFFICE_SLUGS = new Set(['abu-dhabi', 'abuja', 'ankara']);
 
 const FALLBACK_NAMES = {
@@ -107,7 +113,8 @@ export async function loadReportData(env, request) {
       decision,
       office: 'new-delhi',
       source: 'tracker',
-      dated: true,
+      // Scrape observations must never be treated as official decision dates.
+      dated: false,
       report_date: date,
       priority: 2
     });

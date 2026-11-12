@@ -98,6 +98,13 @@ test('loadReportData keeps dated history for the weekly PDF offices', async () =
     assert.ok(new Set(officeRows.map((row) => row.date)).size > 1, `${slug} dated history`);
     assert.ok(officeRows.every((row) => row.dated === true), `${slug} dated flag`);
   }
+
+  const newDelhiRows = data.rows.filter((row) => row.office === 'new-delhi');
+  assert.ok(newDelhiRows.length > 0, 'New Delhi tracker rows');
+  assert.ok(
+    newDelhiRows.every((row) => row.dated === false),
+    'New Delhi tracker scrape dates are not monthly decision dates'
+  );
 });
 
 test('dateOffset crosses month boundaries in UTC', () => {

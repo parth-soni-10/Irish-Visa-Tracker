@@ -140,7 +140,7 @@
 
   <section class="panel" aria-labelledby="activity-heading">
     <h2 id="activity-heading">Daily dated decisions</h2>
-    <p class="note" style="margin-top:-6px">New Delhi, Abu Dhabi, Abuja and Ankara publish individual decision dates; Beijing and Dublin publish running totals.</p>
+    <p class="note" style="margin-top:-6px">Abu Dhabi, Abuja and Ankara publish official report-period dates. New Delhi's tracker records additions when they are scraped, not their official decision dates; Beijing and Dublin publish running totals. The latest cumulative totals for New Delhi, Beijing and Dublin are shown separately.</p>
     <div class="bars-wrap"><div class="bars" id="bars" aria-hidden="true"></div></div>
     <div class="table-wrap" role="region" aria-label="Daily dated decisions table" tabindex="0"><table>
       <thead><tr><th>Date</th><th class="num">Decisions</th><th class="num">Approved</th><th class="num">Refused</th></tr></thead>
@@ -262,7 +262,7 @@
         '<td class="num">' + num(office.reported_total) + '</td><td class="num">' + esc(office.report_date || '—') + '</td></tr>';
     }).join('');
     var asOf = report.offices.filter(function (o) { return o.report_date; }).map(function (o) { return o.name + ' ' + o.report_date; }).join('; ');
-    officeNote.textContent = 'Dated counts use decision dates for New Delhi, Abu Dhabi, Abuja and Ankara. Beijing and Dublin publish cumulative reports, so "Latest report" is the size of each file, not a month count.' + (asOf ? ' Latest reports: ' + asOf + '.' : '');
+    officeNote.textContent = 'Dated counts use official report-period dates for Abu Dhabi, Abuja and Ankara. New Delhi tracker additions are observation-dated and excluded from dated monthly totals. New Delhi, Beijing and Dublin are shown under "Latest report" only; that column is the size of each file, not a month count.' + (asOf ? ' Latest reports: ' + asOf + '.' : '');
   }
 
   function renderDaily(report) {
