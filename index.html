@@ -4406,7 +4406,9 @@ document.addEventListener('click', function(e) {
                 const loading = new Map();
 
                 function loadScript(src, globalVar) {
-                    if (loaded.has(src)) return loaded.get(src);
+                    // Always hand back a promise: cached loads store the resolved value,
+                    // and callers (paintAnalyticsCharts) chain .then on the result.
+                    if (loaded.has(src)) return Promise.resolve(loaded.get(src));
                     if (loading.has(src)) return loading.get(src);
 
                     const promise = new Promise((resolve, reject) => {
