@@ -31,12 +31,41 @@ npx wrangler pages secret put NAME --project-name=irishvisaupdatetracker < path/
 | `RESEND_API_KEY` | Existing production secret | Resend bridge returns 503 |
 | `SENTRY_DSN` | **Not configured** — no Sentry project/DSN supplied | Sentry is a no-op |
 | `TWILIO_ACCOUNT_SID` / `TWILIO_AUTH_TOKEN` / `TWILIO_SMS_FROM` / `TWILIO_WHATSAPP_FROM` | **Not configured** — no Twilio account supplied | SMS and WhatsApp channels report disabled |
+| `TELEGRAM_BOT_TOKEN` | **Not configured** — create a bot with @BotFather | Telegram alerts report disabled |
+| `TELEGRAM_WEBHOOK_SECRET` | **Not configured** | The Telegram webhook accepts unsigned updates |
+| `TELEGRAM_BOT_USERNAME` | Optional | The worker calls `getMe` to resolve the bot handle |
 | `OCR_SPACE_API_KEY` | **Not configured** — no OCR.space key supplied | File OCR returns a clear “not configured” error |
 | `OIDC_ISSUER` / `OIDC_CLIENT_ID` / `OIDC_CLIENT_SECRET` | **Not configured** — no identity provider supplied | Password auth works; SSO status reports disabled |
 | `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` / `VAPID_SUBJECT` | Configured | Browser push reports disabled |
 
-The four unconfigured groups require account-specific credentials or a provider
+The unconfigured groups require account-specific credentials or a provider
 project. They cannot be invented safely.
+
+## Telegram alerts
+
+Telegram is the only alert channel that needs neither a sending domain nor
+business verification. Create a bot with [@BotFather](https://t.me/BotFather),
+then set the deployment secrets:
+
+- `TELEGRAM_BOT_TOKEN` — the token BotFather returns.
+- `TELEGRAM_WEBHOOK_SECRET` — any high-entropy string; Telegram echoes it in
+  `X-Telegram-Bot-Api-Secret-Token` and the webhook rejects mismatches.
+- `TELEGRAM_BOT_USERNAME` — optional; when absent the worker calls `getMe`.
+
+```bash
+npx wrangler pages secret put TELEGRAM_BOT_TOKEN --project-name=irishvisaupdatetracker < path/to/token
+npx wrangler pages secret put TELEGRAM_WEBHOOK_SECRET --project-name=irishvisaupdatetracker < path/to/secret
+TELEGRAM_BOT_TOKEN=... TELEGRAM_WEBHOOK_SECRET=... node tools/setup-telegram-webhook.mjs set
+```
+
+A visitor enters an application number on the tracker and presses “Get alerts on
+Telegram”. The site creates a single-use token that expires in 15 minutes and
+opens `https://t.me/<bot>?start=<token>`; pressing Start stores that chat id
+against the application. The hourly alert runner then sends one message per
+published decision date, updating `last_alert_sent` so retries are idempotent.
+`/stop` disables the chat and `/status` lists its linked applications. No email
+address or phone number is collected, so there is no domain verification,
+opt-in review or per-message fee.
 
 ## Email bridge
 

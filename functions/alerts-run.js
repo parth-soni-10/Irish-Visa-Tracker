@@ -16,6 +16,7 @@ import { loadReportData } from './report-data.js';
 import { createNotification } from './notifications.js';
 import { ensurePortalSchema } from './portal-schema.js';
 import { anyChannelConfigured, isChannelConfigured, sendChannel } from './notify-channels.js';
+import { isTelegramConfigured, ensureTelegramSchema, sendTelegram } from './telegram.js';
 
 const MAX_ALERTS = 250;
 const DEFAULT_BASE = 'https://irishvisaupdatetracker.pages.dev';
@@ -234,6 +235,63 @@ async function runChannelAlerts(env, report, dryRun) {
   return { checked: rows.length, matched, sent, skipped, failed, would_send: wouldSend };
 }
 
+async function runTelegramAlerts(env, report, dryRun) {
+  if (!isTelegramConfigured(env)) {
+    return { checked: 0, matched: 0, sent: 0, skipped: 0, failed: 0, would_send: 0 };
+  }
+  await ensureTelegramSchema(env);
+  let rows = [];
+  try {
+    const result = await env.DB.prepare(`
+      SELECT id, chat_id, application_number, embassy, last_alert_sent
+      FROM telegram_subscriptions
+      WHERE active = 1
+      ORDER BY id
+      LIMIT ?
+    `).bind(MAX_ALERTS).all();
+    rows = result.results || [];
+  } catch (error) {
+    console.warn('Telegram alert query failed:', error.message);
+    return { checked: 0, matched: 0, sent: 0, skipped: 0, failed: 1, would_send: 0 };
+  }
+
+  let matched = 0;
+  let sent = 0;
+  let skipped = 0;
+  let failed = 0;
+  let wouldSend = 0;
+  for (const row of rows) {
+    const decision = findDecision(report.rows, row.application_number, row.embassy);
+    if (!decision) {
+      skipped += 1;
+      continue;
+    }
+    matched += 1;
+    if (!shouldSend(row.last_alert_sent, decision.date)) {
+      skipped += 1;
+      continue;
+    }
+    if (dryRun) {
+      wouldSend += 1;
+      continue;
+    }
+    const message = 'Visa ' + decision.decision + ' for ' + row.application_number +
+      ' at ' + row.embassy + ' (published ' + decision.date + '). View: ' +
+      String(env.APP_BASE_URL || DEFAULT_BASE).replace(/\/+$/, '') +
+      '/?tab=home&q=' + encodeURIComponent(row.application_number) +
+      '\n\nSend /stop to turn these alerts off.';
+    const result = await sendTelegram(env, row.chat_id, message);
+    if (!result.sent) {
+      failed += 1;
+      continue;
+    }
+    sent += 1;
+    await env.DB.prepare('UPDATE telegram_subscriptions SET last_alert_sent = ? WHERE id = ?')
+      .bind(decision.date, row.id).run().catch(() => {});
+  }
+  return { checked: rows.length, matched, sent, skipped, failed, would_send: wouldSend };
+}
+
 function json(body, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
@@ -266,7 +324,8 @@ export async function handleAlertsRun(request, env) {
   const emailConfigured = isEmailConfigured(env);
   const pushConfigured = isPushConfigured(env);
   const channelConfigured = anyChannelConfigured(env);
-  if (!emailConfigured && !pushConfigured && !channelConfigured) {
+  const telegramConfigured = isTelegramConfigured(env);
+  if (!emailConfigured && !pushConfigured && !channelConfigured && !telegramConfigured) {
     return json({ error: 'No alert delivery channel is configured' }, 503);
   }
 
@@ -341,18 +400,21 @@ export async function handleAlertsRun(request, env) {
 
     const push = await runPushAlerts(env, report, dryRun);
     const channels = await runChannelAlerts(env, report, dryRun);
+    const telegram = await runTelegramAlerts(env, report, dryRun);
     return json({
-      ok: failed === 0 && push.failed === 0 && channels.failed === 0,
-      checked: alerts.length + push.checked + channels.checked,
-      matched: matched + push.matched + channels.matched,
-      sent: sent + channels.sent,
-      skipped: skipped + push.skipped + channels.skipped,
-      failed: failed + push.failed + channels.failed,
-      would_send: wouldSend + push.would_send + channels.would_send,
+      ok: failed === 0 && push.failed === 0 && channels.failed === 0 && telegram.failed === 0,
+      checked: alerts.length + push.checked + channels.checked + telegram.checked,
+      matched: matched + push.matched + channels.matched + telegram.matched,
+      sent: sent + channels.sent + telegram.sent,
+      skipped: skipped + push.skipped + channels.skipped + telegram.skipped,
+      failed: failed + push.failed + channels.failed + telegram.failed,
+      would_send: wouldSend + push.would_send + channels.would_send + telegram.would_send,
       push_checked: push.checked,
       push_sent: push.sent,
       channel_checked: channels.checked,
       channel_sent: channels.sent,
+      telegram_checked: telegram.checked,
+      telegram_sent: telegram.sent,
       dry_run: dryRun
     });
   } catch (error) {

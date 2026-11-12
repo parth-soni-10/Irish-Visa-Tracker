@@ -5506,6 +5506,46 @@ document.addEventListener('click', function(e) {
                     e.preventDefault();
                     submitAlert();
                 });
+                var tgBtn = document.getElementById('telegram-alert-btn');
+                if (tgBtn) tgBtn.onclick = async function() {
+                    var form = document.getElementById('alert-form');
+                    var statusEl = document.getElementById('alert-status');
+                    if (!form || !statusEl) return;
+                    var appNumEl = form.querySelector('input[name="application_number"]');
+                    var embassyEl = form.querySelector('select[name="embassy"]');
+                    var appNum = (appNumEl && appNumEl.value ? appNumEl.value : '').trim();
+                    var embassy = embassyEl && embassyEl.value ? embassyEl.value : '';
+                    if (!/^\d{8}$/.test(appNum)) {
+                        statusEl.textContent = 'Please enter a valid 8-digit application number.';
+                        statusEl.style.color = 'var(--red)';
+                        if (appNumEl) appNumEl.focus();
+                        return;
+                    }
+                    tgBtn.disabled = true;
+                    statusEl.textContent = 'Opening Telegram…';
+                    statusEl.style.color = 'var(--ink)';
+                    try {
+                        var res = await fetch('/api/telegram/start', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ application_number: appNum, embassy: embassy })
+                        });
+                        var data = await res.json().catch(function() { return {}; });
+                        if (res.ok && data.url) {
+                            window.open(data.url, '_blank', 'noopener');
+                            statusEl.textContent = 'Press Start in Telegram to finish linking ' + appNum + '.';
+                            statusEl.style.color = 'var(--green)';
+                        } else {
+                            statusEl.textContent = '❌ ' + (data.error || 'Telegram alerts are not available yet.');
+                            statusEl.style.color = 'var(--red)';
+                        }
+                    } catch (err) {
+                        statusEl.textContent = '❌ Network error. Please try again.';
+                        statusEl.style.color = 'var(--red)';
+                    } finally {
+                        tgBtn.disabled = false;
+                    }
+                };
                 // Recent-search chips re-run the search they were saved from.
                 var recentRow = document.getElementById('recent-searches');
                 if (recentRow) recentRow.onclick = function(e) {
@@ -7824,6 +7864,8 @@ document.addEventListener('click', function(e) {
                     '<option value="ankara">🇹🇷 Ankara (Türkiye, Azerbaijan, Saudi Arabia residents)</option>' +
                 '</select></label></p>' +
                 '<button class="btn" type="submit" id="alert-submit">Enable Alerts</button>' +
+                '<button class="btn" type="button" id="telegram-alert-btn" style="margin-top:8px;background:#229ED9;border-color:#229ED9;color:#fff;">Get alerts on Telegram</button>' +
+                '<p class="note2" style="margin-top:6px;">Free and no email needed. Opens the Telegram bot with your application ready to link.</p>' +
                 '<div class="note" id="alert-status" aria-live="polite"></div>';
 
             async function submitTimeline(is1G) {

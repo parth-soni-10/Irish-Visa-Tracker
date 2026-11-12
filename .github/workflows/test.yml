@@ -42,7 +42,7 @@ jobs:
       - name: Run agent-surface and product tests
         # Content negotiation, Markdown documents, the 404 contract, metadata,
         # analytics/fees/exports, auth tokens and notifications.
-        run: node --test tests/agent-docs.test.mjs tests/portal.test.mjs tests/export-tokens.test.mjs tests/email-tokens.test.mjs tests/notifications.test.mjs tests/predict.test.mjs tests/reports.test.mjs tests/channels.test.mjs tests/push.test.mjs tests/email-webhook.test.mjs tests/embassy-pdf-ingestion.test.mjs tests/community-submissions.test.mjs tests/alerts-run.test.mjs
+        run: node --test tests/agent-docs.test.mjs tests/portal.test.mjs tests/export-tokens.test.mjs tests/email-tokens.test.mjs tests/notifications.test.mjs tests/predict.test.mjs tests/reports.test.mjs tests/channels.test.mjs tests/push.test.mjs tests/email-webhook.test.mjs tests/embassy-pdf-ingestion.test.mjs tests/community-submissions.test.mjs tests/alerts-run.test.mjs tests/telegram.test.mjs
 
       - name: Run Ankara ingestion and PDF history tests
         run: node --test tests/ankara-ocr.test.mjs tests/ankara-checksum.test.mjs tests/decision-history.test.mjs

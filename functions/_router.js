@@ -39,6 +39,7 @@ const SUBMISSIONS_PATH = "/api/community-submissions";
 const MAX_TIMELINE_ROWS = 5000;
 const SUBSCRIBE_PATHS = new Set(["/api/subscribe", "/api/verify", "/api/unsubscribe"]);
 const PUSH_PATHS = new Set(["/api/push/subscribe", "/api/push/unsubscribe"]);
+const TELEGRAM_PATHS = new Set(["/api/telegram/start", "/api/telegram/webhook"]);
 const USER_PUSH_PATHS = new Set(["/api/user/push/subscribe", "/api/user/push/unsubscribe", "/api/user/push/key", "/api/user/push/test"]);
 const AUTH_PATHS = new Set(["/api/auth/register", "/api/auth/login", "/api/auth/logout", "/api/auth/me", "/api/auth/profile", "/api/auth/password", "/api/auth/delete"]);
 const ADMIN_PATHS = new Set(["/api/admin/health", "/api/admin/quality", "/api/admin/metrics", "/api/admin/errors", "/api/admin/trigger", "/api/admin/tokens"]);
@@ -644,6 +645,18 @@ async function handleRequest(request, env, captureException) {
     }
     return new Response("Method not allowed", { status: 405 });
   }
+  // Telegram decision alerts (anonymous subscriptions linked through the bot)
+  if (TELEGRAM_PATHS.has(pathname)) {
+    const { handleTelegramStart, handleTelegramWebhook } = await import("./telegram.js");
+    if (pathname === "/api/telegram/start" && request.method === "POST") {
+      return handleTelegramStart(request, env);
+    }
+    if (pathname === "/api/telegram/webhook" && request.method === "POST") {
+      return handleTelegramWebhook(request, env);
+    }
+    return new Response("Method not allowed", { status: 405 });
+  }
+
   // User routes
   if (USER_PATHS.has(pathname) || USER_PUSH_PATHS.has(pathname) ||
       USER_PREFIXES.some((prefix) => pathname.startsWith(prefix))) {
