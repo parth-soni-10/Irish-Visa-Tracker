@@ -38,11 +38,15 @@ jobs:
         id: check_data
         run: |
           # Check if data files have changed since last retrain
-          LAST_RETRAIN=$(git log --oneline -1 --grep="ML Model" --format="%H" || echo "none")
-          if [ "$LAST_RETRAIN" = "none" ] || [ "${{ github.event.inputs.force }}" = "true" ]; then
+          # git log prints nothing when no commit matches, so an empty value -
+          # not the literal "none" - is the never-retrained case. Comparing
+          # against an empty revision made git diff fail and the gate stay
+          # false forever, which silently skipped every monthly retrain.
+          LAST_RETRAIN=$(git log -1 --grep="ML Model" --format=%H)
+          if [ -z "$LAST_RETRAIN" ] || [ "${{ github.event.inputs.force }}" = "true" ]; then
             echo "force=true" >> $GITHUB_OUTPUT
           else
-            CHANGED=$(git diff --name-only $LAST_RETRAIN HEAD -- data/ | wc -l)
+            CHANGED=$(git diff --name-only "$LAST_RETRAIN" HEAD -- data/ | wc -l)
             if [ $CHANGED -gt 0 ]; then
               echo "force=true" >> $GITHUB_OUTPUT
             else
