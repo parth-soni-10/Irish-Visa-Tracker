@@ -126,13 +126,6 @@
             let dataPromise = null;
             let theme = localStorage.getItem('visa-theme') || 'light';
 
-            // ---- account / watchlist state (item 1) ----
-            // Cookie-based session: the backend sets an httpOnly session_id
-            // cookie on login, so every fetch to /api/auth/* includes it
-            // automatically (credentials: 'include').
-            let currentUser = null;
-            let authChecked = false;
-
             // ---- activation funnel ----
             var ACTIVATION_KEY = 'visa-activation-v1';
             function readActivation() {
@@ -187,255 +180,6 @@
                     if (focus) focus.focus({ preventScroll: true });
                 }, 80);
             }
-
-            async function fetchAuth() {
-                if (authChecked) return currentUser;
-                authChecked = true;
-                try {
-                    const res = await fetch('/api/auth/me', {
-                        method: 'GET',
-                        credentials: 'include',
-                        headers: { 'Content-Type': 'application/json' }
-                    });
-                    if (res.ok) {
-                        const data = await res.json();
-                        if (data && data.authenticated && data.user) currentUser = data.user;
-                    }
-                } catch (e) {
-                    // Offline or backend down: stay signed out.
-                }
-                return currentUser;
-            }
-
-            function accountBtnHTML() {
-                if (currentUser) {
-                    return '<button type="button" class="export-btn tu-btn" id="account-btn" title="Account: ' +
-                        escapeHtml(currentUser.email) + '"><i data-lucide="user" aria-hidden="true"></i> ' +
-                        escapeHtml(currentUser.name || currentUser.email) + '</button>' +
-                        '<button type="button" class="export-btn tu-btn" id="signout-btn" title="Sign out"><i data-lucide="log-out" aria-hidden="true"></i> Sign out</button>';
-                }
-                return '<button type="button" class="export-btn tu-btn" id="account-btn" title="Sign in"><i data-lucide="user" aria-hidden="true"></i> Sign in</button>';
-            }
-
-            var _modalReturnFocus = null;
-            var _modalKeyHandlerBound = false;
-            function modalFocusable(m) {
-                return Array.prototype.filter.call(
-                    m.querySelectorAll('a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'),
-                    function(el) { return el.offsetParent !== null && !el.hidden; }
-                );
-            }
-            function bindModalKeyboard() {
-                if (_modalKeyHandlerBound) return;
-                _modalKeyHandlerBound = true;
-                document.addEventListener('keydown', function(e) {
-                    var m = document.getElementById('account-modal');
-                    if (!m || m.hidden) return;
-                    if (e.key === 'Escape') { e.preventDefault(); closeAccountModal(); return; }
-                    if (e.key !== 'Tab') return;
-                    var items = modalFocusable(m);
-                    if (!items.length) return;
-                    var first = items[0];
-                    var last = items[items.length - 1];
-                    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
-                    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
-                });
-            }
-
-            async function openAccountModal() {
-                var m = document.getElementById('account-modal');
-                _modalReturnFocus = document.activeElement;
-                m.hidden = false;
-                m.setAttribute('aria-hidden', 'false');
-                bindModalKeyboard();
-                showAccountTab('signin');
-                setTimeout(function() {
-                    var first = modalFocusable(m)[0];
-                    if (first) first.focus();
-                }, 0);
-                // Resolve sign-in state in the background so the modal opens
-                // immediately even if the auth fetch is slow.
-                await fetchAuth();
-                var tools = document.getElementById('account-tools');
-                var tabs = document.querySelector('#account-modal .modal-tabs');
-                if (currentUser) {
-                    document.getElementById('account-form-signin').hidden = true;
-                    document.getElementById('account-form-register').hidden = true;
-                    if (tools) tools.hidden = false;
-                    if (tabs) tabs.hidden = true;
-                    document.getElementById('account-modal-title').textContent =
-                        'Signed in as ' + escapeHtml(currentUser.email);
-                    var status = document.getElementById('account-signin-status');
-                    if (status) status.textContent = '';
-                    loadAPITokens();
-                } else {
-                    if (tools) tools.hidden = true;
-                    if (tabs) tabs.hidden = false;
-                }
-            }
-
-            function closeAccountModal() {
-                var m = document.getElementById('account-modal');
-                if (m) { m.hidden = true; m.setAttribute('aria-hidden', 'true'); }
-                if (_modalReturnFocus && typeof _modalReturnFocus.focus === 'function') _modalReturnFocus.focus();
-                _modalReturnFocus = null;
-            }
-
-            function showAccountTab(tab) {
-                var signin = document.getElementById('account-form-signin');
-                var register = document.getElementById('account-form-register');
-                var tSignin = document.getElementById('account-tab-signin');
-                var tRegister = document.getElementById('account-tab-register');
-                var tools = document.getElementById('account-tools');
-                if (tools) tools.hidden = true;
-                if (tab === 'register') {
-                    if (signin) { signin.hidden = true; signin.setAttribute('aria-hidden', 'true'); }
-                    if (register) { register.hidden = false; register.setAttribute('aria-hidden', 'false'); }
-                    if (tSignin) tSignin.setAttribute('aria-selected', 'false');
-                    if (tRegister) tRegister.setAttribute('aria-selected', 'true');
-                } else {
-                    if (signin) { signin.hidden = false; signin.setAttribute('aria-hidden', 'false'); }
-                    if (register) { register.hidden = true; register.setAttribute('aria-hidden', 'true'); }
-                    if (tSignin) tSignin.setAttribute('aria-selected', 'true');
-                    if (tRegister) tRegister.setAttribute('aria-selected', 'false');
-                }
-            }
-
-            // The modal markup uses inline handlers, but this script is wrapped
-            // in a closure. Expose the controls those handlers call; without
-            // this the Create account tab, close button and backdrop were dead.
-            window.showAccountTab = showAccountTab;
-            window.closeAccountModal = closeAccountModal;
-
-            async function sendPushTest() {
-                var status = document.getElementById('push-test-status');
-                var button = document.getElementById('push-test-btn');
-                if (!status) return;
-                if (button) button.disabled = true;
-                status.style.color = '';
-                status.textContent = 'Sending test notification\u2026';
-                try {
-                    var response = await fetch('/api/user/push/test', { method: 'POST', credentials: 'include' });
-                    var data = await response.json().catch(function() { return {}; });
-                    if (!response.ok) throw new Error(data.error || 'Test notification failed');
-                    status.textContent = 'Test sent to ' + (data.sent || 0) + ' subscription(s).';
-                    status.style.color = 'var(--green)';
-                } catch (error) {
-                    status.textContent = error.message;
-                    status.style.color = 'var(--red)';
-                } finally {
-                    if (button) button.disabled = false;
-                }
-            }
-
-            window.sendPushTest = sendPushTest;
-
-            async function handleAccountForm(e) {
-                e.preventDefault();
-                var form = e.target;
-                var status = form.querySelector('.note');
-                var btn = form.querySelector('button[type="submit"]');
-                var fd = new FormData(form);
-                var body = {};
-                for (var pair of fd) body[pair[0]] = pair[1];
-                var isRegister = form.id === 'account-form-register';
-                var endpoint = isRegister ? '/api/auth/register' : '/api/auth/login';
-                btn.disabled = true;
-                status.textContent = isRegister ? 'Creating account…' : 'Signing in…';
-                try {
-                    const res = await fetch(endpoint, {
-                        method: 'POST',
-                        credentials: 'include',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(body)
-                    });
-                    const data = await res.json();
-                    if (res.ok) {
-                        closeAccountModal();
-                        authChecked = false;
-                        await fetchAuth();
-                        wireChrome();
-                        render();
-                        if (status) status.textContent = isRegister ? 'Account created.' : 'Signed in.';
-                    } else {
-                        status.textContent = (data && data.error) || 'Failed.';
-                        status.style.color = 'var(--red)';
-                    }
-                } catch (err) {
-                    status.textContent = 'Network error.';
-                    status.style.color = 'var(--red)';
-                } finally {
-                    btn.disabled = false;
-                }
-            }
-
-            async function signOut() {
-                try {
-                    await fetch('/api/auth/logout', {
-                        method: 'POST',
-                        credentials: 'include',
-                        headers: { 'Content-Type': 'application/json' }
-                    });
-                } catch (e) { /* ignore */ }
-                currentUser = null;
-                authChecked = false;
-                closeAccountModal();
-                wireChrome();
-                render();
-            }
-
-            // ---- server watchlist (item 1) ----
-            async function fetchWatchlist() {
-                if (!currentUser) return [];
-                try {
-                    const res = await fetch('/api/user/watchlist', {
-                        method: 'GET',
-                        credentials: 'include',
-                        headers: { 'Content-Type': 'application/json' }
-                    });
-                    if (res.ok) {
-                        const data = await res.json();
-                        return Array.isArray(data.watchlist) ? data.watchlist : [];
-                    }
-                } catch (e) { /* offline */ }
-                return [];
-            }
-
-            async function addToServerWatchlist(appNum, embassySlug, nickname) {
-                if (!currentUser) return false;
-                try {
-                    const res = await fetch('/api/user/watchlist', {
-                        method: 'POST',
-                        credentials: 'include',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            application_number: appNum,
-                            embassy_slug: embassySlug || 'new-delhi',
-                            nickname: nickname || null,
-                            notify_email: true,
-                            notify_push: true
-                        })
-                    });
-                    return res.ok;
-                } catch (e) { return false; }
-            }
-
-            async function removeFromServerWatchlist(id) {
-                if (!currentUser) return false;
-                try {
-                    const res = await fetch('/api/user/watchlist/' + encodeURIComponent(id), {
-                        method: 'DELETE',
-                        credentials: 'include',
-                        headers: { 'Content-Type': 'application/json' }
-                    });
-                    return res.ok;
-                } catch (e) { return false; }
-            }
-
-            // Local (anonymous) watchlist helpers delegate to the existing
-            // getWatchlist/saveWatchlist/checkWatchlist.
-
-
 
             // ---------------- URL state (deep-linkable views) ----------------
             // Tabs, the Home search term, and the Past date filter live in the
@@ -911,14 +655,13 @@
                     '<h2 id="activation-heading">Get your decision by email or Telegram</h2>' +
                     '<p class="activation-lede">Add your application once. The tracker checks the published files and only messages you when a decision appears. No refresh, no guessing.</p>' +
                     '<div class="activation-actions">' +
-                    '<button type="button" class="btn" data-activation-action="email"><i data-lucide="mail" aria-hidden="true"></i> Get email alerts</button>' +
                     '<button type="button" class="btn activation-telegram" data-activation-action="telegram"><i data-lucide="send" aria-hidden="true"></i> Get Telegram alerts</button>' +
                     '</div>' +
                     '<p class="activation-meta">Free. Telegram needs no email address. Email alerts use double opt-in.</p>' +
                     '</div>' +
                     '<ol class="activation-checklist" aria-label="First-run checklist">' +
                     '<li data-activation-step="search"><span class="activation-num">1</span><div><strong>Find your application</strong><p>Search the latest published decision list.</p><button type="button" class="activation-link" data-activation-action="search">Search now</button></div></li>' +
-                    '<li data-activation-step="watch"><span class="activation-num">2</span><div><strong>Save it to your watchlist</strong><p>Keep the application number with your account.</p><button type="button" class="activation-link" data-activation-action="watch">Open watchlist</button></div></li>' +
+                    '<li data-activation-step="watch"><span class="activation-num">2</span><div><strong>Save it to your watchlist</strong><p>Saved in this browser and checked against the latest data.</p><button type="button" class="activation-link" data-activation-action="watch">Open watchlist</button></div></li>' +
                     '<li data-activation-step="alerts"><span class="activation-num">3</span><div><strong>Choose a delivery channel</strong><p>Email or Telegram. One message per published decision.</p></div></li>' +
                     '</ol>' +
                     '</section>';
@@ -1111,10 +854,7 @@
                             if (input) { input.scrollIntoView({ behavior: 'smooth', block: 'center' }); input.focus({ preventScroll: true }); }
                             return;
                         }
-                        if (kind === 'watch') {
-                            if (currentUser) switchTab('watchlist');
-                            else openAccountModal();
-                        }
+                        if (kind === 'watch') switchTab('watchlist');
                     });
                 }
                 paintActivation();
@@ -1296,20 +1036,22 @@
                     syncUrl('replace');
                 };
                 // Watchlist add/remove (delegated - #watch-area is repainted
-                // by paintWatch on every keystroke). Server-backed when signed in.
-                wireHomeWatch();
+                // by paintWatch on every keystroke).
                 var watchArea = document.getElementById('watch-area');
                 if (watchArea) watchArea.onclick = function(e) {
                     var add = e.target && e.target.closest ? e.target.closest('[data-watch-add]') : null;
                     var del = e.target && e.target.closest ? e.target.closest('[data-watch-del]') : null;
                     if (add) {
-                        var list = getWatchlist();
-                        var t = add.getAttribute('data-watch-add');
-                        if (t && list.indexOf(t) === -1) { list.unshift(t); saveWatchlist(list); }
+                        if (addWatchItem(add.getAttribute('data-watch-add')) === 'added') {
+                            markActivation('watch');
+                            trackConversion('watchlist_added', 'home-watch');
+                        }
                         paintWatch();
                     } else if (del) {
-                        var gone = del.getAttribute('data-watch-del');
-                        saveWatchlist(getWatchlist().filter(function(t) { return t !== gone; }));
+                        removeWatchItem(
+                            del.getAttribute('data-watch-del'),
+                            del.getAttribute('data-watch-office')
+                        );
                         paintWatch();
                     }
                 };
@@ -1484,7 +1226,7 @@
                 else if (tabId === 'daily') tabBody.innerHTML = renderDailySummary(rows);
                 else if (tabId === 'past') tabBody.innerHTML = renderPastLayout(rows);
                 else if (tabId === 'analytics') tabBody.innerHTML = renderAnalyticsLayout(rows);
-                else if (tabId === 'watchlist') { tabBody.innerHTML = renderWatchlistLayout(rows); wireWatchAdd(); wireWatchBulk(); }
+                else if (tabId === 'watchlist') { tabBody.innerHTML = renderWatchlistLayout(rows); wireWatchAdd(); }
                 else if (tabId === 'checklist') { tabBody.innerHTML = renderChecklistLayout(); wireChecklistForm(); }
                 else if (tabId === 'search') { tabBody.innerHTML = renderSearchLayout(); wireSearchForm(); wireVFSTracking(); }
                 else { tabBody.innerHTML = renderSuggestLayout(); }
@@ -1620,7 +1362,7 @@
             function renderSearchLayout() {
                 return '<div class="search-layout">' +
                     '<h2 class="search-title">Advanced Search</h2>' +
-                    '<p class="search-sub">Search visa decisions with fuzzy matching, filters, and saved searches.</p>' +
+                    '<p class="search-sub">Search visa decisions with fuzzy matching and filters.</p>' +
                     '<form id="search-form" class="search-form" novalidate>' +
                     '<div class="search-field"><label for="search-query">Search query</label>' +
                     '<input type="text" id="search-query" name="query" placeholder="e.g. study visa, IRL2026123456, etc."></div>' +
@@ -1671,14 +1413,12 @@
                     '</div>' +
                     '<div class="search-actions">' +
                     '<button class="btn" type="submit" id="search-submit">Search</button>' +
-                    '<button type="button" class="btn secondary" id="search-save">Save Search</button>' +
                     '</div>' +
                     '<div class="note" id="search-status" aria-live="polite"></div>' +
                     '</div>' +
                     '</form>' +
                     renderVFSTracking() +
                     '<div id="search-results" class="search-results"></div>' +
-                    '<div id="search-saved" class="search-saved" hidden></div>' +
                     '</div>';
             }
 
@@ -1718,110 +1458,6 @@
                         btn.disabled = false;
                     }
                 });
-
-                // Save search button
-                var saveBtn = document.getElementById('search-save');
-                if (saveBtn) {
-                    saveBtn.addEventListener('click', async function() {
-                        var fd = new FormData(form);
-                        var body = {};
-                        for (var pair of fd) { if (pair[1]) body[pair[0]] = pair[1]; }
-                        var name = prompt('Enter a name for this saved search:');
-                        if (!name) return;
-                        body.save_search = true;
-                        body.search_name = name;
-                        try {
-                            var res = await fetch('/api/search', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify(body)
-                            });
-                            var data = await res.json();
-                            if (res.ok && data.saved_search_id) {
-                                alert('Search saved!');
-                            } else {
-                                alert('Failed to save: ' + (data.error || 'unknown error'));
-                            }
-                        } catch (err) {
-                            alert('Network error.');
-                        }
-                    });
-                }
-
-                // Load saved searches on tab enter
-                loadSavedSearches();
-            }
-
-            async function loadSavedSearches() {
-                try {
-                    var res = await fetch('/api/search?action=list', { method: 'GET', credentials: 'include' });
-                    var data = await res.json();
-                    var searches = (data && (data.searches || data.saved_searches)) || [];
-                    var container = document.getElementById('search-saved');
-                    if (!container) return;
-                    if (!res.ok || !searches.length) {
-                        container.hidden = true;
-                        container.innerHTML = '';
-                        return;
-                    }
-                    container.hidden = false;
-                    var html = '<h3>Saved Searches</h3><ul class="saved-searches">';
-                    searches.forEach(function(s) {
-                        var query = s.query || (s.params && s.params.query) || 'Saved search';
-                        html += '<li class="saved-search-row"><button type="button" class="saved-search-btn" data-id="' + s.id + '">' +
-                            escapeHtml(s.name) + ' <span class="note2">(' + escapeHtml(query) + ')</span></button>' +
-                            '<button type="button" class="saved-search-delete" data-id="' + s.id + '" aria-label="Delete saved search ' + escapeHtml(s.name) + '">Delete</button></li>';
-                    });
-                    html += '</ul>';
-                    container.innerHTML = html;
-                    container.querySelectorAll('.saved-search-btn').forEach(function(btn) {
-                        btn.addEventListener('click', function() {
-                            loadSavedSearch(btn.getAttribute('data-id'));
-                        });
-                    });
-                    container.querySelectorAll('.saved-search-delete').forEach(function(btn) {
-                        btn.addEventListener('click', function() {
-                            deleteSavedSearch(btn.getAttribute('data-id'));
-                        });
-                    });
-                } catch (e) { /* ignore */ }
-            }
-
-            async function deleteSavedSearch(id) {
-                if (!id || !confirm('Delete this saved search?')) return;
-                try {
-                    var res = await fetch('/api/search?id=' + encodeURIComponent(id), { method: 'DELETE', credentials: 'include' });
-                    if (!res.ok) throw new Error('delete failed');
-                    await loadSavedSearches();
-                } catch (e) {
-                    alert('Could not delete that saved search.');
-                }
-            }
-
-            async function loadSavedSearch(id) {
-                try {
-                    var res = await fetch('/api/search?action=get&id=' + encodeURIComponent(id), { method: 'GET', credentials: 'include' });
-                    var data = await res.json();
-                    var saved = data && data.search;
-                    if (!res.ok || !saved) return;
-                    var params = saved.params;
-                    if (typeof params === 'string') {
-                        try { params = JSON.parse(params); } catch (e) { params = {}; }
-                    }
-                    if (!params || typeof params !== 'object') params = {};
-                    var values = {};
-                    var filters = params.filters && typeof params.filters === 'object' ? params.filters : {};
-                    Object.keys(filters).forEach(function(key) { values[key] = filters[key]; });
-                    Object.keys(params).forEach(function(key) { if (key !== 'filters') values[key] = params[key]; });
-                    var form = document.getElementById('search-form');
-                    if (!form) return;
-                    Object.keys(values).forEach(function(key) {
-                        if (form.elements[key] && values[key] !== null && values[key] !== undefined) {
-                            form.elements[key].value = values[key];
-                        }
-                    });
-                    form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
-                } catch (e) { /* ignore */ }
             }
 
             function renderSearchResults(data, container) {
@@ -1888,35 +1524,19 @@
             // ====== VFS TRACKING ======
             function renderVFSTracking() {
                 return '<div class="vfs-tracking">' +
-                    '<h3>VFS Global appointment check</h3>' +
-                    '<p class="note2">Track an application, or check the official booking page for the selected VAC. VFS shows the real calendar only after sign-in, so this tool never claims a slot it cannot see.</p>' +
+                    '<h3>VFS Global appointments</h3>' +
+                    '<p class="note2">Track an application, or open the official booking portal. VFS shows the real calendar only after sign-in.</p>' +
                     '<form id="vfs-track-form" class="vfs-track-form" novalidate>' +
                     '<div class="vfs-field"><label for="vfs-ref">Reference Number <span class="required">*</span></label>' +
                     '<input type="text" id="vfs-ref" name="reference" required placeholder="e.g. IN1234567890" pattern="[A-Z]{2}\\d{10}"></div>' +
                     '<div class="vfs-field"><label for="vfs-lname">Last Name <span class="required">*</span></label>' +
                     '<input type="text" id="vfs-lname" name="last_name" required placeholder="Your surname"></div>' +
-                    '<div class="vfs-field"><label for="vfs-vac">VAC Location</label>' +
-                    '<select id="vfs-vac" name="vac">' +
-                    '<option value="new-delhi">New Delhi</option>' +
-                    '<option value="mumbai">Mumbai</option>' +
-                    '<option value="chennai">Chennai</option>' +
-                    '<option value="kolkata">Kolkata</option>' +
-                    '<option value="bangalore">Bangalore</option>' +
-                    '<option value="hyderabad">Hyderabad</option>' +
-                    '<option value="pune">Pune</option>' +
-                    '<option value="ahmedabad">Ahmedabad</option>' +
-                    '<option value="jalandhar">Jalandhar</option>' +
-                    '<option value="chandigarh">Chandigarh</option>' +
-                    '<option value="cochin">Cochin</option>' +
-                    '</select></div>' +
                     '<div class="vfs-actions" style="display:flex;gap:8px;flex-wrap:wrap">' +
-                    '<button class="btn" type="submit">Track on VFS Global</button>' +
-                    '<button class="btn secondary" type="button" id="vfs-check-btn">Check official VFS page</button>' +
+                    '<a class="btn" href="https://visa.vfsglobal.com/ind/en/irl/book-an-appointment" target="_blank" rel="noopener noreferrer">Open the official VFS portal</a>' +
+                    '<button class="btn secondary" type="submit">Track on VFS Global</button>' +
                     '</div>' +
                     '</form>' +
-                    '<div id="vfs-result" class="vfs-result" hidden></div>' +
-                    '<div id="vfs-appointment-result" class="vfs-result" aria-live="polite" hidden></div>' +
-                    '<p class="note2">VFS does not publish Ireland-India appointment slots publicly. This check reports the page state and points you to the official sign-in; it cannot hold or confirm a slot.</p>' +
+                    '<p class="note2">VFS shows appointment slots only after signing in. This tracker cannot see, hold, or book a slot.</p>' +
                     '</div>';
             }
 
@@ -1933,53 +1553,13 @@
                         '&lastName=' + encodeURIComponent(lname);
                     window.open(url, '_blank', 'noopener,noreferrer');
                 });
-                var check = document.getElementById('vfs-check-btn');
-                if (!check) return;
-                check.addEventListener('click', async function() {
-                    var out = document.getElementById('vfs-appointment-result');
-                    var vac = document.getElementById('vfs-vac').value;
-                    if (!out) return;
-                    out.hidden = false;
-                    out.textContent = 'Checking the official VFS booking page\u2026';
-                    check.disabled = true;
-                    try {
-                        var response = await fetch('/api/vfs/appointments?office=' + encodeURIComponent(vac), {
-                            headers: { Accept: 'application/json' }
-                        });
-                        var data = await response.json();
-                        if (!response.ok) throw new Error(data.error || 'Could not check VFS');
-                        var labels = {
-                            available: 'Booking-calendar language found',
-                            unavailable: 'No appointments reported',
-                            login_required: 'VFS sign-in required',
-                            maintenance: 'VFS maintenance',
-                            challenge: 'VFS bot challenge',
-                            unknown: 'Availability unknown'
-                        };
-                        var label = labels[data.availability] || 'Availability unknown';
-                        var actionUrl = data.requires_login ? (data.login_url || data.booking_url) : data.booking_url;
-                        var actionLabel = data.requires_login ? 'Sign in to the official VFS portal' : 'Open official VFS booking page';
-                        var checkedAt = data.checked_at ? new Date(data.checked_at).toLocaleString() : 'just now';
-                        out.innerHTML = '<strong>' + escapeHtml(label) + '</strong> \u00b7 ' + escapeHtml(data.office_name || vac) +
-                            '<div class="note2" style="margin-top:6px">' + escapeHtml(data.message || '') + '</div>' +
-                            '<div class="note2" style="margin-top:6px">Checked ' + escapeHtml(checkedAt) +
-                            ' \u00b7 confidence: ' + escapeHtml(data.confidence || 'none') +
-                            ' \u00b7 source: ' + escapeHtml(data.source || 'http') + '</div>' +
-                            '<p style="margin:10px 0 0"><a class="link-btn" href="' + escapeHtml(actionUrl) + '" target="_blank" rel="noopener noreferrer">' + escapeHtml(actionLabel) + '</a></p>' +
-                            '<p class="note2" style="margin:8px 0 0">' + escapeHtml(data.disclaimer || '') + '</p>';
-                    } catch (error) {
-                        out.innerHTML = '<strong>Could not check availability.</strong><div class="note2" style="margin-top:6px">' + escapeHtml(error.message) + '</div>';
-                    } finally {
-                        check.disabled = false;
-                    }
-                });
             }
 
             // ====== WATCHLIST TAB ======
-            function renderWatchlistLayout(rows) {
-                var addForm =
-                    '<div class="watch-card">' +
+            function renderWatchlistLayout() {
+                return '<div class="watch-card">' +
                     '<h3 class="watch-h3">Watch an application</h3>' +
+                    '<p class="note2" style="margin:0 0 12px;">Saved in this browser only. No account or sign-in is needed.</p>' +
                     '<form id="watch-add-form" novalidate>' +
                     '<div class="watch-field"><label>Application number</label>' +
                     '<input type="text" name="application_number" required inputmode="numeric" ' +
@@ -1994,131 +1574,71 @@
                     '<option value="ankara">Ankara</option>' +
                     '</select></div>' +
                     '<div class="watch-field"><label>Nickname <span class="note2">(optional)</span></label>' +
-                    '<input type="text" name="nickname" placeholder="e.g. My study visa"></div>' +
-                    '<button class="btn" type="submit" id="watch-add-btn">Add to watchlist</button>' +
+                    '<input type="text" name="nickname" maxlength="60" placeholder="e.g. My study visa"></div>' +
+                    '<button class="btn" type="submit" id="watch-add-btn">Save to watchlist</button>' +
                     '<div class="note" id="watch-add-status" aria-live="polite"></div>' +
                     '</form>' +
+                    '</div>' +
+                    '<div class="watch-card">' +
+                    '<h3 class="watch-h3">Saved applications</h3>' +
+                    '<div class="note2" id="watch-local-status">Checking saved applications\u2026</div>' +
+                    '<div id="watch-local-rows"></div>' +
+                    '<p class="note2" style="margin-bottom:0;">For email or Telegram alerts, use the Suggestions tab. Browser notifications can be enabled per application below.</p>' +
                     '</div>';
-                var listBox = currentUser
-                    ? '<div id="watch-server-list" class="watch-card"><h3 class="watch-h3">Your watchlist</h3>' +
-                      '<div class="note2" id="watch-server-status">Loading\u2026</div>' +
-                      '<div id="watch-server-rows"></div></div>'
-                    : '<div class="watch-card"><h3 class="watch-h3">Sign in to sync your watchlist</h3>' +
-                      '<p class="note2">Create an account or sign in to keep your watched applications ' +
-                      'across devices and receive email/push alerts when a decision is published.</p></div>';
-                var bulkBox = currentUser
-                    ? '<div class="watch-card"><h3 class="watch-h3">Bulk add (agency / family)</h3>' +
-                      '<p class="note2">Paste up to 50 application numbers, one per line. They are added to the office selected here.</p>' +
-                      '<form id="watch-bulk-form" novalidate>' +
-                      '<div class="watch-field"><label>Application numbers</label>' +
-                      '<textarea name="numbers" rows="4" placeholder="48850812&#10;63690452"></textarea></div>' +
-                      '<div class="watch-field"><label>Visa office</label><select name="embassy_slug">' +
-                      '<option value="new-delhi">New Delhi</option><option value="beijing">Beijing</option>' +
-                      '<option value="dublin">Dublin</option><option value="abu-dhabi">Abu Dhabi</option>' +
-                      '<option value="abuja">Abuja</option><option value="ankara">Ankara</option>' +
-                      '</select></div>' +
-                      '<button class="btn" type="submit" id="watch-bulk-btn">Add all</button>' +
-                      '<div class="note" id="watch-bulk-status" aria-live="polite"></div>' +
-                      '</form></div>' +
-                      '<div class="watch-card"><h3 class="watch-h3">Your data</h3>' +
-                      '<p class="note2">Download a JSON copy of your account, watchlist and alert subscriptions.</p>' +
-                      '<button type="button" class="export-btn tu-btn" id="watch-export-btn">Export my data</button></div>'
-                    : '';
-                return addForm + listBox + bulkBox;
             }
 
-            async function paintWatchlist() {
-                if (!currentUser) return;
-                var rows = cache || [];
-                var box = document.getElementById('watch-server-rows');
-                var status = document.getElementById('watch-server-status');
+            function paintWatchlist() {
+                var box = document.getElementById('watch-local-rows');
+                var status = document.getElementById('watch-local-status');
                 if (!box) return;
-                try {
-                    var wl = await fetchWatchlist();
-                    if (status) status.textContent = wl.length
-                        ? wl.length + ' watched application' + (wl.length === 1 ? '' : 's')
-                        : 'Your watchlist is empty.';
-                    box.innerHTML = '';
-                    if (!wl.length) {
-                        box.innerHTML = '<div class="note2">No watched applications yet. Add one above.</div>';
-                        return;
-                    }
-                    // Resolve the latest decision for each watched number from local data.
-                    var byIrl = {};
-                    (rows || []).forEach(function(r) {
-                        if (!r._placeholder && r.irl) byIrl[r.irl] = r;
-                    });
-                    var html = '<table class="results-table"><thead><tr>' +
-                        '<th scope="col">Application</th><th scope="col">Office</th>' +
-                        '<th scope="col">Nickname</th><th scope="col">Latest decision</th>' +
-                        '<th scope="col">Date</th><th scope="col">Channels</th><th scope="col">&nbsp;</th>' +
-                        '</tr></thead><tbody>';
-                    wl.forEach(function(w) {
-                        var r = byIrl[w.application_number];
-                        var decision = r ? escapeHtml(r.decision || '-') : '\u2014';
-                        var date = r ? escapeHtml(r.date) : '\u2014';
-                        var pill = r ? ('<span class="pill ' + (r._pillClass || 'amber') + '">' + decision + '</span>') : decision;
-                        var channelControls = [
-                            ['email', 'Email', w.notify_email],
-                            ['push', 'Push', w.notify_push]
-                        ].map(function(item) {
-                            return '<label class="watch-channel"><input type="checkbox" data-watch-id="' +
-                                escapeHtml(w.id) + '" data-watch-field="notify_' + item[0] + '"' +
-                                (item[2] ? ' checked' : '') + '> ' + item[1] + '</label>';
-                        }).join('');
-                        html += '<tr>' +
-                            '<td class="mono">' + escapeHtml(w.application_number) + '</td>' +
-                            '<td>' + escapeHtml(w.embassy_slug || 'new-delhi') + '</td>' +
-                            '<td>' + escapeHtml(w.nickname || '\u2014') + '</td>' +
-                            '<td>' + pill + '</td>' +
-                            '<td>' + date + '</td>' +
-                            '<td class="watch-channel-cell">' + channelControls + '</td>' +
-                            '<td><button type="button" class="export-btn tu-btn" data-watch-push="' +
-                            escapeHtml(w.application_number) + '" data-watch-office="' + escapeHtml(w.embassy_slug || 'new-delhi') +
-                            '" title="Enable browser notifications" aria-label="Enable browser notifications for ' +
-                            escapeHtml(w.application_number) + '">Enable push</button> ' +
-                            '<button type="button" class="export-btn tu-btn" data-watch-remove="' +
-                            escapeHtml(w.id) + '" title="Remove">Remove</button></td>' +
-                            '</tr>';
-                    });
-                    box.innerHTML = html + '</tbody></table>';
-                } catch (e) {
-                    if (status) status.textContent = 'Could not load watchlist.';
-                    box.innerHTML = '';
+                var list = getWatchlist();
+                if (status) status.textContent = list.length
+                    ? list.length + ' saved application' + (list.length === 1 ? '' : 's')
+                    : 'No saved applications yet.';
+                if (!list.length) {
+                    box.innerHTML = '<div class="note2">Add an application above to keep it here.</div>';
+                    return;
                 }
-                // Persist per-application email and push switches.
-                box.onchange = function(e) {
-                    var input = e.target && e.target.closest ? e.target.closest('[data-watch-field]') : null;
-                    if (!input) return;
-                    var id = input.getAttribute('data-watch-id');
-                    var field = input.getAttribute('data-watch-field');
-                    var value = input.checked;
-                    var status = document.getElementById('watch-server-status');
-                    input.disabled = true;
-                    var patch = {};
-                    patch[field] = value;
-                    fetch('/api/user/watchlist/' + encodeURIComponent(id), {
-                        method: 'PATCH',
-                        credentials: 'include',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(patch)
-                    }).then(function(res) {
-                        if (!res.ok) throw new Error('Could not update alert settings');
-                        if (status) status.textContent = 'Alert settings updated.';
-                    }).catch(function() {
-                        input.checked = !value;
-                        if (status) status.textContent = 'Could not update alert settings.';
-                    }).finally(function() {
-                        input.disabled = false;
-                    });
+                var rows = cache || [];
+                var officeNames = {
+                    'new-delhi': 'New Delhi', beijing: 'Beijing', dublin: 'Dublin',
+                    'abu-dhabi': 'Abu Dhabi', abuja: 'Abuja', ankara: 'Ankara'
                 };
-                // Delegate push and remove clicks.
+                var html = '<table class="results-table"><thead><tr>' +
+                    '<th scope="col">Application</th><th scope="col">Office</th>' +
+                    '<th scope="col">Nickname</th><th scope="col">Latest decision</th>' +
+                    '<th scope="col">Date</th><th scope="col">&nbsp;</th>' +
+                    '</tr></thead><tbody>';
+                list.forEach(function(item) {
+                    var row = rows.find(function(candidate) {
+                        return watchRowMatches(candidate, item);
+                    });
+                    var decision = row ? escapeHtml(row.decision || '-') : 'Not published';
+                    var date = row ? escapeHtml(row.date) : '\u2014';
+                    var pill = row
+                        ? '<span class="pill ' + (row._pillClass || 'amber') + '">' + decision + '</span>'
+                        : '<span class="note2">' + decision + '</span>';
+                    html += '<tr>' +
+                        '<td class="mono">' + escapeHtml(item.number) + '</td>' +
+                        '<td>' + escapeHtml(officeNames[item.office] || item.office) + '</td>' +
+                        '<td>' + escapeHtml(item.nickname || '\u2014') + '</td>' +
+                        '<td>' + pill + '</td>' +
+                        '<td>' + date + '</td>' +
+                        '<td><button type="button" class="export-btn tu-btn" data-watch-push="' +
+                        escapeHtml(item.number) + '" data-watch-office="' + escapeHtml(item.office) +
+                        '" title="Enable browser notifications" aria-label="Enable browser notifications for ' +
+                        escapeHtml(item.number) + '">Enable push</button> ' +
+                        '<button type="button" class="export-btn tu-btn" data-watch-remove="' + escapeHtml(item.number) +
+                        '" data-watch-office="' + escapeHtml(item.office) +
+                        '" title="Remove">Remove</button></td>' +
+                        '</tr>';
+                });
+                box.innerHTML = html + '</tbody></table>';
                 box.onclick = function(e) {
                     var pushBtn = e.target && e.target.closest ? e.target.closest('[data-watch-push]') : null;
                     if (pushBtn) {
                         var app = pushBtn.getAttribute('data-watch-push');
                         var office = pushBtn.getAttribute('data-watch-office');
-                        var status = document.getElementById('watch-server-status');
                         pushBtn.disabled = true;
                         if (status) status.textContent = 'Requesting notification permission\u2026';
                         window.enablePushNotifications(app, office).then(function(result) {
@@ -2128,141 +1648,48 @@
                         }).finally(function() { pushBtn.disabled = false; });
                         return;
                     }
-                    var btn = e.target && e.target.closest ? e.target.closest('[data-watch-remove]') : null;
-                    if (!btn) return;
-                    var id = btn.getAttribute('data-watch-remove');
-                    removeFromServerWatchlist(id).then(function(ok) {
-                        if (ok) paintWatchlist();
-                    });
+                    var removeBtn = e.target && e.target.closest ? e.target.closest('[data-watch-remove]') : null;
+                    if (!removeBtn) return;
+                    removeWatchItem(
+                        removeBtn.getAttribute('data-watch-remove'),
+                        removeBtn.getAttribute('data-watch-office')
+                    );
+                    paintWatchlist();
+                    paintWatch();
                 };
             }
 
-            // Home "Watch" button: server-backed when signed in, localStorage
-            // fallback for anonymous users. Replaces the local-only add so a
-            // signed-in user's watchlist persists across devices.
-            var _homeWatchWired = false;
-            function wireHomeWatch() {
-                if (_homeWatchWired) return;
-                _homeWatchWired = true;
-                var area = document.getElementById('watch-area');
-                if (!area) return;
-                area.onclick = function(e) {
-                    var add = e.target && e.target.closest ? e.target.closest('[data-watch-add]') : null;
-                    var del = e.target && e.target.closest ? e.target.closest('[data-watch-del]') : null;
-                    if (add) {
-                        var term = add.getAttribute('data-watch-add');
-                        if (!term) return;
-                        if (currentUser) {
-                            addToServerWatchlist(term, 'new-delhi', null).then(function(ok) {
-                                if (ok) {
-                                    var list = getWatchlist();
-                                    if (list.indexOf(term) === -1) { list.unshift(term); saveWatchlist(list); }
-                                    markActivation('watch');
-                                    trackConversion('watchlist_added', 'home-watch');
-                                    paintWatch();
-                                }
-                            });
-                        } else {
-                            var list = getWatchlist();
-                            if (list.indexOf(term) === -1) { list.unshift(term); saveWatchlist(list); }
-                            markActivation('watch');
-                            trackConversion('watchlist_added', 'home-watch-anonymous');
-                            paintWatch();
-                        }
-                    } else if (del) {
-                        var gone = del.getAttribute('data-watch-del');
-                        saveWatchlist(getWatchlist().filter(function(t) { return t !== gone; }));
-                        paintWatch();
-                    }
-                };
-            }
-
-            // Watch add form on the watchlist tab.
             function wireWatchAdd() {
                 var form = document.getElementById('watch-add-form');
                 if (!form || form.dataset.wired === '1') return;
                 form.dataset.wired = '1';
-                form.addEventListener('submit', async function(e) {
+                form.addEventListener('submit', function(e) {
                     e.preventDefault();
-                    var btn = document.getElementById('watch-add-btn');
                     var status = document.getElementById('watch-add-status');
-                    var appNum = form.elements['application_number'].value.trim();
-                    var embassy = form.elements['embassy_slug'].value;
-                    var nickname = form.elements['nickname'].value.trim();
-                    if (!appNum) return;
-                    btn.disabled = true;
-                    status.textContent = 'Adding\u2026';
-                    try {
-                        var ok = await addToServerWatchlist(appNum, embassy, nickname);
-                        if (ok) {
-                            status.textContent = 'Added to your watchlist.';
-                            status.style.color = 'var(--green)';
-                            form.reset();
-                            markActivation('watch');
-                            trackConversion('watchlist_added', 'watchlist');
-                            paintWatchlist();
-                        } else {
-                            status.textContent = 'Could not add. Are you signed in?';
-                            status.style.color = 'var(--red)';
-                        }
-                    } catch (err) {
-                        status.textContent = 'Error adding watch.';
-                        status.style.color = 'var(--red)';
-                    } finally {
-                        btn.disabled = false;
-                    }
-                });
-            }
-
-            function wireWatchBulk() {
-                var form = document.getElementById('watch-bulk-form');
-                if (form && form.dataset.wired !== '1') {
-                    form.dataset.wired = '1';
-                    form.addEventListener('submit', async function(e) {
-                        e.preventDefault();
-                        var status = document.getElementById('watch-bulk-status');
-                        var btn = document.getElementById('watch-bulk-btn');
-                        var raw = form.elements['numbers'].value || '';
-                        var numbers = raw.split(/[\s,;]+/).map(function(v) { return v.trim().toUpperCase(); })
-                            .filter(function(v) { return v.length > 0; });
-                        numbers = numbers.filter(function(v, i, arr) { return arr.indexOf(v) === i; }).slice(0, 50);
-                        if (!numbers.length) { if (status) status.textContent = 'Enter at least one application number.'; return; }
-                        if (btn) btn.disabled = true;
-                        if (status) { status.textContent = 'Adding ' + numbers.length + '...'; status.style.color = ''; }
-                        try {
-                            var res = await fetch('/api/user/watchlist/bulk', {
-                                method: 'POST', credentials: 'include',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({
-                                    applications: numbers.map(function(n) {
-                                        return { application_number: n, embassy_slug: form.elements['embassy_slug'].value };
-                                    }),
-                                    notify_email: true, notify_push: true
-                                })
-                            });
-                            var data = await res.json().catch(function() { return {}; });
-                            if (res.ok) {
-                                if (status) {
-                                    status.textContent = 'Added ' + (data.added || 0) + ', skipped ' + (data.skipped || 0) +
-                                        (data.rejected && data.rejected.length ? ', invalid ' + data.rejected.length : '') + '.';
-                                    status.style.color = 'var(--green)';
-                                }
-                                form.reset();
-                                paintWatchlist();
-                            } else if (status) {
-                                status.textContent = data.error || 'Could not add these applications.';
-                                status.style.color = 'var(--red)';
-                            }
-                        } catch (err) {
-                            if (status) { status.textContent = 'Could not add these applications.'; status.style.color = 'var(--red)'; }
-                        } finally { if (btn) btn.disabled = false; }
+                    var result = addWatchItem({
+                        number: form.elements['application_number'].value,
+                        office: form.elements['embassy_slug'].value,
+                        nickname: form.elements['nickname'].value.trim()
                     });
-                }
-                var exportBtn = document.getElementById('watch-export-btn');
-                if (exportBtn && exportBtn.dataset.wired !== '1') {
-                    exportBtn.dataset.wired = '1';
-                    exportBtn.addEventListener('click', function() { window.location.href = '/api/user/export'; });
-                }
+                    if (result === 'invalid') {
+                        if (status) { status.textContent = 'Enter a valid application number.'; status.style.color = 'var(--red)'; }
+                        return;
+                    }
+                    if (result === 'duplicate') {
+                        if (status) { status.textContent = 'That application is already saved.'; status.style.color = ''; }
+                        return;
+                    }
+                    if (result === 'limit') {
+                        if (status) { status.textContent = 'You can save up to 10 applications in this browser.'; status.style.color = ''; }
+                        return;
+                    }
+                    if (status) { status.textContent = 'Saved in this browser.'; status.style.color = 'var(--green)'; }
+                    form.reset();
+                    markActivation('watch');
+                    trackConversion('watchlist_added', 'watchlist');
+                    paintWatchlist();
+                    paintWatch();
+                });
             }
 
             // ====== HOME TAB ======
@@ -2422,7 +1849,7 @@
                 // Memoize: same data + same list = same hits. Without this,
                 // every debounced keystroke would re-scan 33k rows per term.
                 var rows = cache || [];
-                var key = list.join(',');
+                var key = list.map(function(item) { return item.office + ':' + item.number; }).join(',');
                 var hits;
                 if (_watchMemo.rows === rows && _watchMemo.list === key) {
                     hits = _watchMemo.hits;
@@ -2437,17 +1864,21 @@
                         ' on ' + escapeHtml(h.row.date) + '.</div>';
                 });
                 var term = normalizeIRL(homeSearchTerm);
-                if (term && list.indexOf(term) === -1) {
+                if (term && !list.some(function(item) { return item.number === term; })) {
                     html += '<div style="margin:8px 0;"><button type="button" class="export-btn" data-watch-add="' +
                         escapeHtml(term) + '" title="Get notified here when this number appears">Watch ' +
                         escapeHtml(homeSearchTerm.trim()) + '</button></div>';
                 }
                 if (list.length) {
                     html += '<div class="recent-row"><span class="recent-label">Watched:</span>' +
-                        list.map(function(t) {
-                            var hit = hits.some(function(h) { return h.term === t; });
-                            return '<button type="button" class="recent-chip" data-watch-del="' + escapeHtml(t) +
-                                '" title="Stop watching ' + escapeHtml(t) + '">' + escapeHtml(t) +
+                        list.map(function(item) {
+                            var hit = hits.some(function(h) {
+                                return h.item.number === item.number && h.item.office === item.office;
+                            });
+                            var label = item.number + (item.office === 'new-delhi' ? '' : ' \u00b7 ' + item.office);
+                            return '<button type="button" class="recent-chip" data-watch-del="' + escapeHtml(item.number) +
+                                '" data-watch-office="' + escapeHtml(item.office) +
+                                '" title="Stop watching ' + escapeHtml(label) + '">' + escapeHtml(label) +
                                 (hit ? ' \u25cf' : '') + ' \u00d7</button>';
                         }).join('') + '</div>';
                 }
@@ -3122,8 +2553,9 @@
             function renderDecisionTrendsChart(rows) {
                 const real = realRows(rows);
                 if (!real.length) return '<p class="note2">No data for trends</p>';
-                
-                // Group by week
+
+                // Group by week. Counts are plotted separately from the rate so
+                // the rate never shares a y-axis with application volume.
                 const byWeek = {};
                 real.forEach(r => {
                     if (!r.date) return;
@@ -3136,7 +2568,7 @@
                     if (r._status === 'accepted') byWeek[key].accepted++;
                     else if (r._status === 'rejected') byWeek[key].rejected++;
                 });
-                
+
                 const weeks = Object.keys(byWeek).sort().slice(-12); // Last 12 weeks
                 const labels = weeks.map(w => {
                     const d = new Date(w + 'T00:00:00');
@@ -3144,20 +2576,26 @@
                 });
                 const accepted = weeks.map(w => byWeek[w].accepted);
                 const rejected = weeks.map(w => byWeek[w].rejected);
-                const rate = weeks.map(w => w.total ? Math.round((byWeek[w].accepted / w.total) * 100) : 0);
-                
-                const canvasId = 'trends-chart-' + Math.random().toString(36).slice(2);
+                const rate = weeks.map(w => byWeek[w].total
+                    ? Number(((byWeek[w].accepted / byWeek[w].total) * 100).toFixed(1))
+                    : 0);
+
+                const baseId = 'trends-chart-' + Math.random().toString(36).slice(2);
+                const countId = baseId + '-counts';
+                const rateId = baseId + '-rate';
                 const draw = () => {
-                    const ctx = document.getElementById(canvasId);
-                    if (ctx && !ctx.chart) {
-                        ctx.chart = new Chart(ctx, {
-                            type: 'line',
+                    const countCanvas = document.getElementById(countId);
+                    const rateCanvas = document.getElementById(rateId);
+                    if (!countCanvas || !rateCanvas) return;
+
+                    if (!countCanvas.chart) {
+                        countCanvas.chart = new Chart(countCanvas, {
+                            type: 'bar',
                             data: {
                                 labels: labels,
                                 datasets: [
-                                    { label: 'Approved', data: accepted, borderColor: '#059669', backgroundColor: 'rgba(5,150,105,0.1)', fill: true, tension: 0.3 },
-                                    { label: 'Refused', data: rejected, borderColor: '#dc2626', backgroundColor: 'rgba(220,38,38,0.1)', fill: true, tension: 0.3 },
-                                    { label: 'Approval Rate %', data: rate, borderColor: '#059669', backgroundColor: 'transparent', yAxisID: 'y1', type: 'line', tension: 0.3 }
+                                    { label: 'Approved', data: accepted, backgroundColor: '#059669', borderColor: '#047857', borderWidth: 0, borderRadius: 3, maxBarThickness: 28 },
+                                    { label: 'Refused', data: rejected, backgroundColor: '#dc2626', borderColor: '#b91c1c', borderWidth: 0, borderRadius: 3, maxBarThickness: 28 }
                                 ]
                             },
                             options: {
@@ -3165,10 +2603,49 @@
                                 maintainAspectRatio: false,
                                 interaction: { mode: 'index', intersect: false },
                                 scales: {
-                                    y: { type: 'linear', position: 'left', beginAtZero: true, title: { display: true, text: 'Count' } },
-                                    y1: { type: 'linear', position: 'right', min: 0, max: 100, title: { display: true, text: 'Rate %' }, grid: { drawOnChartArea: false } }
+                                    y: { beginAtZero: true, ticks: { precision: 0 }, title: { display: true, text: 'Applications' }, grid: { color: 'rgba(148,163,184,0.18)' } },
+                                    x: { grid: { display: false }, ticks: { maxTicksLimit: 8, maxRotation: 0, autoSkip: true } }
                                 },
-                                plugins: { legend: { position: 'top' } }
+                                plugins: {
+                                    legend: { position: 'top', labels: { usePointStyle: true, boxWidth: 8, boxHeight: 8, padding: 14 } },
+                                    tooltip: { callbacks: { label: function(ctx) { return ctx.dataset.label + ': ' + ctx.parsed.y.toLocaleString() + ' decisions'; } } }
+                                }
+                            }
+                        });
+                    }
+
+                    if (!rateCanvas.chart) {
+                        rateCanvas.chart = new Chart(rateCanvas, {
+                            type: 'line',
+                            data: {
+                                labels: labels,
+                                datasets: [{
+                                    label: 'Approval rate',
+                                    data: rate,
+                                    borderColor: '#2563eb',
+                                    backgroundColor: 'rgba(37,99,235,0.08)',
+                                    borderWidth: 2,
+                                    fill: false,
+                                    tension: 0,
+                                    pointRadius: 3,
+                                    pointHoverRadius: 5,
+                                    pointBackgroundColor: '#ffffff',
+                                    pointBorderColor: '#2563eb',
+                                    pointBorderWidth: 2
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                interaction: { mode: 'index', intersect: false },
+                                scales: {
+                                    y: { min: 0, max: 100, ticks: { stepSize: 25, callback: function(v) { return v + '%'; } }, title: { display: true, text: 'Approval rate' }, grid: { color: 'rgba(148,163,184,0.18)' } },
+                                    x: { grid: { display: false }, ticks: { maxTicksLimit: 8, maxRotation: 0, autoSkip: true } }
+                                },
+                                plugins: {
+                                    legend: { display: false },
+                                    tooltip: { callbacks: { label: function(ctx) { return 'Approval rate: ' + ctx.parsed.y + '%'; } } }
+                                }
                             }
                         });
                     }
@@ -3176,15 +2653,29 @@
                 if (typeof Chart !== 'undefined') {
                     setTimeout(draw, 0);
                 } else {
-                    // Render the canvas first, then draw once the lazy loader resolves.
+                    // Render the canvases first, then draw once the lazy loader resolves.
                     LazyLoader.chart().then(() => setTimeout(draw, 0)).catch((err) => {
                         console.error('Failed to load Chart.js for trends:', err);
-                        const host = document.getElementById(canvasId);
-                        if (host && host.parentNode) host.parentNode.innerHTML = '<div class="chart-placeholder">Chart.js not loaded</div>';
+                        const host = document.getElementById(countId);
+                        const panel = host && host.closest('.decision-trends-chart');
+                        if (panel) panel.innerHTML = '<div class="chart-placeholder">Chart.js not loaded</div>';
                     });
                 }
-                
-                return '<div class="chart-container" style="height:300px;"><canvas id="' + canvasId + '"></canvas></div>';
+
+                return '<div class="chart-container decision-trends-chart">' +
+                    '<div class="decision-trends-head">' +
+                    '<h3>Weekly decisions and approval rate</h3>' +
+                    '<p class="decision-trends-note">Counts and rate have separate scales. Rate is approved decisions divided by all decisions in the week.</p>' +
+                    '</div>' +
+                    '<div class="decision-trends-panel">' +
+                    '<div class="decision-trends-panel-title"><span>Decisions per week</span><span>applications</span></div>' +
+                    '<canvas id="' + countId + '" class="decision-trends-count-canvas" role="img" aria-label="Weekly approved and refused decisions"></canvas>' +
+                    '</div>' +
+                    '<div class="decision-trends-panel">' +
+                    '<div class="decision-trends-panel-title"><span>Approval rate</span><span>percent</span></div>' +
+                    '<canvas id="' + rateId + '" class="decision-trends-rate-canvas" role="img" aria-label="Weekly approval rate"></canvas>' +
+                    '</div>' +
+                    '</div>';
             }
 
             // ====== ANALYTICS TAB ======
@@ -3763,26 +3254,6 @@
                 if (themeToggle) themeToggle.addEventListener('click', toggleTheme);
                 const backBtn = document.getElementById('back-btn');
                 if (backBtn) backBtn.addEventListener('click', function() { setTracker('home'); });
-                const accountBtn = document.getElementById('account-btn');
-                if (accountBtn) accountBtn.addEventListener('click', openAccountModal);
-                const signoutBtn = document.getElementById('signout-btn');
-                if (signoutBtn) signoutBtn.addEventListener('click', signOut);
-                // Modal form submit handlers (delegated, survives re-renders).
-                var signinForm = document.getElementById('account-form-signin');
-                if (signinForm && !signinForm._wired) {
-                    signinForm._wired = true;
-                    signinForm.addEventListener('submit', handleAccountForm);
-                }
-                var regForm = document.getElementById('account-form-register');
-                if (regForm && !regForm._wired) {
-                    regForm._wired = true;
-                    regForm.addEventListener('submit', handleAccountForm);
-                }
-                // Tab buttons inside the modal.
-                var tSignin = document.getElementById('account-tab-signin');
-                var tRegister = document.getElementById('account-tab-register');
-                if (tSignin) tSignin.addEventListener('click', function() { showAccountTab('signin'); });
-                if (tRegister) tRegister.addEventListener('click', function() { showAccountTab('register'); });
             }
 
             // First-paint hero reveal shared by landing/1G pages. The visa
@@ -3945,29 +3416,85 @@
                 return cats.indexOf('1G') !== -1 ? '1G' : cats[0];
             }
 
-            // ---- watched application numbers (item 5) ----
-            // localStorage list of normalized IRL queries; checked against
-            // fresh data on every home paint so a watched decision surfaces
-            // as a banner the moment it lands.
+            // ---- watched applications (local only) ----
+            // Stored in this browser; nothing here is tied to an account.
+            function normalizeWatchItem(value) {
+                var number = '';
+                var office = 'new-delhi';
+                var nickname = '';
+                if (typeof value === 'string') {
+                    number = normalizeIRL(value);
+                } else if (value && typeof value === 'object') {
+                    number = normalizeIRL(value.number || value.application_number || '');
+                    office = String(value.office || value.embassy_slug || 'new-delhi');
+                    nickname = String(value.nickname || '').slice(0, 60);
+                }
+                if (!number) return null;
+                if (['new-delhi', 'beijing', 'dublin', 'abu-dhabi', 'abuja', 'ankara'].indexOf(office) === -1) {
+                    office = 'new-delhi';
+                }
+                return { number: number, office: office, nickname: nickname };
+            }
             function getWatchlist() {
                 try {
                     var raw = JSON.parse(localStorage.getItem('visa-watchlist') || '[]');
-                    return Array.isArray(raw) ? raw.filter(function(x) {
-                        return typeof x === 'string' && x;
-                    }).slice(0, 10) : [];
+                    if (!Array.isArray(raw)) return [];
+                    var seen = {};
+                    return raw.map(normalizeWatchItem).filter(function(item) {
+                        if (!item) return false;
+                        var key = item.office + '|' + item.number;
+                        if (seen[key]) return false;
+                        seen[key] = 1;
+                        return true;
+                    }).slice(0, 10);
                 } catch (e) { return []; }
             }
             function saveWatchlist(list) {
-                try { localStorage.setItem('visa-watchlist', JSON.stringify(list.slice(0, 10))); }
-                catch (e) { /* private mode */ }
+                try {
+                    var seen = {};
+                    var clean = (list || []).map(normalizeWatchItem).filter(function(item) {
+                        if (!item) return false;
+                        var key = item.office + '|' + item.number;
+                        if (seen[key]) return false;
+                        seen[key] = 1;
+                        return true;
+                    }).slice(0, 10);
+                    localStorage.setItem('visa-watchlist', JSON.stringify(clean));
+                } catch (e) { /* private mode */ }
+            }
+            function addWatchItem(value) {
+                var item = normalizeWatchItem(value);
+                if (!item) return 'invalid';
+                var list = getWatchlist();
+                if (list.some(function(saved) {
+                    return saved.number === item.number && saved.office === item.office;
+                })) return 'duplicate';
+                if (list.length >= 10) return 'limit';
+                list.unshift(item);
+                saveWatchlist(list);
+                return 'added';
+            }
+            function removeWatchItem(number, office) {
+                var target = normalizeWatchItem({ number: number, office: office });
+                if (!target) return;
+                saveWatchlist(getWatchlist().filter(function(item) {
+                    return !(item.number === target.number && item.office === target.office);
+                }));
+            }
+            // Rows from visa_decisions.json are the New Delhi tracker and omit
+            // `embassy`; a missing office means New Delhi, never a wildcard.
+            function watchRowMatches(row, item) {
+                return !!row && !!item && !row._placeholder &&
+                    normalizeIRL(row.irl).indexOf(item.number) !== -1 &&
+                    (row.embassy || 'new-delhi') === item.office;
             }
             function checkWatchlist(rows, list) {
                 var hits = [];
-                (list || []).forEach(function(term) {
-                    var match = (rows || []).find(function(r) {
-                        return !r._placeholder && normalizeIRL(r.irl).indexOf(term) !== -1;
+                (list || []).map(normalizeWatchItem).filter(Boolean).forEach(function(item) {
+                    var match = (rows || []).find(function(row) {
+                        return watchRowMatches(row, item);
                     });
-                    if (match) hits.push({ term: term, row: match });
+                    if (match) hits.push({ term: item.number, item: item, row: match });
                 });
                 return hits;
             }
@@ -5178,7 +4705,6 @@ async function renderLandingPage() {
                         '<div class="titlerow"><h1>Irish Visa Decision Tracker</h1>' +
                         '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">' +
                         THEME_BTN_HTML +
-                        accountBtnHTML() +
                         (typeof createLanguageSelector === 'function' ? createLanguageSelector() : '') +
                         '<div class="stutter-badge"><i>\u24D8</i> Switching tabs may briefly stutter while data loads.</div></div></div>' +
                         '<div class="topbar"><div class="topbar-fill"></div></div>' +
@@ -5221,7 +4747,6 @@ async function renderLandingPage() {
                     '<div class="titlerow"><h1>Irish Visa Decision Tracker</h1>' +
                     '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">' +
                     THEME_BTN_HTML +
-                    accountBtnHTML() +
                     (typeof createLanguageSelector === 'function' ? createLanguageSelector() : '') +
                     '<div class="stutter-badge"><i>\u24D8</i> Switching tabs may briefly stutter while data loads.</div></div>' +
                     '</div>' +
@@ -5253,21 +4778,6 @@ async function renderLandingPage() {
                 if (themeToggle) themeToggle.addEventListener('click', toggleTheme);
                 const backBtn = document.getElementById('back-btn');
                 if (backBtn) backBtn.addEventListener('click', function() { setTracker('home'); });
-                const accountBtn = document.getElementById('account-btn');
-                if (accountBtn) accountBtn.addEventListener('click', openAccountModal);
-                const signoutBtn = document.getElementById('signout-btn');
-                if (signoutBtn) signoutBtn.addEventListener('click', signOut);
-                // Wire modal form submit handlers (guarded against double-wiring).
-                var signinForm = document.getElementById('account-form-signin');
-                if (signinForm && !signinForm._wired) {
-                    signinForm._wired = true;
-                    signinForm.addEventListener('submit', handleAccountForm);
-                }
-                var regForm = document.getElementById('account-form-register');
-                if (regForm && !regForm._wired) {
-                    regForm._wired = true;
-                    regForm.addEventListener('submit', handleAccountForm);
-                }
                 morphHero();
                 // Initial body paint: populate the active tab's content DIRECTLY
                 // without the hero cross-fade dip. morphHero already faded the
@@ -5322,25 +4832,3 @@ async function renderLandingPage() {
 
             render();
         })();
-
-// Inline handlers were removed for the strict CSP. Delegation keeps the
-// account modal and push test working without eval or inline event attributes.
-document.addEventListener('click', function (event) {
-  var target = event.target && event.target.closest ? event.target : null;
-  if (!target) return;
-  if (target.closest('[data-close-account]')) {
-    event.preventDefault();
-    if (window.closeAccountModal) window.closeAccountModal();
-    return;
-  }
-  var tab = target.closest('[data-account-tab]');
-  if (tab) {
-    event.preventDefault();
-    if (window.showAccountTab) window.showAccountTab(tab.getAttribute('data-account-tab'));
-    return;
-  }
-  if (target.closest('[data-push-test]')) {
-    event.preventDefault();
-    if (window.sendPushTest) window.sendPushTest();
-  }
-});
