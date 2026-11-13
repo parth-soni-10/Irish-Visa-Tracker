@@ -3,7 +3,7 @@
     "new-delhi": [
       {
         "report_date": "2026-11-12",
-        "fetched_at": "2026-11-13T11:56:22.497Z",
+        "fetched_at": "2026-11-13T12:29:09.386Z",
         "decisions": 42790,
         "approved": 36087,
         "refused": 6703,
@@ -59,7 +59,7 @@
     "beijing": [
       {
         "report_date": "2026-11-01",
-        "fetched_at": "2026-11-13T11:56:24.105Z",
+        "fetched_at": "2026-11-13T12:29:10.763Z",
         "decisions": 13724,
         "approved": 11373,
         "refused": 2351,
@@ -73,7 +73,7 @@
     "abu-dhabi": [
       {
         "report_date": "2026-11-06",
-        "fetched_at": "2026-11-13T11:56:25.057Z",
+        "fetched_at": "2026-11-13T12:29:11.521Z",
         "decisions": 250,
         "approved": 219,
         "refused": 31,
@@ -191,7 +191,7 @@
     "abuja": [
       {
         "report_date": "2026-10-18",
-        "fetched_at": "2026-11-13T11:56:25.544Z",
+        "fetched_at": "2026-11-13T12:29:11.697Z",
         "decisions": 52,
         "approved": 19,
         "refused": 33,
@@ -542,7 +542,7 @@
     "ankara": [
       {
         "report_date": "2026-11-01",
-        "fetched_at": "2026-11-13T11:56:25.672Z",
+        "fetched_at": "2026-11-13T12:29:12.063Z",
         "decisions": 172,
         "approved": 165,
         "refused": 7,
@@ -556,7 +556,7 @@
     "dublin": [
       {
         "report_date": "2026-11-13",
-        "fetched_at": "2026-11-13T11:56:35.102Z",
+        "fetched_at": "2026-11-13T12:29:17.830Z",
         "decisions": 4335,
         "approved": 2475,
         "refused": 1860,
