@@ -34,6 +34,7 @@ test_timelines.py
 test_track_1g.py
 tools/
 tests/
+monitoring/
 __pycache__/
 .pytest_cache/
 wrangler.toml

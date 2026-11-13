@@ -8,159 +8,32 @@
 
 import {
   createAPIToken,
-  validateAPIToken,
-  validateSession
+  validateAPIToken
 } from './auth.js';
-import { ensurePortalSchema } from './portal-schema.js';
+import {
+  json,
+  text,
+  baseUrl,
+  currentUser,
+  prefs,
+  displayName,
+  cleanText,
+  validEmail,
+  slugify,
+  isoDate,
+  readJson,
+  safeRows,
+  safeFirst,
+  requireUser,
+  ensureProduct,
+  membership,
+  publicOrg
+} from './portal-helpers.js';
 import { loadReportData } from './report-data.js';
 import { buildAnalytics } from './analytics.js';
 import { quoteFees, scanDocument } from './assistant.js';
-import { isChannelConfigured, sendChannelTest } from './notify-channels.js';
 import { buildExport, nextRunAt, safeFormat } from './export-service.js';
 import { isEmailConfigured, sendEmail } from './email-send.js';
-
-const DEFAULT_BASE = 'https://irishvisaupdatetracker.pages.dev';
-const MAX_BODY = 64 * 1024;
-
-function json(body, status = 200) {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }
-  });
-}
-
-function text(body, status = 200, type = 'text/plain; charset=utf-8', extra = {}) {
-  return new Response(body, {
-    status,
-    headers: { 'Content-Type': type, 'Cache-Control': 'no-store', ...extra }
-  });
-}
-
-function baseUrl(env) {
-  return String(env.APP_BASE_URL || DEFAULT_BASE).replace(/\/+$/, '');
-}
-
-function sessionIdFromCookie(request) {
-  const header = request.headers.get('Cookie') || '';
-  for (const part of header.split(';')) {
-    const [key, ...rest] = part.trim().split('=');
-    if (key !== 'session_id') continue;
-    const value = rest.join('=');
-    // The normal auth cookie is `userId:sessionId`; SSO creates a bare id.
-    return value.includes(':') ? value.slice(value.indexOf(':') + 1) : value;
-  }
-  return null;
-}
-
-async function currentUser(request, env) {
-  const sessionId = sessionIdFromCookie(request);
-  if (!sessionId || !env.DB) return null;
-  try {
-    return await validateSession(env, sessionId);
-  } catch {
-    return null;
-  }
-}
-
-function prefs(session) {
-  try { return JSON.parse(session && session.preferences || '{}'); } catch { return {}; }
-}
-
-function displayName(user) {
-  const name = String(user && user.name || '').trim();
-  if (!name) return 'Applicant';
-  return name.split(/\s+/)[0].slice(0, 40);
-}
-
-function cleanText(value, max = 2000) {
-  return String(value == null ? '' : value).trim().slice(0, max);
-}
-
-function validEmail(value) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value || ''));
-}
-
-function validPhone(value) {
-  return /^\+[1-9]\d{7,14}$/.test(String(value || '').replace(/[\s()-]/g, ''));
-}
-
-function normalizePhone(value) {
-  return String(value || '').trim().replace(/^whatsapp:/i, '').replace(/[\s()-]/g, '');
-}
-
-function slugify(value) {
-  return String(value || '').toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 60);
-}
-
-function isoDate(value) {
-  const raw = String(value || '').slice(0, 10);
-  return /^\d{4}-\d{2}-\d{2}$/.test(raw) ? raw : '';
-}
-
-async function readJson(request) {
-  const length = Number(request.headers.get('Content-Length') || 0);
-  if (length > MAX_BODY) throw new Error('Request body is too large');
-  return request.json();
-}
-
-async function safeRows(env, sql, params = []) {
-  try {
-    const result = await env.DB.prepare(sql).bind(...params).all();
-    return result.results || [];
-  } catch {
-    return [];
-  }
-}
-
-async function safeFirst(env, sql, params = []) {
-  try {
-    return await env.DB.prepare(sql).bind(...params).first();
-  } catch {
-    return null;
-  }
-}
-
-async function requireUser(request, env) {
-  const user = await currentUser(request, env);
-  if (!user) return { user: null, response: json({ error: 'Sign in required' }, 401) };
-  return { user, response: null };
-}
-
-async function ensureProduct(env) {
-  if (!env.DB) throw new Error('Database not configured');
-  await ensurePortalSchema(env);
-}
-
-async function membership(env, userId) {
-  const member = await safeFirst(env, `
-    SELECT o.*, m.role
-    FROM org_members m JOIN organizations o ON o.id = m.org_id
-    WHERE m.user_id = ?
-    ORDER BY m.created_at LIMIT 1
-  `, [userId]);
-  if (!member) return null;
-  const members = await safeRows(env, `
-    SELECT m.user_id, m.role, m.created_at, u.email, u.name
-    FROM org_members m JOIN users u ON u.id = m.user_id
-    WHERE m.org_id = ? ORDER BY m.created_at
-  `, [member.id]);
-  return { ...member, members };
-}
-
-function publicOrg(org) {
-  if (!org) return null;
-  return {
-    id: org.id,
-    name: org.name,
-    slug: org.slug,
-    brand_name: org.brand_name || org.name,
-    brand_color: org.brand_color || '#047857',
-    logo_url: org.logo_url || null,
-    plan: org.plan || 'team',
-    sso_domain: org.sso_domain || null,
-    sso_required: Boolean(org.sso_required)
-  };
-}
 
 async function createReferralCode(env, userId) {
   const existing = await safeFirst(env, 'SELECT code FROM referral_codes WHERE user_id = ?', [userId]);
@@ -181,9 +54,8 @@ async function overview(request, env) {
   if (!auth.user) return auth.response;
   await ensureProduct(env);
   const user = auth.user;
-  const [watchlists, channels, schedules, posts, referrals, jobs] = await Promise.all([
+  const [watchlists, schedules, posts, referrals, jobs] = await Promise.all([
     safeRows(env, 'SELECT application_number, embassy_slug, nickname, created_at FROM watchlists WHERE user_id = ? ORDER BY created_at DESC', [user.id]),
-    safeRows(env, 'SELECT channel, address, verified, consent_at, updated_at FROM user_channels WHERE user_id = ?', [user.id]),
     safeRows(env, 'SELECT id, format, frequency, next_run_at, enabled FROM scheduled_exports WHERE user_id = ? ORDER BY created_at DESC', [user.id]),
     safeRows(env, 'SELECT id, kind, title, created_at FROM community_posts WHERE user_id = ? ORDER BY created_at DESC LIMIT 5', [user.id]),
     safeRows(env, 'SELECT code, status, invited_email, created_at FROM referrals WHERE user_id = ? ORDER BY created_at DESC LIMIT 10', [user.id]),
@@ -201,7 +73,6 @@ async function overview(request, env) {
       preferences
     },
     watchlists,
-    channels,
     schedules,
     posts,
     referrals,
@@ -211,11 +82,7 @@ async function overview(request, env) {
     org: org ? publicOrg(org) : null,
     capabilities: {
       email: isEmailConfigured(env),
-      push: Boolean(env.VAPID_PUBLIC_KEY && env.VAPID_PRIVATE_KEY),
-      sms: isChannelConfigured(env, 'sms'),
-      whatsapp: isChannelConfigured(env, 'whatsapp'),
-      ocr: Boolean(env.OCR_SPACE_API_KEY),
-      sso: Boolean(env.OIDC_ISSUER && env.OIDC_CLIENT_ID)
+      push: Boolean(env.VAPID_PUBLIC_KEY && env.VAPID_PRIVATE_KEY)
     }
   });
 }
@@ -260,8 +127,6 @@ async function profile(request, env) {
       merged.notifications = {
         email: Boolean(merged.notifications.email),
         push: Boolean(merged.notifications.push),
-        sms: Boolean(merged.notifications.sms),
-        whatsapp: Boolean(merged.notifications.whatsapp),
         digest: Boolean(merged.notifications.digest)
       };
     }
@@ -275,57 +140,6 @@ async function profile(request, env) {
   params.push(new Date().toISOString(), user.id);
   await env.DB.prepare('UPDATE users SET ' + updates.join(', ') + ', updated_at = ? WHERE id = ?').bind(...params).run();
   return json({ success: true });
-}
-
-async function channels(request, env) {
-  const auth = await requireUser(request, env);
-  if (!auth.user) return auth.response;
-  await ensureProduct(env);
-  if (request.method === 'GET') {
-    return json({
-      channels: await safeRows(env, 'SELECT channel, address, verified, consent_at, updated_at FROM user_channels WHERE user_id = ? ORDER BY channel', [auth.user.id]),
-      configured: {
-        sms: isChannelConfigured(env, 'sms'),
-        whatsapp: isChannelConfigured(env, 'whatsapp')
-      }
-    });
-  }
-  let body;
-  try { body = await readJson(request); } catch { return json({ error: 'Invalid JSON' }, 400); }
-  if (request.method === 'DELETE') {
-    const channel = String(body.channel || '');
-    if (!['sms', 'whatsapp'].includes(channel)) return json({ error: 'Invalid channel' }, 400);
-    await env.DB.prepare('DELETE FROM user_channels WHERE user_id = ? AND channel = ?').bind(auth.user.id, channel).run();
-    return json({ success: true });
-  }
-  if (request.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
-  const channel = String(body.channel || '');
-  if (!['sms', 'whatsapp'].includes(channel)) return json({ error: 'Invalid channel' }, 400);
-  const address = normalizePhone(body.address);
-  if (!validPhone(address)) return json({ error: 'Use an international number such as +353871234567' }, 400);
-  if (body.consent !== true) return json({ error: 'Consent is required before enabling messages' }, 400);
-  await env.DB.prepare(`
-    INSERT INTO user_channels (id, user_id, channel, address, verified, consent_at, updated_at)
-    VALUES (?, ?, ?, ?, 1, datetime('now'), datetime('now'))
-    ON CONFLICT(user_id, channel) DO UPDATE SET address = excluded.address, verified = 1,
-      consent_at = datetime('now'), updated_at = datetime('now')
-  `).bind(crypto.randomUUID(), auth.user.id, channel, address).run();
-  return json({ success: true, configured: isChannelConfigured(env, channel), channel, address });
-}
-
-async function testChannel(request, env) {
-  const auth = await requireUser(request, env);
-  if (!auth.user) return auth.response;
-  await ensureProduct(env);
-  let body;
-  try { body = await readJson(request); } catch { return json({ error: 'Invalid JSON' }, 400); }
-  const channel = String(body.channel || '');
-  if (!['sms', 'whatsapp'].includes(channel)) return json({ error: 'Invalid channel' }, 400);
-  const row = await safeFirst(env, 'SELECT address FROM user_channels WHERE user_id = ? AND channel = ?', [auth.user.id, channel]);
-  if (!row) return json({ error: 'Add and consent to this channel first' }, 404);
-  if (!isChannelConfigured(env, channel)) return json({ error: channel + ' delivery is not configured by this deployment' }, 503);
-  const result = await sendChannelTest(env, channel, row.address);
-  return json(result, result.sent ? 200 : 502);
 }
 
 async function analytics(request, env) {
@@ -477,46 +291,6 @@ async function fees(request, env) {
   }));
 }
 
-function bytesToBase64(bytes) {
-  let binary = '';
-  const chunk = 0x8000;
-  for (let i = 0; i < bytes.length; i += chunk) {
-    binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
-  }
-  return btoa(binary);
-}
-
-async function ocrFile(env, file) {
-  if (!env.OCR_SPACE_API_KEY) {
-    return { error: 'OCR provider is not configured. Paste the text instead, or set OCR_SPACE_API_KEY.', disabled: true };
-  }
-  const buffer = await file.arrayBuffer();
-  if (buffer.byteLength > 5 * 1024 * 1024) return { error: 'File must be 5 MB or smaller' };
-  const mime = file.type || 'application/octet-stream';
-  const base64 = bytesToBase64(new Uint8Array(buffer));
-  const form = new URLSearchParams();
-  form.set('apikey', env.OCR_SPACE_API_KEY);
-  form.set('language', 'eng');
-  form.set('isOverlayRequired', 'false');
-  form.set('scale', 'true');
-  form.set('base64Image', 'data:' + mime + ';base64,' + base64);
-  if (mime.includes('pdf')) form.set('filetype', 'PDF');
-  const response = await fetch('https://api.ocr.space/parse/image', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: form.toString(),
-    signal: AbortSignal.timeout(30000)
-  });
-  if (!response.ok) return { error: 'OCR provider rejected the file (' + response.status + ')' };
-  const data = await response.json().catch(() => null);
-  if (!data || data.IsErroredOnProcessing) {
-    return { error: String(data && data.ErrorMessage && data.ErrorMessage[0] || 'OCR could not read this file') };
-  }
-  const text = (data.ParsedResults || []).map((item) => item.ParsedText || '').join('\n');
-  if (!text.trim()) return { error: 'OCR returned no readable text' };
-  return { text };
-}
-
 async function scan(request, env) {
   const auth = await requireUser(request, env);
   if (!auth.user) return auth.response;
@@ -534,9 +308,7 @@ async function scan(request, env) {
         if (String(file.type || '').startsWith('text/') || /\.(txt|csv)$/i.test(file.name || '')) {
           rawText = await file.text();
         } else {
-          const ocr = await ocrFile(env, file);
-          if (ocr.error) return json({ error: ocr.error, disabled: Boolean(ocr.disabled) }, ocr.disabled ? 503 : 422);
-          rawText = ocr.text;
+          return json({ error: 'Upload a .txt or .csv file, or paste the document text.' }, 415);
         }
       }
     } else {
@@ -546,7 +318,7 @@ async function scan(request, env) {
   } catch (error) {
     return json({ error: 'Could not read the submitted document' }, 400);
   }
-  if (!rawText.trim()) return json({ error: 'Paste the document text or upload a text/image/PDF file' }, 400);
+  if (!rawText.trim()) return json({ error: 'Paste the document text or upload a .txt/.csv file' }, 400);
   const result = scanDocument(rawText);
   if (result.confidence > 0) {
     await env.DB.prepare(`
@@ -747,15 +519,11 @@ async function orgs(request, env) {
     try { body = await readJson(request); } catch { return json({ error: 'Invalid JSON' }, 400); }
     const updates = [];
     const params = [];
-    for (const [key, max] of [['name', 120], ['brand_name', 120], ['brand_color', 20], ['logo_url', 500], ['sso_domain', 180]]) {
+    for (const [key, max] of [['name', 120], ['brand_name', 120], ['brand_color', 20], ['logo_url', 500]]) {
       if (body[key] !== undefined) {
         updates.push(key + ' = ?');
         params.push(cleanText(body[key], max));
       }
-    }
-    if (body.sso_required !== undefined) {
-      updates.push('sso_required = ?');
-      params.push(body.sso_required ? 1 : 0);
     }
     if (!updates.length) return json({ error: 'No fields to update' }, 400);
     params.push(new Date().toISOString(), member.id);
@@ -812,8 +580,6 @@ export async function handlePortal(request, env) {
   try {
     if (url.pathname === '/api/portal/overview' && request.method === 'GET') return overview(request, env);
     if (url.pathname === '/api/portal/profile' && ['GET', 'PATCH', 'PUT'].includes(request.method)) return profile(request, env);
-    if (url.pathname === '/api/portal/channels' && ['GET', 'POST', 'DELETE'].includes(request.method)) return channels(request, env);
-    if (url.pathname === '/api/portal/channels/test' && request.method === 'POST') return testChannel(request, env);
     if (url.pathname === '/api/portal/analytics' && request.method === 'GET') return analytics(request, env);
     if (url.pathname === '/api/portal/exports/download' && request.method === 'GET') return exportDownload(request, env);
     if (url.pathname === '/api/portal/exports' && request.method === 'GET') return exports(request, env);
@@ -832,4 +598,4 @@ export async function handlePortal(request, env) {
   }
 }
 
-export { currentUser, ensureProduct, membership, publicOrg };
+export { currentUser, ensureProduct, membership, publicOrg } from './portal-helpers.js';

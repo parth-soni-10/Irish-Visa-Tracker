@@ -19,15 +19,20 @@ const ROW = {
   created_at: "2026-03-05 09:00:00",
 };
 
-function envWith(rows) {
+function envWith(rows, inserts = []) {
   const statement = {
-    bind: () => statement,
+    sql: '',
+    args: [],
+    bind: (...args) => { statement.args = args; return statement; },
     all: async () => ({ results: rows }),
-    run: async () => ({ success: true }),
+    run: async () => {
+      if (/INSERT INTO submissions/.test(statement.sql)) inserts.push(statement.args);
+      return { success: true };
+    },
     first: async () => null,
   };
   return {
-    DB: { prepare: () => statement, batch: async () => [] },
+    DB: { prepare: (sql) => { statement.sql = sql; return statement; }, batch: async () => [] },
     ASSETS: { fetch: async () => new Response("missing", { status: 404 }) },
   };
 }
@@ -57,4 +62,46 @@ test("rejects writes", async () => {
     envWith([]),
   );
   assert.equal(response.status, 405);
+});
+
+test("accepts the fields the current timeline forms submit", async () => {
+  const inserts = [];
+  const response = await router.fetch(
+    new Request("https://tracker.test/", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        "form-name": "timelines-visa",
+        tracker: "visa",
+        applied: "2026-01-02",
+        decided: "2026-03-04",
+        outcome: "granted",
+      }).toString(),
+    }),
+    envWith([], inserts),
+  );
+  assert.equal(response.status, 200);
+  assert.equal(inserts.length, 1);
+  assert.equal(inserts[0][0], "timelines-visa");
+  assert.match(inserts[0][1], /"applied":"2026-01-02"/);
+});
+
+test("rejects a timeline without valid dates", async () => {
+  const inserts = [];
+  const response = await router.fetch(
+    new Request("https://tracker.test/", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        "form-name": "timelines-visa",
+        tracker: "visa",
+        applied: "",
+        decided: "2026-03-04",
+        outcome: "granted",
+      }).toString(),
+    }),
+    envWith([], inserts),
+  );
+  assert.equal(response.status, 400);
+  assert.equal(inserts.length, 0);
 });

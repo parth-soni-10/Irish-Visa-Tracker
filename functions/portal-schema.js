@@ -31,25 +31,10 @@ CREATE TABLE IF NOT EXISTS watchlists (
   nickname TEXT,
   notify_email INTEGER DEFAULT 1,
   notify_push INTEGER DEFAULT 1,
-  notify_whatsapp INTEGER DEFAULT 0,
-  notify_sms INTEGER DEFAULT 0,
   last_alert_sent TEXT,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 CREATE UNIQUE INDEX IF NOT EXISTS idx_watchlist_unique ON watchlists(user_id, application_number, embassy_slug);
-
-CREATE TABLE IF NOT EXISTS user_channels (
-  id TEXT PRIMARY KEY,
-  user_id TEXT NOT NULL,
-  channel TEXT NOT NULL,
-  address TEXT NOT NULL,
-  verified INTEGER NOT NULL DEFAULT 0,
-  consent_at TEXT,
-  last_alert_sent TEXT,
-  created_at TEXT NOT NULL DEFAULT (datetime('now')),
-  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
-);
-CREATE UNIQUE INDEX IF NOT EXISTS idx_user_channels_unique ON user_channels(user_id, channel);
 
 CREATE TABLE IF NOT EXISTS community_posts (
   id TEXT PRIMARY KEY,
@@ -141,8 +126,6 @@ CREATE TABLE IF NOT EXISTS organizations (
   brand_color TEXT DEFAULT '#047857',
   logo_url TEXT,
   plan TEXT NOT NULL DEFAULT 'team',
-  sso_domain TEXT,
-  sso_required INTEGER NOT NULL DEFAULT 0,
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
@@ -161,25 +144,6 @@ CREATE TABLE IF NOT EXISTS org_invites (
   org_id TEXT NOT NULL,
   email TEXT,
   role TEXT NOT NULL DEFAULT 'member',
-  expires_at TEXT NOT NULL,
-  created_at TEXT NOT NULL DEFAULT (datetime('now'))
-);
-
-CREATE TABLE IF NOT EXISTS sso_identities (
-  id TEXT PRIMARY KEY,
-  provider TEXT NOT NULL,
-  subject TEXT NOT NULL,
-  user_id TEXT NOT NULL,
-  email TEXT,
-  created_at TEXT NOT NULL DEFAULT (datetime('now')),
-  UNIQUE(provider, subject)
-);
-
-CREATE TABLE IF NOT EXISTS sso_states (
-  state TEXT PRIMARY KEY,
-  org_slug TEXT,
-  code_verifier TEXT NOT NULL,
-  redirect_uri TEXT NOT NULL,
   expires_at TEXT NOT NULL,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
@@ -211,11 +175,10 @@ export async function ensurePortalSchema(env) {
     }
   }
 
-  // Additive columns for older deployments. ALTER TABLE has no IF NOT EXISTS
+  // Additive column for older deployments. ALTER TABLE has no IF NOT EXISTS
   // in SQLite, so a duplicate-column error is expected on subsequent runs.
   for (const statement of [
-    'ALTER TABLE watchlists ADD COLUMN last_alert_sent TEXT',
-    'ALTER TABLE watchlists ADD COLUMN notify_sms INTEGER DEFAULT 0'
+    'ALTER TABLE watchlists ADD COLUMN last_alert_sent TEXT'
   ]) {
     try {
       await env.DB.prepare(statement).run();

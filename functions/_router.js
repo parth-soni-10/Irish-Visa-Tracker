@@ -21,6 +21,10 @@
  */
 
 import { handleHealthCheck } from "./health.js";
+import { getRequestId, logEvent, logRequest, withRequestId } from "./monitoring.js";
+import { ensureSchema } from "./db-schema.js";
+export { ensureSchema };
+import { checkRateLimit, getClientIp } from "./rate-limit.js";
 import {
   DOCUMENTS,
   MARKDOWN_ALIASES,
@@ -52,6 +56,7 @@ const SEARCH_PATH = "/api/search";
 const ALERTS_PATH = "/api/alerts/run";
 const EXPORT_RUN_PATH = "/api/exports/run";
 const CONFIG_PATH = "/api/config";
+const EVENTS_PATH = "/api/events";
 const EMAIL_WEBHOOK_PATH = "/api/email/send";
 const REPORT_PATHS = new Set([
   "/api/reports/monthly", "/api/reports/changes", "/api/digest/preview",
@@ -61,263 +66,10 @@ const REPORT_PATHS = new Set([
 const MAX_BODY = 16 * 1024;
 const NOT_FOUND_PATHS = new Set(["/404", "/404/", "/404.html"]);
 
-// Database schema
-const SCHEMA = `
-CREATE TABLE IF NOT EXISTS submissions (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  form TEXT NOT NULL,
-  fields TEXT NOT NULL,
-  created_at TEXT NOT NULL DEFAULT (datetime('now'))
-);
-
-CREATE TABLE IF NOT EXISTS push_subscriptions (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  user_id TEXT,
-  endpoint TEXT NOT NULL,
-  p256dh TEXT NOT NULL,
-  auth TEXT NOT NULL,
-  email TEXT,
-  application_number TEXT,
-  embassy TEXT,
-  embassy_slug TEXT,
-  last_alert_sent TEXT,
-  created_at TEXT NOT NULL DEFAULT (datetime('now'))
-);
-
-CREATE UNIQUE INDEX IF NOT EXISTS idx_push_endpoint_app ON push_subscriptions(endpoint, application_number);
-CREATE INDEX IF NOT EXISTS idx_push_app_embassy ON push_subscriptions(application_number, embassy);
-
-CREATE TABLE IF NOT EXISTS embassy_config (
-  slug TEXT PRIMARY KEY,
-  name TEXT NOT NULL,
-  flag TEXT,
-  countries TEXT NOT NULL,
-  source TEXT NOT NULL,
-  url TEXT NOT NULL,
-  schedule TEXT NOT NULL,
-  parser TEXT NOT NULL,
-  decision_cols TEXT,
-  enabled INTEGER NOT NULL DEFAULT 1,
-  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
-);
-
-CREATE TABLE IF NOT EXISTS visa_type_rules (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  visa_type TEXT NOT NULL,
-  subtype TEXT,
-  min_app_num INTEGER NOT NULL,
-  max_app_num INTEGER NOT NULL,
-  confidence REAL NOT NULL DEFAULT 0.5,
-  embassy_slug TEXT,
-  is_active INTEGER NOT NULL DEFAULT 1,
-  created_at TEXT NOT NULL DEFAULT (datetime('now'))
-);
-
-CREATE INDEX IF NOT EXISTS idx_visa_type_range ON visa_type_rules(min_app_num, max_app_num);
-
-CREATE TABLE IF NOT EXISTS vac_transit_rules (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  embassy_slug TEXT NOT NULL,
-  vac_city TEXT NOT NULL,
-  vac_address TEXT NOT NULL,
-  vac_hours TEXT,
-  vac_phone TEXT,
-  vac_email TEXT,
-  required_docs TEXT NOT NULL,
-  processing_time TEXT,
-  fee TEXT,
-  transit_visa_required INTEGER DEFAULT 0,
-  transit_exempt_countries TEXT,
-  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
-);
-
-CREATE INDEX IF NOT EXISTS idx_vac_embassy ON vac_transit_rules(embassy_slug);
-
-CREATE TABLE IF NOT EXISTS email_subscriptions (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  user_id TEXT,
-  email_hash TEXT NOT NULL,
-  email TEXT NOT NULL,
-  application_number TEXT NOT NULL,
-  embassy TEXT NOT NULL,
-  verified INTEGER NOT NULL DEFAULT 0,
-  verification_token TEXT,
-  verification_expires TEXT,
-  unsubscribe_token TEXT,
-  unsubscribed INTEGER NOT NULL DEFAULT 0,
-  created_at TEXT NOT NULL DEFAULT (datetime('now')),
-  last_alert_sent TEXT
-);
-
-CREATE UNIQUE INDEX IF NOT EXISTS idx_email_sub_unique ON email_subscriptions(email_hash, application_number, embassy);
-CREATE INDEX IF NOT EXISTS idx_email_pending ON email_subscriptions(verified, unsubscribed);
-
-CREATE TABLE IF NOT EXISTS users (
-  id TEXT PRIMARY KEY,
-  email TEXT UNIQUE NOT NULL,
-  email_hash TEXT UNIQUE NOT NULL,
-  password_hash TEXT NOT NULL,
-  name TEXT,
-  preferences TEXT DEFAULT '{}',
-  created_at TEXT NOT NULL DEFAULT (datetime('now')),
-  updated_at TEXT NOT NULL DEFAULT (datetime('now')),
-  last_login_at TEXT
-);
-
-CREATE TABLE IF NOT EXISTS user_sessions (
-  session_id TEXT PRIMARY KEY,
-  user_id TEXT NOT NULL,
-  expires_at TEXT NOT NULL,
-  created_at TEXT NOT NULL DEFAULT (datetime('now')),
-  last_activity TEXT NOT NULL DEFAULT (datetime('now'))
-);
-
-CREATE INDEX IF NOT EXISTS idx_user_sessions_user ON user_sessions(user_id);
-
-CREATE TABLE IF NOT EXISTS admin_tokens (
-  id TEXT PRIMARY KEY,
-  name TEXT NOT NULL,
-  token_hash TEXT NOT NULL UNIQUE,
-  expires_at TEXT,
-  revoked INTEGER DEFAULT 0,
-  last_used_at TEXT,
-  created_at TEXT NOT NULL DEFAULT (datetime('now'))
-);
-
--- Private export tokens. Only a SHA-256 digest is stored; the plaintext
--- token is shown once and can only download that user's export.
-CREATE TABLE IF NOT EXISTS api_tokens (
-  id TEXT PRIMARY KEY,
-  user_id TEXT NOT NULL,
-  token_hash TEXT NOT NULL UNIQUE,
-  name TEXT NOT NULL,
-  scopes TEXT NOT NULL DEFAULT '["read"]',
-  expires_at TEXT,
-  created_at TEXT NOT NULL DEFAULT (datetime('now')),
-  last_used_at TEXT,
-  revoked INTEGER NOT NULL DEFAULT 0
-);
-
-CREATE INDEX IF NOT EXISTS idx_api_tokens_user ON api_tokens(user_id);
-CREATE INDEX IF NOT EXISTS idx_api_tokens_hash ON api_tokens(token_hash);
-
--- In-app notification inbox. Delivery channels (email/push) remain separate.
-CREATE TABLE IF NOT EXISTS user_notifications (
-  id TEXT PRIMARY KEY,
-  user_id TEXT NOT NULL,
-  type TEXT NOT NULL DEFAULT 'decision',
-  title TEXT NOT NULL,
-  body TEXT,
-  url TEXT,
-  read_at TEXT,
-  created_at TEXT NOT NULL DEFAULT (datetime('now'))
-);
-
-CREATE INDEX IF NOT EXISTS idx_user_notifications_user ON user_notifications(user_id, created_at);
-
-CREATE TABLE IF NOT EXISTS watchlists (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  user_id TEXT NOT NULL,
-  application_number TEXT NOT NULL,
-  embassy_slug TEXT NOT NULL,
-  nickname TEXT,
-  notify_email INTEGER DEFAULT 1,
-  notify_push INTEGER DEFAULT 1,
-  notify_whatsapp INTEGER DEFAULT 0,
-  notify_sms INTEGER DEFAULT 0,
-  created_at TEXT NOT NULL DEFAULT (datetime('now'))
-);
-
-CREATE UNIQUE INDEX IF NOT EXISTS idx_watchlist_unique ON watchlists(user_id, application_number, embassy_slug);
-CREATE INDEX IF NOT EXISTS idx_watchlist_user ON watchlists(user_id);
-
--- Saved searches for advanced search
-CREATE TABLE IF NOT EXISTS saved_searches (
-  id TEXT PRIMARY KEY,
-  user_id TEXT NOT NULL,
-  name TEXT NOT NULL,
-  params TEXT NOT NULL, -- JSON
-  created_at TEXT NOT NULL DEFAULT (datetime('now'))
-);
-`;
-
-let schemaReady = false;
-export async function ensureSchema(db) {
-  if (schemaReady) return;
-  
-  // Strip full-line SQL comments BEFORE splitting on semicolons. Splitting
-  // first lets a semicolon inside a comment become a bogus SQL statement.
-  const statements = SCHEMA
-    .replace(/^\s*--.*$/gm, '')
-    .split(';')
-    .map(s => s.trim())
-    .filter(s => s.length > 0);
-  for (let i = 0; i < statements.length; i++) {
-    const stmt = statements[i];
-    try {
-      await db.prepare(stmt).run();
-    } catch (error) {
-      // Ignore "already exists" errors
-      if (!error.message.includes('already exists') && !error.message.includes('duplicate')) {
-        console.error(`Schema statement ${i} failed:`, stmt.substring(0, 300));
-        console.error('Error:', error.message);
-        throw error;
-      }
-    }
-  }
-  // Additive column for deployments created before SMS opt-in existed.
-  try {
-    await db.prepare("ALTER TABLE watchlists ADD COLUMN notify_sms INTEGER DEFAULT 0").run();
-  } catch (error) {
-    if (!error.message.includes("duplicate") && !error.message.includes("already exists")) throw error;
-  }
-  // Saved searches created before account scoping were global. Leave those
-  // unowned rather than guessing which account they belonged to.
-  for (const statement of [
-    "ALTER TABLE saved_searches ADD COLUMN user_id TEXT",
-    "CREATE INDEX IF NOT EXISTS idx_saved_searches_user ON saved_searches(user_id, created_at)"
-  ]) {
-    try {
-      await db.prepare(statement).run();
-    } catch (error) {
-      if (!error.message.includes("duplicate") && !error.message.includes("already exists")) throw error;
-    }
-  }
-  schemaReady = true;
-}
-
 // The dashboard's data files are written by the GitHub Actions job
 // to the repository root. We serve them from the Pages asset bucket
 // (which is the repo root at build time) so they're at known paths.
 const REPO_RAW = "https://raw.githubusercontent.com/parth-soni/irish-visa-tracker/main";
-
-// In-memory rate limit store (per-instance, not durable across restarts)
-const rateLimitStore = new Map();
-const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute
-const RATE_LIMIT_MAX = 300; // 300 API requests per minute per IP
-
-function getClientIp(request) {
-  return request.headers.get("CF-Connecting-IP") || "unknown";
-}
-
-function checkRateLimit(ip) {
-  const now = Date.now();
-  const windowStart = now - RATE_LIMIT_WINDOW;
-
-  if (!rateLimitStore.has(ip)) {
-    rateLimitStore.set(ip, []);
-  }
-
-  const requests = rateLimitStore.get(ip).filter((t) => t > windowStart);
-  rateLimitStore.set(ip, requests);
-
-  if (requests.length >= RATE_LIMIT_MAX) {
-    return false;
-  }
-
-  requests.push(now);
-  return true;
-}
 
 // Security headers
 function addSecurityHeaders(response) {
@@ -326,18 +78,24 @@ function addSecurityHeaders(response) {
   headers.set("X-Frame-Options", "DENY");
   headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
   headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
-  // CSP: allow self, inline scripts/styles for our own code, and specific external resources
+  // Inline executable scripts and <style> elements are extracted. Inline
+  // style attributes remain for generated geometry, so only that attribute
+  // source keeps unsafe-inline; script attributes are disabled entirely.
   headers.set(
     "Content-Security-Policy",
     "default-src 'self'; " +
-    "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://static.cloudflareinsights.com; " +
-    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
-    "font-src 'self' https://fonts.gstatic.com; " +
+    "script-src 'self' https://cdn.jsdelivr.net https://static.cloudflareinsights.com; " +
+    "script-src-attr 'none'; " +
+    "style-src 'self'; " +
+    "style-src-attr 'unsafe-inline'; " +
+    "style-src-elem 'self'; " +
+    "font-src 'self' data:; " +
     "img-src 'self' data: https:; " +
     "connect-src 'self' https://fcm.googleapis.com https://cloudflareinsights.com; " +
     "frame-ancestors 'none'; " +
     "base-uri 'self'; " +
-    "form-action 'self';"
+    "form-action 'self'; " +
+    "object-src 'none';"
   );
   return new Response(response.body, {
     status: response.status,
@@ -369,12 +127,32 @@ function invalidField(formName, fields) {
     if (!fields.name || fields.name.length > 200) return "name";
     if (!fields.suggestion || fields.suggestion.length > 5000) return "suggestion";
   }
-  if (formName === "timelines-visa" || formName === "timelines-1g") {
-    if (!fields.visa_type || fields.visa_type.length > 100) return "visa_type";
-    if (!fields.embassy || fields.embassy.length > 100) return "embassy";
-    if (!fields.outcome || !["granted", "refused"].includes(fields.outcome)) return "outcome";
+  if (formName === "timelines-visa" || formName === "timelines-1g" || formName === "timelines") {
+    // The current forms submit dates, outcome and tracker. `visa_type` and
+    // `embassy` belonged to the old combined form; accept them when present
+    // for legacy posts, but do not require them for the split forms.
+    if (fields.visa_type && fields.visa_type.length > 100) return "visa_type";
+    if (fields.embassy && fields.embassy.length > 100) return "embassy";
+    if (!["granted", "refused"].includes(fields.outcome)) return "outcome";
+    const expectedTracker = formName === "timelines-visa" ? "visa"
+      : formName === "timelines-1g" ? "1g" : "";
+    if (expectedTracker ? fields.tracker !== expectedTracker
+      : !["visa", "1g"].includes(fields.tracker)) return "tracker";
+    if (!isISODate(fields.applied)) return "applied";
+    if (!isISODate(fields.decided)) return "decided";
+    const today = new Date().toISOString().slice(0, 10);
+    if (fields.applied < "2020-01-01" || fields.decided < fields.applied || fields.decided > today) {
+      return "decided";
+    }
   }
   return null;
+}
+
+function isISODate(value) {
+  const raw = String(value || "");
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(raw)) return false;
+  const date = new Date(raw + "T00:00:00Z");
+  return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === raw;
 }
 
 const json = (body, status = 200) =>
@@ -485,7 +263,7 @@ async function handleRequest(request, env) {
 
   // Health check endpoint (no rate limiting)
   if (pathname === '/api/health' || pathname === '/health') {
-    return handleHealthCheck(env);
+    return handleHealthCheck(env, request);
   }
 
   // Public browser configuration. Only publishable values belong here; the
@@ -496,7 +274,6 @@ async function handleRequest(request, env) {
       brand_name: env.BRAND_NAME || 'Irish Visa Decision Tracker',
       brand_color: env.BRAND_COLOR || '#047857',
       support_email: env.SUPPORT_EMAIL || '',
-      sso_enabled: Boolean(env.OIDC_ISSUER && env.OIDC_CLIENT_ID),
       workspace: true
     });
   }
@@ -509,15 +286,31 @@ async function handleRequest(request, env) {
     return handleEmailWebhook(request, env);
   }
 
-  // Rate limiting for API endpoints
+  // Rate limiting for API endpoints. D1 is the shared counter, so one client
+  // cannot get a fresh budget by landing on another edge isolate.
   if (pathname.startsWith('/api/')) {
-    const ip = getClientIp(request);
-    if (!checkRateLimit(ip)) {
+    const decision = await checkRateLimit(env, {
+      bucket: 'api',
+      subject: getClientIp(request),
+      limit: Math.max(1, Number(env.API_RATE_LIMIT_MAX) || 300),
+      windowSeconds: 60
+    });
+    if (!decision.allowed) {
       return new Response(JSON.stringify({ error: 'Rate limit exceeded' }), {
         status: 429,
-        headers: { 'Content-Type': 'application/json', 'Retry-After': '60' }
+        headers: {
+          'Content-Type': 'application/json',
+          'Retry-After': String(decision.retryAfter || 60)
+        }
       });
     }
+  }
+
+  // Conversion funnel. Public, anonymous and deliberately narrow; the global
+  // API limiter above already throttles it.
+  if (pathname === EVENTS_PATH && request.method === 'POST') {
+    const { handleEvents } = await import('./events.js');
+    return handleEvents(request, env);
   }
 
   // Community timeline rows for the nightly sync job. Public and read-only,
@@ -552,16 +345,6 @@ async function handleRequest(request, env) {
   if (pathname.startsWith('/api/portal/')) {
     const { handlePortal } = await import('./portal-api.js');
     return handlePortal(request, env);
-  }
-
-  // Generic OIDC SSO. Kept separate from password auth so a provider outage
-  // cannot break the normal sign-in path.
-  if (pathname.startsWith('/api/auth/sso/')) {
-    const { handleSsoStatus, handleSsoStart, handleSsoCallback } = await import('./sso.js');
-    if (pathname === '/api/auth/sso/status' && (request.method === 'GET' || request.method === 'HEAD')) return handleSsoStatus(request, env);
-    if (pathname === '/api/auth/sso/start' && request.method === 'GET') return handleSsoStart(request, env);
-    if (pathname === '/api/auth/sso/callback' && request.method === 'GET') return handleSsoCallback(request, env);
-    return new Response('Method not allowed', { status: 405 });
   }
 
   // Auth routes (register, login, logout, me, profile, password, delete)
@@ -784,7 +567,6 @@ async function handleRequest(request, env) {
     if (invalid) return json({ error: `Invalid ${invalid}` }, 400);
 
     try {
-      const { ensureSchema } = await import("./_router.js");
       await ensureSchema(env.DB);
       await env.DB.prepare("INSERT INTO submissions (form, fields) VALUES (?, ?)")
         .bind(formName, JSON.stringify(fields))
@@ -920,50 +702,19 @@ async function handleRequest(request, env) {
 }
 
 
-// VFS Appointment Availability Scraper
-async function scrapeVFSAppointments(embassy) {
-  // This is a placeholder - VFS Global uses dynamic JavaScript-heavy pages
-  // Real implementation would need Puppeteer/Playwright or API access
-  const embassyUrls = {
-    'new-delhi': 'https://visa.vfsglobal.com/ind/en/irl',
-    'mumbai': 'https://visa.vfsglobal.com/ind/en/irl',
-    // ... other VACs
-  };
-  
-  const url = embassyUrls[embassy];
-  if (!url) return { error: 'Unknown embassy' };
-  
-  try {
-    // Note: This won't work with simple fetch due to JS rendering
-    // Would need Cloudflare Browser Rendering API or external service
-    const response = await fetch(url, { 
-      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; IrishVisaTracker/1.0)' }
-    });
-    const html = await response.text();
-    return { html, scraped: true, url };
-  } catch (err) {
-    return { error: err.message };
-  }
-}
-
-export async function handleVFSAppointments(request, env) {
-  const url = new URL(request.url);
-  const embassy = url.searchParams.get('embassy') || 'new-delhi';
-  const result = await scrapeVFSAppointments(embassy);
-  return new Response(JSON.stringify(result), {
-    headers: { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=300' }
-  });
-}
-
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
+    const startedAt = Date.now();
+    const requestId = getRequestId(request);
     try {
-      return await handleRequest(request, env);
+      const response = await handleRequest(request, env);
+      logRequest({ request, response, requestId, startedAt });
+      return withRequestId(response, requestId, request);
     } catch (error) {
-      console.error('Unhandled request error:', error);
+      logRequest({ request, requestId, startedAt, error });
       return new Response(JSON.stringify({ error: 'Internal server error' }), {
         status: 500,
-        headers: { 'Content-Type': 'application/json' }
+        headers: { 'Content-Type': 'application/json', 'X-Request-Id': requestId }
       });
     }
   },
@@ -971,7 +722,8 @@ export default {
   // Scheduled handler for cron triggers (multi-embassy scraping)
   async scheduled(controller, env, ctx) {
     const { cron } = controller;
-    console.log(`[Scheduled] Cron triggered: ${cron}`);
+    const startedAt = Date.now();
+    logEvent('info', 'scheduled_start', { cron });
 
     // Map cron patterns to embassies
     const cronToEmbassy = {
@@ -988,7 +740,7 @@ export default {
     // Load embassy config
     const configResp = await fetch(`${REPO_RAW}/embassy-config.json`);
     if (!configResp.ok) {
-      console.error(`[Scheduled] Failed to load embassy config: ${configResp.status}`);
+      logEvent('error', 'scheduled_config_error', { cron, status: configResp.status });
       return;
     }
     const embassyConfig = await configResp.json();
@@ -1013,7 +765,11 @@ export default {
         const existing = await loadExistingDecisions(embassy.slug);
         return mergeDecisions(existing, decisions);
       } catch (error) {
-        console.error(`[Scheduled][${embassy.slug}] Scrape failed:`, error);
+        logEvent('error', 'scheduled_embassy_error', {
+          cron,
+          embassy: embassy.slug,
+          error: { name: String(error.name || 'Error'), message: String(error.message || error).slice(0, 500) }
+        });
         return [];
       }
     };
@@ -1079,6 +835,10 @@ export default {
       // or you can use a GitHub token to commit the updated JSON files
     }
 
-    console.log(`[Scheduled] All scrapers completed for cron: ${cron}`);
+    logEvent('info', 'scheduled_complete', {
+      cron,
+      duration_ms: Date.now() - startedAt,
+      embassies: embassyList.length
+    });
   },
 };

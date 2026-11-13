@@ -1,0 +1,38 @@
+name: External Uptime Check
+
+# This runs on GitHub's infrastructure, not on Cloudflare, so a Pages outage
+# cannot suppress the check. It probes the readiness endpoint and the public
+# data manifest; a failed probe fails this workflow and sends ALERT_WEBHOOK_URL
+# when that repository secret is configured.
+on:
+  workflow_dispatch: {}
+  schedule:
+    - cron: '*/15 * * * *'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: external-uptime
+  cancel-in-progress: true
+
+jobs:
+  probe:
+    name: Probe production health and data freshness
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      - name: Set up Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - name: Run external monitor
+        env:
+          MONITOR_BASE_URL: ${{ vars.APP_BASE_URL || 'https://irishvisaupdatetracker.pages.dev' }}
+          MAX_DATA_AGE_HOURS: '72'
+          ALERT_WEBHOOK_URL: ${{ secrets.ALERT_WEBHOOK_URL }}
+        run: node tools/monitor.mjs

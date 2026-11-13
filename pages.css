@@ -109,19 +109,6 @@ a:focus-visible { outline: 2px solid var(--green); outline-offset: 3px; border-r
 .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
 .table-wrap table { min-width: 560px; }
 
-.site-header {
-  border-bottom: 1px solid var(--border);
-  background: var(--surface);
-}
-.site-header-inner {
-  max-width: 1040px;
-  margin: 0 auto;
-  padding: 18px 24px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 20px;
-}
 .brand {
   display: inline-flex;
   align-items: center;
@@ -134,18 +121,6 @@ a:focus-visible { outline: 2px solid var(--green); outline-offset: 3px; border-r
   white-space: nowrap;
 }
 .brand img { width: 22px; height: 22px; }
-.site-nav { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
-.site-nav a {
-  color: var(--ink-soft);
-  text-decoration: none;
-  font-size: 13px;
-  font-weight: 600;
-  padding: 7px 10px;
-  border-radius: 7px;
-}
-.site-nav a:hover { color: var(--ink); background: var(--raised); }
-.site-nav a[aria-current="page"] { color: var(--green-deep); background: var(--green-soft); }
-
 .page {
   max-width: 760px;
   margin: 0 auto;
@@ -291,21 +266,6 @@ a:focus-visible { outline: 2px solid var(--green); outline-offset: 3px; border-r
   font-weight: 400;
 }
 
-.site-footer {
-  max-width: 760px;
-  margin: 0 auto;
-  padding: 28px 24px 56px;
-  border-top: 1px solid var(--border);
-  font-size: 12px;
-  color: var(--ink-muted);
-  display: flex;
-  justify-content: space-between;
-  gap: 16px;
-  flex-wrap: wrap;
-}
-.site-footer a { color: var(--ink-soft); text-decoration: none; }
-.site-footer a:hover { color: var(--green-deep); text-decoration: underline; }
-
 /* 404 */
 .notfound { max-width: 620px; margin: 0 auto; padding: 88px 24px 40px; text-align: left; }
 .notfound-code {
@@ -332,11 +292,8 @@ a:focus-visible { outline: 2px solid var(--green); outline-offset: 3px; border-r
 .notfound-links a:hover { border-color: var(--green); background: var(--green-soft); }
 
 @media (max-width: 640px) {
-  .site-header-inner { padding: 14px 18px; flex-wrap: wrap; gap: 8px; }
-  .site-nav a { padding: 6px 8px; }
   .page { padding-top: 44px; }
   .page-lede { font-size: 17px; }
-  .site-footer { flex-direction: column; gap: 8px; padding-top: 22px; }
 }
 
 /* Breadcrumb trail: matches the BreadcrumbList JSON-LD on the data pages, which

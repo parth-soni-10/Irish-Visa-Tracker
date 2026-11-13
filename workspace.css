@@ -95,8 +95,6 @@
 .workspace-tabs button[aria-selected="true"] { background: #fff; color: var(--workspace-brand); box-shadow: 0 1px 2px rgba(15, 23, 42, .08); }
 .workspace-muted { color: var(--workspace-muted); font-size: 12.5px; }
 .workspace-divider { display: block; margin: 16px 0 10px; color: #94a3b8; font-size: 11px; font-weight: 700; text-align: center; text-transform: uppercase; letter-spacing: .1em; }
-.workspace-sso { margin-top: 16px; }
-.workspace-sso .btn { width: 100%; }
 
 .workspace-grid { display: grid; grid-template-columns: 230px minmax(0, 1fr); gap: 28px; align-items: start; }
 .workspace-side { position: sticky; top: 18px; display: grid; gap: 16px; }
@@ -180,8 +178,6 @@
 .workspace-notice.error { border-color: #ef4444; background: #fef2f2; color: var(--workspace-red); }
 .workspace-code { display: block; padding: 10px; border: 1px dashed #cbd5e1; border-radius: 7px; background: var(--workspace-raised); color: var(--workspace-ink); font: 12px/1.5 var(--mono); overflow-wrap: anywhere; }
 .workspace-empty { margin: 0; color: var(--workspace-muted); font-size: 13px; }
-.workspace-meter { height: 6px; overflow: hidden; border-radius: 999px; background: #e2e8f0; }
-.workspace-meter span { display: block; height: 100%; border-radius: inherit; background: var(--workspace-brand); }
 .workspace-heat { width: 100%; border-collapse: collapse; font-size: 11px; }
 .workspace-heat th, .workspace-heat td { padding: 5px 4px; border: 1px solid #eef2f7; text-align: center; }
 .workspace-heat th { color: var(--workspace-muted); font-weight: 700; }
@@ -200,8 +196,6 @@
 .workspace-brand-preview { padding: 16px; border-radius: 10px; color: #fff; background: var(--workspace-brand); }
 .workspace-brand-preview strong { display: block; font-size: 18px; }
 .workspace-brand-preview span { opacity: .85; font-size: 12px; }
-.workspace-split { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
-.workspace-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 .form-status { min-height: 1.4em; margin: 0; color: var(--workspace-muted); font-size: 12px; }
 .form-status.error { color: var(--workspace-red); }
 .form-status.ok { color: #047857; }
@@ -212,7 +206,6 @@
   .workspace-nav { display: flex; flex-wrap: wrap; }
   .workspace-nav button { width: auto; }
   .workspace-side-links { display: flex; flex-wrap: wrap; gap: 12px; }
-  .workspace-split { grid-template-columns: 1fr; }
 }
 @media (max-width: 620px) {
   .workspace-page { width: min(100% - 28px, 1160px); padding-top: 28px; }

@@ -1,8 +1,7 @@
 /**
  * Application-assistant helpers: indicative fee quotes and text extraction
  * from a pasted decision/application page. The extraction is deliberately
- * conservative; an OCR provider is optional and is never called with data
- * unless the user explicitly submits a document.
+ * conservative; it only reads text the user explicitly submits.
  */
 
 const VISA_FEES = {

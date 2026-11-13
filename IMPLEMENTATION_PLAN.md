@@ -1,6 +1,6 @@
-# Implementation Plan: Features 1, 4, 5 + Detailed Plan for 6
+# Implementation Plan: Features 1 and 5 + Detailed Plan for 6
 
-> **Status — 2026-11-12.** Features 1 and 5 are implemented and verified in the current tree. Sentry (section 4) was **removed by product decision** on 2026-11-12; its section is historical design context only. Native mobile (section 6) is **deferred**: the installable PWA is the supported mobile product. The detailed section is retained as a future option, not current scope. Account email verification and password reset were also **removed by product decision**; references to them below are historical design context, not current routes. See `COMPLETION_REPORT.md` and `GAP_ANALYSIS.md` for the live record.
+> **Status — 2026-11-12.** Features 1 and 5 are implemented and verified in the current tree. Native mobile (section 6) is **deferred**: the installable PWA is the supported mobile product. The detailed section is retained as a future option, not current scope. Account email verification and password reset were also **removed by product decision**; references to them below are historical design context, not current routes. See `COMPLETION_REPORT.md` and `GAP_ANALYSIS.md` for the live record.
 
 ## 1. User Accounts + Saved Watchlists (Medium)
 
@@ -38,7 +38,6 @@ CREATE TABLE IF NOT EXISTS watchlists (
   nickname TEXT,
   notify_email BOOLEAN DEFAULT 1,
   notify_push BOOLEAN DEFAULT 1,
-  notify_whatsapp BOOLEAN DEFAULT 0,
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   FOREIGN KEY (user_id) REFERENCES users(id)
 );
@@ -149,130 +148,6 @@ async function validateAPIToken(env, token) { ... }
 - Watchlist UI on Home/Past tabs (already have watch infrastructure, persist to D1)
 - Protected routes for authenticated features
 - Session persistence via HttpOnly cookie + localStorage fallback
-
----
-
-## 4. Sentry Error Tracking (Low)
-
-### 4.1 Installation
-```bash
-npm install @sentry/cloudflare
-```
-
-### 4.2 Sentry Configuration (`functions/sentry.js`)
-```javascript
-import * as Sentry from "@sentry/cloudflare";
-
-export function initSentry(env) {
-  Sentry.init({
-    dsn: env.SENTRY_DSN,
-    environment: env.ENVIRONMENT || 'production',
-    release: env.COMMIT_SHA || 'unknown',
-    tracesSampleRate: 0.1,
-    profilesSampleRate: 0.1,
-    integrations: [
-      new Sentry.Integrations.HttpClient(),
-    ],
-    beforeSend(event, hint) {
-      // Filter out known benign errors
-      if (event.exception) {
-        const error = hint.originalException;
-        if (error?.message?.includes('Network request failed')) {
-          return null; // Drop network errors
-        }
-      }
-      return event;
-    },
-  });
-}
-
-export function captureException(error, context = {}) {
-  Sentry.withScope((scope) => {
-    Object.entries(context).forEach(([key, value]) => {
-      scope.setExtra(key, value);
-    });
-    Sentry.captureException(error);
-  });
-}
-
-export function setUserContext(user) {
-  Sentry.setUser({
-    id: user.id,
-    email: user.email,
-    username: user.name,
-  });
-}
-```
-
-### 4.3 Integration in Router (`functions/_router.js`)
-```javascript
-import { initSentry, captureException, setUserContext } from "./sentry.js";
-
-export default {
-  async fetch(request, env) {
-    initSentry(env);
-    
-    try {
-      // ... existing router logic
-    } catch (error) {
-      captureException(error, {
-        url: request.url,
-        method: request.method,
-        headers: Object.fromEntries(request.headers),
-      });
-      return new Response(JSON.stringify({ error: 'Internal server error' }), {
-        status: 500,
-        headers: { 'Content-Type': 'application/json' }
-      });
-    }
-  },
-  
-  async scheduled(controller, env, ctx) {
-    initSentry(env);
-    // ... scheduled handler
-  }
-};
-```
-
-### 4.3 Frontend Error Tracking (`index.html`)
-```html
-<script>
-  // Initialize Sentry on client side
-  if (window.Sentry) {
-    Sentry.init({
-      dsn: 'YOUR_SENTRY_DSN',
-      environment: 'production',
-      tracesSampleRate: 0.1,
-      beforeSend(event) {
-        // Filter out known benign errors
-        if (event.exception) {
-          const error = event.exception.values?.[0];
-          if (error?.value?.includes('Network request failed')) return null;
-        }
-        return event;
-      }
-    });
-  }
-  
-  // Global error handler
-  window.addEventListener('error', (e) => {
-    if (window.Sentry) Sentry.captureException(e.error);
-  });
-  
-  window.addEventListener('unhandledrejection', (e) => {
-    if (window.Sentry) Sentry.captureException(e.reason);
-  });
-</script>
-<script src="https://browser.sentry-cdn.com/7.100.0/bundle.min.js" integrity="sha384-..." crossorigin="anonymous"></script>
-```
-
-### 4.4 Sentry Setup Checklist
-- [ ] Create Sentry project
-- [ ] Add `SENTRY_DSN` to Cloudflare Pages secrets
-- [ ] Add `SENTRY_AUTH_TOKEN` for source maps upload
-- [ ] Configure source maps upload in build pipeline
-- [ ] Set up alerts for error spikes
-- [ ] Configure release tracking
 
 ---
 
@@ -939,8 +814,7 @@ jobs:
 
 ### Phase 1 (Weeks 1-4): Foundation
 1. ✅ **User Accounts + Watchlists** - D1 schema, auth routes, frontend auth UI
-2. ❌ **Sentry Integration** - removed by product decision (2026-11-12)
-3. 🔄 **ML Timeline Predictor** - Data export → Colab training → ONNX export → Worker endpoint
+2. 🔄 **ML Timeline Predictor** - Data export → Colab training → ONNX export → Worker endpoint
 
 ### Phase 2 (Weeks 5-8): Mobile Foundation
 1. Monorepo setup (Turborepo + Expo)
@@ -958,10 +832,10 @@ jobs:
 1. ML Timeline Predictor (ONNX + Worker endpoint)
 2. Native iOS/Android builds (EAS)
 3. App Store / Play Store submission
-3. Monitoring (analytics; Sentry removed)
+3. Monitoring (analytics)
 
 ### Phase 5 (Post-Launch)
 1. ML model retraining pipeline
 2. Native push reliability improvements
-3. Appointment slot monitoring (VFS Global API)
+3. VFS appointment page-state checks (the slot calendar itself requires authenticated VFS access)
 4. White-label / consultant features

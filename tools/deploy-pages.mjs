@@ -69,6 +69,7 @@ const assetsToCopy = [
   // JS modules
   'analytics-chart.js',
   'calendar-component.js',
+  'calendar-component.css',
   'dynamic-button.js',
   'filter-disclosure.js',
   'glide-select.js',
@@ -81,7 +82,6 @@ const assetsToCopy = [
   'squish-switch.js',
   'stepper.js',
   'time-undo.js',
-  'i18n.js',
   'site-chrome.js',
   'workspace.js',
   // CSS files
@@ -119,6 +119,8 @@ const assetsToCopy = [
 const dirsToCopy = [
   'data',
   'fonts',
+  'scripts',
+  'styles',
 ];
 
 async function copyFile(src, dest) {

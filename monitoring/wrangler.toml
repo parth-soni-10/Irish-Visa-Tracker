@@ -1,0 +1,25 @@
+# Standalone monitoring Worker. Deploy separately from the Pages project:
+#   npx wrangler deploy --config monitoring/wrangler.toml
+#   npx wrangler secret put ALERT_WEBHOOK_URL --config monitoring/wrangler.toml
+#
+# Workers Logs persists the JSON check records in the Cloudflare dashboard.
+# `logpush = true` makes this Worker eligible for a Workers Trace Events
+# Logpush job (Workers Paid plan; create the job in the Cloudflare dashboard or
+# API with an R2/S3 destination).
+name = "irish-visa-tracker-monitor"
+main = "worker.js"
+compatibility_date = "2026-10-01"
+logpush = true
+
+[observability]
+enabled = true
+head_sampling_rate = 1
+
+[observability.logs]
+invocation_logs = true
+
+[triggers]
+crons = ["*/10 * * * *"]
+
+[vars]
+APP_BASE_URL = "https://irishvisaupdatetracker.pages.dev"

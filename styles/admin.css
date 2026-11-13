@@ -1,0 +1,12 @@
+.admin-toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: end; margin: 18px 0; }
+    .admin-toolbar-flush { margin: 0; }
+    .admin-toolbar label { display: flex; flex-direction: column; gap: 4px; min-width: 260px; }
+    .admin-toolbar input { padding: 8px 10px; border: 1px solid #d1d5db; border-radius: 8px; }
+    .admin-card { border: 1px solid #e5e7eb; border-radius: 12px; padding: 16px; margin: 14px 0; }
+    .admin-card h2 { margin-top: 0; }
+    .admin-pre { background: #0f172a; color: #e2e8f0; padding: 14px; border-radius: 10px; overflow: auto; max-height: 480px; font-size: 12px; }
+    .admin-status { font-size: 13px; color: #5b6572; }
+    .admin-status.error { color: #b91c1c; }
+    .admin-status.ok { color: #047857; }
+    .admin-toolbar select { padding: 8px 10px; border: 1px solid #d1d5db; border-radius: 8px; background: #fff; }
+    .admin-token-out { background: #f8fafc; border: 1px solid #e5e7eb; padding: 12px; border-radius: 8px; overflow-wrap: anywhere; }

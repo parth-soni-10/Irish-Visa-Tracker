@@ -24,6 +24,7 @@ compatibility_date = "2026-10-01"
 compatibility_flags = ["nodejs_compat"]
 
 # Note: Cron triggers for scheduled scraping are not supported in Pages Functions.
+# The separate monitoring Worker has its own config at monitoring/wrangler.toml.
 # Scheduled scraping should be handled via:
 # 1. GitHub Actions workflow (.github/workflows/ml-retrain.yml) for ML retraining
 # 2. External cron service (cron-job.org, etc.) calling the scraper endpoints

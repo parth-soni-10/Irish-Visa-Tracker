@@ -42,7 +42,15 @@ jobs:
       - name: Run agent-surface and product tests
         # Content negotiation, Markdown documents, the 404 contract, metadata,
         # analytics/fees/exports, auth tokens and notifications.
-        run: node --test tests/agent-docs.test.mjs tests/portal.test.mjs tests/export-tokens.test.mjs tests/email-tokens.test.mjs tests/notifications.test.mjs tests/predict.test.mjs tests/reports.test.mjs tests/channels.test.mjs tests/push.test.mjs tests/email-webhook.test.mjs tests/embassy-pdf-ingestion.test.mjs tests/community-submissions.test.mjs tests/alerts-run.test.mjs tests/telegram.test.mjs tests/digest-schedule.test.mjs
+        run: node --test tests/agent-docs.test.mjs tests/portal.test.mjs tests/export-tokens.test.mjs tests/email-tokens.test.mjs tests/notifications.test.mjs tests/predict.test.mjs tests/reports.test.mjs tests/push.test.mjs tests/email-webhook.test.mjs tests/embassy-pdf-ingestion.test.mjs tests/community-submissions.test.mjs tests/alerts-run.test.mjs tests/telegram.test.mjs tests/digest-schedule.test.mjs
+
+      - name: Run admin, durable rate-limit and conversion tests
+        # The admin metrics/token surface and the D1-backed limiter had no
+        # direct coverage before these suites.
+        run: node --test tests/admin-api.test.mjs tests/rate-limit.test.mjs tests/events.test.mjs
+
+      - name: Run health and monitoring tests
+        run: node --test tests/health.test.mjs tests/monitoring.test.mjs
 
       - name: Run Ankara ingestion and PDF history tests
         run: node --test tests/ankara-ocr.test.mjs tests/ankara-checksum.test.mjs tests/decision-history.test.mjs tests/scrape-ocr-guard.test.mjs
@@ -56,10 +64,16 @@ jobs:
       - name: Run embassy checksum tests
         run: node --test tests/embassy-checksums.test.mjs
 
-      - name: Syntax-check index.html inline scripts
-        # The dashboard is one 4000-line single file; a stray brace or quote in
-        # any inline block would only surface on the deployed site otherwise.
+      - name: Audit served HTML for inline assets
+        # The deployed CSP has no unsafe-inline for scripts or <style> elements;
+        # every executable byte must come from /scripts or /styles.
         run: python tools/check_html_scripts.py
+
+      - name: Syntax-check served JavaScript
+        run: node tools/check-js-syntax.mjs
+
+      - name: Check for dead named exports
+        run: node tools/check-dead-code.mjs
 
   accessibility:
     runs-on: ubuntu-latest

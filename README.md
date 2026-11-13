@@ -7,8 +7,8 @@ A public, unofficial tracker for Irish visa decisions, with a searchable archive
 ## What it tracks
 
 - **New Delhi, Beijing, Abu Dhabi, Abuja, Ankara and Dublin** official decision publications.
-- **61,005 latest-report rows** across the six offices; the dated archives contain **65,773 rows**.
-- New Delhi’s daily tracker contains **42,472 decisions plus 50 dated placeholders**.
+- **61,154 latest-report rows** across the six offices; the dated archives contain **65,977 rows**.
+- New Delhi’s daily tracker contains **42,621 decisions plus 49 dated placeholders**.
 - Weekly PDF offices keep their historical report dates: Abu Dhabi has 9 dated reports, Abuja 27 and Ankara 4.
 - Only official public files are ingested. A missing official file is left as a gap, never filled with inferred decisions.
 
@@ -17,11 +17,16 @@ The Abuja **31 August–6 September 2026** report, long listed as missing, was r
 ## Product surface
 
 - Application lookup, daily summaries, monthly reports and historical trends.
+- VFS Global appointment-page checks for the India/Ireland VACs. VFS keeps the real booking calendar behind sign-in; the check reports `login_required` or a bot challenge and never invents availability.
 - PWA install, service worker and offline shell.
 - Accounts, sessions, private watchlists and an in-app notification inbox.
-- Email webhook, browser push and optional Twilio SMS/WhatsApp delivery.
+- A first-run activation path on the New Delhi dashboard: prominent email and
+  Telegram calls to action, a persisted three-step checklist, and privacy-light
+  conversion events (`/api/events`) that record only a fixed event vocabulary
+  and surface name.
+- Email webhook, browser push and Telegram alerts.
 - Monthly email digest with double opt-in and one-click unsubscribe.
-- Private workspace: analytics, document checklist, fee quotes, file OCR, scheduled CSV/JSON exports and private export tokens.
+- Private workspace: analytics, document checklist, fee quotes, document field extraction from pasted or text-file content, scheduled CSV/JSON exports and private export tokens.
 - ML decision-time estimate from a committed synthetic-data XGBoost model (illustrative, not a guarantee).
 - Agent-facing HTML/Markdown negotiation, `/llms.txt`, sitemap and accessible trust pages.
 
@@ -33,10 +38,9 @@ The important variables are:
 
 - `APP_BASE_URL`, `SCRAPER_CRON_SECRET`
 - `EMAIL_WEBHOOK_URL`, `EMAIL_WEBHOOK_SECRET`, `EMAIL_FROM`
-- `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_SMS_FROM`, `TWILIO_WHATSAPP_FROM`
-- `OCR_SPACE_API_KEY`
-- `OIDC_ISSUER`, `OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET`
 - `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`
+- Optional VFS page rendering: `CF_ACCOUNT_ID`, `CF_API_TOKEN`
+- Optional shared monitoring alert destination: `ALERT_WEBHOOK_URL`
 
 The email path is provider-neutral: the app posts to `EMAIL_WEBHOOK_URL`, and this deployment’s secret-protected `/api/email/send` bridge translates that contract to the existing Resend account. No mail credential ever reaches the browser.
 
@@ -47,6 +51,8 @@ npm ci
 python -m pytest test_scraper.py test_track_1g.py test_permits.py test_timelines.py -q
 node --test tests/*.test.mjs
 python tools/check_html_scripts.py
+node tools/check-js-syntax.mjs
+node tools/check-dead-code.mjs
 npx playwright test --project=chromium --timeout=120000
 npm run build
 ```
@@ -60,7 +66,7 @@ node tools/verify-ankara.mjs
 
 ## Deployment
 
-The site is a Cloudflare Pages project (`irishvisaupdatetracker`). Pages compiles `functions/` and serves the assets staged in `.pages-dist` by `tools/deploy-pages.mjs`.
+The site is a Cloudflare Pages project (`irishvisaupdatetracker`). Pages compiles `functions/` and serves the assets staged in `.pages-dist` by `tools/deploy-pages.mjs`. Dashboard and page JavaScript live under `scripts/`; extracted styles live under `styles/`. The strict CSP in `_headers` forbids inline executable scripts and `<style>` elements, so new code must be served from those directories.
 
 ```bash
 npm run build
@@ -69,6 +75,10 @@ node tools/smoke-deploy.mjs
 ```
 
 Scheduled GitHub Actions cover scraping, community timelines, Stamp 1G and permit snapshots, decision alerts, monthly digests and due exports. Pages Functions cannot define Cloudflare cron triggers, so these workflows call the authenticated endpoints.
+
+## Monitoring
+
+Sentry was removed. `GET /api/health` is a readiness probe for D1 and static assets, and Pages Functions emit privacy-light JSON request/error logs. A separate [monitoring Worker](docs/monitoring.md) enables Workers Logs/Logpush for persisted uptime checks, while `uptime.yml` probes production from GitHub and `cron-failure-alerts.yml` forwards failed scheduled runs to `ALERT_WEBHOOK_URL`.
 
 ## Scope decision: mobile
 

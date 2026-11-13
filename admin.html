@@ -9,19 +9,7 @@
   <meta name="theme-color" content="#ffffff">
   <link rel="icon" href="/icon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/pages.css">
-  <style>
-    .admin-toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: end; margin: 18px 0; }
-    .admin-toolbar label { display: flex; flex-direction: column; gap: 4px; min-width: 260px; }
-    .admin-toolbar input { padding: 8px 10px; border: 1px solid #d1d5db; border-radius: 8px; }
-    .admin-card { border: 1px solid #e5e7eb; border-radius: 12px; padding: 16px; margin: 14px 0; }
-    .admin-card h2 { margin-top: 0; }
-    .admin-pre { background: #0f172a; color: #e2e8f0; padding: 14px; border-radius: 10px; overflow: auto; max-height: 480px; font-size: 12px; }
-    .admin-status { font-size: 13px; color: #5b6572; }
-    .admin-status.error { color: #b91c1c; }
-    .admin-status.ok { color: #047857; }
-    .admin-toolbar select { padding: 8px 10px; border: 1px solid #d1d5db; border-radius: 8px; background: #fff; }
-    .admin-token-out { background: #f8fafc; border: 1px solid #e5e7eb; padding: 12px; border-radius: 8px; overflow-wrap: anywhere; }
-  </style>
+  <link rel="stylesheet" href="/styles/admin.css">
   <link rel="stylesheet" href="/site-chrome.css">
 </head>
 <body>
@@ -68,7 +56,7 @@
     <p id="admin-status" class="admin-status" aria-live="polite"></p>
     <div class="admin-card">
       <h2>Scraper control</h2>
-      <div class="admin-toolbar" style="margin:0">
+      <div class="admin-toolbar admin-toolbar-flush">
         <label>Office
           <select id="admin-embassy">
             <option value="new-delhi">New Delhi</option>
@@ -86,7 +74,7 @@
     <div class="admin-card">
       <h2>Admin tokens</h2>
       <p class="admin-status">The bootstrap token can create named tokens. A new token is shown once.</p>
-      <form id="admin-token-form" class="admin-toolbar" style="margin:0">
+      <form id="admin-token-form" class="admin-toolbar admin-toolbar-flush">
         <label>Token name
           <input id="admin-token-name" required maxlength="100" placeholder="e.g. on-call laptop">
         </label>
@@ -160,97 +148,7 @@
     <p><a href="/sitemap.xml">Sitemap</a><a href="/llms.txt">llms.txt</a><a href="https://github.com/parth-soni-10/Irish-Visa-Tracker" rel="noopener">GitHub</a></p>
   </div>
 </footer>
-  <script>
-  (function () {
-    var token = document.getElementById('admin-token');
-    var status = document.getElementById('admin-status');
-    var panels = {
-      health: document.getElementById('admin-health'),
-      quality: document.getElementById('admin-quality'),
-      metrics: document.getElementById('admin-metrics'),
-      errors: document.getElementById('admin-errors')
-    };
-    token.value = sessionStorage.getItem('admin-token') || '';
-
-    function setStatus(text, kind) {
-      status.textContent = text;
-      status.className = 'admin-status' + (kind ? ' ' + kind : '');
-    }
-
-    function load() {
-      var value = token.value.trim();
-      if (!value) { setStatus('Enter an admin token first.', 'error'); return; }
-      sessionStorage.setItem('admin-token', value);
-      setStatus('Loading\u2026');
-      var endpoints = ['health', 'quality', 'metrics', 'errors'];
-      Promise.all(endpoints.map(function (name) {
-        return fetch('/api/admin/' + name, { headers: { Authorization: 'Bearer ' + value } })
-          .then(function (r) { return r.json().then(function (body) { return { name: name, ok: r.ok, body: body }; }); })
-          .catch(function (e) { return { name: name, ok: false, body: { error: e.message } }; });
-      })).then(function (results) {
-        var failed = 0;
-        results.forEach(function (result) {
-          panels[result.name].textContent = JSON.stringify(result.body, null, 2);
-          if (!result.ok) failed++;
-        });
-        setStatus(failed ? failed + ' endpoint(s) failed. Check the token and server logs.' : 'Dashboard loaded.', failed ? 'error' : 'ok');
-      });
-    }
-
-    function api(path, options) {
-      var opts = options || {};
-      opts.headers = Object.assign({}, opts.headers || {}, { Authorization: 'Bearer ' + token.value.trim() });
-      return fetch(path, opts);
-    }
-
-    document.getElementById('admin-trigger').addEventListener('click', function () {
-      var action = document.getElementById('admin-action-status');
-      var button = this;
-      button.disabled = true;
-      action.textContent = 'Dispatching workflow\u2026';
-      action.className = 'admin-status';
-      api('/api/admin/trigger', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ embassy: document.getElementById('admin-embassy').value })
-      }).then(function (r) { return r.json().then(function (body) { return { ok: r.ok, body: body }; }); })
-        .then(function (result) {
-          action.textContent = result.ok ? (result.body.message || 'Dispatched.') : (result.body.error || 'Dispatch failed.');
-          action.className = 'admin-status ' + (result.ok ? 'ok' : 'error');
-        })
-        .catch(function (error) { action.textContent = error.message; action.className = 'admin-status error'; })
-        .finally(function () { button.disabled = false; });
-    });
-
-    document.getElementById('admin-token-form').addEventListener('submit', function (event) {
-      event.preventDefault();
-      var result = document.getElementById('admin-token-result');
-      var name = document.getElementById('admin-token-name');
-      if (!name.value.trim()) return;
-      api('/api/admin/tokens', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: name.value.trim(), expiresDays: 90 })
-      }).then(function (r) { return r.json().then(function (body) { return { ok: r.ok, body: body }; }); })
-        .then(function (response) {
-          result.hidden = false;
-          if (!response.ok) { result.textContent = response.body.error || 'Could not create token.'; return; }
-          result.textContent = 'Copy this token now; it is shown once:\n\n' + response.body.token;
-          name.value = '';
-        })
-        .catch(function (error) { result.hidden = false; result.textContent = error.message; });
-    });
-
-    document.getElementById('admin-refresh').addEventListener('click', load);
-    document.getElementById('admin-clear').addEventListener('click', function () {
-      sessionStorage.removeItem('admin-token');
-      token.value = '';
-      Object.keys(panels).forEach(function (key) { panels[key].textContent = 'Not loaded.'; });
-      setStatus('Token cleared.');
-    });
-    if (token.value) load();
-  })();
-  </script>
+  <script src="/scripts/admin-1.js" defer></script>
   <script src="/site-chrome.js" defer></script>
 </body>
 </html>

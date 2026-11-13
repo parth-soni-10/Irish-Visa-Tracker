@@ -7,7 +7,10 @@
   in `pages.css`, `site-chrome.css` and `workspace.css`.
 - Hosting: Cloudflare Pages project `irishvisaupdatetracker`.
 - Server: `functions/[[path]].js` catches every request and delegates to
-  `functions/_router.js`. No separate Worker.
+  `functions/_router.js`. The Pages app has no separate Worker.
+- Monitoring: `monitoring/worker.js` is a separate cron-only Worker for
+  persisted Workers Logs/Logpush uptime checks; the app itself uses structured
+  Pages Function logs and `/api/health`.
 - D1 binding: `DB`, database `irish-visa-tracker-submissions`.
 - Static data: `data/*.json`. The Pages assets and the router serve it with a
   short cache; generated decisions are committed by the scraper workflow.
@@ -44,9 +47,11 @@ node --test tests/*.test.mjs
 
 ## Services
 
-See `docs/services.md` for variable names, current status and the safe secret
-procedure. Do not invent values for Twilio, OCR.space or OIDC. The app
-must report those integrations as disabled rather than claiming delivery.
+See `docs/services.md` and `docs/monitoring.md` for variable names, current
+status and the safe secret procedure. Do not invent provider credentials.
+Email, push and Telegram are the supported delivery channels; SMS/WhatsApp are
+not part of the product. `ALERT_WEBHOOK_URL` is the optional shared monitoring
+alert destination.
 
 ## Workflows
 
@@ -58,6 +63,8 @@ must report those integrations as disabled rather than claiming delivery.
 - `ml-retrain.yml`: monthly XGBoost retraining, then regenerates
   `functions/api/model-trees.js` and commits the artifacts.
 - `timelines.yml`, `track_1g.yml`, `track_permits.yml`: community and queue data.
+- `uptime.yml`: external health and data-freshness probe.
+- `cron-failure-alerts.yml`: forwards failed scheduled runs to the alert webhook.
 
 ## Deploy
 

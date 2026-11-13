@@ -35,8 +35,7 @@
     tokenResult: null,
     fees: null,
     scan: null,
-    ref: '',
-    sso: false
+    ref: ''
   };
 
   function el(id) { return document.getElementById(id); }
@@ -141,12 +140,6 @@
     var first = form.querySelector('input');
     if (first) first.focus();
   }
-  function setSso(status) {
-    state.sso = Boolean(status && status.enabled);
-    el('auth-sso').hidden = !state.sso;
-    if (state.sso) el('auth-sso-link').textContent = status.label || 'Continue with single sign-on';
-  }
-
   function renderPerson() {
     var data = state.overview;
     if (!data || !data.user) return;
@@ -167,12 +160,10 @@
     var data = state.overview;
     var user = data.user || {};
     var capabilities = data.capabilities || {};
-    var channels = data.channels || [];
     var notifications = data.notifications || [];
     var values = [
       ['Watchlist', data.watchlists ? data.watchlists.length : 0],
       ['Unread alerts', data.unread_notifications || 0],
-      ['Message channels', channels.length],
       ['Private exports', (data.jobs || []).length]
     ];
     return '<div class="workspace-heading"><h2>Welcome back, ' + esc((user.name || 'Applicant').split(/\s+/)[0]) + '</h2><p>Your private workspace for applications, alerts and research.</p></div>' +
@@ -184,10 +175,10 @@
         '<div class="workspace-actions" style="margin-top:10px;"><button class="btn" type="button" data-action="go" data-view="profile">Edit profile</button><a class="btn" href="/">Open tracker</a></div>' +
       '</section>' +
       '<section class="workspace-card"><h3>Alerts and delivery</h3><div class="workspace-inline">' +
-        [['Email', capabilities.email], ['Push', capabilities.push], ['SMS', capabilities.sms], ['WhatsApp', capabilities.whatsapp], ['OCR', capabilities.ocr], ['SSO', capabilities.sso]].map(function (item) {
+        [['Email', capabilities.email], ['Push', capabilities.push]].map(function (item) {
           return pill(item[0] + ': ' + (item[1] ? 'ready' : 'not configured'), item[1] ? 'ok' : 'off');
         }).join('') +
-      '</div><p class="workspace-muted" style="margin-top:10px;">Email and push are configured by the deployment. SMS and WhatsApp additionally require your consent and an international number.</p>' +
+      '</div><p class="workspace-muted" style="margin-top:10px;">Email and push are configured by the deployment. Enable them per watched application.</p>' +
       '<button class="btn" type="button" data-action="go" data-view="notifications">Manage notifications</button></section>' +
       '<section class="workspace-card"><h3>Recent notifications</h3>' +
         (notifications.length ? '<ul class="workspace-list">' + notifications.map(function (item) {
@@ -226,25 +217,11 @@
   function renderNotifications() {
     var data = state.overview || {};
     var capabilities = data.capabilities || {};
-    var channels = data.channels || [];
-    return '<div class="workspace-heading"><h2>Notifications</h2><p>Email and browser push are always optional. SMS and WhatsApp require explicit consent.</p></div>' +
+    return '<div class="workspace-heading"><h2>Notifications</h2><p>Email and browser push are optional and can be switched per watched application.</p></div>' +
       '<section class="workspace-card"><h3>Delivery availability</h3><div class="workspace-inline">' +
-        [['Email', capabilities.email], ['Push', capabilities.push], ['SMS', capabilities.sms], ['WhatsApp', capabilities.whatsapp]].map(function (item) {
+        [['Email', capabilities.email], ['Push', capabilities.push]].map(function (item) {
           return pill(item[0] + ': ' + (item[1] ? 'ready' : 'not configured'), item[1] ? 'ok' : 'off');
         }).join('') + '</div>' +
-        (!capabilities.sms && !capabilities.whatsapp ? '<div class="workspace-notice warn" style="margin-top:12px;">The deployment has no SMS/WhatsApp provider credentials. You can still save a consented number, but test delivery will return a clear “not configured” response.</div>' : '') +
-      '</section>' +
-      '<section class="workspace-card"><h3>Add a message channel</h3><form class="workspace-form" data-action="add-channel">' +
-        '<div class="workspace-form-grid"><label>Channel<select name="channel">' + options([['sms', 'SMS'], ['whatsapp', 'WhatsApp']], 'sms') + '</select></label>' +
-        '<label>International number<input name="address" inputmode="tel" autocomplete="tel" placeholder="+353871234567" required></label></div>' +
-        '<label class="workspace-check"><input type="checkbox" name="consent" required> I consent to receive decision alerts on this number.</label>' +
-        '<button class="btn primary" type="submit">Save channel</button><p class="form-status" data-form-status aria-live="polite"></p></form></section>' +
-      '<section class="workspace-card"><h3>Your channels</h3>' +
-        (channels.length ? '<ul class="workspace-list">' + channels.map(function (row) {
-          var configured = capabilities[row.channel];
-          return '<li><div class="workspace-row"><div><strong>' + esc(row.channel === 'sms' ? 'SMS' : 'WhatsApp') + '</strong> <span class="workspace-muted">' + esc(row.address) + '</span><p class="workspace-muted">' + (row.consent_at ? 'Consent recorded' : 'Consent pending') + ' · ' + (configured ? 'Provider ready' : 'Provider not configured') + '</p></div>' +
-            '<div class="workspace-actions"><button class="btn secondary" type="button" data-action="test-channel" data-channel="' + esc(row.channel) + '">Send test</button><button class="btn secondary workspace-danger" type="button" data-action="remove-channel" data-channel="' + esc(row.channel) + '">Remove</button></div></div></li>';
-        }).join('') + '</ul>' : empty('No SMS or WhatsApp number is connected.')) +
       '</section>' +
       '<section class="workspace-card"><h3>Notification preferences</h3><p class="workspace-muted">Edit email, push and digest preferences in your profile.</p><button class="btn" type="button" data-action="go" data-view="profile">Edit preferences</button></section>';
   }
@@ -334,12 +311,12 @@
         '<div class="workspace-inline"><label class="workspace-check"><input type="checkbox" name="vfs" checked> Include VFS service fee</label><label class="workspace-check"><input type="checkbox" name="postal"> Include return courier</label></div>' +
         '<button class="btn primary" type="submit">Calculate estimate</button></form>' +
         (fees ? '<div class="workspace-table-wrap" style="margin-top:14px;"><table class="workspace-table"><tbody>' + fees.line_items.map(function (item) { return '<tr><td>' + esc(item.label) + '</td><td>' + money(item.amount) + '</td></tr>'; }).join('') + '<tr><th>Total (EUR)</th><th>' + money(fees.total) + '</th></tr></tbody></table></div><p class="workspace-muted">' + esc(fees.disclaimer) + '</p>' : '') + '</section>' +
-      '<section class="workspace-card"><h3>Read a document</h3><p class="workspace-muted">Paste text, upload a text file, or upload an image/PDF. OCR requires the deployment’s OCR provider; when it is absent the API reports that instead of pretending to read the file.</p><form class="workspace-form" data-action="scan">' +
+      '<section class="workspace-card"><h3>Read a document</h3><p class="workspace-muted">Paste text or upload a .txt/.csv file, then extract the application fields.</p><form class="workspace-form" data-action="scan">' +
         '<label>Document text<textarea name="text" rows="6" placeholder="Paste the decision email or application page here…"></textarea></label>' +
-        '<label>Or upload a file<input type="file" name="file" accept=".txt,.csv,image/*,.pdf"></label>' +
+        '<label>Or upload a file<input type="file" name="file" accept=".txt,.csv"></label>' +
         '<button class="btn primary" type="submit">Extract fields</button><p class="form-status" data-form-status aria-live="polite"></p></form>' +
         (scan ? '<div class="workspace-notice">Confidence ' + esc(scan.confidence) + '% · ' + count(scan.text_length) + ' characters read</div><div class="workspace-table-wrap"><table class="workspace-table"><tbody>' + Object.keys(scan.fields || {}).map(function (key) { return '<tr><th>' + esc(key.replace(/_/g, ' ')) + '</th><td>' + (scan.fields[key] ? esc(scan.fields[key]) : '<span class="workspace-muted">not found</span>') + '</td></tr>'; }).join('') + '</tbody></table></div>' + (scan.warnings && scan.warnings.length ? '<div class="workspace-notice warn">' + scan.warnings.map(esc).join('<br>') + '</div>' : '') : '') + '</section>' +
-      '<section class="workspace-card"><h3>Tracker tools</h3><div class="workspace-actions"><a class="btn" href="/">Decision search</a><a class="btn" href="/">Watchlist and alerts</a><a class="btn" href="/">VFS appointment finder</a><a class="btn" href="/visa-processing-times">Processing times</a></div><p class="workspace-muted" style="margin-top:10px;">The fee estimate is indicative only. Confirm current fees and requirements with the official embassy or VFS page before paying.</p></section>';
+      '<section class="workspace-card"><h3>Tracker tools</h3><div class="workspace-actions"><a class="btn" href="/?tracker=visa&tab=search">Decision search</a><a class="btn" href="/?tracker=visa&tab=watchlist">Watchlist and alerts</a><a class="btn" href="/?tracker=visa&tab=search#vfs-check-btn">VFS appointment check</a><a class="btn" href="/visa-processing-times">Processing times</a></div><p class="workspace-muted" style="margin-top:10px;">The fee estimate is indicative only. Confirm current fees and requirements with the official embassy or VFS page before paying.</p></section>';
   }
 
   function renderCommunity() {
@@ -378,7 +355,7 @@
     var detail = state.orgDetail;
     var org = detail && detail.org;
     if (!org) {
-      return '<div class="workspace-heading"><h2>Organization</h2><p>Create a small team workspace with branding, shared support context and domain-based SSO.</p></div>' +
+      return '<div class="workspace-heading"><h2>Organization</h2><p>Create a small team workspace with branding and shared support context.</p></div>' +
         '<section class="workspace-card"><h3>Create an organization</h3><form class="workspace-form" data-action="create-org"><label>Organization name<input name="name" maxlength="120" required placeholder="Your team or agency"></label><button class="btn primary" type="submit">Create organization</button><p class="form-status" data-form-status aria-live="polite"></p></form></section>' +
         '<section class="workspace-card"><h3>Join with an invite</h3><form class="workspace-form" data-action="join-org"><label>Invite token<input name="token" required></label><button class="btn" type="submit">Join organization</button><p class="form-status" data-form-status aria-live="polite"></p></form></section>';
     }
@@ -386,13 +363,13 @@
     var canEdit = org.role === 'owner' || org.role === 'admin' || detail.role === 'owner' || detail.role === 'admin';
     return '<div class="workspace-heading"><h2>Organization</h2><p>' + esc(org.name) + ' · ' + esc(org.plan || 'team') + ' · your role: ' + esc(detail.role || org.role || 'member') + '</p></div>' +
       '<section class="workspace-card"><div class="workspace-brand-preview" style="background:' + safeColor(org.brand_color) + '"><strong>' + esc(org.brand_name || org.name) + '</strong><span>Brand preview · ' + esc(org.slug) + '</span></div></section>' +
-      (canEdit ? '<section class="workspace-card"><h3>Branding and SSO</h3><form class="workspace-form" data-action="save-org"><div class="workspace-form-grid"><label>Legal name<input name="name" maxlength="120" value="' + esc(org.name) + '"></label><label>Brand name<input name="brand_name" maxlength="120" value="' + esc(org.brand_name || org.name) + '"></label><label>Brand color<input name="brand_color" maxlength="20" value="' + esc(org.brand_color || '#047857') + '"></label><label>Logo URL<input name="logo_url" maxlength="500" value="' + esc(org.logo_url || '') + '"></label><label>SSO email domain<input name="sso_domain" maxlength="180" placeholder="example.com" value="' + esc(org.sso_domain || '') + '"></label></div>' +
-        '<label class="workspace-check"><input type="checkbox" name="sso_required"' + (org.sso_required ? ' checked' : '') + '> Prefer organization SSO for this domain</label><button class="btn primary" type="submit">Save organization</button><p class="form-status" data-form-status aria-live="polite"></p></form></section>' : '') +
+      (canEdit ? '<section class="workspace-card"><h3>Branding</h3><form class="workspace-form" data-action="save-org"><div class="workspace-form-grid"><label>Legal name<input name="name" maxlength="120" value="' + esc(org.name) + '"></label><label>Brand name<input name="brand_name" maxlength="120" value="' + esc(org.brand_name || org.name) + '"></label><label>Brand color<input name="brand_color" maxlength="20" value="' + esc(org.brand_color || '#047857') + '"></label><label>Logo URL<input name="logo_url" maxlength="500" value="' + esc(org.logo_url || '') + '"></label></div>' +
+        '<button class="btn primary" type="submit">Save organization</button><p class="form-status" data-form-status aria-live="polite"></p></form></section>' : '') +
       '<section class="workspace-card"><h3>Members</h3>' + (members.length ? '<div class="workspace-table-wrap"><table class="workspace-table"><thead><tr><th>Name</th><th>Email</th><th>Role</th></tr></thead><tbody>' + members.map(function (member) {
         return '<tr><td>' + esc(member.name || '') + '</td><td>' + esc(member.email || '') + '</td><td>' + esc(member.role) + '</td></tr>';
       }).join('') + '</tbody></table></div>' : empty('No members found.')) + '</section>' +
       (canEdit ? '<section class="workspace-card"><h3>Invite a member</h3><form class="workspace-form" data-action="invite-org"><label>Email<input type="email" name="email" required></label><button class="btn" type="submit">Create invite</button><p class="form-status" data-form-status aria-live="polite"></p></form><p class="workspace-muted">Invites expire after seven days. Email delivery is attempted only when the deployment has an email webhook configured.</p></section>' : '') +
-      '<section class="workspace-card"><h3>Single sign-on</h3>' + (state.sso ? '<p class="workspace-muted">Your deployment has an OIDC provider configured. Members can sign in with SSO and, when enabled, join this organization automatically.</p><a class="btn" href="/api/auth/sso/start?org=' + encodeURIComponent(org.slug) + '">Continue with SSO</a>' : '<p class="workspace-muted">SSO is not configured on this deployment. Set the OIDC issuer and client variables to enable it.</p>') + '</section>';
+      '';
   }
 
   function renderView(view) {
@@ -513,10 +490,6 @@
       await handleInvite();
       var requested = (location.hash || '').replace('#', '');
       await setView(VIEW_TITLES[requested] ? requested : 'overview', true);
-      var ssoError = new URLSearchParams(location.search).get('sso');
-      if (ssoError === 'error') {
-        flash('Single sign-on failed: ' + (new URLSearchParams(location.search).get('message') || 'the provider did not complete the sign-in.'), 'warning');
-      }
     } catch (error) {
       if (error.status === 401) showAuth();
       else {
@@ -565,26 +538,6 @@
     }
     if (action === 'retry') {
       await setView(state.view);
-      return;
-    }
-    if (action === 'test-channel') {
-      target.disabled = true;
-      try {
-        var tested = await api('/api/portal/channels/test', { method: 'POST', body: { channel: target.dataset.channel } });
-        flash(tested.sent ? 'Test message accepted by the provider.' : (tested.error || 'Test message was not sent.'), tested.sent ? '' : 'warning');
-      } catch (error) {
-        flash(error.message, 'error');
-      } finally { target.disabled = false; }
-      return;
-    }
-    if (action === 'remove-channel') {
-      if (!window.confirm('Remove this notification channel?')) return;
-      try {
-        await api('/api/portal/channels', { method: 'DELETE', body: { channel: target.dataset.channel } });
-        await refreshOverview();
-        await setView('notifications');
-        flash('Channel removed.');
-      } catch (error) { flash(error.message, 'error'); }
       return;
     }
     if (action === 'delete-schedule') {
@@ -675,14 +628,6 @@
         await refreshOverview();
         formStatus(form, 'Profile saved.', 'ok');
         flash('Profile saved.');
-      } else if (action === 'add-channel') {
-        await api('/api/portal/channels', {
-          method: 'POST',
-          body: { channel: values.channel, address: values.address, consent: Boolean(values.consent) }
-        });
-        await refreshOverview();
-        await setView('notifications');
-        flash('Channel saved. Send a test when the provider is configured.');
       } else if (action === 'analytics-filter') {
         state.analyticsFilter = { office: values.office, from: values.from, to: values.to, date: values.date };
         state.analytics = null;
@@ -780,9 +725,7 @@
             name: values.name,
             brand_name: values.brand_name,
             brand_color: values.brand_color,
-            logo_url: values.logo_url,
-            sso_domain: values.sso_domain,
-            sso_required: Boolean(values.sso_required)
+            logo_url: values.logo_url
           }
         });
         state.orgDetail = null;
@@ -849,7 +792,6 @@
       var view = location.hash.replace('#', '');
       if (VIEW_TITLES[view] && view !== state.view) setView(view, true);
     });
-    api('/api/auth/sso/status').then(setSso).catch(function () { setSso(null); });
     bootstrap();
   }
 

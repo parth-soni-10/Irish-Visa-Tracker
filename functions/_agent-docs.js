@@ -12,9 +12,6 @@
  * what the numbers do not mean.
  * ------------------------------------------------------------------------- */
 
-export const SITE = "https://irishvisaupdatetracker.pages.dev";
-export const EMAIL = "soni.soni.parth@gmail.com";
-
 const lines = (...parts) => parts.join("\n").trim() + "\n";
 
 export const HOME_MARKDOWN = lines(

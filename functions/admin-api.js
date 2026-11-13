@@ -185,7 +185,7 @@ export async function handleSystemMetrics(request, env) {
 
   try {
     const [users, sessions, email, telegram, push, watchlists, apiTokens, notifications, submissions,
-      smsChannels, whatsappChannels, communityPosts, organizations, scheduledExports, exportJobs] = await Promise.all([
+      communityPosts, organizations, scheduledExports, exportJobs] = await Promise.all([
       env.DB.prepare(`SELECT COUNT(*) AS count,
         COUNT(CASE WHEN created_at > datetime('now', '-7 days') THEN 1 END) AS last_week,
         COUNT(CASE WHEN created_at > datetime('now', '-30 days') THEN 1 END) AS last_month
@@ -202,8 +202,6 @@ export async function handleSystemMetrics(request, env) {
       safeCount(env, 'SELECT COUNT(*) AS count FROM api_tokens WHERE revoked = 0'),
       safeCount(env, 'SELECT COUNT(*) AS count FROM user_notifications WHERE read_at IS NULL'),
       safeCount(env, 'SELECT COUNT(*) AS count FROM submissions'),
-      safeCount(env, "SELECT COUNT(*) AS count FROM user_channels WHERE channel = 'sms' AND verified = 1"),
-      safeCount(env, "SELECT COUNT(*) AS count FROM user_channels WHERE channel = 'whatsapp' AND verified = 1"),
       safeCount(env, "SELECT COUNT(*) AS count FROM community_posts WHERE status = 'published'"),
       safeCount(env, 'SELECT COUNT(*) AS count FROM organizations'),
       safeCount(env, 'SELECT COUNT(*) AS count FROM scheduled_exports WHERE enabled = 1'),
@@ -213,6 +211,17 @@ export async function handleSystemMetrics(request, env) {
     const offices = {};
     for (const office of report.officeList) {
       offices[office.slug] = report.rows.filter((row) => row.office === office.slug).length;
+    }
+    const conversionRows = await env.DB.prepare(`
+      SELECT event, COUNT(*) AS count
+      FROM conversion_events
+      WHERE created_at >= datetime('now', '-30 days')
+      GROUP BY event
+      ORDER BY count DESC
+    `).all().catch(() => ({ results: [] }));
+    const conversions = {};
+    for (const row of conversionRows.results || []) {
+      conversions[row.event] = Number(row.count) || 0;
     }
     return json({
       timestamp: new Date().toISOString(),
@@ -235,13 +244,13 @@ export async function handleSystemMetrics(request, env) {
       unreadNotifications: notifications,
       submissions,
       product: {
-        smsChannels,
-        whatsappChannels,
         telegramChannels: Number(telegram && telegram.active) || 0,
         communityPosts,
         organizations,
         scheduledExports,
-        readyExports: exportJobs
+        readyExports: exportJobs,
+        conversions,
+        conversionWindowDays: 30
       },
       dataVolume: { visa_decisions: report.rows.length, offices, latest_date: report.latestDate },
       api: {

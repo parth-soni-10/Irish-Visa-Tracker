@@ -1,11 +1,17 @@
 /**
- * VFS Global appointment availability.
+ * VFS Global appointment-page check.
  *
- * VFS renders the booking calendar in JavaScript. A plain fetch cannot read
- * the final slot list, so this endpoint returns an explicit availability signal
- * from the official VFS page. If CLOUDFLARE_BROWSER_RENDERING credentials are
- * configured it renders the page first; otherwise it reports `unknown` rather
- * than inventing a slot. The official booking URL is always returned.
+ * VFS does not publish the Ireland-India appointment calendar publicly. The
+ * booking page is behind an account sign-in, and direct requests are usually
+ * answered with a Cloudflare challenge. This module therefore reports only what
+ * it can actually prove from the official page: the page is reachable, it
+ * requires sign-in, it is challenged, it reports no slots, or it shows calendar
+ * language. It never invents a date or a slot.
+ *
+ * If Cloudflare Browser Rendering is configured (CF_ACCOUNT_ID and
+ * CF_API_TOKEN), the rendered page is inspected first. Otherwise the direct
+ * HTTP response is classified. The official booking and tracking links are
+ * always returned.
  */
 
 const OFFICES = {
@@ -24,49 +30,80 @@ const OFFICES = {
 };
 
 const TRACK_URL = 'https://visa.vfsglobal.com/ind/en/irl/track-application';
+const LOGIN_URL = 'https://visa.vfsglobal.com/ind/en/irl/login';
+const DEFAULT_OFFICE = 'new-delhi';
+const DISCLAIMER = 'VFS does not publish Ireland-India appointment slots publicly. This check reports the public page state only; it cannot hold or confirm a slot. Sign in to the official VFS portal to see the calendar.';
 
 function normalizeOffice(value) {
-  const key = String(value || 'new-delhi').trim().toLowerCase().replace(/\s+/g, '-');
+  const key = String(value || DEFAULT_OFFICE).trim().toLowerCase().replace(/\s+/g, '-');
   return OFFICES[key] ? key : null;
+}
+
+function loginRequired(message) {
+  return {
+    availability: 'login_required',
+    confidence: 'high',
+    message: message || 'VFS requires an account sign-in before it shows the appointment calendar. No public slot data is available.'
+  };
 }
 
 function classify(text, status) {
   const body = String(text || '').replace(/\s+/g, ' ');
-  if (status === 403 || /cf-chl|just a moment|challenge-platform|enable javascript and cookies/i.test(body)) {
+  const httpStatus = Number(status) || 0;
+
+  if (httpStatus === 403 || httpStatus === 429 ||
+      /cf-chl|just a moment|challenge-platform|enable javascript and cookies|checking your browser/i.test(body)) {
     return {
       availability: 'challenge',
       confidence: 'none',
-      message: 'VFS returned a bot challenge. Open the official page in a browser to see the calendar.'
+      message: 'VFS returned a bot challenge. Open the official page in a browser to sign in and see the calendar.'
     };
   }
-  if (/maintenance|temporarily unavailable|service unavailable|technical error/i.test(body)) {
+
+  if (httpStatus === 401) {
+    return loginRequired('VFS returned an authentication-required response. Sign in on the official page to see the appointment calendar.');
+  }
+
+  if (httpStatus >= 500 ||
+      /maintenance|temporarily unavailable|service unavailable|technical error|bad gateway/i.test(body)) {
     return {
       availability: 'maintenance',
       confidence: 'low',
       message: 'VFS appears to be in maintenance or temporarily unavailable.'
     };
   }
-  if (/no appointments? (?:are )?(?:currently )?available|no slots? available|currently no appointments?/i.test(body)) {
+
+  if (/no appointments? (?:are )?(?:currently )?available|no slots? available|currently no appointments?|appointment slots? (?:are )?(?:currently )?unavailable/i.test(body)) {
     return {
       availability: 'unavailable',
       confidence: 'medium',
-      message: 'VFS page reports no appointments available right now.'
+      message: 'The VFS page reports no appointments available right now.'
     };
   }
-  if (/earliest available|available appointment|select (?:a|your) (?:date|time|slot)|choose (?:a|your) (?:date|time|slot)/i.test(body)) {
+
+  // Strong sign-in signals. The booking page links to /login even before the
+  // calendar exists, so a login link plus "Book now" is a login-required state,
+  // not an appointment signal.
+  if (/(?:sign in|log in).{0,160}(?:email|password)|(?:email|password).{0,160}(?:sign in|log in)|forgot password|activate my account|\/login(?:\?|["'#/])/i.test(body)) {
+    return loginRequired();
+  }
+
+  if (/earliest available|available appointment|select (?:a |your )?(?:date|time|slot)|choose (?:a |your )?(?:date|time|slot)|available dates?|appointment calendar/i.test(body)) {
     return {
       availability: 'available',
       confidence: 'medium',
-      message: 'VFS page contains booking-calendar language. Confirm the slot on the official page.'
+      message: 'The VFS page contains booking-calendar language. Confirm the actual date and time on the official page.'
     };
   }
-  if (/book an appointment|appointment/i.test(body)) {
+
+  if (/book(?: an)? appointment|appointment/i.test(body)) {
     return {
       availability: 'unknown',
       confidence: 'low',
-      message: 'The official booking page is reachable, but the slot calendar is JavaScript-rendered.'
+      message: 'The official booking page is reachable, but it does not expose slot data to an unauthenticated request.'
     };
   }
+
   return {
     availability: 'unknown',
     confidence: 'none',
@@ -74,20 +111,28 @@ function classify(text, status) {
   };
 }
 
-async function fetchRendered(url, env) {
-  if (!env.CF_ACCOUNT_ID || !env.CF_API_TOKEN) return null;
+function renderingCredentials(env) {
+  const accountId = env && (env.CF_ACCOUNT_ID || env.CLOUDFLARE_ACCOUNT_ID);
+  const token = env && (env.CF_API_TOKEN || env.CLOUDFLARE_API_TOKEN);
+  return accountId && token ? { accountId, token } : null;
+}
+
+async function fetchRendered(url, env, fetchImpl = fetch) {
+  const credentials = renderingCredentials(env);
+  if (!credentials) return null;
+
   const endpoint = 'https://api.cloudflare.com/client/v4/accounts/' +
-    encodeURIComponent(env.CF_ACCOUNT_ID) + '/browser-rendering/content';
-  const response = await fetch(endpoint, {
+    encodeURIComponent(credentials.accountId) + '/browser-rendering/content';
+  const response = await fetchImpl(endpoint, {
     method: 'POST',
     headers: {
-      Authorization: 'Bearer ' + env.CF_API_TOKEN,
+      Authorization: 'Bearer ' + credentials.token,
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
       url,
       gotoOptions: { waitUntil: 'networkidle0', timeout: 45000 },
-      waitForTimeout: 2500
+      waitForTimeout: 3000
     })
   });
   if (!response.ok) {
@@ -95,17 +140,18 @@ async function fetchRendered(url, env) {
     throw new Error('Browser Rendering ' + response.status + ': ' + detail.slice(0, 200));
   }
   const payload = await response.json();
+  const result = payload && payload.result;
   return {
-    text: String((payload && payload.result) || ''),
+    text: typeof result === 'string' ? result : String((result && (result.content || result.html)) || ''),
     source: 'browser-rendering'
   };
 }
 
-async function fetchPage(url, env) {
+async function fetchPage(url, fetchImpl = fetch) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 9000);
   try {
-    const response = await fetch(url, {
+    const response = await fetchImpl(url, {
       redirect: 'follow',
       signal: controller.signal,
       headers: {
@@ -121,7 +167,94 @@ async function fetchPage(url, env) {
   }
 }
 
-export async function handleVFSAppointments(request, env) {
+/**
+ * Check one office. Exported separately from the HTTP handler so the scheduler
+ * or a future monitor can reuse the exact same classification rules.
+ */
+export async function checkVFSAppointment(options = {}) {
+  const { env = {}, fetchImpl = fetch } = options;
+  const officeKey = normalizeOffice(options.office || options.officeKey);
+  if (!officeKey) {
+    return {
+      success: false,
+      error: 'Unknown VFS office',
+      status: 400
+    };
+  }
+
+  const office = OFFICES[officeKey];
+  const visaType = String(options.visaType || options.visa_type || '').trim().slice(0, 80);
+  let page;
+  let source = 'http';
+  let renderError = null;
+
+  try {
+    const rendered = await fetchRendered(office.url, env, fetchImpl);
+    if (rendered) {
+      page = rendered;
+      source = rendered.source;
+    }
+  } catch (error) {
+    renderError = error.message;
+    console.warn('VFS browser rendering failed:', error.message);
+  }
+
+  if (!page) {
+    try {
+      page = await fetchPage(office.url, fetchImpl);
+      source = page.source;
+    } catch (error) {
+      return {
+        success: false,
+        office: officeKey,
+        office_name: office.name,
+        visa_type: visaType || null,
+        availability: 'unknown',
+        confidence: 'none',
+        error: 'Could not reach the official VFS page',
+        detail: error.name === 'AbortError' ? 'Request timed out' : error.message,
+        message: 'The official VFS page could not be reached. Try again or open it directly.',
+        official_url: office.url,
+        booking_url: office.url,
+        login_url: LOGIN_URL,
+        tracking_url: TRACK_URL,
+        source,
+        http_status: null,
+        render_error: renderError,
+        requires_login: false,
+        calendar_visible: false,
+        public_slots: false,
+        checked_at: new Date().toISOString(),
+        disclaimer: DISCLAIMER
+      };
+    }
+  }
+
+  const result = classify(page.text, page.status);
+  return {
+    success: true,
+    office: officeKey,
+    office_name: office.name,
+    visa_type: visaType || null,
+    availability: result.availability,
+    confidence: result.confidence,
+    message: result.message,
+    official_url: office.url,
+    booking_url: office.url,
+    login_url: LOGIN_URL,
+    tracking_url: TRACK_URL,
+    source,
+    http_status: page.status || null,
+    render_error: renderError,
+    requires_login: result.availability === 'login_required',
+    calendar_visible: result.availability === 'available' || result.availability === 'unavailable',
+    public_slots: false,
+    checked_at: new Date().toISOString(),
+    disclaimer: DISCLAIMER
+  };
+}
+
+export async function handleVFSAppointments(request, env = {}) {
   if (request.method !== 'GET' && request.method !== 'HEAD') {
     return new Response(JSON.stringify({ error: 'Method not allowed' }), {
       status: 405,
@@ -141,65 +274,14 @@ export async function handleVFSAppointments(request, env) {
     });
   }
 
-  const office = OFFICES[officeKey];
-  const visaType = String(url.searchParams.get('visa_type') || '').trim().slice(0, 80);
-  let page;
-  let source = 'http';
-  let renderError = null;
-
-  try {
-    const rendered = await fetchRendered(office.url, env);
-    if (rendered) {
-      page = rendered;
-      source = rendered.source;
-    }
-  } catch (error) {
-    renderError = error.message;
-    console.warn('VFS browser rendering failed:', error.message);
-  }
-
-  if (!page) {
-    try {
-      page = await fetchPage(office.url, env);
-      source = page.source;
-    } catch (error) {
-      return new Response(JSON.stringify({
-        success: false,
-        office: officeKey,
-        office_name: office.name,
-        availability: 'unavailable',
-        confidence: 'none',
-        error: 'Could not reach the official VFS page',
-        detail: error.name === 'AbortError' ? 'Request timed out' : error.message,
-        official_url: office.url,
-        booking_url: office.url,
-        tracking_url: TRACK_URL,
-        checked_at: new Date().toISOString()
-      }), {
-        status: 502,
-        headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }
-      });
-    }
-  }
-
-  const result = classify(page.text, page.status);
-  return new Response(JSON.stringify({
-    success: true,
+  const result = await checkVFSAppointment({
     office: officeKey,
-    office_name: office.name,
-    visa_type: visaType || null,
-    availability: result.availability,
-    confidence: result.confidence,
-    message: result.message,
-    official_url: office.url,
-    booking_url: office.url,
-    tracking_url: TRACK_URL,
-    source,
-    http_status: page.status || null,
-    render_error: renderError,
-    checked_at: new Date().toISOString(),
-    disclaimer: 'Availability changes quickly. This is an unauthenticated signal from the public VFS page, not a held slot or a guarantee. Confirm on the official VFS booking page.'
-  }), {
+    visaType: url.searchParams.get('visa_type'),
+    env
+  });
+  const status = result.success ? 200 : (result.status === 400 ? 400 : 502);
+  return new Response(JSON.stringify(result), {
+    status,
     headers: {
       'Content-Type': 'application/json',
       'Cache-Control': 'public, max-age=300, s-maxage=300'
@@ -207,4 +289,4 @@ export async function handleVFSAppointments(request, env) {
   });
 }
 
-export { OFFICES, classify };
+export { OFFICES, classify, normalizeOffice };

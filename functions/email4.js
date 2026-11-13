@@ -2,10 +2,6 @@ import { sha256 } from './crypto.js';
 import { isEmailConfigured, sendEmail } from './email-send.js';
 import { json, ack, generateToken, invalidSubscription } from './email-utils.js';
 
-export const SUBSCRIBE_PATH = '/api/subscribe';
-export const VERIFY_PATH = '/api/verify';
-export const UNSUBSCRIBE_PATH = '/api/unsubscribe';
-
 // `email_subscriptions` is shared with the account API, so keep these names in
 // sync with `_router.js` / `db-schema.cjs`. Older deployments may have been
 // created by this file with the old `verify_token` names; ensureEmailSchema

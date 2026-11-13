@@ -224,8 +224,10 @@ test("markdownResponse: body-free for HEAD, Vary preserved on merge", () => {
 });
 
 test("every page title the app sets carries the brand", async () => {
-  const html = await read("index.html");
-  const titles = [...html.matchAll(/document\.title = '([^']+)'/g)].map((match) => match[1]);
+  // The dashboard's executable JavaScript is served from /scripts after the
+  // inline-asset split, so the title assignments live in index.js now.
+  const script = await read("scripts/index.js");
+  const titles = [...script.matchAll(/document\.title = '([^']+)'/g)].map((match) => match[1]);
   assert.ok(titles.length >= 4, "expected the app's four titles");
   for (const title of titles) assert.match(title, /Irish Visa Decision Tracker/);
 });

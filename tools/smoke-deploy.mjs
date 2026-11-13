@@ -45,7 +45,7 @@ const workspace = await get('/workspace');
 check('workspace page serves', workspace.status === 200 && /workspace/i.test(workspace.text), 'HTTP ' + workspace.status);
 
 const ssoStatus = await get('/api/auth/sso/status');
-check('SSO status serves', ssoStatus.status === 200 && typeof ssoStatus.json.enabled === 'boolean', 'HTTP ' + ssoStatus.status);
+check('removed SSO route is not served', ssoStatus.status === 404, 'HTTP ' + ssoStatus.status);
 
 const manifest = await get('/manifest.json');
 check('manifest serves', manifest.status === 200 && manifest.json && Array.isArray(manifest.json.icons) && manifest.json.icons.length > 0, 'HTTP ' + manifest.status);

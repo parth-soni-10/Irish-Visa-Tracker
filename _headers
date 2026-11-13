@@ -6,9 +6,11 @@
 # served - which is why the twin is gone now that every directive it carried
 # lives here. This is the only copy: what is written here is the whole policy.
 #
-# Single-file app: inline scripts/styles are intrinsic, so lock down
-# everything else (objects, frames, base-uri, form-action). Data files
-# ship with the site itself, so connect-src is self-only.
+# Inline executable scripts and style elements are extracted into /scripts
+# and /styles. Inline style attributes remain for generated chart/table
+# geometry, so style-src-attr is the one deliberate exception. Data files ship
+# with the site itself; connect-src stays self-only except for Web Push and
+# Cloudflare's optional insights beacon.
 /employer
   Cache-Control: no-store
 
@@ -17,4 +19,4 @@
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: geolocation=(), microphone=(), camera=(), payment=()
-  Content-Security-Policy: default-src 'none'; script-src 'self' 'unsafe-inline' https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data:; connect-src 'self' https://cloudflareinsights.com; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
+  Content-Security-Policy: default-src 'none'; script-src 'self' https://cdn.jsdelivr.net https://static.cloudflareinsights.com; script-src-attr 'none'; style-src 'self'; style-src-attr 'unsafe-inline'; style-src-elem 'self'; font-src 'self' data:; img-src 'self' data: https:; connect-src 'self' https://fcm.googleapis.com https://cloudflareinsights.com; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'

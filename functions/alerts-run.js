@@ -14,8 +14,6 @@ import { ensureEmailSchema } from './email4.js';
 import { isEmailConfigured, sendEmail } from './email-send.js';
 import { loadReportData } from './report-data.js';
 import { createNotification } from './notifications.js';
-import { ensurePortalSchema } from './portal-schema.js';
-import { anyChannelConfigured, isChannelConfigured, sendChannel } from './notify-channels.js';
 import { isTelegramConfigured, ensureTelegramSchema, sendTelegram } from './telegram.js';
 
 const MAX_ALERTS = 250;
@@ -164,77 +162,6 @@ async function runPushAlerts(env, report, dryRun) {
   return { checked: rows.length, matched, sent, skipped, failed, would_send: wouldSend };
 }
 
-async function runChannelAlerts(env, report, dryRun) {
-  const configuredChannels = ['sms', 'whatsapp'].filter((channel) => isChannelConfigured(env, channel));
-  if (!configuredChannels.length) {
-    return { checked: 0, matched: 0, sent: 0, skipped: 0, failed: 0, would_send: 0 };
-  }
-  await ensurePortalSchema(env);
-  let rows = [];
-  try {
-    const placeholders = configuredChannels.map(() => '?').join(', ');
-    const result = await env.DB.prepare(`
-      SELECT w.user_id, w.application_number, w.embassy_slug AS embassy,
-             w.last_alert_sent, c.channel, c.address
-      FROM watchlists w
-      JOIN user_channels c ON c.user_id = w.user_id
-      WHERE c.verified = 1 AND c.consent_at IS NOT NULL
-        AND c.channel IN (${placeholders})
-        AND ((c.channel = 'sms' AND w.notify_sms = 1)
-          OR (c.channel = 'whatsapp' AND w.notify_whatsapp = 1))
-      ORDER BY w.id LIMIT ?
-    `).bind(...configuredChannels, MAX_ALERTS).all();
-    rows = result.results || [];
-  } catch (error) {
-    console.warn('Channel alert query failed:', error.message);
-    return { checked: 0, matched: 0, sent: 0, skipped: 0, failed: 1, would_send: 0 };
-  }
-
-  let matched = 0;
-  let sent = 0;
-  let skipped = 0;
-  let failed = 0;
-  let wouldSend = 0;
-  for (const row of rows) {
-    const decision = findDecision(report.rows, row.application_number, row.embassy);
-    if (!decision) {
-      skipped += 1;
-      continue;
-    }
-    matched += 1;
-    if (!shouldSend(row.last_alert_sent, decision.date)) {
-      skipped += 1;
-      continue;
-    }
-    if (dryRun) {
-      wouldSend += 1;
-      continue;
-    }
-    const message = 'Visa ' + decision.decision + ' for ' + row.application_number +
-      ' at ' + row.embassy + ' (published ' + decision.date + '). View: ' +
-      String(env.APP_BASE_URL || DEFAULT_BASE).replace(/\/+$/, '') +
-      '/?tab=home&q=' + encodeURIComponent(row.application_number);
-    const result = await sendChannel(env, row.channel, row.address, message);
-    if (!result.sent) {
-      failed += 1;
-      continue;
-    }
-    sent += 1;
-    await env.DB.prepare(`
-      UPDATE watchlists SET last_alert_sent = ?
-      WHERE user_id = ? AND application_number = ? AND embassy_slug = ?
-    `).bind(decision.date, row.user_id, row.application_number, row.embassy).run().catch(() => {});
-    await createNotification(env, {
-      userId: row.user_id,
-      type: 'decision',
-      title: 'Visa ' + decision.decision + ': ' + row.application_number,
-      body: 'Published ' + decision.date + ' for ' + row.embassy + '.',
-      url: '/?tab=home&q=' + encodeURIComponent(row.application_number)
-    });
-  }
-  return { checked: rows.length, matched, sent, skipped, failed, would_send: wouldSend };
-}
-
 async function runTelegramAlerts(env, report, dryRun) {
   if (!isTelegramConfigured(env)) {
     return { checked: 0, matched: 0, sent: 0, skipped: 0, failed: 0, would_send: 0 };
@@ -323,9 +250,8 @@ export async function handleAlertsRun(request, env) {
   const { isPushConfigured } = await import('./push.js');
   const emailConfigured = isEmailConfigured(env);
   const pushConfigured = isPushConfigured(env);
-  const channelConfigured = anyChannelConfigured(env);
   const telegramConfigured = isTelegramConfigured(env);
-  if (!emailConfigured && !pushConfigured && !channelConfigured && !telegramConfigured) {
+  if (!emailConfigured && !pushConfigured && !telegramConfigured) {
     return json({ error: 'No alert delivery channel is configured' }, 503);
   }
 
@@ -399,20 +325,17 @@ export async function handleAlertsRun(request, env) {
     }
 
     const push = await runPushAlerts(env, report, dryRun);
-    const channels = await runChannelAlerts(env, report, dryRun);
     const telegram = await runTelegramAlerts(env, report, dryRun);
     return json({
-      ok: failed === 0 && push.failed === 0 && channels.failed === 0 && telegram.failed === 0,
-      checked: alerts.length + push.checked + channels.checked + telegram.checked,
-      matched: matched + push.matched + channels.matched + telegram.matched,
-      sent: sent + channels.sent + telegram.sent,
-      skipped: skipped + push.skipped + channels.skipped + telegram.skipped,
-      failed: failed + push.failed + channels.failed + telegram.failed,
-      would_send: wouldSend + push.would_send + channels.would_send + telegram.would_send,
+      ok: failed === 0 && push.failed === 0 && telegram.failed === 0,
+      checked: alerts.length + push.checked + telegram.checked,
+      matched: matched + push.matched + telegram.matched,
+      sent: sent + telegram.sent,
+      skipped: skipped + push.skipped + telegram.skipped,
+      failed: failed + push.failed + telegram.failed,
+      would_send: wouldSend + push.would_send + telegram.would_send,
       push_checked: push.checked,
       push_sent: push.sent,
-      channel_checked: channels.checked,
-      channel_sent: channels.sent,
       telegram_checked: telegram.checked,
       telegram_sent: telegram.sent,
       dry_run: dryRun

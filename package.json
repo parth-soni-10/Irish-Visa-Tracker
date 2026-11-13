@@ -3,6 +3,10 @@
   "type": "module",
   "scripts": {
     "build": "node tools/deploy-pages.mjs",
+    "check:html": "python tools/check_html_scripts.py",
+    "lint:dead": "node tools/check-dead-code.mjs",
+    "lint:js": "node tools/check-js-syntax.mjs",
+    "test": "node --test tests/*.test.mjs",
     "smoke": "node tools/smoke-deploy.mjs",
     "test:e2e": "playwright test --project=chromium",
     "audit:a11y": "node accessibility-audit.js",
@@ -14,9 +18,7 @@
     "cheerio": "^1.2.0",
     "pdf-parse": "^2.4.5",
     "pdf-poppler": "^0.2.3",
-    "pdf2pic": "^3.2.0",
     "pdfjs-dist": "^6.5.438",
-    "puppeteer": "^25.16.0",
     "tesseract.js": "^7.0.0",
     "web-push": "^4.0.0",
     "xlsx": "^0.18.5"
@@ -24,7 +26,6 @@
   "devDependencies": {
     "@axe-core/playwright": "^4.14.0",
     "@playwright/test": "^1.65.0",
-    "esbuild": "^0.28.2",
     "playwright": "^1.65.0"
   }
 }
