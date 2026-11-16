@@ -3,8 +3,8 @@
  *
  * Telegram needs no sending domain and no business verification: a bot created
  * with BotFather can message anyone who presses Start. Subscriptions are
- * anonymous, like the email alert list, and are linked through a single-use
- * token so the site never asks a visitor for a chat id.
+ * anonymous and linked through a single-use token so the site never asks a
+ * visitor for a chat id.
  */
 
 import { EMBASSIES, json } from './email-utils.js';

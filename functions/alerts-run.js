@@ -1,19 +1,16 @@
 /**
  * Decision alert runner.
  *
- * This is the missing "check again" half of the alert pipeline. It is called by
- * a scheduler with X-Cron-Secret, loads the published decision files, matches
- * verified subscriptions against the current office snapshots, sends at most
- * one email per decision date, and records last_alert_sent so a retry is
- * idempotent.
+ * Called by a scheduler with X-Cron-Secret. It loads the published decision
+ * files, matches subscribed applications against the current office snapshots,
+ * sends at most one alert per decision date for each enabled channel, and
+ * records last_alert_sent so a retry is idempotent.
  *
- * It never returns email addresses or tokens.
+ * Telegram and browser push are the supported channels. Email alerts are not
+ * implemented and are deliberately not part of this runner.
  */
 
-import { ensureEmailSchema } from './email4.js';
-import { isEmailConfigured, sendEmail } from './email-send.js';
 import { loadReportData } from './report-data.js';
-import { createNotification } from './notifications.js';
 import { isTelegramConfigured, ensureTelegramSchema, sendTelegram } from './telegram.js';
 
 const MAX_ALERTS = 250;
@@ -21,15 +18,6 @@ const DEFAULT_BASE = 'https://irishvisaupdatetracker.pages.dev';
 
 function normalizeNumber(value) {
   return String(value || '').replace(/\s+/g, '').replace(/^IRL/i, '').toUpperCase();
-}
-
-function escapeHtml(value) {
-  return String(value == null ? '' : value)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
 }
 
 /**
@@ -57,40 +45,6 @@ export function shouldSend(lastSent, decisionDate) {
   return Boolean(date) && (!sent || sent < date);
 }
 
-function unsubscribeUrl(env, token) {
-  const base = String(env.APP_BASE_URL || DEFAULT_BASE).replace(/\/+$/, '');
-  return token
-    ? base + '/api/unsubscribe?token=' + encodeURIComponent(token)
-    : base + '/contact';
-}
-
-function alertEmail(env, alert, decision) {
-  const app = escapeHtml(alert.application_number);
-  const office = escapeHtml(alert.embassy);
-  const status = escapeHtml(decision.decision);
-  const date = escapeHtml(decision.date);
-  const unsub = escapeHtml(unsubscribeUrl(env, alert.unsubscribe_token));
-  const subject = 'Visa ' + decision.decision + ' for ' + alert.application_number;
-  const html = [
-    '<h2 style="color:' + (decision.decision === 'Approved' ? '#047857' : '#b91c1c') + '">Application ' + status + '</h2>',
-    '<p><strong>Application:</strong> ' + app + '</p>',
-    '<p><strong>Office:</strong> ' + office + '</p>',
-    '<p><strong>Published date:</strong> ' + date + '</p>',
-    '<p><strong>Outcome:</strong> ' + status + '</p>',
-    '<p><a href="https://www.irishimmigration.ie/visa-decisions/" style="background:#059669;color:white;padding:12px 24px;border-radius:6px;text-decoration:none;display:inline-block;">View official decisions</a></p>',
-    '<p style="color:#666;font-size:12px;">This is a convenience alert over a published decision. Confirm it on the official source before acting on it.</p>',
-    '<hr><p style="color:#999;font-size:11px;"><a href="' + unsub + '">Unsubscribe from this alert</a></p>'
-  ].join('');
-  const text = [
-    'Application ' + alert.application_number + ' was ' + decision.decision + '.',
-    'Office: ' + alert.embassy,
-    'Published date: ' + decision.date,
-    'Official source: https://www.irishimmigration.ie/visa-decisions/',
-    'Unsubscribe: ' + unsubscribeUrl(env, alert.unsubscribe_token)
-  ].join('\n');
-  return { subject, html, text };
-}
-
 async function runPushAlerts(env, report, dryRun) {
   const { isPushConfigured, ensurePushSchema, sendDecisionPush } = await import('./push.js');
   if (!isPushConfigured(env)) {
@@ -103,8 +57,7 @@ async function runPushAlerts(env, report, dryRun) {
     const result = await env.DB.prepare(`
       SELECT application_number,
              COALESCE(embassy_slug, embassy) AS embassy,
-             MAX(last_alert_sent) AS last_alert_sent,
-             GROUP_CONCAT(DISTINCT user_id) AS user_ids
+             MAX(last_alert_sent) AS last_alert_sent
       FROM push_subscriptions
       WHERE application_number IS NOT NULL AND application_number <> ''
       GROUP BY application_number, COALESCE(embassy_slug, embassy)
@@ -145,15 +98,6 @@ async function runPushAlerts(env, report, dryRun) {
         UPDATE push_subscriptions SET last_alert_sent = ?
         WHERE application_number = ? AND (embassy_slug = ? OR embassy = ?)
       `).bind(decision.date, row.application_number, row.embassy, row.embassy).run().catch(() => {});
-      for (const userId of String(row.user_ids || '').split(',').filter(Boolean)) {
-        await createNotification(env, {
-          userId,
-          type: 'decision',
-          title: 'Visa ' + decision.decision + ': ' + row.application_number,
-          body: 'Published ' + decision.date + ' for ' + row.embassy + '.',
-          url: '/?tab=home&q=' + encodeURIComponent(row.application_number)
-        });
-      }
     } else {
       failed += 1;
     }
@@ -248,92 +192,25 @@ export async function handleAlertsRun(request, env) {
   }
 
   const { isPushConfigured } = await import('./push.js');
-  const emailConfigured = isEmailConfigured(env);
   const pushConfigured = isPushConfigured(env);
   const telegramConfigured = isTelegramConfigured(env);
-  if (!emailConfigured && !pushConfigured && !telegramConfigured) {
+  if (!pushConfigured && !telegramConfigured) {
     return json({ error: 'No alert delivery channel is configured' }, 503);
   }
 
   const dryRun = new URL(request.url).searchParams.get('dry_run') === '1';
   try {
-    let alerts = [];
-    if (emailConfigured) {
-      await ensureEmailSchema(env);
-      const result = await env.DB.prepare(`
-        SELECT id, user_id, email, application_number, embassy, unsubscribe_token, last_alert_sent
-        FROM email_subscriptions
-        WHERE verified = 1
-          AND unsubscribed = 0
-          AND application_number <> ''
-        ORDER BY id
-        LIMIT ?
-      `).bind(MAX_ALERTS).all();
-      alerts = result.results || [];
-    }
-
     const report = await loadReportData(env, request);
-    let matched = 0;
-    let sent = 0;
-    let skipped = 0;
-    let failed = 0;
-    let wouldSend = 0;
-
-    for (const alert of alerts) {
-      const decision = findDecision(report.rows, alert.application_number, alert.embassy);
-      if (!decision) {
-        skipped += 1;
-        continue;
-      }
-      matched += 1;
-      if (!shouldSend(alert.last_alert_sent, decision.date)) {
-        skipped += 1;
-        continue;
-      }
-      if (dryRun) {
-        wouldSend += 1;
-        continue;
-      }
-
-      try {
-        const mail = alertEmail(env, alert, decision);
-        await sendEmail(env, {
-          from: env.EMAIL_FROM,
-          to: alert.email,
-          subject: mail.subject,
-          html: mail.html,
-          text: mail.text
-        });
-        await env.DB.prepare('UPDATE email_subscriptions SET last_alert_sent = ? WHERE id = ?')
-          .bind(decision.date, alert.id).run();
-        sent += 1;
-
-        if (alert.user_id) {
-          await createNotification(env, {
-            userId: alert.user_id,
-            type: 'decision',
-            title: 'Visa ' + decision.decision + ': ' + alert.application_number,
-            body: 'Published ' + decision.date + ' for ' + alert.embassy + '.',
-            url: '/?tab=home&q=' + encodeURIComponent(alert.application_number)
-          });
-        }
-
-      } catch (error) {
-        failed += 1;
-        console.error('Decision alert failed for application', alert.application_number, error.message);
-      }
-    }
-
     const push = await runPushAlerts(env, report, dryRun);
     const telegram = await runTelegramAlerts(env, report, dryRun);
     return json({
-      ok: failed === 0 && push.failed === 0 && telegram.failed === 0,
-      checked: alerts.length + push.checked + telegram.checked,
-      matched: matched + push.matched + telegram.matched,
-      sent: sent + telegram.sent,
-      skipped: skipped + push.skipped + telegram.skipped,
-      failed: failed + push.failed + telegram.failed,
-      would_send: wouldSend + push.would_send + telegram.would_send,
+      ok: push.failed === 0 && telegram.failed === 0,
+      checked: push.checked + telegram.checked,
+      matched: push.matched + telegram.matched,
+      sent: push.sent + telegram.sent,
+      skipped: push.skipped + telegram.skipped,
+      failed: push.failed + telegram.failed,
+      would_send: push.would_send + telegram.would_send,
       push_checked: push.checked,
       push_sent: push.sent,
       telegram_checked: telegram.checked,

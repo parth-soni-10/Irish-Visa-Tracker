@@ -6,6 +6,7 @@
  * checklist are JSON API endpoints consumed by the page.
  */
 
+import fs from 'node:fs/promises';
 import { test, expect } from '@playwright/test';
 
 const BASE_URL = process.env.E2E_BASE_URL || 'http://127.0.0.1:8788';
@@ -66,11 +67,16 @@ test.describe('SPA shell', () => {
     expect(after).toHaveLength(0);
   });
 
-  test('matches a watchlist entry only to its selected office', async ({ page }) => {
+  test('matches and removes only the selected office entry', async ({ page }) => {
     await page.route('**/data/visa_decisions.json', (route) => route.fulfill({
       status: 200,
       contentType: 'application/json',
       body: JSON.stringify([['2026-01-02', '48850812', 'Approved']]),
+    }));
+    await page.route('**/data/embassy-beijing.json', (route) => route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ decisions: [] }),
     }));
     await page.addInitScript(() => {
       localStorage.setItem('visa-watchlist', JSON.stringify([
@@ -81,12 +87,190 @@ test.describe('SPA shell', () => {
 
     await openVisaTracker(page);
     await page.locator('.navpill[data-tab="watchlist"]').click();
-    const rows = page.locator('#watch-local-rows tbody tr');
-    await expect(rows).toHaveCount(2);
-    await expect(rows.nth(0)).toContainText('New Delhi');
-    await expect(rows.nth(0)).toContainText('Approved');
-    await expect(rows.nth(1)).toContainText('Beijing');
-    await expect(rows.nth(1)).toContainText('Not published');
+    const delhi = page.locator('#watch-local-rows tr[data-office="new-delhi"][data-watch-number="48850812"]');
+    const beijing = page.locator('#watch-local-rows tr[data-office="beijing"][data-watch-number="48850812"]');
+    await expect(delhi).toHaveCount(1);
+    await expect(delhi).toContainText('Approved');
+    await expect(beijing).toHaveCount(1);
+    await expect(beijing).toContainText('No decision found');
+
+    await beijing.locator('[data-watch-remove]').click();
+    await expect(beijing).toHaveCount(0);
+    await expect(delhi).toContainText('Approved');
+    const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('visa-watchlist') || '[]'));
+    expect(saved).toHaveLength(1);
+    expect(saved[0].office).toBe('new-delhi');
+  });
+
+  test('loads the latest decision from a watched office archive', async ({ page }) => {
+    await page.route('**/data/visa_decisions.json', (route) => route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: '[]',
+    }));
+    await page.route('**/data/embassy-beijing.json', (route) => route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        decisions: [{ date: '2026-01-03', number: '44078322', decision: 'Refused' }],
+      }),
+    }));
+    await page.addInitScript(() => {
+      localStorage.setItem('visa-watchlist', JSON.stringify([
+        { number: '44078322', office: 'beijing' },
+      ]));
+    });
+
+    await openVisaTracker(page);
+    await page.locator('.navpill[data-tab="watchlist"]').click();
+    const beijing = page.locator('#watch-local-rows tr[data-office="beijing"][data-watch-number="44078322"]');
+    await expect(beijing).toContainText('Refused');
+    await expect(beijing).toContainText('2026-01-03');
+  });
+
+  test('shows when an office archive cannot be loaded', async ({ page }) => {
+    await page.route('**/data/visa_decisions.json', (route) => route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: '[]',
+    }));
+    await page.route('**/data/embassy-beijing.json', (route) => route.fulfill({
+      status: 503,
+      contentType: 'application/json',
+      body: JSON.stringify({ error: 'unavailable' }),
+    }));
+    await page.addInitScript(() => {
+      localStorage.setItem('visa-watchlist', JSON.stringify([
+        { number: '44078322', office: 'beijing' },
+      ]));
+    });
+
+    await openVisaTracker(page);
+    await page.locator('.navpill[data-tab="watchlist"]').click();
+    const beijing = page.locator('#watch-local-rows tr[data-office="beijing"]');
+    await expect(beijing).toContainText('Office data unavailable');
+  });
+
+  test('migrates a legacy string watchlist entry to New Delhi', async ({ page }) => {
+    await page.route('**/data/visa_decisions.json', (route) => route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify([['2026-01-02', '48850812', 'Approved']]),
+    }));
+    await page.addInitScript(() => {
+      localStorage.setItem('visa-watchlist', JSON.stringify(['48850812']));
+    });
+
+    await openVisaTracker(page);
+    await page.locator('.navpill[data-tab="watchlist"]').click();
+    const delhi = page.locator('#watch-local-rows tr[data-office="new-delhi"][data-watch-number="48850812"]');
+    await expect(delhi).toContainText('Approved');
+    const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('visa-watchlist') || '[]'));
+    expect(saved[0].office).toBe('new-delhi');
+  });
+
+  test('reports a watchlist storage failure instead of claiming success', async ({ page }) => {
+    await page.addInitScript(() => {
+      const original = Storage.prototype.setItem;
+      Storage.prototype.setItem = function(key, value) {
+        if (key === 'visa-watchlist') throw new Error('storage blocked');
+        return original.call(this, key, value);
+      };
+    });
+
+    await openVisaTracker(page);
+    await page.locator('.navpill[data-tab="watchlist"]').click();
+    await page.fill('#watch-add-form input[name="application_number"]', '48850812');
+    await page.selectOption('#watch-add-form select[name="embassy_slug"]', 'new-delhi');
+    await page.click('#watch-add-btn');
+    await expect(page.locator('#watch-add-status')).toContainText('Could not save this watchlist');
+  });
+
+  test('syncs watchlist changes across tabs', async ({ context }) => {
+    const pageA = await context.newPage();
+    const pageB = await context.newPage();
+    await openVisaTracker(pageA);
+    await openVisaTracker(pageB);
+    await pageB.locator('.navpill[data-tab="watchlist"]').click();
+    await expect(pageB.locator('#watch-local-status')).toContainText('No saved applications');
+
+    await pageA.evaluate(() => {
+      localStorage.setItem('visa-watchlist', JSON.stringify([
+        { number: '48850812', office: 'new-delhi' },
+      ]));
+    });
+    await expect(pageB.locator('#watch-local-rows')).toContainText('48850812');
+    await pageA.close();
+    await pageB.close();
+  });
+
+  test('exports and restores a watchlist backup', async ({ page }) => {
+    await page.addInitScript(() => {
+      localStorage.setItem('visa-watchlist', JSON.stringify([
+        { number: '48850812', office: 'new-delhi' },
+        { number: '44078322', office: 'beijing' },
+      ]));
+    });
+    await openVisaTracker(page);
+    await page.locator('.navpill[data-tab="watchlist"]').click();
+
+    const downloadPromise = page.waitForEvent('download');
+    await page.click('#watch-export-btn');
+    const download = await downloadPromise;
+    expect(download.suggestedFilename()).toMatch(/^irish-visa-watchlist-/);
+    const path = await download.path();
+    expect(path).toBeTruthy();
+    const payload = JSON.parse(await fs.readFile(String(path), 'utf8'));
+    expect(payload.watchlist).toHaveLength(2);
+
+    page.on('dialog', (dialog) => dialog.accept());
+    await page.locator('#watch-import-input').setInputFiles({
+      name: 'watchlist.json',
+      mimeType: 'application/json',
+      buffer: Buffer.from(JSON.stringify({ watchlist: [
+        { number: '11112222', office: 'new-delhi', nickname: 'Restored' },
+      ] })),
+    });
+    await expect(page.locator('#watch-backup-status')).toContainText('Imported 1 application');
+    const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('visa-watchlist') || '[]'));
+    expect(saved).toHaveLength(1);
+    expect(saved[0].number).toBe('11112222');
+  });
+
+  test('does not show a heads-up for a different office', async ({ page }) => {
+    await page.route('**/data/visa_decisions.json', (route) => route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify([['2026-01-02', '48850812', 'Approved']]),
+    }));
+    await page.addInitScript(() => {
+      localStorage.setItem('visa-watchlist', JSON.stringify([
+        { number: '48850812', office: 'beijing' },
+      ]));
+    });
+
+    await openVisaTracker(page);
+    await expect(page.locator('#watch-area')).toContainText('Beijing');
+    await expect(page.locator('#watch-area .pub-live')).toHaveCount(0);
+
+    // The same number is still addable for New Delhi from Home.
+    await page.fill('#home-search', '48850812');
+    await expect(page.locator('#watch-area [data-watch-add]')).toHaveCount(1);
+  });
+
+  test('explains the limit when adding from Home', async ({ page }) => {
+    await page.addInitScript(() => {
+      const items = Array.from({ length: 10 }, (_, index) => ({
+        number: String(10000000 + index),
+        office: 'new-delhi',
+      }));
+      localStorage.setItem('visa-watchlist', JSON.stringify(items));
+    });
+    await openVisaTracker(page);
+    await page.fill('#home-search', '99999999');
+    await page.waitForTimeout(500);
+    await page.locator('#watch-area [data-watch-add]').click();
+    await expect(page.locator('#watch-area')).toContainText('up to 10 applications');
   });
 });
 

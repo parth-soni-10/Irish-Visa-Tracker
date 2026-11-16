@@ -46,11 +46,10 @@ The Abuja **31 August–6 September 2026** report is present in the archive
 The following changes are present in the working tree and verified locally, but
 have not been committed or redeployed:
 
-- **Activation path:** the New Delhi dashboard now opens with prominent email
-  and Telegram CTAs, a persisted three-step first-run checklist (find, watch,
-  choose a channel), and privacy-light `/api/events` conversion tracking. The
-  event table accepts only a fixed vocabulary and stores no email, IP, cookie or
-  free text.
+- **Activation path:** the New Delhi dashboard now opens with a prominent
+  Telegram CTA, a persisted three-step first-run checklist (find, watch, link
+  alerts), and privacy-light `/api/events` conversion tracking. The event table
+  accepts only a fixed vocabulary and stores no email, IP, cookie or free text.
 - **Durable limits:** API and auth limits use the shared D1 `rate_limits`
   table; the in-memory limiter remains only as a degraded fallback when D1 is
   unavailable.
@@ -63,10 +62,9 @@ have not been committed or redeployed:
   and the CSP no longer permits inline executable scripts or `<style>` elements.
   The only inline script left is the non-executable JSON-LD data block. Inline
   style attributes remain for generated chart/table geometry only.
-- **Backend modularisation:** the base D1 schema moved to `db-schema.js`, portal
-  response/session helpers to `portal-helpers.js`, and user watchlist/push routes
-  to `user-watchlist.js` / `user-push.js`. The router and API files remain large
-  but no longer own those concerns.
+- **Backend modularisation:** the base D1 schema lives in `db-schema.js`, and
+  alert/search delivery lives in focused modules. Account sessions, portal
+  helpers, saved searches and the private workspace were removed on 2026-11-13.
 - **CI quality gates:** `check-js-syntax.mjs` parses served JavaScript,
   `check-dead-code.mjs` rejects unused named exports, and
   `check_html_scripts.py` rejects inline assets that the CSP would block.
@@ -77,9 +75,9 @@ have not been committed or redeployed:
   Cloudflare, and `cron-failure-alerts.yml` forwards failed scheduled runs to
   `ALERT_WEBHOOK_URL`.
 
-Local verification after these changes: **127 Node tests pass**, the HTML and
+Local verification after these changes: **115 Node tests pass**, the HTML and
 JavaScript syntax gates pass, the dead-export gate passes, and the build stages
-**78 files**. Production still serves the prior deployment until these changes
+the deployable output. Production still serves the prior deployment until these changes
 are committed and redeployed.
 
 ## Live deployment
@@ -93,9 +91,9 @@ are committed and redeployed.
 The live `data_manifest.json`, New Delhi tracker and all six office archives
 matched the committed files byte for byte. The email bridge was exercised with
 missing and wrong secrets (401), an invalid recipient (400), and a real Resend
-delivery (200). The post-deploy smoke check covered the homepage, comparison,
-status, workspace, manifest, service worker, icon, search, monthly
-report, digest preview, auth and data manifest.
+delivery (200). The post-deploy smoke check covers the homepage, comparison,
+status, manifest, service worker, icon, search, monthly report, digest preview,
+the removed-route 404s and the data manifest.
 
 Pages binds secrets at deployment time. Email secrets were added and the
 Functions bundle redeployed; an existing deployment does not automatically see
@@ -104,16 +102,12 @@ a newly added secret.
 ## Shipped product surfaces
 
 - Six-office official decision archives and the New Delhi daily tracker.
-- Account registration/login, private multiple-application watchlists, sessions and profile settings.
-- Account-scoped saved searches, referral acceptance and one-credit reward accounting.
-- Account email verification and password reset were removed by product decision; subscriber alert verification remains.
-- In-app notification inbox and decision alert runner.
-- Browser push via VAPID.
+- Browser-local multiple-application watchlists with no account.
+- Anonymous decision alerts by Telegram and browser push.
 - Provider-neutral email with the new secret-protected Resend bridge.
 - Monthly report, email digest and double opt-in/unsubscribe.
-- Private workspace: analytics, document checklist, fees, document field
-  extraction, scheduled exports and private export tokens.
-- Advanced search, community timelines, referral/org models and admin endpoints.
+- Public analytics, document checklist, fee estimator and document field extraction.
+- Advanced search, community timelines and admin endpoints.
 - ML predictor served from the committed XGBoost tree ensemble; training data,
   scripts and artifacts are now tracked.
 - Accessibility and agent-facing Markdown surfaces.
@@ -127,9 +121,9 @@ plus the email bridge URL/secret and `EMAIL_FROM`. The production email bridge
 was verified with a real delivery on 2026-11-11.
 
 SMS and WhatsApp delivery is not part of this release. The Twilio code, phone
-number UI and channel endpoints were removed by product decision; email, browser
-push and Telegram remain the supported delivery channels. Existing production
-rows were left untouched.
+number UI and channel endpoints were removed by product decision; browser push
+and Telegram remain the supported alert channels, while email is used only for
+the monthly report digest. Existing production rows were left untouched.
 
 Structured Pages Function logs, the `/api/health` readiness probe, the separate
 Workers Logs/Logpush monitor and the admin error endpoint are the supported
@@ -140,12 +134,10 @@ need a deployment; the application changes remain local to this working tree.
 
 - Decision alerts: hourly GitHub Actions workflow.
 - Monthly digest: first of the month.
-- Scheduled exports: daily after the 07:00 UTC due time.
 - External uptime and data freshness: every 15 minutes from GitHub Actions.
 - Failed scheduled runs: forwarded to `ALERT_WEBHOOK_URL`; without it the
   companion alert workflow fails visibly instead of skipping.
-- The three delivery jobs require the repository `SCRAPER_CRON_SECRET` Actions
-  secret.
+- The delivery jobs require the repository `SCRAPER_CRON_SECRET` Actions secret.
 - Monthly ML retraining now regenerates both `models/` and the served
   `functions/api/model-trees.js`; the training scripts, synthetic data and model
   artifacts are committed, so the workflow is no longer a dangling reference.
@@ -154,12 +146,12 @@ need a deployment; the application changes remain local to this working tree.
 
 Native iOS/Android is **deferred**. The PWA is the supported mobile product; the
 native plan remains a future option only. This avoids maintaining a second
-client, a second auth surface and duplicate notification infrastructure without
-a current product need.
+client and duplicate notification infrastructure without a current product
+need.
 
 ## Remaining real gaps
 
-1. VFS Ireland-India slots remain behind VFS sign-in; the public checker can
-   report page state but cannot monitor or guarantee slots.
+1. VFS Ireland-India slots remain behind VFS sign-in; the tracker now hands off
+   to the official portal and does not claim or monitor availability.
 2. The Resend key exposed in an earlier terminal session should be rotated.
 3. Native mobile is deliberately out of scope.

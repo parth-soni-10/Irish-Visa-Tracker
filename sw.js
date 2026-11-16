@@ -31,9 +31,8 @@ self.addEventListener('fetch', event => {
 
   const url = new URL(event.request.url);
 
-  // Never cache API responses: auth, watchlists and decision data must always
-  // come from the network, and a cached /api/auth/me would leak one account's
-  // session state into another page load.
+  // Never cache API responses: alert subscriptions and decision data must
+  // always come from the network.
   if (url.origin !== self.location.origin) return;
   if (url.pathname.startsWith('/api/')) return;
   // Decision data changes every scrape; never serve a cached copy.

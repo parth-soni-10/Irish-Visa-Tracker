@@ -590,6 +590,48 @@
             width: 100% !important;
             height: 300px !important;
         }
+        #visa-dash .decision-trends-head {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            gap: 8px 18px;
+            flex-wrap: wrap;
+            margin-bottom: 10px;
+        }
+        #visa-dash .decision-trends-head h3 {
+            margin: 0;
+        }
+        #visa-dash .decision-trends-note {
+            max-width: 680px;
+            margin: 0;
+            color: var(--ink-muted);
+            font-size: 12.5px;
+            line-height: 1.45;
+        }
+        #visa-dash .decision-trends-panel + .decision-trends-panel {
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid var(--border);
+        }
+        #visa-dash .decision-trends-panel-title {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 6px;
+            color: var(--ink-soft);
+            font-size: 12px;
+            font-weight: 600;
+        }
+        #visa-dash .decision-trends-panel-title span:last-child {
+            color: var(--ink-muted);
+            font-weight: 500;
+        }
+        #visa-dash .decision-trends-chart canvas.decision-trends-count-canvas {
+            height: 210px !important;
+        }
+        #visa-dash .decision-trends-chart canvas.decision-trends-rate-canvas {
+            height: 150px !important;
+        }
         
         
 
@@ -1010,1225 +1052,6 @@
             letter-spacing: 0.05em;
         }
         
-        /* Recent Decisions Section */
-        #visa-dash .recent-decisions-section {
-            margin: 24px 0;
-            padding: 20px;
-            background: var(--surface-raised);
-            border: 1px solid var(--border);
-            border-radius: var(--r-container);
-        }
-        #visa-dash .recent-decisions-section h3 {
-            margin: 0 0 12px;
-            font-size: 14px;
-            font-weight: 600.
-        }
-        
-        /* Quick Actions */
-        #visa-dash .quick-actions {
-            display: flex.
-            flex-wrap: wrap.
-            gap: 12px.
-            margin: 24px 0.
-            padding: 20px.
-            background: var(--surface-raised).
-            border: 1px solid var(--border).
-            border-radius: var(--r-container).
-        }
-        #visa-dash .quick-action {
-            display: inline-flex.
-            align-items: center.
-            gap: 8px.
-            padding: 10px 16px.
-            background: var(--surface).
-            border: 1px solid var(--border).
-            border-radius: 100px.
-            color: var(--ink).
-            text-decoration: none.
-            font-size: 13px.
-            font-weight: 600.
-            transition: background-color 0.2s, border-color 0.2s, color 0.2s, transform 0.2s.
-        }
-        #visa-dash .quick-action:hover {
-            background: var(--surface-hover).
-            border-color: var(--green).
-            color: var(--ink).
-            transform: translateY(-1px).
-        }
-        #visa-dash .quick-action i {
-            width: 16px.
-            height: 16px.
-            color: var(--green).
-        }
-        #visa-dash .quick-action:focus-visible {
-            outline: 2px solid var(--green).
-            outline-offset: 2px.
-        }
-        
-        /* Estimator Result */
-        #visa-dash #estimator-result {
-            display: none.
-            padding: 16px.
-            background: var(--surface-raised).
-            border: 1px solid var(--border).
-            border-radius: var(--r-container).
-            margin-top: 16px.
-        }
-        #visa-dash #estimator-result h4 {
-            margin: 0 0 12px.
-            font-size: 14px.
-        }
-        #visa-dash #estimator-result .stat {
-            text-align: center.
-        }
-        #visa-dash #estimator-result .stat-value {
-            font-size: 24px.
-            font-weight: 700.
-            color: var(--ink).
-        }
-        #visa-dash #estimator-result .stat-label {
-            font-size: 11px.
-            color: var(--ink-muted).
-            text-transform: uppercase.
-            letter-spacing: 0.05em.
-        }
-        
-        /* Recent Decisions Section */
-        #visa-dash .recent-decisions-section {
-            margin: 24px 0.
-            padding: 20px.
-            background: var(--surface-raised).
-            border: 1px solid var(--border).
-            border-radius: var(--r-container).
-        }
-        #visa-dash .recent-decisions-section h3 {
-            margin: 0 0 12px.
-            font-size: 14px.
-            font-weight: 600.
-        }
-        
-        /* Quick Actions */
-        #visa-dash .quick-actions {
-            display: flex.
-            flex-wrap: wrap.
-            gap: 12px.
-            margin: 24px 0.
-            padding: 20px.
-            background: var(--surface-raised).
-            border: 1px solid var(--border).
-            border-radius: var(--r-container).
-        }
-        #visa-dash .quick-action {
-            display: inline-flex.
-            align-items: center.
-            gap: 8px.
-            padding: 10px 16px.
-            background: var(--surface).
-            border: 1px solid var(--border).
-            border-radius: 100px.
-            color: var(--ink).
-            text-decoration: none.
-            font-size: 13px.
-            font-weight: 600.
-            transition: background-color 0.2s, border-color 0.2s, color 0.2s, transform 0.2s.
-        }
-        #visa-dash .quick-action:hover {
-            background: var(--surface-hover).
-            border-color: var(--green).
-            color: var(--ink).
-            transform: translateY(-1px).
-        }
-        #visa-dash .quick-action i {
-            width: 16px.
-            height: 16px.
-            color: var(--green).
-        }
-        #visa-dash .quick-action:focus-visible {
-            outline: 2px solid var(--green).
-            outline-offset: 2px.
-        }
-        
-        /* Estimator Result */
-        #visa-dash #estimator-result {
-            display: none.
-            padding: 16px.
-            background: var(--surface-raised).
-            border: 1px solid var(--border).
-            border-radius: var(--r-container).
-            margin-top: 16px.
-        }
-        #visa-dash #estimator-result h4 {
-            margin: 0 0 12px.
-            font-size: 14px.
-        }
-        #visa-dash #estimator-result .stat {
-            text-align: center.
-        }
-        #visa-dash #estimator-result .stat-value {
-            font-size: 24px.
-            font-weight: 700.
-            color: var(--ink).
-        }
-        #visa-dash #estimator-result .stat-label {
-            font-size: 11px.
-            color: var(--ink-muted).
-            text-transform: uppercase.
-            letter-spacing: 0.05em.
-        }
-        
-        /* Recent Decisions Section */
-        #visa-dash .recent-decisions-section {
-            margin: 24px 0.
-            padding: 20px.
-            background: var(--surface-raised).
-            border: 1px solid var(--border).
-            border-radius: var(--r-container).
-        }
-        #visa-dash .recent-decisions-section h3 {
-            margin: 0 0 12px.
-            font-size: 14px.
-            font-weight: 600.
-        }
-        
-        /* Quick Actions */
-        #visa-dash .quick-actions {
-            display: flex.
-            flex-wrap: wrap.
-            gap: 12px.
-            margin: 24px 0.
-            padding: 20px.
-            background: var(--surface-raised).
-            border: 1px solid var(--border).
-            border-radius: var(--r-container).
-        }
-        #visa-dash .quick-action {
-            display: inline-flex.
-            align-items: center.
-            gap: 8px.
-            padding: 10px 16px.
-            background: var(--surface).
-            border: 1px solid var(--border).
-            border-radius: 100px.
-            color: var(--ink).
-            text-decoration: none.
-            font-size: 13px.
-            font-weight: 600.
-            transition: background-color 0.2s, border-color 0.2s, color 0.2s, transform 0.2s.
-        }
-        #visa-dash .quick-action:hover {
-            background: var(--surface-hover).
-            border-color: var(--green).
-            color: var(--ink).
-            transform: translateY(-1px).
-        }
-        #visa-dash .quick-action i {
-            width: 16px.
-            height: 16px.
-            color: var(--green).
-        }
-        #visa-dash .quick-action:focus-visible {
-            outline: 2px solid var(--green).
-            outline-offset: 2px.
-        }
-        
-        /* Estimator Result */
-        #visa-dash #estimator-result {
-            display: none.
-            padding: 16px.
-            background: var(--surface-raised).
-            border: 1px solid var(--border).
-            border-radius: var(--r-container).
-            margin-top: 16px.
-        }
-        #visa-dash #estimator-result h4 {
-            margin: 0 0 12px.
-            font-size: 14px.
-        }
-        #visa-dash #estimator-result .stat {
-            text-align: center.
-        }
-        #visa-dash #estimator-result .stat-value {
-            font-size: 24px.
-            font-weight: 700.
-            color: var(--ink).
-        }
-        #visa-dash #estimator-result .stat-label {
-            font-size: 11px.
-            color: var(--ink-muted).
-            text-transform: uppercase.
-            letter-spacing: 0.05em.
-        }
-        
-        /* Recent Decisions Section */
-        #visa-dash .recent-decisions-section {
-            margin: 24px 0.
-            padding: 20px.
-            background: var(--surface-raised).
-            border: 1px solid var(--border).
-            border-radius: var(--r-container).
-        }
-        #visa-dash .recent-decisions-section h3 {
-            margin: 0 0 12px.
-            font-size: 14px.
-            font-weight: 600.
-        }
-        
-        /* Quick Actions */
-        #visa-dash .quick-actions {
-            display: flex.
-            flex-wrap: wrap.
-            gap: 12px.
-            margin: 24px 0.
-            padding: 20px.
-            background: var(--surface-raised).
-            border: 1px solid var(--border).
-            border-radius: var(--r-container).
-        }
-        #visa-dash .quick-action {
-            display: inline-flex.
-            align-items: center.
-            gap: 8px.
-            padding: 10px 16px.
-            background: var(--surface).
-            border: 1px solid var(--border).
-            border-radius: 100px.
-            color: var(--ink).
-            text-decoration: none.
-            font-size: 13px.
-            font-weight: 600.
-            transition: background-color 0.2s, border-color 0.2s, color 0.2s, transform 0.2s.
-        }
-        #visa-dash .quick-action:hover {
-            background: var(--surface-hover).
-            border-color: var(--green).
-            color: var(--ink).
-            transform: translateY(-1px).
-        }
-        #visa-dash .quick-action i {
-            width: 16px.
-            height: 16px.
-            color: var(--green).
-        }
-        #visa-dash .quick-action:focus-visible {
-            outline: 2px solid var(--green).
-            outline-offset: 2px.
-        }
-        
-        /* Estimator Result */
-        #visa-dash #estimator-result {
-            display: none.
-            padding: 16px.
-            background: var(--surface-raised).
-            border: 1px solid var(--border).
-            border-radius: var(--r-container).
-            margin-top: 16px.
-        }
-        #visa-dash #estimator-result h4 {
-            margin: 0 0 12px.
-            font-size: 14px.
-        }
-        #visa-dash #estimator-result .stat {
-            text-align: center.
-        }
-        #visa-dash #estimator-result .stat-value {
-            font-size: 24px.
-            font-weight: 700.
-            color: var(--ink).
-        }
-        #visa-dash #estimator-result .stat-label {
-            font-size: 11px.
-            color: var(--ink-muted).
-            text-transform: uppercase.
-            letter-spacing: 0.05em.
-        }
-        
-        /* Recent Decisions Section */
-        #visa-dash .recent-decisions-section {
-            margin: 24px 0.
-            padding: 20px.
-            background: var(--surface-raised).
-            border: 1px solid var(--border).
-            border-radius: var(--r-container).
-        }
-        #visa-dash .recent-decisions-section h3 {
-            margin: 0 0 12px.
-            font-size: 14px.
-            font-weight: 600.
-        }
-        
-        /* Quick Actions */
-        #visa-dash .quick-actions {
-            display: flex.
-            flex-wrap: wrap.
-            gap: 12px.
-            margin: 24px 0.
-            padding: 20px.
-            background: var(--surface-raised).
-            border: 1px solid var(--border).
-            border-radius: var(--r-container).
-        }
-        #visa-dash .quick-action {
-            display: inline-flex.
-            align-items: center.
-            gap: 8px.
-            padding: 10px 16px.
-            background: var(--surface).
-            border: 1px solid var(--border).
-            border-radius: 100px.
-            color: var(--ink).
-            text-decoration: none.
-            font-size: 13px.
-            font-weight: 600.
-            transition: background-color 0.2s, border-color 0.2s, color 0.2s, transform 0.2s.
-        }
-        #visa-dash .quick-action:hover {
-            background: var(--surface-hover).
-            border-color: var(--green).
-            color: var(--ink).
-            transform: translateY(-1px).
-        }
-        #visa-dash .quick-action i {
-            width: 16px.
-            height: 16px.
-            color: var(--green).
-        }
-        #visa-dash .quick-action:focus-visible {
-            outline: 2px solid var(--green).
-            outline-offset: 2px.
-        }
-        
-        /* Estimator Result */
-        #visa-dash #estimator-result {
-            display: none.
-            padding: 16px.
-            background: var(--surface-raised).
-            border: 1px solid var(--border).
-            border-radius: var(--r-container).
-            margin-top: 16px.
-        }
-        #visa-dash #estimator-result h4 {
-            margin: 0 0 12px.
-            font-size: 14px.
-        }
-        #visa-dash #estimator-result .stat {
-            text-align: center.
-        }
-        #visa-dash #estimator-result .stat-value {
-            font-size: 24px.
-            font-weight: 700.
-            color: var(--ink).
-        }
-        #visa-dash #estimator-result .stat-label {
-            font-size: 11px.
-            color: var(--ink-muted).
-            text-transform: uppercase.
-            letter-spacing: 0.05em.
-        }
-        
-        /* Recent Decisions Section */
-        #visa-dash .recent-decisions-section {
-            margin: 24px 0.
-            padding: 20px.
-            background: var(--surface-raised).
-            border: 1px solid var(--border).
-            border-radius: var(--r-container).
-        }
-        #visa-dash .recent-decisions-section h3 {
-            margin: 0 0 12px.
-            font-size: 14px.
-            font-weight: 600.
-        }
-        
-        /* Quick Actions */
-        #visa-dash .quick-actions {
-            display: flex.
-            flex-wrap: wrap.
-            gap: 12px.
-            margin: 24px 0.
-            padding: 20px.
-            background: var(--surface-raised).
-            border: 1px solid var(--border).
-            border-radius: var(--r-container).
-        }
-        #visa-dash .quick-action {
-            display: inline-flex.
-            align-items: center.
-            gap: 8px.
-            padding: 10px 16px.
-            background: var(--surface).
-            border: 1px solid var(--border).
-            border-radius: 100px.
-            color: var(--ink).
-            text-decoration: none.
-            font-size: 13px.
-            font-weight: 600.
-            transition: background-color 0.2s, border-color 0.2s, color 0.2s, transform 0.2s.
-        }
-        #visa-dash .quick-action:hover {
-            background: var(--surface-hover).
-            border-color: var(--green).
-            color: var(--ink).
-            transform: translateY(-1px).
-        }
-        #visa-dash .quick-action i {
-            width: 16px.
-            height: 16px.
-            color: var(--green).
-        }
-        #visa-dash .quick-action:focus-visible {
-            outline: 2px solid var(--green).
-            outline-offset: 2px.
-        }
-        
-        /* Estimator Result */
-        #visa-dash #estimator-result {
-            display: none.
-            padding: 16px.
-            background: var(--surface-raised).
-            border: 1px solid var(--border).
-            border-radius: var(--r-container).
-            margin-top: 16px.
-        }
-        #visa-dash #estimator-result h4 {
-            margin: 0 0 12px.
-            font-size: 14px.
-        }
-        #visa-dash #estimator-result .stat {
-            text-align: center.
-        }
-        #visa-dash #estimator-result .stat-value {
-            font-size: 24px.
-            font-weight: 700.
-            color: var(--ink).
-        }
-        #visa-dash #estimator-result .stat-label {
-            font-size: 11px.
-            color: var(--ink-muted).
-            text-transform: uppercase.
-            letter-spacing: 0.05em.
-        }
-        
-        /* Recent Decisions Section */
-        #visa-dash .recent-decisions-section {
-            margin: 24px 0.
-            padding: 20px.
-            background: var(--surface-raised).
-            border: 1px solid var(--border).
-            border-radius: var(--r-container).
-        }
-        #visa-dash .recent-decisions-section h3 {
-            margin: 0 0 12px.
-            font-size: 14px.
-            font-weight: 600.
-        }
-        
-        /* Quick Actions */
-        #visa-dash .quick-actions {
-            display: flex.
-            flex-wrap: wrap.
-            gap: 12px.
-            margin: 24px 0.
-            padding: 20px.
-            background: var(--surface-raised).
-            border: 1px solid var(--border).
-            border-radius: var(--r-container).
-        }
-        #visa-dash .quick-action {
-            display: inline-flex.
-            align-items: center.
-            gap: 8px.
-            padding: 10px 16px.
-            background: var(--surface).
-            border: 1px solid var(--border).
-            border-radius: 100px.
-            color: var(--ink).
-            text-decoration: none.
-            font-size: 13px.
-            font-weight: 600.
-            transition: background-color 0.2s, border-color 0.2s, color 0.2s, transform 0.2s.
-        }
-        #visa-dash .quick-action:hover {
-            background: var(--surface-hover).
-            border-color: var(--green).
-            color: var(--ink).
-            transform: translateY(-1px).
-        }
-        #visa-dash .quick-action i {
-            width: 16px.
-            height: 16px.
-            color: var(--green).
-        }
-        #visa-dash .quick-action:focus-visible {
-            outline: 2px solid var(--green).
-            outline-offset: 2px.
-        }
-        
-        /* Estimator Result */
-        #visa-dash #estimator-result {
-            display: none.
-            padding: 16px.
-            background: var(--surface-raised).
-            border: 1px solid var(--border).
-            border-radius: var(--r-container).
-            margin-top: 16px.
-        }
-        #visa-dash #estimator-result h4 {
-            margin: 0 0 12px.
-            font-size: 14px.
-        }
-        #visa-dash #estimator-result .stat {
-            text-align: center.
-        }
-        #visa-dash #estimator-result .stat-value {
-            font-size: 24px.
-            font-weight: 700.
-            color: var(--ink).
-        }
-        #visa-dash #estimator-result .stat-label {
-            font-size: 11px.
-            color: var(--ink-muted).
-            text-transform: uppercase.
-            letter-spacing: 0.05em.
-        }
-        
-        /* Recent Decisions Section */
-        #visa-dash .recent-decisions-section {
-            margin: 24px 0.
-            padding: 20px.
-            background: var(--surface-raised).
-            border: 1px solid var(--border).
-            border-radius: var(--r-container).
-        }
-        #visa-dash .recent-decisions-section h3 {
-            margin: 0 0 12px.
-            font-size: 14px.
-            font-weight: 600.
-        }
-        
-        /* Quick Actions */
-        #visa-dash .quick-actions {
-            display: flex.
-            flex-wrap: wrap.
-            gap: 12px.
-            margin: 24px 0.
-            padding: 20px.
-            background: var(--surface-raised).
-            border: 1px solid var(--border).
-            border-radius: var(--r-container).
-        }
-        #visa-dash .quick-action {
-            display: inline-flex.
-            align-items: center.
-            gap: 8px.
-            padding: 10px 16px.
-            background: var(--surface).
-            border: 1px solid var(--border).
-            border-radius: 100px.
-            color: var(--ink).
-            text-decoration: none.
-            font-size: 13px.
-            font-weight: 600.
-            transition: background-color 0.2s, border-color 0.2s, color 0.2s, transform 0.2s.
-        }
-        #visa-dash .quick-action:hover {
-            background: var(--surface-hover).
-            border-color: var(--green).
-            color: var(--ink).
-            transform: translateY(-1px).
-        }
-        #visa-dash .quick-action i {
-            width: 16px.
-            height: 16px.
-            color: var(--green).
-        }
-        #visa-dash .quick-action:focus-visible {
-            outline: 2px solid var(--green).
-            outline-offset: 2px.
-        }
-        
-        /* Estimator Result */
-        #visa-dash #estimator-result {
-            display: none.
-            padding: 16px.
-            background: var(--surface-raised).
-            border: 1px solid var(--border).
-            border-radius: var(--r-container).
-            margin-top: 16px.
-        }
-        #visa-dash #estimator-result h4 {
-            margin: 0 0 12px.
-            font-size: 14px.
-        }
-        #visa-dash #estimator-result .stat {
-            text-align: center.
-        }
-        #visa-dash #estimator-result .stat-value {
-            font-size: 24px.
-            font-weight: 700.
-            color: var(--ink).
-        }
-        #visa-dash #estimator-result .stat-label {
-            font-size: 11px.
-            color: var(--ink-muted).
-            text-transform: uppercase.
-            letter-spacing: 0.05em.
-        }
-        
-        /* Recent Decisions Section */
-        #visa-dash .recent-decisions-section {
-            margin: 24px 0.
-            padding: 20px.
-            background: var(--surface-raised).
-            border: 1px solid var(--border).
-            border-radius: var(--r-container).
-        }
-        #visa-dash .recent-decisions-section h3 {
-            margin: 0 0 12px.
-            font-size: 14px.
-            font-weight: 600.
-        }
-        
-        /* Quick Actions */
-        #visa-dash .quick-actions {
-            display: flex.
-            flex-wrap: wrap.
-            gap: 12px.
-            margin: 24px 0.
-            padding: 20px.
-            background: var(--surface-raised).
-            border: 1px solid var(--border).
-            border-radius: var(--r-container).
-        }
-        #visa-dash .quick-action {
-            display: inline-flex.
-            align-items: center.
-            gap: 8px.
-            padding: 10px 16px.
-            background: var(--surface).
-            border: 1px solid var(--border).
-            border-radius: 100px.
-            color: var(--ink).
-            text-decoration: none.
-            font-size: 13px.
-            font-weight: 600.
-            transition: background-color 0.2s, border-color 0.2s, color 0.2s, transform 0.2s.
-        }
-        #visa-dash .quick-action:hover {
-            background: var(--surface-hover).
-            border-color: var(--green).
-            color: var(--ink).
-            transform: translateY(-1px).
-        }
-        #visa-dash .quick-action i {
-            width: 16px.
-            height: 16px.
-            color: var(--green).
-        }
-        #visa-dash .quick-action:focus-visible {
-            outline: 2px solid var(--green).
-            outline-offset: 2px.
-        }
-        
-        /* Estimator Result */
-        #visa-dash #estimator-result {
-            display: none.
-            padding: 16px.
-            background: var(--surface-raised).
-            border: 1px solid var(--border).
-            border-radius: var(--r-container).
-            margin-top: 16px.
-        }
-        #visa-dash #estimator-result h4 {
-            margin: 0 0 12px.
-            font-size: 14px.
-        }
-        #visa-dash #estimator-result .stat {
-            text-align: center.
-        }
-        #visa-dash #estimator-result .stat-value {
-            font-size: 24px.
-            font-weight: 700.
-            color: var(--ink).
-        }
-        #visa-dash #estimator-result .stat-label {
-            font-size: 11px.
-            color: var(--ink-muted).
-            text-transform: uppercase.
-            letter-spacing: 0.05em.
-        }
-        
-        /* Recent Decisions Section */
-        #visa-dash .recent-decisions-section {
-            margin: 24px 0.
-            padding: 20px.
-            background: var(--surface-raised).
-            border: 1px solid var(--border).
-            border-radius: var(--r-container).
-        }
-        #visa-dash .recent-decisions-section h3 {
-            margin: 0 0 12px.
-            font-size: 14px.
-            font-weight: 600.
-        }
-        
-        /* Quick Actions */
-        #visa-dash .quick-actions {
-            display: flex.
-            flex-wrap: wrap.
-            gap: 12px.
-            margin: 24px 0.
-            padding: 20px.
-            background: var(--surface-raised).
-            border: 1px solid var(--border).
-            border-radius: var(--r-container).
-        }
-        #visa-dash .quick-action {
-            display: inline-flex.
-            align-items: center.
-            gap: 8px.
-            padding: 10px 16px.
-            background: var(--surface).
-            border: 1px solid var(--border).
-            border-radius: 100px.
-            color: var(--ink).
-            text-decoration: none.
-            font-size: 13px.
-            font-weight: 600.
-            transition: background-color 0.2s, border-color 0.2s, color 0.2s, transform 0.2s.
-        }
-        #visa-dash .quick-action:hover {
-            background: var(--surface-hover).
-            border-color: var(--green).
-            color: var(--ink).
-            transform: translateY(-1px).
-        }
-        #visa-dash .quick-action i {
-            width: 16px.
-            height: 16px.
-            color: var(--green).
-        }
-        #visa-dash .quick-action:focus-visible {
-            outline: 2px solid var(--green).
-            outline-offset: 2px.
-        }
-        
-        /* Estimator Result */
-        #visa-dash #estimator-result {
-            display: none.
-            padding: 16px.
-            background: var(--surface-raised).
-            border: 1px solid var(--border).
-            border-radius: var(--r-container).
-            margin-top: 16px.
-        }
-        #visa-dash #estimator-result h4 {
-            margin: 0 0 12px.
-            font-size: 14px.
-        }
-        #visa-dash #estimator-result .stat {
-            text-align: center.
-        }
-        #visa-dash #estimator-result .stat-value {
-            font-size: 24px.
-            font-weight: 700.
-            color: var(--ink).
-        }
-        #visa-dash #estimator-result .stat-label {
-            font-size: 11px.
-            color: var(--ink-muted).
-            text-transform: uppercase.
-            letter-spacing: 0.05em.
-        }
-        
-        /* Recent Decisions Section */
-        #visa-dash .recent-decisions-section {
-            margin: 24px 0.
-            padding: 20px.
-            background: var(--surface-raised).
-            border: 1px solid var(--border).
-            border-radius: var(--r-container).
-        }
-        #visa-dash .recent-decisions-section h3 {
-            margin: 0 0 12px.
-            font-size: 14px.
-            font-weight: 600.
-        }
-        
-        /* Quick Actions */
-        #visa-dash .quick-actions {
-            display: flex.
-            flex-wrap: wrap.
-            gap: 12px.
-            margin: 24px 0.
-            padding: 20px.
-            background: var(--surface-raised).
-            border: 1px solid var(--border).
-            border-radius: var(--r-container).
-        }
-        #visa-dash .quick-action {
-            display: inline-flex.
-            align-items: center.
-            gap: 8px.
-            padding: 10px 16px.
-            background: var(--surface).
-            border: 1px solid var(--border).
-            border-radius: 100px.
-            color: var(--ink).
-            text-decoration: none.
-            font-size: 13px.
-            font-weight: 600.
-            transition: background-color 0.2s, border-color 0.2s, color 0.2s, transform 0.2s.
-        }
-        #visa-dash .quick-action:hover {
-            background: var(--surface-hover).
-            border-color: var(--green).
-            color: var(--ink).
-            transform: translateY(-1px).
-        }
-        #visa-dash .quick-action i {
-            width: 16px.
-            height: 16px.
-            color: var(--green).
-        }
-        #visa-dash .quick-action:focus-visible {
-            outline: 2px solid var(--green).
-            outline-offset: 2px.
-        }
-        
-        /* Estimator Result */
-        #visa-dash #estimator-result {
-            display: none.
-            padding: 16px.
-            background: var(--surface-raised).
-            border: 1px solid var(--border).
-            border-radius: var(--r-container).
-            margin-top: 16px.
-        }
-        #visa-dash #estimator-result h4 {
-            margin: 0 0 12px.
-            font-size: 14px.
-        }
-        #visa-dash #estimator-result .stat {
-            text-align: center.
-        }
-        #visa-dash #estimator-result .stat-value {
-            font-size: 24px.
-            font-weight: 700.
-            color: var(--ink).
-        }
-        #visa-dash #estimator-result .stat-label {
-            font-size: 11px.
-            color: var(--ink-muted).
-            text-transform: uppercase.
-            letter-spacing: 0.05em.
-        }
-        
-        /* Recent Decisions Section */
-        #visa-dash .recent-decisions-section {
-            margin: 24px 0.
-            padding: 20px.
-            background: var(--surface-raised).
-            border: 1px solid var(--border).
-            border-radius: var(--r-container).
-        }
-        #visa-dash .recent-decisions-section h3 {
-            margin: 0 0 12px.
-            font-size: 14px.
-            font-weight: 600.
-        }
-        
-        /* Quick Actions */
-        #visa-dash .quick-actions {
-            display: flex.
-            flex-wrap: wrap.
-            gap: 12px.
-            margin: 24px 0.
-            padding: 20px.
-            background: var(--surface-raised).
-            border: 1px solid var(--border).
-            border-radius: var(--r-container).
-        }
-        #visa-dash .quick-action {
-            display: inline-flex.
-            align-items: center.
-            gap: 8px.
-            padding: 10px 16px.
-            background: var(--surface).
-            border: 1px solid var(--border).
-            border-radius: 100px.
-            color: var(--ink).
-            text-decoration: none.
-            font-size: 13px.
-            font-weight: 600.
-            transition: background-color 0.2s, border-color 0.2s, color 0.2s, transform 0.2s.
-        }
-        #visa-dash .quick-action:hover {
-            background: var(--surface-hover).
-            border-color: var(--green).
-            color: var(--ink).
-            transform: translateY(-1px).
-        }
-        #visa-dash .quick-action i {
-            width: 16px.
-            height: 16px.
-            color: var(--green).
-        }
-        #visa-dash .quick-action:focus-visible {
-            outline: 2px solid var(--green).
-            outline-offset: 2px.
-        }
-        
-        /* Estimator Result */
-        #visa-dash #estimator-result {
-            display: none.
-            padding: 16px.
-            background: var(--surface-raised).
-            border: 1px solid var(--border).
-            border-radius: var(--r-container).
-            margin-top: 16px.
-        }
-        #visa-dash #estimator-result h4 {
-            margin: 0 0 12px.
-            font-size: 14px.
-        }
-        #visa-dash #estimator-result .stat {
-            text-align: center.
-        }
-        #visa-dash #estimator-result .stat-value {
-            font-size: 24px.
-            font-weight: 700.
-            color: var(--ink).
-        }
-        #visa-dash #estimator-result .stat-label {
-            font-size: 11px.
-            color: var(--ink-muted).
-            text-transform: uppercase.
-            letter-spacing: 0.05em.
-        }
-        
-        /* Recent Decisions Section */
-        #visa-dash .recent-decisions-section {
-            margin: 24px 0.
-            padding: 20px.
-            background: var(--surface-raised).
-            border: 1px solid var(--border).
-            border-radius: var(--r-container).
-        }
-        #visa-dash .recent-decisions-section h3 {
-            margin: 0 0 12px.
-            font-size: 14px.
-            font-weight: 600.
-        }
-        
-        /* Quick Actions */
-        #visa-dash .quick-actions {
-            display: flex.
-            flex-wrap: wrap.
-            gap: 12px.
-            margin: 24px 0.
-            padding: 20px.
-            background: var(--surface-raised).
-            border: 1px solid var(--border).
-            border-radius: var(--r-container).
-        }
-        #visa-dash .quick-action {
-            display: inline-flex.
-            align-items: center.
-            gap: 8px.
-            padding: 10px 16px.
-            background: var(--surface).
-            border: 1px solid var(--border).
-            border-radius: 100px.
-            color: var(--ink).
-            text-decoration: none.
-            font-size: 13px.
-            font-weight: 600.
-            transition: background-color 0.2s, border-color 0.2s, color 0.2s, transform 0.2s.
-        }
-        #visa-dash .quick-action:hover {
-            background: var(--surface-hover).
-            border-color: var(--green).
-            color: var(--ink).
-            transform: translateY(-1px).
-        }
-        #visa-dash .quick-action i {
-            width: 16px.
-            height: 16px.
-            color: var(--green).
-        }
-        #visa-dash .quick-action:focus-visible {
-            outline: 2px solid var(--green).
-            outline-offset: 2px.
-        }
-        
-        /* Estimator Result */
-        #visa-dash #estimator-result {
-            display: none.
-            padding: 16px.
-            background: var(--surface-raised).
-            border: 1px solid var(--border).
-            border-radius: var(--r-container).
-            margin-top: 16px.
-        }
-        #visa-dash #estimator-result h4 {
-            margin: 0 0 12px.
-            font-size: 14px.
-        }
-        #visa-dash #estimator-result .stat {
-            text-align: center.
-        }
-        #visa-dash #estimator-result .stat-value {
-            font-size: 24px.
-            font-weight: 700.
-            color: var(--ink).
-        }
-        #visa-dash #estimator-result .stat-label {
-            font-size: 11px.
-            color: var(--ink-muted).
-            text-transform: uppercase.
-            letter-spacing: 0.05em.
-        }
-        
-        /* Recent Decisions Section */
-        #visa-dash .recent-decisions-section {
-            margin: 24px 0.
-            padding: 20px.
-            background: var(--surface-raised).
-            border: 1px solid var(--border).
-            border-radius: var(--r-container).
-        }
-        #visa-dash .recent-decisions-section h3 {
-            margin: 0 0 12px.
-            font-size: 14px.
-            font-weight: 600.
-        }
-        
-        /* Quick Actions */
-        #visa-dash .quick-actions {
-            display: flex.
-            flex-wrap: wrap.
-            gap: 12px.
-            margin: 24px 0.
-            padding: 20px.
-            background: var(--surface-raised).
-            border: 1px solid var(--border).
-            border-radius: var(--r-container).
-        }
-        #visa-dash .quick-action {
-            display: inline-flex.
-            align-items: center.
-            gap: 8px.
-            padding: 10px 16px.
-            background: var(--surface).
-            border: 1px solid var(--border).
-            border-radius: 100px.
-            color: var(--ink).
-            text-decoration: none.
-            font-size: 13px.
-            font-weight: 600.
-            transition: background-color 0.2s, border-color 0.2s, color 0.2s, transform 0.2s.
-        }
-        #visa-dash .quick-action:hover {
-            background: var(--surface-hover).
-            border-color: var(--green).
-            color: var(--ink).
-            transform: translateY(-1px).
-        }
-        #visa-dash .quick-action i {
-            width: 16px.
-            height: 16px.
-            color: var(--green).
-        }
-        #visa-dash .quick-action:focus-visible {
-            outline: 2px solid var(--green).
-            outline-offset: 2px.
-        }
-        
-        /* Estimator Result */
-        #visa-dash #estimator-result {
-            display: none.
-            padding: 16px.
-            background: var(--surface-raised).
-            border: 1px solid var(--border).
-            border-radius: var(--r-container).
-            margin-top: 16px.
-        }
-        #visa-dash #estimator-result h4 {
-            margin: 0 0 12px.
-            font-size: 14px.
-        }
-        #visa-dash #estimator-result .stat {
-            text-align: center.
-        }
-        #visa-dash #estimator-result .stat-value {
-            font-size: 24px.
-            font-weight: 700.
-            color: var(--ink).
-        }
-        #visa-dash #estimator-result .stat-label {
-            font-size: 11px.
-            color: var(--ink-muted).
-            text-transform: uppercase.
-            letter-spacing: 0.05em.
-        }
-        
-        /* Recent Decisions Section */
-        #visa-dash .recent-decisions-section {
-            margin: 24px 0.
-            padding: 20px.
-            background: var(--surface-raised).
-            border: 1px solid var(--border).
-            border-radius: var(--r-container).
-        }
-        #visa-dash .recent-decisions-section h3 {
-            margin: 0 0 12px.
-            font-size: 14px.
-            font-weight: 600.
-        }
-        
-        /* Quick Actions */
-        #visa-dash .quick-actions {
-            display: flex.
-            flex-wrap: wrap.
-            gap: 12px.
-            margin: 24px 0.
-            padding: 20px.
-            background: var(--surface-raised).
-            border: 1px solid var(--border).
-            border-radius: var(--r-container).
-        }
-        #visa-dash .quick-action {
-            display: inline-flex.
-            align-items: center.
-            gap: 8px.
-            padding: 10px 16px.
-            background: var(--surface).
-            border: 1px solid var(--border).
-            border-radius: 100px.
-            color: var(--ink).
-            text-decoration: none.
-            font-size: 13px.
-            font-weight: 600.
-            transition: background-color 0.2s, border-color 0.2s, color 0.2s, transform 0.2s.
-        }
-        #visa-dash .quick-action:hover {
-            background: var(--surface-hover).
-            border-color: var(--green).
-            color: var(--ink).
-            transform: translateY(-1px).
-        }
-        #visa-dash .quick-action i {
-            width: 16px.
-            height: 16px.
-            color: var(--green).
-        }
-        #visa-dash .quick-action:focus-visible {
-            outline: 2px solid var(--green).
-            outline-offset: 2px.
-        }
-        
-        /* Export CSV button + recent-search chips. */
-
 /* Export CSV button + recent-search chips. */
         #visa-dash .export-btn {
             padding: 0 12px;
@@ -3306,20 +2129,7 @@
         .glide-select__option { font-family: "Inter", sans-serif; font-size: 12.5px; }
     
 
-        /* Account modal + watchlist tab (item 1). */
-        .watch-channel-cell { white-space: nowrap; }
-        .watch-channel { display: inline-flex; align-items: center; gap: 3px; margin-right: 8px; font-size: 12px; }
-    #account-modal { position: fixed; inset: 0; z-index: 60; }
-    #account-modal[hidden] { display: none !important; }
-    #account-modal:not([hidden]) { display: block; }
-    .modal-backdrop { position: absolute; inset: 0; background: rgba(0,0,0,0.45); backdrop-filter: blur(2px); }
-    .modal-panel { position: absolute; top: 12%; left: 50%; transform: translate(-50%, 0); width: min(440px, 92vw); background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-container); padding: 24px; box-shadow: 0 20px 60px rgba(0,0,0,0.25); animation: modal-open 0.2s ease; }
-    @keyframes modal-open { from { opacity: 0; transform: translate(-50%, -8px); } to { opacity: 1; transform: translate(-50%, 0); } }
-    .modal-close { position: absolute; top: 10px; right: 14px; background: transparent; border: none; font-size: 26px; line-height: 1; cursor: pointer; color: var(--ink-soft); padding: 0 4px; }
-    .modal-close:hover { color: var(--ink); }
-    .modal-tabs { display: flex; gap: 8px; margin-bottom: 16px; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
-    .modal-tabs [role="tab"] { background: transparent; border: none; border-bottom: 2px solid transparent; padding: 6px 10px; cursor: pointer; color: var(--ink-soft); font-size: 13px; font-weight: 600; }
-    .modal-tabs [role="tab"][aria-selected="true"] { color: var(--green); border-bottom-color: var(--green); }
+        /* Watchlist tab. */
     .watch-card { background: var(--surface-raised); border: 1px solid var(--border); border-radius: var(--r-container); padding: 16px; margin: 12px 0; }
     .watch-h3 { margin: 0 0 12px; font-size: 15px; color: var(--ink); }
     .watch-field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
@@ -3330,13 +2140,7 @@
     .watch-card th { text-align: left; color: var(--ink-soft); font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; padding: 8px; border-bottom: 1px solid var(--border); }
     .watch-card td { padding: 10px 8px; border-bottom: 1px solid var(--border); color: var(--ink); }
     .watch-card .mono { font-size: 12px; }
-    .link-btn { background: transparent; border: none; color: var(--green); cursor: pointer; font-size: inherit; padding: 0; text-decoration: underline; }
-    .link-btn:hover { color: var(--green-deep); }
     .export-btn.tu-btn { margin-left: 8px; }
-    #watch-server-status { margin-bottom: 8px; font-size: 12px; color: var(--ink-soft); }
-    @media (max-width: 480px) {
-      .modal-panel { top: 8%; width: 94vw; padding: 16px; }
-    }
 
     /* Checklist tab */
     .checklist-layout { max-width: 720px; }
@@ -3422,16 +2226,359 @@
     .search-results-table th, .search-results-table td { padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: left; }
     .search-results-table th { background: var(--surface-raised); font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-soft); }
     .search-pagination { margin-top: 16px; text-align: center; }
-    .saved-searches { list-style: none; padding: 0; margin: 12px 0 0; }
-    .saved-searches li { padding: 8px 0; border-bottom: 1px solid var(--border); }
-    .saved-search-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-    .saved-search-btn { background: transparent; border: none; color: var(--green); cursor: pointer; font-size: 13px; padding: 0; text-align: left; width: 100%; }
-    .saved-search-btn:hover { color: var(--green-deep); text-decoration: underline; }
-    .saved-search-delete { flex: none; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); color: var(--ink-muted); cursor: pointer; font: inherit; font-size: 11px; padding: 4px 8px; }
-    .saved-search-delete:hover { border-color: var(--red); color: var(--red); }
-    .account-switch-note { margin-top: 8px; }
 
     @media (max-width: 480px) {
-      .modal-panel { top: 8%; width: 94vw; padding: 16px; }
       .search-row { flex-direction: column; }
+    }
+
+    /* ===== Mobile layout pass =====
+       The dashboard is dense: data tables, a long tab bar and several
+       side-by-side controls all share a 390px canvas. Give the tab bar a
+       stable 4x2 grid, keep tables inside their cards (cards for the feed,
+       contained horizontal scroll for wide analytics tables) and reclaim
+       vertical space from controls that do not need it on a phone. */
+    @media (max-width: 760px) {
+      #visa-dash { padding: 16px 14px 28px; }
+      #visa-dash h1 { font-size: 24px; }
+      #visa-dash .titlerow { gap: 8px; }
+      #visa-dash .titlerow > div:last-child {
+        width: 100%;
+        gap: 8px;
+        justify-content: flex-start;
+      }
+      #visa-dash .stutter-badge { display: none; }
+      #visa-dash .theme-switch {
+        gap: 8px;
+        min-height: 40px;
+        padding: 4px 0;
+      }
+      #visa-dash .theme-switch::before {
+        content: "Theme";
+        color: var(--ink-muted);
+        font-size: 12px;
+        font-weight: 600;
+        white-space: nowrap;
+      }
+      #visa-dash .lang-btn { min-height: 38px; padding: 6px 12px; }
+
+      /* Eight tracker tabs: a 4x2 grid is more discoverable than a clipped
+         horizontal strip where the active tab can be off-screen. */
+      #visa-dash .navpills {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 6px;
+        overflow: visible;
+        padding: 0;
+        margin-bottom: 18px;
+      }
+      #visa-dash .navpills .gn-goo,
+      #visa-dash .navpills .gn-svg { display: none !important; }
+      #visa-dash .navpill {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 3px;
+        width: 100%;
+        min-height: 60px;
+        padding: 8px 3px;
+        border: 1px solid transparent;
+        border-radius: 10px;
+        font-size: 10.5px;
+        line-height: 1.15;
+        white-space: normal;
+        text-align: center;
+      }
+      #visa-dash .navpill i { width: 15px; height: 15px; }
+      #visa-dash .navpills .navpill.active {
+        background: var(--green-soft) !important;
+        color: var(--green-text) !important;
+        border-color: #bbf7d0;
+        box-shadow: none !important;
+      }
+      #visa-dash[data-theme="dark"] .navpills .navpill.active {
+        border-color: rgba(52, 211, 153, .35);
+      }
+
+      #visa-dash .stats-bar {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 14px 10px;
+        margin: 18px 0;
+        padding: 16px 12px;
+      }
+      #visa-dash .stats-bar .stat { gap: 3px; }
+      #visa-dash .stats-bar .stat-value { font-size: 23px; }
+      #visa-dash .stats-bar .stat-label { font-size: 10px; letter-spacing: .04em; }
+
+      #visa-dash .tracker-card { padding: 18px; }
+      #visa-dash .landing-wrap .tracker-grid { gap: 12px; margin-top: 16px; }
+
+      /* Two compact stat cards per row instead of a long single column. */
+      #visa-dash .cards {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+      }
+      #visa-dash .card { padding: 12px; }
+      #visa-dash .card .value { font-size: 20px; }
+
+      #visa-dash .quick-actions {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+        margin: 18px 0;
+        padding: 12px;
+      }
+      #visa-dash .quick-action {
+        justify-content: center;
+        min-height: 44px;
+        padding: 10px 8px;
+        font-size: 12px;
+        white-space: nowrap;
+      }
+      #visa-dash .quick-action i { width: 15px; height: 15px; }
+
+      #visa-dash .recent-decisions-section,
+      #visa-dash .community-wait-section,
+      #visa-dash .estimator-section { padding: 14px; margin: 18px 0; }
+
+      /* The latest-decisions feed reads better as compact cards than as a
+         four-column table squeezed into 300px. */
+      #visa-dash .recent-decisions-section .table-wrap {
+        overflow: visible;
+        border: 0;
+        background: transparent;
+        box-shadow: none;
+      }
+      #visa-dash .recent-decisions-section .results-table {
+        display: block;
+        min-width: 0;
+        background: transparent;
+      }
+      #visa-dash .recent-decisions-section .results-table thead { display: none; }
+      #visa-dash .recent-decisions-section .results-table tbody {
+        display: grid;
+        gap: 8px;
+      }
+      #visa-dash .recent-decisions-section .results-table tr {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 3px 10px;
+        padding: 10px 12px;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        background: var(--surface);
+      }
+      #visa-dash .recent-decisions-section .results-table td {
+        display: block;
+        padding: 0;
+        border: 0;
+      }
+      #visa-dash .recent-decisions-section .results-table td:nth-child(1) {
+        grid-column: 1;
+        grid-row: 1;
+        color: var(--ink-muted);
+        font-size: 11px;
+      }
+      #visa-dash .recent-decisions-section .results-table td:nth-child(2) {
+        grid-column: 1;
+        grid-row: 2;
+        font-size: 13px;
+        font-weight: 600;
+      }
+      #visa-dash .recent-decisions-section .results-table td:nth-child(3) {
+        grid-column: 2;
+        grid-row: 1 / span 2;
+        align-self: center;
+      }
+      #visa-dash .recent-decisions-section .results-table td:nth-child(4) {
+        grid-column: 1 / -1;
+        grid-row: 3;
+        color: var(--ink-muted);
+        font-size: 11px;
+      }
+      #visa-dash .recent-decisions-section .results-table td:nth-child(4)::before {
+        content: "Office: ";
+      }
+
+      /* The six-office coverage table only needs three columns on a phone. */
+      #visa-dash .coverage-table {
+        min-width: 0;
+        table-layout: fixed;
+      }
+      #visa-dash .coverage-table th:nth-child(4),
+      #visa-dash .coverage-table td:nth-child(4) { display: none; }
+      #visa-dash .coverage-table th,
+      #visa-dash .coverage-table td {
+        padding: 9px 7px;
+        font-size: 10.5px;
+        white-space: normal;
+      }
+      #visa-dash .coverage-table th:nth-child(1),
+      #visa-dash .coverage-table td:nth-child(1) { width: 34%; }
+      #visa-dash .coverage-table th:nth-child(2),
+      #visa-dash .coverage-table td:nth-child(2) { width: 26%; }
+      #visa-dash .coverage-table th:nth-child(3),
+      #visa-dash .coverage-table td:nth-child(3) { width: 40%; }
+
+      /* Home and Past are three-column tables; let them use the card width
+         instead of forcing a 360px minimum. */
+      #visa-dash .home-results-table,
+      #visa-dash .past-results-table { min-width: 0; }
+      #visa-dash .home-results-table th,
+      #visa-dash .home-results-table td,
+      #visa-dash .past-results-table th,
+      #visa-dash .past-results-table td {
+        padding: 9px 8px;
+        font-size: 11px;
+      }
+
+      /* Wide analytics tables stay as tables, but scroll inside their card
+         rather than widening the whole dashboard. */
+      #visa-dash .cohort-table,
+      #visa-dash .visa-type-breakdown,
+      #visa-dash .watchlist-table-wrap,
+      #visa-dash .wait-times-table,
+      #visa-dash .search-results-table {
+        max-width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+      #visa-dash .cohort-table .results-table { min-width: 0; }
+      #visa-dash .cohort-table th,
+      #visa-dash .cohort-table td,
+      #visa-dash .visa-type-breakdown th,
+      #visa-dash .visa-type-breakdown td {
+        padding: 8px 5px;
+        font-size: 10px;
+      }
+      #visa-dash .cohort-table th,
+      #visa-dash .visa-type-breakdown th {
+        line-height: 1.2;
+        letter-spacing: .02em;
+        white-space: normal;
+      }
+      /* Drop the usually-small "Other" bucket so the five remaining visa-type
+         columns fit a phone instead of starting a horizontal scroll. */
+      #visa-dash .visa-type-breakdown .results-table { min-width: 0; }
+      #visa-dash .visa-type-breakdown th:nth-child(5),
+      #visa-dash .visa-type-breakdown td:nth-child(5) { display: none; }
+      #visa-dash .search-results-table .results-table { min-width: 560px; }
+
+      /* Watchlist: six columns do not belong in a horizontal scroll on a
+         phone. Expose the same row as two readable columns plus actions. */
+      #visa-dash .watchlist-table-wrap {
+        overflow: visible;
+        border: 0;
+        background: transparent;
+        box-shadow: none;
+      }
+      #visa-dash .watchlist-table-wrap .results-table {
+        display: block;
+        min-width: 0;
+        background: transparent;
+      }
+      #visa-dash .watchlist-table-wrap .results-table thead { display: none; }
+      #visa-dash .watchlist-table-wrap .results-table tbody {
+        display: grid;
+        gap: 8px;
+      }
+      #visa-dash .watchlist-table-wrap .results-table tr {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 3px 10px;
+        padding: 10px 12px;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        background: var(--surface);
+      }
+      #visa-dash .watchlist-table-wrap .results-table td {
+        display: block;
+        padding: 0;
+        border: 0;
+      }
+      #visa-dash .watchlist-table-wrap .results-table td:nth-child(1) {
+        grid-column: 1;
+        grid-row: 1;
+        font-size: 13px;
+        font-weight: 600;
+      }
+      #visa-dash .watchlist-table-wrap .results-table td:nth-child(2) {
+        grid-column: 1;
+        grid-row: 2;
+        color: var(--ink-muted);
+        font-size: 11px;
+      }
+      #visa-dash .watchlist-table-wrap .results-table td:nth-child(2)::before { content: "Office: "; }
+      #visa-dash .watchlist-table-wrap .results-table td:nth-child(3) {
+        grid-column: 1;
+        grid-row: 3;
+        color: var(--ink-muted);
+        font-size: 11px;
+      }
+      #visa-dash .watchlist-table-wrap .results-table td:nth-child(3)::before { content: "Nickname: "; }
+      #visa-dash .watchlist-table-wrap .results-table td:nth-child(4) {
+        grid-column: 2;
+        grid-row: 1 / span 3;
+        align-self: center;
+      }
+      #visa-dash .watchlist-table-wrap .results-table td:nth-child(5) {
+        grid-column: 1;
+        grid-row: 4;
+        color: var(--ink-muted);
+        font-size: 11px;
+      }
+      #visa-dash .watchlist-table-wrap .results-table td:nth-child(5)::before { content: "Date: "; }
+      #visa-dash .watchlist-table-wrap .results-table td:nth-child(6) {
+        grid-column: 1 / -1;
+        grid-row: 5;
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-top: 4px;
+      }
+      #visa-dash .watchlist-table-wrap .export-btn {
+        min-height: 36px;
+        flex: 1 1 120px;
+      }
+
+      #visa-dash .landing-search { gap: 6px; margin-bottom: 16px; }
+      #visa-dash .landing-search .btn { padding-left: 18px; padding-right: 18px; }
+      #visa-dash .landing-alert-cta { gap: 10px; padding: 14px; }
+      #visa-dash .landing-alert-cta strong { font-size: 14px; }
+    }
+
+    @media (max-width: 480px) {
+      /* The hero's decorative rings/bars cost more vertical space than the
+         headline on a phone. Keep the summary text, drop the visual. */
+      #visa-dash .hero {
+        min-height: 0;
+        padding: 16px;
+      }
+      #visa-dash .hero-body { gap: 0; }
+      #visa-dash .hero .visual { display: none; }
+      #visa-dash .hero-title { font-size: 20px; }
+      #visa-dash .hero-sub { margin-top: 4px; font-size: 12.5px; line-height: 1.45; }
+    }
+
+    @media (max-width: 380px) {
+      #visa-dash { padding-left: 12px; padding-right: 12px; }
+      #visa-dash .navpill { font-size: 10px; }
+      #visa-dash .quick-action { font-size: 11px; }
+      #visa-dash .stats-bar .stat-value { font-size: 21px; }
+      #visa-dash .cohort-table th,
+      #visa-dash .cohort-table td,
+      #visa-dash .visa-type-breakdown th,
+      #visa-dash .visa-type-breakdown td {
+        padding: 7px 4px;
+        font-size: 9px;
+      }
+    }
+
+    @media (max-width: 340px) {
+      /* Flex centering shrink-wrapped the landing search past the content
+         edge at 320px. Let the field shrink so the Track button keeps its
+         margin. */
+      #visa-dash .landing-search { width: 100%; min-width: 0; }
+      #visa-dash .landing-search .searchbar { min-width: 0; }
+      #visa-dash .landing-search .searchbar input[type="text"] { min-width: 0; }
     }

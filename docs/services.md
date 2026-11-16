@@ -24,12 +24,12 @@ npx wrangler pages secret put NAME --project-name=irishvisaupdatetracker < path/
 
 D1 also stores the operational counters and the activation funnel:
 
-- `rate_limits` — shared fixed-window API/auth counters (`bucket`, `subject`,
+- `rate_limits` — shared fixed-window API counters (`bucket`, `subject`,
   `window_start`, `count`). Old rows are pruned opportunistically; losing this
   table only degrades the limiter to a per-isolate fallback.
 - `conversion_events` — fixed-vocabulary funnel events (`alert_cta_view`,
-  email/Telegram click and submit, watchlist add, search, activation step, PWA
-  install). It stores no email address, IP address, cookie or free text.
+  Telegram click and open, watchlist add, search, activation step, PWA install).
+  It stores no email address, IP address, cookie or free text.
 
 ## Current status
 
@@ -37,7 +37,7 @@ D1 also stores the operational counters and the activation funnel:
 |---|---|---|
 | `APP_BASE_URL` | Configured | Links fall back to the production origin |
 | `ALERT_WEBHOOK_URL` | Optional shared alert destination | External uptime and cron-failure alerts have no out-of-band delivery |
-| `SCRAPER_CRON_SECRET` | Configured | `/api/alerts/run`, `/api/digest/send`, `/api/exports/run` return 503 |
+| `SCRAPER_CRON_SECRET` | Configured | `/api/alerts/run` and `/api/digest/send` return 503 |
 | `EMAIL_WEBHOOK_URL` | Configured to the deployment’s `/api/email/send` bridge | Email delivery is disabled |
 | `EMAIL_WEBHOOK_SECRET` | Configured (deployment secret) | Email bridge rejects requests |
 | `EMAIL_FROM` | Configured from the existing Resend sender | Resend bridge cannot choose a sender |
@@ -46,24 +46,18 @@ D1 also stores the operational counters and the activation funnel:
 | `TELEGRAM_WEBHOOK_SECRET` | Configured (deployment secret) | The Telegram webhook rejects every update with 503 |
 | `TELEGRAM_BOT_USERNAME` | Optional | The worker calls `getMe` to resolve the bot handle |
 | `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` / `VAPID_SUBJECT` | Configured | Browser push reports disabled |
-| `CF_ACCOUNT_ID` / `CF_API_TOKEN` | Optional | VFS checks use a direct HTTP request and report VFS's bot challenge |
 
-## VFS appointment check
+## VFS appointment handoff
 
-`GET /api/vfs/appointments?office=<vac-slug>` reads the official VFS
-Ireland-India booking page. VFS does not expose that booking calendar publicly:
-it requires an account sign-in and usually answers unauthenticated requests
-with a Cloudflare challenge. The endpoint therefore reports only `available`,
-`unavailable`, `login_required`, `challenge`, `maintenance` or `unknown`, plus
-the official booking/login links. It never stores VFS credentials, signs in, or
-claims a slot.
+`GET /api/vfs/appointments?office=<vac-slug>` returns a static handoff to the
+official VFS Ireland-India booking portal. VFS does not publish the appointment
+calendar publicly; availability is visible only after signing in. The endpoint
+makes no outbound request and returns `login_required`, `requires_login: true`,
+`public_slots: false`, the official booking/login/tracking links and a message
+stating that the tracker cannot see, hold or book a slot.
 
-If `CF_ACCOUNT_ID` and `CF_API_TOKEN` are set, the checker renders the page with
-Cloudflare Browser Rendering before classifying it. Without those optional
-secrets it uses a direct request; a `403` is reported as a challenge, not as
-unavailable. VFS slot monitoring through its authenticated API is not
-implemented because it needs a user's VFS session and would bypass the portal's
-access controls.
+VFS slot monitoring is intentionally not implemented. It would need a user's
+authenticated VFS session and would bypass the portal's access controls.
 
 ## Telegram alerts
 
@@ -135,7 +129,7 @@ Sentry was removed by product decision on 2026-11-12. The supported stack is:
 - `.github/workflows/uptime.yml` — an external, independent readiness and data
   freshness check every 15 minutes.
 - `.github/workflows/cron-failure-alerts.yml` — posts failed scheduled scraper,
-  alert, digest, export, ML and data workflows to `ALERT_WEBHOOK_URL`.
+  alert, digest, ML and data workflows to `ALERT_WEBHOOK_URL`.
 
 Cloudflare Pages Functions do not persist logs and cannot use Workers Logs or
 Workers Logpush. App errors therefore use the live structured stream; the
@@ -153,9 +147,8 @@ workflows provide them:
 
 - `.github/workflows/alerts.yml` — hourly decision-alert safety net.
 - `.github/workflows/digest.yml` — monthly digest on the first of the month.
-- `.github/workflows/exports.yml` — daily due-export delivery.
 
-All three call the corresponding `/api/*` endpoint with `X-Cron-Secret` and skip
+Both call the corresponding `/api/*` endpoint with `X-Cron-Secret` and skip
 with a workflow warning when the repository’s `SCRAPER_CRON_SECRET` secret is
 absent. Add that repository secret (Actions → Secrets and variables → Actions)
 with the same value as the Pages secret, then run each workflow once with

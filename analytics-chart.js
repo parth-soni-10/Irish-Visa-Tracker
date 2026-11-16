@@ -245,7 +245,6 @@
         chart.appendChild(last);
       }
 
-      dots = [dot];
       show(state.at);
       // A freshly built chart is at rest, not being read: position the cursor on
       // the latest point but leave the tooltip closed until someone asks.

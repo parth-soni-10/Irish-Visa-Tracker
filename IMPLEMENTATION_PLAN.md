@@ -1,155 +1,11 @@
-# Implementation Plan: Features 1 and 5 + Detailed Plan for 6
+# Implementation Plan: ML Timeline Predictor + Native Mobile
 
-> **Status — 2026-11-12.** Features 1 and 5 are implemented and verified in the current tree. Native mobile (section 6) is **deferred**: the installable PWA is the supported mobile product. The detailed section is retained as a future option, not current scope. Account email verification and password reset were also **removed by product decision**; references to them below are historical design context, not current routes. See `COMPLETION_REPORT.md` and `GAP_ANALYSIS.md` for the live record.
-
-## 1. User Accounts + Saved Watchlists (Medium)
-
-### 1.1 Database Schema (D1)
-```sql
--- Users table (extends existing schema)
-CREATE TABLE IF NOT EXISTS users (
-  id TEXT PRIMARY KEY,
-  email TEXT UNIQUE NOT NULL,
-  email_hash TEXT UNIQUE NOT NULL,
-  password_hash TEXT NOT NULL,
-  name TEXT,
-  preferences TEXT DEFAULT '{}', -- JSON: theme, language, notifications, timezone
-  created_at TEXT NOT NULL DEFAULT (datetime('now')),
-  updated_at TEXT NOT NULL DEFAULT (datetime('now')),
-  last_login_at TEXT
-);
-
--- User sessions (for JWT/cookie management)
-CREATE TABLE IF NOT EXISTS user_sessions (
-  id TEXT PRIMARY KEY,
-  user_id TEXT NOT NULL,
-  expires_at TEXT NOT NULL,
-  created_at TEXT NOT NULL DEFAULT (datetime('now')),
-  last_activity TEXT NOT NULL DEFAULT (datetime('now')),
-  FOREIGN KEY (user_id) REFERENCES users(id)
-);
-
--- Watchlists (persisted across devices)
-CREATE TABLE IF NOT EXISTS watchlists (
-  id TEXT PRIMARY KEY,
-  user_id TEXT NOT NULL,
-  application_number TEXT NOT NULL,
-  embassy_slug TEXT NOT NULL,
-  nickname TEXT,
-  notify_email BOOLEAN DEFAULT 1,
-  notify_push BOOLEAN DEFAULT 1,
-  created_at TEXT NOT NULL DEFAULT (datetime('now')),
-  FOREIGN KEY (user_id) REFERENCES users(id)
-);
-
--- Push subscriptions (Web Push VAPID)
-CREATE TABLE IF NOT EXISTS push_subscriptions (
-  id TEXT PRIMARY KEY,
-  user_id TEXT NOT NULL,
-  endpoint TEXT NOT NULL UNIQUE,
-  p256dh TEXT NOT NULL,
-  auth TEXT NOT NULL,
-  created_at TEXT NOT NULL DEFAULT (datetime('now')),
-  FOREIGN KEY (user_id) REFERENCES users(id)
-);
-
--- Private export tokens (workspace-only downloads; no public API)
-CREATE TABLE IF NOT EXISTS api_tokens (
-  id TEXT PRIMARY KEY,
-  user_id TEXT NOT NULL,
-  token_hash TEXT NOT NULL UNIQUE,
-  name TEXT NOT NULL,
-  scopes TEXT DEFAULT '["export"]', -- JSON array; production uses ["export"] for private downloads
-  expires_at TEXT,
-  created_at TEXT NOT NULL DEFAULT (datetime('now')),
-  last_used_at TEXT,
-  revoked BOOLEAN DEFAULT 0,
-  FOREIGN KEY (user_id) REFERENCES users(id)
-);
-
--- Admin tokens (for admin dashboard)
-CREATE TABLE IF NOT EXISTS admin_tokens (
-  id TEXT PRIMARY KEY,
-  name TEXT NOT NULL,
-  token_hash TEXT NOT NULL UNIQUE,
-  expires_at TEXT,
-  revoked BOOLEAN DEFAULT 0,
-  created_at TEXT NOT NULL DEFAULT (datetime('now'))
-);
-
--- Email subscriptions (decision alerts)
-CREATE TABLE IF NOT EXISTS email_subscriptions (
-  id TEXT PRIMARY KEY,
-  user_id TEXT, -- nullable for anonymous subscriptions
-  email_hash TEXT NOT NULL,
-  email TEXT NOT NULL,
-  application_number TEXT NOT NULL,
-  embassy_slug TEXT NOT NULL,
-  verified INTEGER DEFAULT 0,
-  verification_token TEXT,
-  verification_expires TEXT,
-  unsubscribed INTEGER DEFAULT 0,
-  created_at TEXT NOT NULL DEFAULT (datetime('now')),
-  last_alert_sent TEXT
-);
-
--- Account email verification and password-reset tokens are not part of the
--- current product. Subscriber alert verification remains in email_subscriptions.
-```
-
-### 1.2 Auth Module (`functions/auth.js`)
-```javascript
-// Password hashing (PBKDF2)
-async function hashPassword(password) { ... }
-async function verifyPassword(password, hash) { ... }
-
-// Session management
-async function createSession(env, userId) { ... }
-async function validateSession(env, sessionId) { ... }
-async function deleteSession(env, sessionId) { ... }
-
-// JWT tokens for API access
-async function createAPIToken(env, userId, name, scopes) { ... }
-async function validateAPIToken(env, token) { ... }
-
-// Account email verification and password reset are intentionally not provided.
-// Subscriber alert verification remains in the email delivery flow.
-```
-
-### 1.3 User API Routes (`functions/user-api.js`)
-```javascript
-// POST /api/auth/register - Register new user
-// POST /api/auth/login - Login (returns session cookie)
-// POST /api/auth/logout - Logout
-// GET /api/auth/me - Get current user
-// PUT /api/auth/profile - Update profile (name, preferences)
-// PUT /api/auth/password - Change password
-// DELETE /api/auth/delete - Delete account
-// Account email verification and password reset routes are intentionally not provided.
-
-// Watchlist management
-// GET /api/user/watchlist - Get user's watchlist
-// POST /api/user/watchlist - Add to watchlist
-// DELETE /api/user/watchlist/:appNumber - Remove from watchlist
-
-// Push notifications
-// POST /api/user/push/subscribe - Subscribe to push
-// DELETE /api/user/push/subscribe - Unsubscribe
-
-// Private export tokens (workspace only; the public API was retired)
-// GET /api/portal/export-tokens - List private export tokens
-// POST /api/portal/export-tokens - Create a private export token
-// DELETE /api/portal/export-tokens?id= - Revoke a private export token
-```
-
-### 1.4 Frontend Integration
-- Add "Sign In / Sign Up" to landing page and tracker headers
-- User dropdown menu (profile, settings, watchlist, workspace, sign out)
-- Watchlist UI on Home/Past tabs (already have watch infrastructure, persist to D1)
-- Protected routes for authenticated features
-- Session persistence via HttpOnly cookie + localStorage fallback
-
----
+> **Status — 2026-11-13.** The tracker has no accounts, sign-in, saved searches,
+private exports or workspace. Tracking, browser-local watchlists and email,
+Telegram and browser-push alerts are public and anonymous. The ML predictor
+(section 5) is implemented. Native mobile (section 6) is **deferred**: the
+installable PWA is the supported mobile product. See `COMPLETION_REPORT.md` and
+`GAP_ANALYSIS.md` for the live record.
 
 ## 5. ML Timeline Predictor (High)
 
@@ -383,13 +239,8 @@ visa-tracker/
 │       │   │   ├── 1g.tsx          # Stamp 1G tracker
 │       │   │   │   ├── estimator.tsx
 │       │   │   ├── permits.tsx     # Employment permits
-│       │   │   ├── alerts.tsx      # Alerts/Watchlist
-│       │   │   ├── profile.tsx     # User profile, settings
+│       │   │   ├── alerts.tsx      # Alerts / saved applications
 │       │   │   └── admin.tsx       # Admin (if admin)
-│       │   ├── auth/
-│       │   │   ├── login.tsx
-│       │   │   ├── register.tsx
-│       │   │   └── verify.tsx
 │       │   └── settings.tsx
 │       │
 │       ├── components/
@@ -399,7 +250,6 @@ visa-tracker/
 │       │   └── charts/          # Chart wrappers
 │       │
 │       ├── hooks/
-│       │   ├── useAuth.ts
 │       │   ├── useVisaData.ts
 │       │   ├── useWatchlist.ts
 │       │   ├── usePushNotifications.ts
@@ -407,7 +257,6 @@ visa-tracker/
 │       │
 │       ├── services/
 │       │   ├── api.ts           # API client (shared)
-│       │   ├── auth.ts          # Auth service
 │       │   ├── push.ts          # Push notifications
 │       │   ├── storage.ts       # Secure storage (MMKV)
 │       │   ├── offline.ts       # Offline queue (WatermelonDB/SQLite)
@@ -415,7 +264,6 @@ visa-tracker/
 │       │
 │       ├── store/
 │       │   ├── index.ts         # Zustand/Redux Toolkit store
-│       │   ├── authSlice.ts
 │       │   ├── visaSlice.ts
 │       │   └── settingsSlice.ts
 │       │
@@ -429,7 +277,7 @@ visa-tracker/
 ├── packages/
 │   ├── api/              # Shared API client & types
 │   │   ├── src/
-│   │   │   ├── client.ts       # Fetch wrapper with auth
+│   │   │   ├── client.ts       # Fetch wrapper
 │   │   │   ├── endpoints.ts    # Endpoint definitions
 │   │   │   ├── schemas.ts      # Zod schemas
 │   │   │   └── index.ts
@@ -447,7 +295,6 @@ visa-tracker/
 │   ├── types/            # Shared TypeScript types + Zod schemas
 │   │   ├── src/
 │   │   │   ├── visa.ts
-│   │   │   ├── user.ts
 │   │   │   ├── alerts.ts
 │   │   │   └── index.ts
 │   │   └── package.json
@@ -468,22 +315,7 @@ visa-tracker/
 
 ### 6.4 Core Features Implementation
 
-#### 6.4.1 Authentication Flow
-```typescript
-// packages/api/src/auth.ts
-export const authApi = {
-  register: (data: RegisterInput) => api.post('/api/auth/register', data),
-  login: (credentials: LoginInput) => api.post('/api/auth/login', credentials),
-  logout: () => api.post('/api/auth/logout'),
-  me: () => api.get('/api/auth/me'),
-  updateProfile: (data: Partial<User>) => api.put('/api/auth/profile', data),
-  changePassword: (data: { current: string; new: string }) => api.put('/api/auth/password', data),
-  deleteAccount: () => api.delete('/api/auth/delete'),
-  // Account email verification and password reset are intentionally not provided.
-};
-```
-
-#### 6.4.2 Offline-First Data Layer (WatermelonDB)
+#### 6.4.1 Offline-First Data Layer (WatermelonDB)
 ```typescript
 // apps/mobile/services/offline.ts
 import { Database } from '@nozbe/watermelondb';
@@ -494,7 +326,6 @@ import { VisaDecision } from './models/VisaDecision';
 import { WatchlistItem } from './models/WatchlistItem';
 import { CommunityTimeline } from './models/CommunityTimeline';
 import { PermitData } from './models/PermitData';
-import { User } from './models/User';
 
 const adapter = new SQLiteAdapter({
   schema,
@@ -504,7 +335,7 @@ const adapter = new SQLiteAdapter({
 
 export const database = new Database({
   adapter,
-  modelClasses: [VisaDecision, WatchlistItem, CommunityTimeline, PermitData, User],
+  modelClasses: [VisaDecision, WatchlistItem, CommunityTimeline, PermitData],
 });
 
 export const synchronize = async (api: ApiClient) => {
@@ -539,12 +370,11 @@ setInterval(() => {
 }, 30 * 60 * 1000);
 ```
 
-#### 6.4.3 Push Notifications (Expo + Web Push)
+#### 6.4.2 Push Notifications (Expo + Web Push)
 ```typescript
 // apps/mobile/services/push.ts
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
-import { Platform } from 'react-native';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -554,7 +384,7 @@ Notifications.setNotificationHandler({
   }),
 });
 
-export async function registerForPushNotifications(userId: string) {
+export async function registerForPushNotifications() {
   if (!Device.isDevice) return;
   
   const { status } = await Notifications.getPermissionsAsync();
@@ -567,16 +397,9 @@ export async function registerForPushNotifications(userId: string) {
     projectId: Constants.expoConfig?.extra?.eas?.projectId,
   })).data;
 
-  await api.post('/api/user/push/subscribe', {
-    token,
-    platform: Platform.OS,
-    deviceId: Device.getDeviceId(),
-  });
-
-  // Also register Web Push for web compatibility
-  if (Platform.OS === 'web') {
-    await registerWebPush();
-  }
+  // The caller registers this token against an application subscription.
+  // No account or user ID is involved.
+  return token;
 }
 
 export async function handleDecisionAlert(decision: VisaDecision) {
@@ -596,16 +419,11 @@ export async function handleDecisionAlert(decision: VisaDecision) {
 export default function RootLayout() {
   return (
     <Stack>
-      <Stack.Screen name="auth/login" options={{ headerShown: false }} />
-      <Stack.Screen name="auth/register" options={{ headerShown: false }} />
-      <Stack.Screen name="auth/verify" options={{ headerShown: false }} />
-      
       <Tabs screenOptions={{ headerShown: false }}>
         <Tabs.Screen name="(tabs)/visa" options={{ title: 'Visa' }} />
         <Tabs.Screen name="(tabs)/1g" options={{ title: 'Stamp 1G' }} />
         <Tabs.Screen name="(tabs)/permits" options={{ title: 'Permits' }} />
         <Tabs.Screen name="(tabs)/alerts" options={{ title: 'Alerts' }} />
-        <Tabs.Screen name="(tabs)/profile" options={{ title: 'Profile' }} />
       </Tabs>
       
       <Stack.Screen name="visa/[id]" options={{ title: 'Application Details' }} />
@@ -780,11 +598,11 @@ jobs:
 ### 6.10 Timeline Estimate
 | Phase | Duration | Milestone |
 |-------|----------|-----------|
-| **Setup & Foundation** | 2 weeks | Monorepo, shared packages, auth, API client |
+| **Setup & Foundation** | 2 weeks | Monorepo, shared packages, API client |
 | **Core Screens** | 3 weeks | Landing, Visa/1G/Permits tabs, navigation |
 | **Offline & Sync** | 2 weeks | WatermelonDB, background sync, conflict resolution |
 | **Push & Alerts** | 1 week | Expo notifications, Web Push parity |
-| **Profile & Settings** | 1 week | Auth, profile, watchlist, private exports |
+| **Settings & Saved Applications** | 1 week | Local settings and saved-application watchlist |
 | **Testing & Polish** | 2 weeks | E2E tests, accessibility, performance |
 | **App Store Prep** | 1 week | Screenshots, metadata, privacy policy |
 | **Store Submission** | 1 week | TestFlight, Play Console, review |
@@ -813,20 +631,18 @@ jobs:
 ## Summary: Implementation Order
 
 ### Phase 1 (Weeks 1-4): Foundation
-1. ✅ **User Accounts + Watchlists** - D1 schema, auth routes, frontend auth UI
-2. 🔄 **ML Timeline Predictor** - Data export → Colab training → ONNX export → Worker endpoint
+1. ✅ **ML Timeline Predictor** - Data export → Colab training → ONNX export → Worker endpoint
 
 ### Phase 2 (Weeks 5-8): Mobile Foundation
 1. Monorepo setup (Turborepo + Expo)
 2. Shared packages (api, ui, types, utils)
-3. Authentication flow (login, register, JWT)
-4. Core screens (Home, Visa, 1G, Permits, Alerts, Profile)
+3. Core screens (Home, Visa, 1G, Permits, Alerts, Settings)
 
 ### Phase 3 (Weeks 9-14): Core Mobile Features
 1. Offline-first data layer (WatermelonDB)
 2. Push notifications (Expo + Web Push parity)
-4. Watchlist sync across devices
-5. Document checklist generator
+3. Browser-local saved applications
+4. Document checklist generator
 
 ### Phase 4 (Weeks 15-18): Launch Prep
 1. ML Timeline Predictor (ONNX + Worker endpoint)
@@ -837,5 +653,5 @@ jobs:
 ### Phase 5 (Post-Launch)
 1. ML model retraining pipeline
 2. Native push reliability improvements
-3. VFS appointment page-state checks (the slot calendar itself requires authenticated VFS access)
+3. VFS official-portal handoff; slot monitoring remains out of scope unless VFS offers a supported feed
 4. White-label / consultant features

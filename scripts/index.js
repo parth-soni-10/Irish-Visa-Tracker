@@ -9,6 +9,13 @@
             const CACHE_FRESH_MS = 5 * 60 * 1000;
             const NO_UPLOAD_MESSAGE = "Visa office hasn't uploaded any sheet until now, check back later, or come back tomorrow";
             const WEEKEND_MESSAGE = "Saturday/Sunday, Visa Office is closed";
+            const WATCH_OFFICE_NAMES = {
+                'new-delhi': 'New Delhi', beijing: 'Beijing', dublin: 'Dublin',
+                'abu-dhabi': 'Abu Dhabi', abuja: 'Abuja', ankara: 'Ankara'
+            };
+            const WATCH_OFFICES = Object.keys(WATCH_OFFICE_NAMES);
+            const WATCH_LIMIT = 10;
+            const OFFICE_ARCHIVE_PREFIX = 'data/embassy-';
 
             // Boot-time device-capability detector. Runs once at the top of
             // the IIFE (the page is already parsing this script which lives
@@ -166,8 +173,8 @@
                     keepalive: true
                 }).catch(function() {});
             }
-            function openAlertForm(kind) {
-                trackConversion(kind === 'telegram' ? 'alert_telegram_click' : 'alert_email_click', 'activation');
+            function openAlertForm() {
+                trackConversion('alert_telegram_click', 'activation');
                 // `suggest` is the registered tab id in KNOWN_TABS; using
                 // "suggestions" here renders the form but writes a URL that
                 // reloads to the landing page.
@@ -176,7 +183,7 @@
                     var form = document.getElementById('alert-form');
                     if (!form) return;
                     form.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    var focus = form.querySelector(kind === 'telegram' ? '#telegram-alert-btn' : 'input[name="email"]');
+                    var focus = form.querySelector('#telegram-alert-btn');
                     if (focus) focus.focus({ preventScroll: true });
                 }, 80);
             }
@@ -241,6 +248,9 @@
             let lastVisitAt = Number(localStorage.getItem('visa-last-visit') || '0') || 0;
             let visited = false;
             let staleAt = null; // data being shown is from this timestamp (live refresh failed)
+            let dataLoadError = false;
+            let officeWatchData = Object.create(null);
+            let officeWatchPromises = Object.create(null);
 
             function classify(decision) {
                 const s = (decision || '').toLowerCase();
@@ -583,6 +593,7 @@
                         const raw = await res.json();
                         if (!Array.isArray(raw)) throw new Error('bad payload');
                         staleAt = null;
+                        dataLoadError = false;
                         persistSnapshot(raw);
                         // Pre-compute classify + row HTML once per row, then sort by
                         // date desc so render paths are pure filter + string concat.
@@ -600,6 +611,7 @@
                         cacheFetchedAt = Date.now();
                     } catch (e) {
                         console.warn('loadData failed:', e);
+                        dataLoadError = true;
                         const snap = await restoreSnapshot();
                         if (snap) {
                             cache = snap.rows.map(r => preloadRow(Array.isArray(r) ? { date: r[0], irl: r[1], decision: r[2] } : r));
@@ -618,6 +630,7 @@
                         } else if (cache === null) cache = [];
                     } finally {
                         dataPromise = null;
+                        if (document.getElementById('watch-local-rows')) paintWatchlist();
                     }
                     return cache;
                 })();
@@ -652,17 +665,17 @@
                 return '<section class="activation" id="activation-card" aria-labelledby="activation-heading">' +
                     '<div>' +
                     '<p class="activation-kicker">Never miss a decision</p>' +
-                    '<h2 id="activation-heading">Get your decision by email or Telegram</h2>' +
+                    '<h2 id="activation-heading">Get your decision by Telegram</h2>' +
                     '<p class="activation-lede">Add your application once. The tracker checks the published files and only messages you when a decision appears. No refresh, no guessing.</p>' +
                     '<div class="activation-actions">' +
                     '<button type="button" class="btn activation-telegram" data-activation-action="telegram"><i data-lucide="send" aria-hidden="true"></i> Get Telegram alerts</button>' +
                     '</div>' +
-                    '<p class="activation-meta">Free. Telegram needs no email address. Email alerts use double opt-in.</p>' +
+                    '<p class="activation-meta">Free. No email address needed. One message per published decision.</p>' +
                     '</div>' +
                     '<ol class="activation-checklist" aria-label="First-run checklist">' +
                     '<li data-activation-step="search"><span class="activation-num">1</span><div><strong>Find your application</strong><p>Search the latest published decision list.</p><button type="button" class="activation-link" data-activation-action="search">Search now</button></div></li>' +
                     '<li data-activation-step="watch"><span class="activation-num">2</span><div><strong>Save it to your watchlist</strong><p>Saved in this browser and checked against the latest data.</p><button type="button" class="activation-link" data-activation-action="watch">Open watchlist</button></div></li>' +
-                    '<li data-activation-step="alerts"><span class="activation-num">3</span><div><strong>Choose a delivery channel</strong><p>Email or Telegram. One message per published decision.</p></div></li>' +
+                    '<li data-activation-step="alerts"><span class="activation-num">3</span><div><strong>Link Telegram alerts</strong><p>One message per published decision. Your email address is never collected.</p></div></li>' +
                     '</ol>' +
                     '</section>';
             }
@@ -848,7 +861,7 @@
                         var action = event.target.closest('[data-activation-action]');
                         if (!action) return;
                         var kind = action.getAttribute('data-activation-action');
-                        if (kind === 'email' || kind === 'telegram') { openAlertForm(kind); return; }
+                        if (kind === 'telegram') { openAlertForm(); return; }
                         if (kind === 'search') {
                             var input = document.getElementById('home-search');
                             if (input) { input.scrollIntoView({ behavior: 'smooth', block: 'center' }); input.focus({ preventScroll: true }); }
@@ -938,6 +951,8 @@
                 var dateClearEl = document.getElementById('past-date-clear');
                 if (dateClearEl) dateClearEl.addEventListener('click', function() {
                     pastDateFilter = '';
+                    var dateInput = document.getElementById('past-date-filter');
+                    if (dateInput) dateInput.value = '';
                     if (dateClearEl.parentElement) {
                         dateClearEl.parentElement.classList.remove('has-filter');
                     }
@@ -980,50 +995,8 @@
                 var alertForm = document.getElementById('alert-form');
                 if (alertForm) alertForm.addEventListener('submit', function(e) {
                     e.preventDefault();
-                    submitAlert();
+                    startTelegramAlerts();
                 });
-                var tgBtn = document.getElementById('telegram-alert-btn');
-                if (tgBtn) tgBtn.onclick = async function() {
-                    var form = document.getElementById('alert-form');
-                    var statusEl = document.getElementById('alert-status');
-                    if (!form || !statusEl) return;
-                    var appNumEl = form.querySelector('input[name="application_number"]');
-                    var embassyEl = form.querySelector('select[name="embassy"]');
-                    var appNum = (appNumEl && appNumEl.value ? appNumEl.value : '').trim();
-                    var embassy = embassyEl && embassyEl.value ? embassyEl.value : '';
-                    if (!/^\d{8}$/.test(appNum)) {
-                        statusEl.textContent = 'Please enter a valid 8-digit application number.';
-                        statusEl.style.color = 'var(--red)';
-                        if (appNumEl) appNumEl.focus();
-                        return;
-                    }
-                    tgBtn.disabled = true;
-                    statusEl.textContent = 'Opening Telegram…';
-                    statusEl.style.color = 'var(--ink)';
-                    try {
-                        var res = await fetch('/api/telegram/start', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ application_number: appNum, embassy: embassy })
-                        });
-                        var data = await res.json().catch(function() { return {}; });
-                        if (res.ok && data.url) {
-                            window.open(data.url, '_blank', 'noopener');
-                            markActivation('alerts');
-                            trackConversion('alert_telegram_opened', 'suggestions');
-                            statusEl.textContent = 'Press Start in Telegram to finish linking ' + appNum + '.';
-                            statusEl.style.color = 'var(--green)';
-                        } else {
-                            statusEl.textContent = '❌ ' + (data.error || 'Telegram alerts are not available yet.');
-                            statusEl.style.color = 'var(--red)';
-                        }
-                    } catch (err) {
-                        statusEl.textContent = '❌ Network error. Please try again.';
-                        statusEl.style.color = 'var(--red)';
-                    } finally {
-                        tgBtn.disabled = false;
-                    }
-                };
                 // Recent-search chips re-run the search they were saved from.
                 var recentRow = document.getElementById('recent-searches');
                 if (recentRow) recentRow.onclick = function(e) {
@@ -1042,16 +1015,32 @@
                     var add = e.target && e.target.closest ? e.target.closest('[data-watch-add]') : null;
                     var del = e.target && e.target.closest ? e.target.closest('[data-watch-del]') : null;
                     if (add) {
-                        if (addWatchItem(add.getAttribute('data-watch-add')) === 'added') {
+                        var addResult = addWatchItem(add.getAttribute('data-watch-add'));
+                        if (addResult === 'added') {
+                            watchNotice = '';
                             markActivation('watch');
                             trackConversion('watchlist_added', 'home-watch');
+                        } else if (addResult === 'duplicate') {
+                            watchNotice = 'That application is already saved in this browser.';
+                        } else if (addResult === 'limit') {
+                            watchNotice = 'You can save up to ' + WATCH_LIMIT + ' applications in this browser.';
+                        } else if (addResult === 'save-failed') {
+                            watchNotice = 'Could not save this watchlist in this browser.';
+                        } else {
+                            watchNotice = 'Enter a valid application number.';
                         }
                         paintWatch();
                     } else if (del) {
-                        removeWatchItem(
+                        var removal = removeWatchItem(
                             del.getAttribute('data-watch-del'),
                             del.getAttribute('data-watch-office')
                         );
+                        if (!removal.saved) {
+                            watchNotice = 'Could not update this browser\'s watchlist.';
+                        } else if (removal.item) {
+                            watchNotice = '';
+                            disableWatchPush(removal.item);
+                        }
                         paintWatch();
                     }
                 };
@@ -1226,7 +1215,7 @@
                 else if (tabId === 'daily') tabBody.innerHTML = renderDailySummary(rows);
                 else if (tabId === 'past') tabBody.innerHTML = renderPastLayout(rows);
                 else if (tabId === 'analytics') tabBody.innerHTML = renderAnalyticsLayout(rows);
-                else if (tabId === 'watchlist') { tabBody.innerHTML = renderWatchlistLayout(rows); wireWatchAdd(); }
+                else if (tabId === 'watchlist') { tabBody.innerHTML = renderWatchlistLayout(rows); wireWatchAdd(); wireWatchBackup(); }
                 else if (tabId === 'checklist') { tabBody.innerHTML = renderChecklistLayout(); wireChecklistForm(); }
                 else if (tabId === 'search') { tabBody.innerHTML = renderSearchLayout(); wireSearchForm(); wireVFSTracking(); }
                 else { tabBody.innerHTML = renderSuggestLayout(); }
@@ -1334,26 +1323,50 @@
             function renderChecklistResult(data, container) {
                 container.hidden = false;
                 var html = '<h3>Your Document Checklist</h3>';
-                if (data.checklist && Array.isArray(data.checklist)) {
-                    html += '<ul class="checklist-items">';
-                    data.checklist.forEach(function(item) {
-                        var required = item.required ? ' <span class="badge required">Required</span>' : '';
-                        var category = item.category ? ' <span class="badge category">' + escapeHtml(item.category) + '</span>' : '';
-                        html += '<li><strong>' + escapeHtml(item.name) + '</strong>' + required + category + '</li>';
-                    });
-                    html += '</ul>';
-                } else if (data.items && Array.isArray(data.items)) {
-                    html += '<ul class="checklist-items">';
-                    data.items.forEach(function(item) {
-                        var required = item.required ? ' <span class="badge required">Required</span>' : '';
-                        var category = item.category ? ' <span class="badge category">' + escapeHtml(item.category) + '</span>' : '';
-                        html += '<li><strong>' + escapeHtml(item.name) + '</strong>' + required + category + '</li>';
-                    });
-                    html += '</ul>';
-                } else {
-                    html += '<p class="note2">No specific checklist items returned. See full API response below.</p>';
-                    html += '<pre class="api-response">' + escapeHtml(JSON.stringify(data, null, 2)) + '</pre>';
+                var checklist = data && data.checklist;
+                var groups = [];
+                if (checklist && typeof checklist === 'object') {
+                    if (Array.isArray(checklist.mandatory) && checklist.mandatory.length) {
+                        groups.push({ title: 'Mandatory documents', items: checklist.mandatory, badge: 'Required' });
+                    }
+                    var conditional = Array.isArray(checklist.conditional)
+                        ? checklist.conditional.filter(function(item) { return item.applicable !== false; })
+                        : [];
+                    if (conditional.length) {
+                        groups.push({ title: 'Conditional documents', items: conditional, badge: 'If applicable' });
+                    }
+                    if (Array.isArray(checklist.embassy_specific) && checklist.embassy_specific.length) {
+                        groups.push({ title: 'Office-specific requirements', items: checklist.embassy_specific, badge: 'Required' });
+                    }
                 }
+
+                var total = groups.reduce(function(sum, group) { return sum + group.items.length; }, 0);
+                if (!total) {
+                    html += '<p class="note2">No checklist items returned. Try a different visa type or office.</p>';
+                    container.innerHTML = html;
+                    return;
+                }
+
+                if (checklist && checklist.processing_time) {
+                    html += '<p class="note2" style="margin:0 0 14px;">Processing time: <strong>' +
+                        escapeHtml(checklist.processing_time) + '</strong></p>';
+                }
+                groups.forEach(function(group) {
+                    html += '<h4 style="margin:16px 0 8px;">' + escapeHtml(group.title) +
+                        ' <span class="badge category">' + group.items.length + '</span></h4>';
+                    html += '<ul class="checklist-items">';
+                    group.items.forEach(function(item) {
+                        var name = item.name || item.title || item.id || 'Document';
+                        var required = group.badge
+                            ? ' <span class="badge required">' + escapeHtml(group.badge) + '</span>' : '';
+                        var category = item.category
+                            ? ' <span class="badge category">' + escapeHtml(item.category) + '</span>' : '';
+                        var description = item.description
+                            ? '<div class="note2" style="margin:4px 0 0;">' + escapeHtml(item.description) + '</div>' : '';
+                        html += '<li><strong>' + escapeHtml(name) + '</strong>' + required + category + description + '</li>';
+                    });
+                    html += '</ul>';
+                });
                 container.innerHTML = html;
             }
 
@@ -1500,21 +1513,42 @@
                 if (loadMore) {
                     loadMore.addEventListener('click', function() {
                         var form = document.getElementById('search-form');
+                        var status = document.getElementById('search-status');
+                        if (!form) return;
                         var fd = new FormData(form);
                         var body = {};
                         for (var pair of fd) { if (pair[1]) body[pair[0]] = pair[1]; }
                         body.offset = data.pagination.offset + data.pagination.limit;
-                        // Re-search with new offset
+                        loadMore.disabled = true;
+                        if (status) {
+                            status.textContent = 'Loading more results\u2026';
+                            status.style.color = 'var(--ink)';
+                        }
                         fetch('/api/search', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify(body)
-                        }).then(function(r) { return r.json(); }).then(function(newData) {
-                            if (newData.success) {
-                                data.pagination = newData.pagination;
-                                data.results = data.results.concat(newData.results);
-                                renderSearchResults(data, container);
+                        }).then(function(r) {
+                            if (!r.ok) throw new Error('Search failed');
+                            return r.json();
+                        }).then(function(newData) {
+                            if (!newData.success || !newData.pagination || !Array.isArray(newData.results)) {
+                                throw new Error((newData && newData.error) || 'Search failed');
                             }
+                            data.pagination = newData.pagination;
+                            data.results = data.results.concat(newData.results);
+                            renderSearchResults(data, container);
+                            var nextStatus = document.getElementById('search-status');
+                            if (nextStatus) {
+                                nextStatus.textContent = data.results.length + ' of ' + data.pagination.total + ' results shown.';
+                                nextStatus.style.color = 'var(--green)';
+                            }
+                        }).catch(function() {
+                            if (status) {
+                                status.textContent = 'Could not load more results. Please try again.';
+                                status.style.color = 'var(--red)';
+                            }
+                            loadMore.disabled = false;
                         });
                     });
                 }
@@ -1535,6 +1569,7 @@
                     '<a class="btn" href="https://visa.vfsglobal.com/ind/en/irl/book-an-appointment" target="_blank" rel="noopener noreferrer">Open the official VFS portal</a>' +
                     '<button class="btn secondary" type="submit">Track on VFS Global</button>' +
                     '</div>' +
+                    '<div class="note" id="vfs-track-status" aria-live="polite"></div>' +
                     '</form>' +
                     '<p class="note2">VFS shows appointment slots only after signing in. This tracker cannot see, hold, or book a slot.</p>' +
                     '</div>';
@@ -1547,11 +1582,23 @@
                     e.preventDefault();
                     var ref = document.getElementById('vfs-ref').value.trim();
                     var lname = document.getElementById('vfs-lname').value.trim();
-                    if (!ref || !lname) return;
+                    var status = document.getElementById('vfs-track-status');
+                    if (!ref || !lname) {
+                        if (status) {
+                            status.textContent = 'Enter both the reference number and last name.';
+                            status.style.color = 'var(--red)';
+                        }
+                        (ref ? document.getElementById('vfs-lname') : document.getElementById('vfs-ref')).focus();
+                        return;
+                    }
                     var url = 'https://visa.vfsglobal.com/ind/en/irl/track-application' +
                         '?reference=' + encodeURIComponent(ref) +
                         '&lastName=' + encodeURIComponent(lname);
                     window.open(url, '_blank', 'noopener,noreferrer');
+                    if (status) {
+                        status.textContent = 'Opening VFS Global\u2026';
+                        status.style.color = 'var(--green)';
+                    }
                 });
             }
 
@@ -1566,12 +1613,9 @@
                     'autocomplete="off" maxlength="20" placeholder="e.g. IRL2026123456"></div>' +
                     '<div class="watch-field"><label>Visa office</label>' +
                     '<select name="embassy_slug">' +
-                    '<option value="new-delhi">New Delhi</option>' +
-                    '<option value="beijing">Beijing</option>' +
-                    '<option value="dublin">Dublin</option>' +
-                    '<option value="abu-dhabi">Abu Dhabi</option>' +
-                    '<option value="abuja">Abuja</option>' +
-                    '<option value="ankara">Ankara</option>' +
+                    WATCH_OFFICES.map(function(office) {
+                        return '<option value="' + office + '">' + WATCH_OFFICE_NAMES[office] + '</option>';
+                    }).join('') +
                     '</select></div>' +
                     '<div class="watch-field"><label>Nickname <span class="note2">(optional)</span></label>' +
                     '<input type="text" name="nickname" maxlength="60" placeholder="e.g. My study visa"></div>' +
@@ -1582,9 +1626,81 @@
                     '<div class="watch-card">' +
                     '<h3 class="watch-h3">Saved applications</h3>' +
                     '<div class="note2" id="watch-local-status">Checking saved applications\u2026</div>' +
+                    '<div class="note2" id="watch-data-note"></div>' +
                     '<div id="watch-local-rows"></div>' +
-                    '<p class="note2" style="margin-bottom:0;">For email or Telegram alerts, use the Suggestions tab. Browser notifications can be enabled per application below.</p>' +
+                    '<p class="note2" style="margin-bottom:0;">For Telegram alerts, use the Suggestions tab. Browser notifications can be enabled per application below.</p>' +
+                    '</div>' +
+                    '<div class="watch-card">' +
+                    '<h3 class="watch-h3">Back up this list</h3>' +
+                    '<p class="note2" style="margin:0 0 10px;">Download a JSON copy or restore a previous copy. The file stays on this device.</p>' +
+                    '<button type="button" class="export-btn tu-btn" id="watch-export-btn">Export watchlist</button>' +
+                    '<button type="button" class="export-btn tu-btn" id="watch-import-btn">Import watchlist</button>' +
+                    '<input class="visually-hidden" type="file" id="watch-import-input" accept="application/json,.json">' +
+                    '<div class="note" id="watch-backup-status" aria-live="polite"></div>' +
                     '</div>';
+            }
+
+            function watchlistDataNote(list) {
+                var hasNewDelhi = (list || []).some(function(item) {
+                    return item.office === 'new-delhi';
+                });
+                if (!hasNewDelhi) return '';
+                if (staleAt) {
+                    var when = new Date(staleAt).toLocaleString('en-GB', {
+                        day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'
+                    });
+                    return 'Showing cached New Delhi data from ' + when + '. Live refresh failed.';
+                }
+                if (dataLoadError) return 'Live New Delhi decision data could not be loaded.';
+                return '';
+            }
+
+            function loadOfficeWatchData(office) {
+                if (office === 'new-delhi') return Promise.resolve(cache || []);
+                if (officeWatchData[office] && officeWatchData[office].status !== 'loading') {
+                    return Promise.resolve(officeWatchData[office].rows || []);
+                }
+                if (officeWatchPromises[office]) return officeWatchPromises[office];
+                officeWatchData[office] = { status: 'loading', rows: [] };
+                officeWatchPromises[office] = fetch(OFFICE_ARCHIVE_PREFIX + office + '.json', { cache: 'no-store' })
+                    .then(function(res) {
+                        if (!res.ok) throw new Error('HTTP ' + res.status);
+                        return res.json();
+                    })
+                    .then(function(payload) {
+                        var decisions = Array.isArray(payload) ? payload :
+                            (payload && Array.isArray(payload.decisions) ? payload.decisions : []);
+                        var rows = decisions.map(function(d) {
+                            return preloadRow({
+                                date: d.date, irl: d.number, decision: d.decision, embassy: office
+                            });
+                        }).sort(function(a, b) {
+                            return String(b.date).localeCompare(String(a.date));
+                        });
+                        officeWatchData[office] = { status: 'ready', rows: rows };
+                    })
+                    .catch(function(error) {
+                        console.warn('Office watchlist data failed for ' + office + ':', error);
+                        officeWatchData[office] = { status: 'error', rows: [] };
+                    })
+                    .finally(function() {
+                        officeWatchPromises[office] = null;
+                        if (document.getElementById('watch-local-rows')) {
+                            paintWatchlist();
+                            paintWatch();
+                        }
+                    });
+                return officeWatchPromises[office];
+            }
+
+            function watchOfficeState(office) {
+                if (office === 'new-delhi') {
+                    if (cache === null) return { status: 'loading', rows: [] };
+                    if (dataLoadError && !cache.length) return { status: 'error', rows: [] };
+                    return { status: 'ready', rows: cache };
+                }
+                if (!officeWatchData[office]) loadOfficeWatchData(office);
+                return officeWatchData[office] || { status: 'loading', rows: [] };
             }
 
             function paintWatchlist() {
@@ -1592,70 +1708,101 @@
                 var status = document.getElementById('watch-local-status');
                 if (!box) return;
                 var list = getWatchlist();
-                if (status) status.textContent = list.length
-                    ? list.length + ' saved application' + (list.length === 1 ? '' : 's')
-                    : 'No saved applications yet.';
+                var note = document.getElementById('watch-data-note');
+                if (note) note.textContent = watchlistDataNote(list);
                 if (!list.length) {
+                    if (status) status.textContent = 'No saved applications yet.';
                     box.innerHTML = '<div class="note2">Add an application above to keep it here.</div>';
                     return;
                 }
-                var rows = cache || [];
-                var officeNames = {
-                    'new-delhi': 'New Delhi', beijing: 'Beijing', dublin: 'Dublin',
-                    'abu-dhabi': 'Abu Dhabi', abuja: 'Abuja', ankara: 'Ankara'
-                };
-                var html = '<table class="results-table"><thead><tr>' +
+                var states = {};
+                var checking = false;
+                list.forEach(function(item) {
+                    var state = watchOfficeState(item.office);
+                    states[item.office] = state;
+                    if (state.status === 'loading') checking = true;
+                });
+                if (status) status.textContent = checking
+                    ? 'Checking saved applications\u2026'
+                    : list.length + ' saved application' + (list.length === 1 ? '' : 's');
+                var html = '<div class="table-wrap watchlist-table-wrap"><table class="results-table"><thead><tr>' +
                     '<th scope="col">Application</th><th scope="col">Office</th>' +
                     '<th scope="col">Nickname</th><th scope="col">Latest decision</th>' +
                     '<th scope="col">Date</th><th scope="col">&nbsp;</th>' +
                     '</tr></thead><tbody>';
                 list.forEach(function(item) {
-                    var row = rows.find(function(candidate) {
+                    var state = states[item.office] || { status: 'loading', rows: [] };
+                    var row = state.status === 'ready' ? state.rows.find(function(candidate) {
                         return watchRowMatches(candidate, item);
-                    });
-                    var decision = row ? escapeHtml(row.decision || '-') : 'Not published';
-                    var date = row ? escapeHtml(row.date) : '\u2014';
-                    var pill = row
-                        ? '<span class="pill ' + (row._pillClass || 'amber') + '">' + decision + '</span>'
-                        : '<span class="note2">' + decision + '</span>';
-                    html += '<tr>' +
+                    }) : null;
+                    var decision;
+                    var date = '\u2014';
+                    var pill;
+                    if (row) {
+                        decision = escapeHtml(row.decision || '-');
+                        date = escapeHtml(row.date);
+                        pill = '<span class="pill ' + (row._pillClass || 'amber') + '">' + decision + '</span>';
+                    } else {
+                        decision = state.status === 'loading' ? 'Checking office data\u2026' :
+                            state.status === 'error' ? 'Office data unavailable' : 'No decision found';
+                        pill = '<span class="note2">' + decision + '</span>';
+                    }
+                    var pushLabel = item.push ? 'Push on' : 'Enable push';
+                    var pushTitle = item.push ? 'Browser notifications are enabled' : 'Enable browser notifications';
+                    html += '<tr data-office="' + escapeHtml(item.office) +
+                        '" data-watch-number="' + escapeHtml(item.number) + '">' +
                         '<td class="mono">' + escapeHtml(item.number) + '</td>' +
-                        '<td>' + escapeHtml(officeNames[item.office] || item.office) + '</td>' +
+                        '<td>' + escapeHtml(WATCH_OFFICE_NAMES[item.office] || item.office) + '</td>' +
                         '<td>' + escapeHtml(item.nickname || '\u2014') + '</td>' +
                         '<td>' + pill + '</td>' +
                         '<td>' + date + '</td>' +
                         '<td><button type="button" class="export-btn tu-btn" data-watch-push="' +
                         escapeHtml(item.number) + '" data-watch-office="' + escapeHtml(item.office) +
-                        '" title="Enable browser notifications" aria-label="Enable browser notifications for ' +
-                        escapeHtml(item.number) + '">Enable push</button> ' +
+                        '" aria-pressed="' + (item.push ? 'true' : 'false') + '" title="' + pushTitle +
+                        '" aria-label="' + pushTitle + ' for ' + escapeHtml(item.number) + '">' + pushLabel + '</button> ' +
                         '<button type="button" class="export-btn tu-btn" data-watch-remove="' + escapeHtml(item.number) +
                         '" data-watch-office="' + escapeHtml(item.office) +
                         '" title="Remove">Remove</button></td>' +
                         '</tr>';
                 });
-                box.innerHTML = html + '</tbody></table>';
+                box.innerHTML = html + '</tbody></table></div>';
                 box.onclick = function(e) {
                     var pushBtn = e.target && e.target.closest ? e.target.closest('[data-watch-push]') : null;
                     if (pushBtn) {
                         var app = pushBtn.getAttribute('data-watch-push');
                         var office = pushBtn.getAttribute('data-watch-office');
+                        if (typeof window.enablePushNotifications !== 'function') {
+                            if (status) status.textContent = 'Browser notifications are not available.';
+                            return;
+                        }
                         pushBtn.disabled = true;
                         if (status) status.textContent = 'Requesting notification permission\u2026';
                         window.enablePushNotifications(app, office).then(function(result) {
+                            var saved = result.ok ? updateWatchItemPush(app, office, true) : false;
+                            paintWatchlist();
                             if (status) status.textContent = result.ok
-                                ? 'Browser notifications enabled for ' + app + '.'
+                                ? (saved ? 'Browser notifications enabled for ' + app + '.'
+                                    : 'Browser notifications enabled, but the setting could not be saved in this browser.')
                                 : (result.error || 'Could not enable notifications.');
                         }).finally(function() { pushBtn.disabled = false; });
                         return;
                     }
                     var removeBtn = e.target && e.target.closest ? e.target.closest('[data-watch-remove]') : null;
                     if (!removeBtn) return;
-                    removeWatchItem(
+                    var removal = removeWatchItem(
                         removeBtn.getAttribute('data-watch-remove'),
                         removeBtn.getAttribute('data-watch-office')
                     );
+                    if (!removal.saved) {
+                        if (status) status.textContent = 'Could not remove this entry from the browser.';
+                        return;
+                    }
                     paintWatchlist();
                     paintWatch();
+                    if (removal.item) {
+                        disableWatchPush(removal.item);
+                        if (status) status.textContent = 'Removed from this browser.';
+                    }
                 };
             }
 
@@ -1680,7 +1827,11 @@
                         return;
                     }
                     if (result === 'limit') {
-                        if (status) { status.textContent = 'You can save up to 10 applications in this browser.'; status.style.color = ''; }
+                        if (status) { status.textContent = 'You can save up to ' + WATCH_LIMIT + ' applications in this browser.'; status.style.color = ''; }
+                        return;
+                    }
+                    if (result === 'save-failed') {
+                        if (status) { status.textContent = 'Could not save this watchlist in this browser.'; status.style.color = 'var(--red)'; }
                         return;
                     }
                     if (status) { status.textContent = 'Saved in this browser.'; status.style.color = 'var(--green)'; }
@@ -1689,6 +1840,106 @@
                     trackConversion('watchlist_added', 'watchlist');
                     paintWatchlist();
                     paintWatch();
+                });
+            }
+
+            function watchBackupStatus(message, isError) {
+                var status = document.getElementById('watch-backup-status');
+                if (!status) return;
+                status.textContent = message;
+                status.style.color = isError ? 'var(--red)' : '';
+            }
+
+            function exportWatchlist() {
+                var items = getWatchlist().map(function(item) {
+                    return { number: item.number, office: item.office, nickname: item.nickname };
+                });
+                var payload = {
+                    version: 1,
+                    exported_at: new Date().toISOString(),
+                    watchlist: items
+                };
+                var blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+                var url = URL.createObjectURL(blob);
+                var link = document.createElement('a');
+                link.href = url;
+                link.download = 'irish-visa-watchlist-' + new Date().toISOString().slice(0, 10) + '.json';
+                document.body.appendChild(link);
+                link.click();
+                link.remove();
+                setTimeout(function() { URL.revokeObjectURL(url); }, 0);
+                watchBackupStatus('Export started.', false);
+            }
+
+            function importWatchlistText(text) {
+                var parsed;
+                try {
+                    parsed = JSON.parse(text);
+                } catch (e) {
+                    watchBackupStatus('That file is not valid JSON.', true);
+                    return;
+                }
+                var raw = Array.isArray(parsed) ? parsed :
+                    (parsed && Array.isArray(parsed.watchlist) ? parsed.watchlist : null);
+                if (!raw) {
+                    watchBackupStatus('That file does not contain a watchlist.', true);
+                    return;
+                }
+                var clean = cleanWatchlist(raw);
+                if (!clean.length) {
+                    watchBackupStatus('That file does not contain a valid watchlist.', true);
+                    return;
+                }
+                var old = getWatchlist();
+                var oldPush = {};
+                old.forEach(function(item) { oldPush[item.office + '|' + item.number] = item.push; });
+                clean.forEach(function(item) {
+                    if (oldPush[item.office + '|' + item.number]) item.push = true;
+                });
+                if (old.length && !window.confirm('Replace this browser\'s watchlist with the imported file?')) {
+                    watchBackupStatus('Import cancelled.', false);
+                    return;
+                }
+                if (!saveWatchlist(clean)) {
+                    watchBackupStatus('Could not save this watchlist in this browser.', true);
+                    return;
+                }
+                var kept = {};
+                clean.forEach(function(item) { kept[item.office + '|' + item.number] = 1; });
+                old.forEach(function(item) {
+                    if (!kept[item.office + '|' + item.number]) disableWatchPush(item);
+                });
+                paintWatchlist();
+                paintWatch();
+                watchBackupStatus('Imported ' + clean.length + ' application' +
+                    (clean.length === 1 ? '' : 's') +
+                    (raw.length > clean.length ? '. Only valid entries within the ' + WATCH_LIMIT + '-item limit were kept.' : '.'), false);
+            }
+
+            function wireWatchBackup() {
+                var exportBtn = document.getElementById('watch-export-btn');
+                if (exportBtn && exportBtn.dataset.wired !== '1') {
+                    exportBtn.dataset.wired = '1';
+                    exportBtn.addEventListener('click', exportWatchlist);
+                }
+                var importBtn = document.getElementById('watch-import-btn');
+                var input = document.getElementById('watch-import-input');
+                if (!importBtn || !input || importBtn.dataset.wired === '1') return;
+                importBtn.dataset.wired = '1';
+                importBtn.addEventListener('click', function() { input.click(); });
+                input.addEventListener('change', function() {
+                    var file = input.files && input.files[0];
+                    if (!file) return;
+                    var reader = new FileReader();
+                    reader.onload = function() {
+                        importWatchlistText(String(reader.result || ''));
+                        input.value = '';
+                    };
+                    reader.onerror = function() {
+                        watchBackupStatus('Could not read that file.', true);
+                        input.value = '';
+                    };
+                    reader.readAsText(file);
                 });
             }
 
@@ -1745,7 +1996,7 @@
                     renderCohortAnalysis(rows) +
                     renderAnomalyAlerts(rows) +
                     '<div class="searchbar">' + searchIcon() +
-                    '<input type="text" id="home-search" name="q" list="home-suggestions" autocomplete="off" maxlength="200" aria-label="Search by application number" placeholder="Search by application number\u2026" value="' +
+                    '<input type="text" id="home-search" name="q" list="home-suggestions" autocomplete="off" maxlength="200" aria-label="Search by application number" placeholder="Application number" value="' +
                     escapeHtml(homeSearchTerm) + '"></div>' +
                     '<datalist id="home-suggestions"></datalist>' +
                     '<div class="toolbar-row">' +
@@ -1767,7 +2018,7 @@
                     '</div>' +
                     '<div id="community-box"></div>' +
                     '<div class="note" id="home-results-count" aria-live="polite" style="margin-bottom:8px;margin-top:0;"></div>' +
-                    '<div class="table-wrap"><table class="results-table"><thead><tr><th>Date</th><th>Application No.</th><th>Decision</th></tr></thead>' +
+                    '<div class="table-wrap"><table class="results-table home-results-table"><thead><tr><th>Date</th><th>Application No.</th><th>Decision</th></tr></thead>' +
                     '<tbody id="home-rows"></tbody></table></div>';
             }
 
@@ -1842,6 +2093,7 @@
             // removable chips for saved ones, and a heads-up banner the moment
             // a watched number appears in the data.
             var _watchMemo = { rows: null, list: '', hits: [] };
+            var watchNotice = '';
             function paintWatch() {
                 var box = document.getElementById('watch-area');
                 if (!box) return;
@@ -1858,13 +2110,19 @@
                     _watchMemo = { rows: rows, list: key, hits: hits };
                 }
                 var html = '';
+                if (watchNotice) {
+                    html += '<div class="note2" role="status" style="margin:6px 0;">' +
+                        escapeHtml(watchNotice) + '</div>';
+                }
                 hits.forEach(function(h) {
                     html += '<div class="status-line pub-live" role="status">Heads up: <strong>' +
                         escapeHtml(h.term) + '</strong> was ' + escapeHtml(h.row.decision || '-') +
                         ' on ' + escapeHtml(h.row.date) + '.</div>';
                 });
                 var term = normalizeIRL(homeSearchTerm);
-                if (term && !list.some(function(item) { return item.number === term; })) {
+                if (term && !list.some(function(item) {
+                    return item.number === term && item.office === 'new-delhi';
+                })) {
                     html += '<div style="margin:8px 0;"><button type="button" class="export-btn" data-watch-add="' +
                         escapeHtml(term) + '" title="Get notified here when this number appears">Watch ' +
                         escapeHtml(homeSearchTerm.trim()) + '</button></div>';
@@ -1875,7 +2133,8 @@
                             var hit = hits.some(function(h) {
                                 return h.item.number === item.number && h.item.office === item.office;
                             });
-                            var label = item.number + (item.office === 'new-delhi' ? '' : ' \u00b7 ' + item.office);
+                            var label = item.number + (item.office === 'new-delhi' ? '' :
+                                ' \u00b7 ' + (WATCH_OFFICE_NAMES[item.office] || item.office));
                             return '<button type="button" class="recent-chip" data-watch-del="' + escapeHtml(item.number) +
                                 '" data-watch-office="' + escapeHtml(item.office) +
                                 '" title="Stop watching ' + escapeHtml(label) + '">' + escapeHtml(label) +
@@ -1885,41 +2144,6 @@
                 box.innerHTML = html;
             }
 
-
-            // ====== USER-CONTRIBUTED TIMELINES UI ======
-            function renderCommunityTimelinesUI() {
-                return '<div class="community-timelines">' +
-                    '<h3>Community Timelines</h3>' +
-                    '<p class="note2">Share your visa timeline to help others. Data is published anonymously in aggregate.</p>' +
-                    '<form id="timeline-form" class="timeline-form" novalidate>' +
-                    '<input type="hidden" name="tracker" value="visa" />' +
-                    '<div class="timeline-row">' +
-                    '<div class="timeline-field"><label>Visa Type</label>' +
-                    '<select name="visa_type" required>' +
-                    '<option value="">Select...</option>' +
-                    '<option value="study">Study</option>' +
-                    '<option value="work">Work</option>' +
-                    '<option value="visit">Visit</option>' +
-                    '<option value="family">Family</option>' +
-                    '<option value="transit">Transit</option>' +
-                    '<option value="research">Research</option>' +
-                    '</select></div>' +
-                    '<div class="timeline-field"><label>Applied On</label>' +
-                    '<input type="date" name="applied" required data-calendar></div>' +
-                    '<div class="timeline-field"><label>Decided On</label>' +
-                    '<input type="date" name="decided" required data-calendar></div>' +
-                    '<div class="timeline-field"><label>Outcome</label>' +
-                    '<select name="outcome" required>' +
-                    '<option value="granted">Granted</option>' +
-                    '<option value="refused">Refused</option>' +
-                    '</select></div>' +
-                    '</div>' +
-                    '<button class="btn" type="submit">Share Timeline</button>' +
-                    '<div class="note" id="timeline-status" aria-live="polite"></div>' +
-                    '</form>' +
-                    '<div id="community-stats" class="community-stats"></div>' +
-                    '</div>';
-            }
 
             // Community-reported waits panel (item 6). Filled once per layout
             // render (guarded by dataset.done); the JSON is cached after first
@@ -2292,7 +2516,7 @@
                     '</div>' +
                     '</div>' +
                     '<div class="note" id="past-results-count" aria-live="polite" style="margin-bottom:8px;margin-top:0;"></div>' +
-                    '<div class="table-wrap"><table class="results-table"><thead><tr><th>Date</th><th>Application No.</th><th>Decision</th></tr></thead>' +
+                    '<div class="table-wrap"><table class="results-table past-results-table"><thead><tr><th>Date</th><th>Application No.</th><th>Decision</th></tr></thead>' +
                     '<tbody id="past-rows"></tbody></table></div>' +
                     '<button class="scroll-top-btn" id="scroll-top-btn" title="Scroll to top" aria-label="Scroll to top">\u2191</button>';
             }
@@ -2368,12 +2592,9 @@
                             '</form>' +
                         '</div>' +
                         '<div class="form-col" style="max-width:560px;">' +
-                            '<form class="card" id="alert-form" name="alert-subscribe" novalidate style="max-width:100%;">' +
+                            '<form class="card" id="alert-form" name="telegram-alerts" novalidate style="max-width:100%;">' +
                                 ALERT_FORM_HTML +
                             '</form>' +
-                        '</div>' +
-                        '<div class="form-col" style="max-width:560px;">' +
-                            renderCommunityTimelinesUI() +
                         '</div>' +
                     '</div>';
             }
@@ -2405,7 +2626,7 @@
                 
                 let html = '<h3>Weekly Cohort Analysis</h3>';
                 html += '<p class="note2">Each row = applications received that week. Columns = % decided within N weeks.</p>';
-                html += '<div class="cohort-table"><table class="results-table"><thead>' +
+                html += '<div class="table-wrap cohort-table"><table class="results-table"><thead>' +
                     '<tr><th>Application Week</th><th>Total Apps</th><th>Decided</th><th>Approval Rate</th></tr></thead><tbody>';
                 
                 weeks.forEach(w => {
@@ -2527,7 +2748,7 @@
                 if (!Object.keys(byType).length) return '';
                 
                 let html = '<h3>Decisions by Visa Type</h3>';
-                html += '<div class="visa-type-breakdown"><table class="results-table"><thead>' +
+                html += '<div class="table-wrap visa-type-breakdown"><table class="results-table"><thead>' +
                     '<tr><th>Visa Type</th><th>Total</th><th>Approved</th><th>Refused</th><th>Other</th><th>Approval Rate</th></tr></thead><tbody>';
                 
                 Object.keys(byType).sort().forEach(type => {
@@ -2986,11 +3207,8 @@
                 '<div class="note" id="time-status-1g" aria-live="polite"></div>';
 
             const ALERT_FORM_HTML =
-                '<input type="hidden" name="form-name" value="alert-subscribe" />' +
-                '<h3 class="readme-title" style="margin-top:0;">Get Decision Alerts</h3>' +
-                '<p class="note2">Enter your email and application number. We will email you the moment a decision is published.</p>' +
-                '<input type="hidden" name="bot-field" autocomplete="off" tabindex="-1" />' +
-                '<p><label>Email <input type="email" name="email" required placeholder="you@example.com" /></label></p>' +
+                '<h3 class="readme-title" style="margin-top:0;">Get Decision Alerts on Telegram</h3>' +
+                '<p class="note2">Enter your application number and visa office. We will message you on Telegram when a decision is published. No email address is collected.</p>' +
                 '<p><label>Application Number <input type="text" name="application_number" required placeholder="12345678" pattern="\\d{8}" /></label></p>' +
                 '<p><label>Visa Office <select name="embassy" required>' +
                     '<option value="new-delhi">🇮🇳 New Delhi (India, Bangladesh, Nepal, Sri Lanka)</option>' +
@@ -3000,8 +3218,7 @@
                     '<option value="abuja">🇳🇬 Abuja (Nigeria, Ghana, Côte d\'Ivoire, Senegal)</option>' +
                     '<option value="ankara">🇹🇷 Ankara (Türkiye, Azerbaijan, Saudi Arabia residents)</option>' +
                 '</select></label></p>' +
-                '<button class="btn" type="submit" id="alert-submit">Enable Alerts</button>' +
-                '<button class="btn" type="button" id="telegram-alert-btn" style="margin-top:8px;background:#229ED9;border-color:#229ED9;color:#fff;">Get alerts on Telegram</button>' +
+                '<button class="btn" type="submit" id="telegram-alert-btn" style="background:#229ED9;border-color:#229ED9;color:#fff;">Get alerts on Telegram</button>' +
                 '<p class="note2" style="margin-top:6px;">Free and no email needed. Opens the Telegram bot with your application ready to link.</p>' +
                 '<div class="note" id="alert-status" aria-live="polite"></div>';
 
@@ -3073,55 +3290,42 @@
                 }
             }
 
-            async function submitAlert() {
+            async function startTelegramAlerts() {
                 const form = document.getElementById('alert-form');
-                if (!form) return;
                 const statusEl = document.getElementById('alert-status');
-                const btn = document.getElementById('alert-submit');
-                const emailEl = form.querySelector('input[name="email"]');
+                const btn = document.getElementById('telegram-alert-btn');
+                if (!form || !statusEl || !btn) return;
                 const appNumEl = form.querySelector('input[name="application_number"]');
                 const embassyEl = form.querySelector('select[name="embassy"]');
+                const applicationNumber = (appNumEl && appNumEl.value ? appNumEl.value : '').trim();
+                const embassy = embassyEl && embassyEl.value ? embassyEl.value : '';
 
-                const email = emailEl.value.trim().toLowerCase();
-                const applicationNumber = appNumEl.value.trim();
-                const embassy = embassyEl.value;
-
-                if (!email.includes('@')) {
-                    statusEl.textContent = 'Please enter a valid email address.';
-                    statusEl.style.color = 'var(--red)';
-                    emailEl.focus();
-                    return;
-                }
                 if (!/^\d{8}$/.test(applicationNumber)) {
                     statusEl.textContent = 'Please enter a valid 8-digit application number.';
                     statusEl.style.color = 'var(--red)';
-                    appNumEl.focus();
+                    if (appNumEl) appNumEl.focus();
                     return;
                 }
 
                 btn.disabled = true;
-                statusEl.textContent = 'Subscribing…';
+                statusEl.textContent = 'Opening Telegram…';
                 statusEl.style.color = 'var(--ink)';
 
                 try {
-                    const fd = new FormData();
-                    fd.append('form-name', 'alert-subscribe');
-                    fd.append('email', email);
-                    fd.append('application_number', applicationNumber);
-                    fd.append('embassy', embassy);
-                    fd.append('bot-field', '');
-
-                    const res = await fetch('/api/subscribe', { method: 'POST', body: fd });
-                    const data = await res.json();
-
-                    if (res.ok) {
-                        statusEl.textContent = '✅ Verification email sent! Check your inbox.';
-                        statusEl.style.color = 'var(--green)';
+                    const res = await fetch('/api/telegram/start', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ application_number: applicationNumber, embassy: embassy })
+                    });
+                    const data = await res.json().catch(function() { return {}; });
+                    if (res.ok && data.url) {
+                        window.open(data.url, '_blank', 'noopener');
                         markActivation('alerts');
-                        trackConversion('alert_email_submitted', 'suggestions');
-                        form.reset();
+                        trackConversion('alert_telegram_opened', 'suggestions');
+                        statusEl.textContent = 'Press Start in Telegram to finish linking ' + applicationNumber + '.';
+                        statusEl.style.color = 'var(--green)';
                     } else {
-                        statusEl.textContent = '❌ ' + (data.error || 'Failed to subscribe');
+                        statusEl.textContent = '❌ ' + (data.error || 'Telegram alerts are not available yet.');
                         statusEl.style.color = 'var(--red)';
                     }
                 } catch (err) {
@@ -3422,45 +3626,51 @@
                 var number = '';
                 var office = 'new-delhi';
                 var nickname = '';
+                var push = false;
+                var explicitOffice = false;
                 if (typeof value === 'string') {
                     number = normalizeIRL(value);
                 } else if (value && typeof value === 'object') {
                     number = normalizeIRL(value.number || value.application_number || '');
-                    office = String(value.office || value.embassy_slug || 'new-delhi');
+                    explicitOffice = Boolean(value.office || value.embassy_slug);
+                    office = String(value.office || value.embassy_slug || 'new-delhi').trim().toLowerCase();
                     nickname = String(value.nickname || '').slice(0, 60);
+                    push = value.push === true;
                 }
                 if (!number) return null;
-                if (['new-delhi', 'beijing', 'dublin', 'abu-dhabi', 'abuja', 'ankara'].indexOf(office) === -1) {
+                if (WATCH_OFFICES.indexOf(office) === -1) {
+                    if (explicitOffice) return null;
                     office = 'new-delhi';
                 }
-                return { number: number, office: office, nickname: nickname };
+                return { number: number, office: office, nickname: nickname, push: push };
+            }
+            function cleanWatchlist(values) {
+                var seen = {};
+                var clean = [];
+                (values || []).forEach(function(value) {
+                    var item = normalizeWatchItem(value);
+                    if (!item) return;
+                    var key = item.office + '|' + item.number;
+                    if (seen[key]) return;
+                    seen[key] = 1;
+                    clean.push(item);
+                });
+                return clean.slice(0, WATCH_LIMIT);
             }
             function getWatchlist() {
                 try {
                     var raw = JSON.parse(localStorage.getItem('visa-watchlist') || '[]');
-                    if (!Array.isArray(raw)) return [];
-                    var seen = {};
-                    return raw.map(normalizeWatchItem).filter(function(item) {
-                        if (!item) return false;
-                        var key = item.office + '|' + item.number;
-                        if (seen[key]) return false;
-                        seen[key] = 1;
-                        return true;
-                    }).slice(0, 10);
+                    return Array.isArray(raw) ? cleanWatchlist(raw) : [];
                 } catch (e) { return []; }
             }
             function saveWatchlist(list) {
                 try {
-                    var seen = {};
-                    var clean = (list || []).map(normalizeWatchItem).filter(function(item) {
-                        if (!item) return false;
-                        var key = item.office + '|' + item.number;
-                        if (seen[key]) return false;
-                        seen[key] = 1;
-                        return true;
-                    }).slice(0, 10);
-                    localStorage.setItem('visa-watchlist', JSON.stringify(clean));
-                } catch (e) { /* private mode */ }
+                    localStorage.setItem('visa-watchlist', JSON.stringify(cleanWatchlist(list)));
+                    return true;
+                } catch (e) {
+                    console.warn('watchlist storage failed:', e);
+                    return false;
+                }
             }
             function addWatchItem(value) {
                 var item = normalizeWatchItem(value);
@@ -3469,23 +3679,55 @@
                 if (list.some(function(saved) {
                     return saved.number === item.number && saved.office === item.office;
                 })) return 'duplicate';
-                if (list.length >= 10) return 'limit';
+                if (list.length >= WATCH_LIMIT) return 'limit';
                 list.unshift(item);
-                saveWatchlist(list);
-                return 'added';
+                return saveWatchlist(list) ? 'added' : 'save-failed';
             }
             function removeWatchItem(number, office) {
                 var target = normalizeWatchItem({ number: number, office: office });
-                if (!target) return;
-                saveWatchlist(getWatchlist().filter(function(item) {
-                    return !(item.number === target.number && item.office === target.office);
-                }));
+                if (!target) return { item: null, saved: true };
+                var removed = null;
+                var next = getWatchlist().filter(function(item) {
+                    if (item.number === target.number && item.office === target.office) {
+                        removed = item;
+                        return false;
+                    }
+                    return true;
+                });
+                if (!removed) return { item: null, saved: true };
+                return { item: removed, saved: saveWatchlist(next) };
+            }
+            function updateWatchItemPush(number, office, enabled) {
+                var found = false;
+                var list = getWatchlist();
+                list.forEach(function(item) {
+                    if (item.number === number && item.office === office) {
+                        item.push = !!enabled;
+                        found = true;
+                    }
+                });
+                return found && saveWatchlist(list);
+            }
+            function disableWatchPush(item) {
+                if (!item || typeof window.disablePushNotifications !== 'function') return;
+                window.disablePushNotifications(item.number, item.office).then(function(result) {
+                    if (result.ok) return;
+                    var status = document.getElementById('watch-local-status');
+                    if (status) status.textContent = 'Removed locally; browser alerts could not be updated.';
+                }).catch(function() { /* local removal already succeeded */ });
+            }
+            function migrateWatchlist() {
+                try {
+                    var raw = JSON.parse(localStorage.getItem('visa-watchlist') || '[]');
+                    if (!Array.isArray(raw) || !raw.some(function(value) { return typeof value === 'string'; })) return;
+                    saveWatchlist(raw);
+                } catch (e) { /* corrupt storage is ignored until the next write */ }
             }
             // Rows from visa_decisions.json are the New Delhi tracker and omit
             // `embassy`; a missing office means New Delhi, never a wildcard.
             function watchRowMatches(row, item) {
                 return !!row && !!item && !row._placeholder &&
-                    normalizeIRL(row.irl).indexOf(item.number) !== -1 &&
+                    normalizeIRL(row.irl) === item.number &&
                     (row.embassy || 'new-delhi') === item.office;
             }
             function checkWatchlist(rows, list) {
@@ -4586,7 +4828,7 @@ async function renderLandingPage() {
                     '<div class="landing-status" id="landing-status" aria-live="polite"><span class="note2">Checking today\u2019s updates\u2026</span></div>' +
                     '<form class="landing-search" id="landing-search" role="search">' +
                     '<div class="searchbar">' + searchIcon() +
-                    '<input type="text" id="landing-q" name="q" autocomplete="off" maxlength="200" aria-label="Search by application number" placeholder="Enter your application number\u2026"></div>' +
+                    '<input type="text" id="landing-q" name="q" autocomplete="off" maxlength="200" aria-label="Search by application number" placeholder="Application number"></div>' +
                     '<button class="btn" type="submit">Track</button></form>' +
                     '<div class="tracker-grid">' +
                     trackerCardHTML('visa', 'plane', 'Embassy Visa Decisions',
@@ -4599,10 +4841,9 @@ async function renderLandingPage() {
                     // Activation CTA visible before the visitor opens a tracker.
                     '<div class="landing-alert-cta" role="region" aria-label="Decision alerts">' +
                     '<div><p class="activation-kicker">Never miss a decision</p>' +
-                    '<strong>Get your decision by email or Telegram</strong>' +
-                    '<span>Free, one message when your application appears. Email uses double opt-in.</span></div>' +
+                    '<strong>Get decision alerts on Telegram</strong>' +
+                    '<span>Free, one message when your application appears. No email address needed.</span></div>' +
                     '<div class="landing-alert-actions">' +
-                    '<a class="btn" href="/?tracker=visa&amp;tab=suggest">Email alerts</a>' +
                     '<a class="btn activation-telegram" href="/?tracker=visa&amp;tab=suggest">Telegram alerts</a>' +
                     '</div></div>' +
                     // New: Stats Bar
@@ -4796,6 +5037,11 @@ async function renderLandingPage() {
                     } else if (activeTab === 'past') {
                         tabBody.innerHTML = renderPastLayout(rows);
                         paintPastRows();
+                    } else if (activeTab === 'watchlist') {
+                        tabBody.innerHTML = renderWatchlistLayout(rows);
+                        wireWatchAdd();
+                        wireWatchBackup();
+                        paintWatchlist();
                     } else {
                         tabBody.innerHTML = renderSuggestLayout();
                     }
@@ -4830,5 +5076,11 @@ async function renderLandingPage() {
                 switchTab(activeTab, { noUrl: true });
             });
 
+            migrateWatchlist();
+            window.addEventListener('storage', function(e) {
+                if (e.key !== 'visa-watchlist') return;
+                paintWatchlist();
+                paintWatch();
+            });
             render();
         })();

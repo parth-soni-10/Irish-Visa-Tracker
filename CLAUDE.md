@@ -2,9 +2,9 @@
 
 ## Architecture
 
-- Frontend: one self-contained SPA in `index.html`, plus `workspace.html`,
-  `status.html`, `monthly-report.html` and the trust pages. Shared styling lives
-  in `pages.css`, `site-chrome.css` and `workspace.css`.
+- Frontend: one self-contained SPA in `index.html`, plus `status.html`,
+  `monthly-report.html` and the trust pages. Shared styling lives in
+  `pages.css` and `site-chrome.css`.
 - Hosting: Cloudflare Pages project `irishvisaupdatetracker`.
 - Server: `functions/[[path]].js` catches every request and delegates to
   `functions/_router.js`. The Pages app has no separate Worker.
@@ -18,7 +18,7 @@
   deployment’s `/api/email/send` bridge authenticates that call and uses the
   server-side Resend key. Never expose mail credentials to the browser.
 - Scheduled work: GitHub Actions, because Pages Functions do not support cron
-  triggers. Alert, digest and export endpoints require `X-Cron-Secret`.
+  triggers. Alert and digest endpoints require `X-Cron-Secret`.
 
 ## Data model
 
@@ -49,8 +49,8 @@ node --test tests/*.test.mjs
 
 See `docs/services.md` and `docs/monitoring.md` for variable names, current
 status and the safe secret procedure. Do not invent provider credentials.
-Email, push and Telegram are the supported delivery channels; SMS/WhatsApp are
-not part of the product. `ALERT_WEBHOOK_URL` is the optional shared monitoring
+Telegram and push are the supported alert channels; email is used only for the
+monthly report digest. SMS/WhatsApp are not part of the product. `ALERT_WEBHOOK_URL` is the optional shared monitoring
 alert destination.
 
 ## Workflows
@@ -59,7 +59,6 @@ alert destination.
 - `test.yml`: Python, Node, accessibility and Chromium E2E checks.
 - `alerts.yml`: hourly decision-alert safety net.
 - `digest.yml`: monthly digest.
-- `exports.yml`: due scheduled exports.
 - `ml-retrain.yml`: monthly XGBoost retraining, then regenerates
   `functions/api/model-trees.js` and commits the artifacts.
 - `timelines.yml`, `track_1g.yml`, `track_permits.yml`: community and queue data.

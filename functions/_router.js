@@ -41,20 +41,15 @@ const TIMELINE_FORMS = ["timelines-visa", "timelines-1g", "timelines"];
 // a visitor's name and free text.
 const SUBMISSIONS_PATH = "/api/community-submissions";
 const MAX_TIMELINE_ROWS = 5000;
-const SUBSCRIBE_PATHS = new Set(["/api/subscribe", "/api/verify", "/api/unsubscribe"]);
 const PUSH_PATHS = new Set(["/api/push/subscribe", "/api/push/unsubscribe"]);
 const TELEGRAM_PATHS = new Set(["/api/telegram/start", "/api/telegram/webhook"]);
-const USER_PUSH_PATHS = new Set(["/api/user/push/subscribe", "/api/user/push/unsubscribe", "/api/user/push/key", "/api/user/push/test"]);
-const AUTH_PATHS = new Set(["/api/auth/register", "/api/auth/login", "/api/auth/logout", "/api/auth/me", "/api/auth/profile", "/api/auth/password", "/api/auth/delete"]);
 const ADMIN_PATHS = new Set(["/api/admin/health", "/api/admin/quality", "/api/admin/metrics", "/api/admin/errors", "/api/admin/trigger", "/api/admin/tokens"]);
-const USER_PATHS = new Set(["/api/user/profile", "/api/user/watchlist", "/api/user/alerts", "/api/user/export", "/api/user/notifications", "/api/user/notifications/read"]);
-const USER_PREFIXES = ["/api/user/watchlist/"];
 const PREDICT_PATH = "/api/predict";
 const CHECKLIST_PATH = "/api/checklist";
 const VFS_APPOINTMENTS_PATH = "/api/vfs/appointments";
 const SEARCH_PATH = "/api/search";
 const ALERTS_PATH = "/api/alerts/run";
-const EXPORT_RUN_PATH = "/api/exports/run";
+
 const CONFIG_PATH = "/api/config";
 const EVENTS_PATH = "/api/events";
 const EMAIL_WEBHOOK_PATH = "/api/email/send";
@@ -273,8 +268,7 @@ async function handleRequest(request, env) {
       vapid_public_key: env.VAPID_PUBLIC_KEY || '',
       brand_name: env.BRAND_NAME || 'Irish Visa Decision Tracker',
       brand_color: env.BRAND_COLOR || '#047857',
-      support_email: env.SUPPORT_EMAIL || '',
-      workspace: true
+      support_email: env.SUPPORT_EMAIL || ''
     });
   }
 
@@ -333,49 +327,6 @@ async function handleRequest(request, env) {
     return handleAlertsRun(request, env);
   }
 
-  // Scheduled private exports. The token is scoped to one account and is
-  // accepted only by the download route; this is not a public API.
-  if (pathname === EXPORT_RUN_PATH) {
-    const { handleExportRun } = await import('./export-service.js');
-    return handleExportRun(request, env);
-  }
-
-  // Product workspace: private profile, analytics, exports, assistant,
-  // community, referrals and organizations.
-  if (pathname.startsWith('/api/portal/')) {
-    const { handlePortal } = await import('./portal-api.js');
-    return handlePortal(request, env);
-  }
-
-  // Auth routes (register, login, logout, me, profile, password, delete)
-  if (AUTH_PATHS.has(pathname)) {
-    const { handleRegister, handleLogin, handleLogout, handleMe,
-            handleUpdateProfile, handleChangePassword, handleDeleteAccount } = await import("./user-api.js");
-    
-    if (pathname === '/api/auth/register' && request.method === 'POST') {
-      return handleRegister(request, env);
-    }
-    if (pathname === '/api/auth/login' && request.method === 'POST') {
-      return handleLogin(request, env);
-    }
-    if (pathname === '/api/auth/logout' && (request.method === 'POST' || request.method === 'GET')) {
-      return handleLogout(request, env);
-    }
-    if (pathname === '/api/auth/me' && (request.method === 'GET' || request.method === 'HEAD')) {
-      return handleMe(request, env);
-    }
-    if (pathname === '/api/auth/profile' && (request.method === 'PUT' || request.method === 'PATCH')) {
-      return handleUpdateProfile(request, env);
-    }
-    if (pathname === '/api/auth/password' && request.method === 'PUT') {
-      return handleChangePassword(request, env);
-    }
-    if (pathname === '/api/auth/delete' && request.method === 'DELETE') {
-      return handleDeleteAccount(request, env);
-    }
-    return new Response("Method not allowed", { status: 405 });
-  }
-
   // Prediction route (ML timeline predictor)
   if (pathname === PREDICT_PATH) {
     const { onRequest } = await import("./api/predict.js");
@@ -427,64 +378,6 @@ async function handleRequest(request, env) {
     return new Response("Method not allowed", { status: 405 });
   }
 
-  // User routes
-  if (USER_PATHS.has(pathname) || USER_PUSH_PATHS.has(pathname) ||
-      USER_PREFIXES.some((prefix) => pathname.startsWith(prefix))) {
-    const { handleMe, handleUpdateProfile: handleUserUpdateProfile,
-            handleGetWatchlist, handleAddToWatchlist, handleRemoveFromWatchlist,
-            handleUpdateWatchlist, handleBulkAddToWatchlist, handleExportAccountData, handleGetAlerts, handlePushSubscribe,
-            handlePushUnsubscribe, handlePushKey, handlePushTest } = await import("./user-api.js");
-
-    if (pathname === '/api/user/profile' && request.method === 'GET') {
-      return handleMe(request, env);
-    }
-    if (pathname === '/api/user/profile' && (request.method === 'PUT' || request.method === 'PATCH')) {
-      return handleUserUpdateProfile(request, env);
-    }
-    if (pathname === '/api/user/watchlist' && request.method === 'GET') {
-      return handleGetWatchlist(request, env);
-    }
-    if (pathname === '/api/user/watchlist/bulk' && request.method === 'POST') {
-      return handleBulkAddToWatchlist(request, env);
-    }
-    if (pathname === '/api/user/export' && request.method === 'GET') {
-      return handleExportAccountData(request, env);
-    }
-    if (pathname === '/api/user/watchlist' && request.method === 'POST') {
-      return handleAddToWatchlist(request, env);
-    }
-    if (pathname.startsWith('/api/user/watchlist/') && request.method === 'DELETE') {
-      return handleRemoveFromWatchlist(request, env);
-    }
-    if (pathname.startsWith('/api/user/watchlist/') && (request.method === 'PUT' || request.method === 'PATCH')) {
-      return handleUpdateWatchlist(request, env);
-    }
-    if (pathname === '/api/user/alerts' && request.method === 'GET') {
-      return handleGetAlerts(request, env);
-    }
-    if (pathname === '/api/user/notifications' && request.method === 'GET') {
-      const { handleListNotifications } = await import('./notifications.js');
-      return handleListNotifications(request, env);
-    }
-    if (pathname === '/api/user/notifications/read' && request.method === 'POST') {
-      const { handleMarkNotificationsRead } = await import('./notifications.js');
-      return handleMarkNotificationsRead(request, env);
-    }
-    if (pathname === '/api/user/push/key' && request.method === 'GET') {
-      return handlePushKey(request, env);
-    }
-    if (pathname === '/api/user/push/test' && request.method === 'POST') {
-      return handlePushTest(request, env);
-    }
-    if (pathname === '/api/user/push/subscribe' && request.method === 'POST') {
-      return handlePushSubscribe(request, env);
-    }
-    if (pathname === '/api/user/push/unsubscribe' && (request.method === 'DELETE' || request.method === 'POST')) {
-      return handlePushUnsubscribe(request, env);
-    }
-    return new Response("Method not allowed", { status: 405 });
-  }
-
   if (REPORT_PATHS.has(pathname)) {
     const { handleReports } = await import("./reports.js");
     return handleReports(request, env);
@@ -530,8 +423,7 @@ async function handleRequest(request, env) {
   }
 
   // API routes are handled explicitly above. Only the legacy HTML form posts
-  // should reach the generic form handler below; without this guard it also
-  // swallowed POST /api/subscribe with a 415 before the email routes ran.
+  // should reach the generic form handler below.
   if (request.method === "POST" && !pathname.startsWith("/api/")) {
     const contentType = request.headers.get("Content-Type") || "";
     if (!contentType.includes("application/x-www-form-urlencoded")) {
@@ -577,23 +469,6 @@ async function handleRequest(request, env) {
     }
 
     return ack(request);
-  }
-
-  // Email subscription routes
-  if (SUBSCRIBE_PATHS.has(pathname)) {
-    if (pathname === "/api/subscribe" && request.method === "POST") {
-      const { handleSubscribe } = await import("./email4.js");
-      return handleSubscribe(request, env);
-    }
-    if (pathname === "/api/verify" && (request.method === "GET" || request.method === "HEAD")) {
-      const { handleVerify } = await import("./email4.js");
-      return handleVerify(request, env);
-    }
-    if (pathname === "/api/unsubscribe" && (request.method === "GET" || request.method === "HEAD")) {
-      const { handleUnsubscribe } = await import("./email4.js");
-      return handleUnsubscribe(request, env);
-    }
-    return new Response("Method not allowed", { status: 405 });
   }
 
   // Admin routes

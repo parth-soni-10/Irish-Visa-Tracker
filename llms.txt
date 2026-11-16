@@ -49,7 +49,7 @@ live tables and filters need a browser.
 
 Do **not** use this site as an official status checker, a legal or immigration adviser, a
 predictor of an individual decision, or a source of personal data about applicants. It has no
-account lookup, no authentication and no private case data.
+accounts, no authentication and no private case data.
 
 ## Data endpoints
 
@@ -71,15 +71,14 @@ All are public, read-only and same-origin:
 - `GET /api/community-submissions` - `{ "submissions": [ { "form", "fields", "created_at" } ] }`
   for the two timeline forms only. It never returns the private `suggestions` form.
 
-### Accounts and private workspace
+### Watchlists and alerts
 
-The public developer API has been retired. Signed-in users can open `/workspace` for private
-profile preferences, notification channels, deeper analytics, scheduled CSV/JSON exports, fee and
-document tools, community answers, referrals and organization branding. Private export tokens are
-scoped to one account and are accepted only by that account's export download. There is no
-account-lookup endpoint, and the site never exposes private case data. To answer "what happened to
-application X", use the published decision files or the tracker search; a published row is a
-convenience layer over the official source, not an official confirmation.
+There are no accounts, sign-in screens or private workspaces, and no public developer API. A
+watchlist is a `visa-watchlist` entry in the visitor's own browser, not a server-side account. Email,
+Telegram and browser-push alerts are anonymous, per-application subscriptions. The site never
+exposes private case data. To answer "what happened to application X", use the published decision
+files or the tracker search; a published row is a convenience layer over the official source, not
+an official confirmation.
 
 ## Pages
 

@@ -43,7 +43,6 @@ const assetsToCopy = [
   'terms.html',
   'refund.html',
   'admin.html',
-  'workspace.html',
   'monthly-report.html',
 
   'stamp-1g-processing-dates.html',
@@ -83,7 +82,6 @@ const assetsToCopy = [
   'stepper.js',
   'time-undo.js',
   'site-chrome.js',
-  'workspace.js',
   // CSS files
   'analytics-chart.css',
   'dynamic-button.css',
@@ -99,7 +97,6 @@ const assetsToCopy = [
   'time-undo.css',
   'pages.css',
   'site-chrome.css',
-  'workspace.css',
   // Data files
   'data/embassy-abu-dhabi.json',
   'data/embassy-abuja.json',

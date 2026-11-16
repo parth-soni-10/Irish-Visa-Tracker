@@ -144,7 +144,7 @@
 
     <!-- Web Push: the public VAPID key is supplied by /api/config. The
          subscription is created only from a user gesture, then posted to the
-         authenticated per-user endpoint. -->
+         anonymous per-application endpoint. -->
     <script src="/scripts/index-push.js" defer></script>
 
 </head>
@@ -223,43 +223,6 @@
         </p>
       </article>
     </main>
-
-    <div class="modal" id="account-modal" role="dialog" aria-modal="true" aria-labelledby="account-modal-title" hidden>
-      <div class="modal-backdrop" data-close-account></div>
-      <div class="modal-panel">
-        <button type="button" class="modal-close" data-close-account aria-label="Close">&times;</button>
-        <h3 id="account-modal-title">Sign in</h3>
-        <div class="modal-tabs" role="tablist">
-          <button type="button" role="tab" aria-selected="true" aria-controls="account-form-signin" id="account-tab-signin" data-account-tab="signin">Sign in</button>
-          <button type="button" role="tab" aria-selected="false" aria-controls="account-form-register" id="account-tab-register" data-account-tab="register">Create account</button>
-        </div>
-        <form id="account-form-signin" aria-labelledby="account-tab-signin" novalidate>
-          <p><label>Email <input type="email" name="email" required placeholder="you@example.com"></label></p>
-          <p><label>Password <input type="password" name="password" required minlength="8"></label></p>
-          <p class="note" id="account-remember"><label><input type="checkbox" name="remember"> Remember me for 30 days</label></p>
-          <button class="btn" type="submit" id="account-signin-btn">Sign in</button>
-          <p class="note2 account-switch-note">No account? <button type="button" class="link-btn" data-account-tab="register">Create one</button></p>
-          <div class="note" id="account-signin-status" aria-live="polite"></div>
-        </form>
-        <form id="account-form-register" aria-labelledby="account-tab-register" novalidate hidden>
-          <p><label>Name <input type="text" name="name" placeholder="Your name"></label></p>
-          <p><label>Email <input type="email" name="email" required placeholder="you@example.com"></label></p>
-          <p><label>Password <input type="password" name="password" required minlength="8"></label></p>
-          <button class="btn" type="submit" id="account-register-btn">Create account</button>
-          <p class="note2 account-switch-note">Already have an account? <button type="button" class="link-btn" data-account-tab="signin">Sign in</button></p>
-          <div class="note" id="account-register-status" aria-live="polite"></div>
-        </form>
-        <div id="account-tools" hidden>
-          <h4 class="watch-h3">Browser notifications</h4>
-          <p class="note2">Enable notifications per watched application in the Watchlist tab, then send a test from this account.</p>
-          <button type="button" class="btn secondary" id="push-test-btn" data-push-test>Send test notification</button>
-          <div class="note" id="push-test-status" aria-live="polite"></div>
-          <h4 class="watch-h3">Workspace</h4>
-          <p class="note2">Manage private exports, scheduled downloads, notification channels, analytics and community from your workspace. The public developer API has been retired.</p>
-          <a class="btn secondary" href="/workspace#exports">Open workspace exports</a>
-        </div>
-      </div>
-    </div>
 
 <footer class="sitebar-footer">
   <div class="sitebar-footer-inner">

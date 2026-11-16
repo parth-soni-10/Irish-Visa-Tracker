@@ -1,37 +1,15 @@
 /**
  * Advanced Search API
- * Nearest neighbors, fuzzy matching, filters, saved searches
+ * Nearest neighbors, fuzzy matching and filters
  * Fetches data from deployed site's data files
  */
 
 import { ensureSchema } from '../_router.js';
-import { validateSession } from '../auth.js';
 
 // Shared cache for decisions data (module-level, survives across requests)
 let decisionsCache = null;
 let cacheTimestamp = 0;
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
-
-function sessionIdFromCookie(request) {
-  const header = request.headers.get('Cookie') || '';
-  for (const part of header.split(';')) {
-    const [key, ...rest] = part.trim().split('=');
-    if (key !== 'session_id') continue;
-    const value = rest.join('=');
-    return value.includes(':') ? value.slice(value.indexOf(':') + 1) : value;
-  }
-  return null;
-}
-
-async function currentUser(request, env) {
-  const sessionId = sessionIdFromCookie(request);
-  if (!sessionId || !env.DB) return null;
-  try {
-    return await validateSession(env, sessionId);
-  } catch {
-    return null;
-  }
-}
 
 const OFFICE_FILES = [
   'embassy-new-delhi.json',
@@ -204,15 +182,6 @@ export async function onRequestPost(context) {
     const limit = Math.min(100, Math.max(1, Number(body.limit) || 20));
     const offset = Math.max(0, Number(body.offset) || 0);
     const sort = body.sort || 'date_desc';
-    const save_search = body.save_search === true;
-    const search_name = String(body.search_name || '').trim().slice(0, 120);
-    const savedSearchUser = save_search ? await currentUser(request, env) : null;
-    if (save_search && !savedSearchUser) {
-      return new Response(JSON.stringify({ error: 'Sign in to save a search' }), {
-        status: 401,
-        headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }
-      });
-    }
     
     // Load all decisions
     const allDecisions = await loadAllDecisions(request, env);
@@ -257,18 +226,6 @@ export async function onRequestPost(context) {
     // Apply pagination
     const paginated = results.slice(offset, offset + limit);
     
-    // Save search if requested. Saved searches are always private to the
-    // signed-in account; the public search itself remains unauthenticated.
-    let savedSearchId = null;
-    if (save_search) {
-      if (!search_name || !query) {
-        return new Response(JSON.stringify({ error: 'A query and name are required to save a search' }), {
-          status: 400, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }
-        });
-      }
-      savedSearchId = await saveSearch(env.DB, savedSearchUser.id, search_name, { query, mode, filters, sort });
-    }
-    
     return new Response(JSON.stringify({
       success: true,
       results: paginated,
@@ -278,7 +235,6 @@ export async function onRequestPost(context) {
         offset,
         has_more: offset + limit < total
       },
-      saved_search_id: savedSearchId,
       query,
       mode,
       filters,
@@ -428,82 +384,11 @@ function applySorting(results, sort) {
   }
 }
 
-// Save search to database
-async function saveSearch(db, userId, name, searchParams) {
-  const id = crypto.randomUUID();
-  await db.prepare(`
-    INSERT INTO saved_searches (id, user_id, name, params, created_at)
-    VALUES (?, ?, ?, ?, datetime('now'))
-  `).bind(id, userId, name, JSON.stringify(searchParams)).run();
-  return id;
-}
-
-function parseSavedSearch(row) {
-  if (!row) return null;
-  let params = {};
-  try {
-    params = typeof row.params === 'string' ? JSON.parse(row.params) : (row.params || {});
-  } catch {}
-  return {
-    ...row,
-    params,
-    query: params.query || ''
-  };
-}
-
-// GET - Retrieve saved searches
+// GET - Return search capabilities
 export async function onRequestGet(context) {
-  const { request, env } = context;
-  const url = new URL(request.url);
-  
+  const { env } = context;
   try {
     await ensureSchema(env.DB);
-    
-    const action = url.searchParams.get('action');
-    const wantsSaved = action === 'list' || (action === 'get' && url.searchParams.get('id'));
-    const user = wantsSaved ? await currentUser(request, env) : null;
-    if (wantsSaved && !user) {
-      return new Response(JSON.stringify({ error: 'Sign in to access saved searches' }), {
-        status: 401, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }
-      });
-    }
-    
-    if (action === 'list') {
-      const stmt = await env.DB.prepare(`
-        SELECT id, name, params, created_at
-        FROM saved_searches
-        WHERE user_id = ?
-        ORDER BY created_at DESC
-      `).bind(user.id).all();
-      const searches = (stmt.results || []).map(parseSavedSearch);
-      
-      return new Response(JSON.stringify({
-        success: true,
-        searches,
-        saved_searches: searches
-      }), { headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
-    }
-    
-    if (action === 'get' && url.searchParams.get('id')) {
-      const id = url.searchParams.get('id');
-      const stmt = await env.DB.prepare(`
-        SELECT id, name, params, created_at
-        FROM saved_searches
-        WHERE id = ? AND user_id = ?
-      `).bind(id, user.id).first();
-      if (!stmt) {
-        return new Response(JSON.stringify({ error: 'Saved search not found' }), {
-          status: 404, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }
-        });
-      }
-      
-      return new Response(JSON.stringify({
-        success: true,
-        search: parseSavedSearch(stmt)
-      }), { headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
-    }
-    
-    // Return search capabilities
     return new Response(JSON.stringify({
       modes: ['fuzzy', 'nearest', 'filter', 'hybrid'],
       filters: [
@@ -512,12 +397,9 @@ export async function onRequestGet(context) {
       ],
       sort_options: ['date_desc', 'date_asc', 'number_asc', 'number_desc', 'embassy', 'decision'],
       endpoints: {
-        search: 'POST /api/search',
-        saved_searches: 'GET /api/search?action=list',
-        get_saved: 'GET /api/search?action=get&id=<id>'
+        search: 'POST /api/search'
       }
     }), { headers: { 'Content-Type': 'application/json' } });
-    
   } catch (error) {
     return new Response(JSON.stringify({ error: 'Failed to get search info' }), {
       status: 500, headers: { 'Content-Type': 'application/json' }
@@ -525,43 +407,4 @@ export async function onRequestGet(context) {
   }
 }
 
-// DELETE - Delete saved search
-export async function onRequestDelete(context) {
-  const { request, env } = context;
-  const url = new URL(request.url);
-  
-  try {
-    await ensureSchema(env.DB);
-    
-    const id = url.searchParams.get('id');
-    if (!id) {
-      return new Response(JSON.stringify({ error: 'Search ID required' }), {
-        status: 400, headers: { 'Content-Type': 'application/json' }
-      });
-    }
-    const user = await currentUser(request, env);
-    if (!user) {
-      return new Response(JSON.stringify({ error: 'Sign in to delete saved searches' }), {
-        status: 401, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }
-      });
-    }
-    
-    const result = await env.DB.prepare('DELETE FROM saved_searches WHERE id = ? AND user_id = ?').bind(id, user.id).run();
-    if (!result.meta || !result.meta.changes) {
-      return new Response(JSON.stringify({ error: 'Saved search not found' }), {
-        status: 404, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }
-      });
-    }
-    
-    return new Response(JSON.stringify({ success: true }), {
-      headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }
-    });
-    
-  } catch (error) {
-    return new Response(JSON.stringify({ error: 'Failed to delete search' }), {
-      status: 500, headers: { 'Content-Type': 'application/json' }
-    });
-  }
-}
-
-export const onRequest = { POST: onRequestPost, GET: onRequestGet, DELETE: onRequestDelete };
+export const onRequest = { POST: onRequestPost, GET: onRequestGet };

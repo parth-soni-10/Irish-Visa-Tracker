@@ -1,6 +1,6 @@
 # Irish Visa Decision Tracker
 
-A public, unofficial tracker for Irish visa decisions, with a searchable archive, community processing timelines, private watchlists, reports, alerts, and a workspace for applicants.
+A public, unofficial tracker for Irish visa decisions, with a searchable archive, community processing timelines, local watchlists, reports and anonymous alerts.
 
 **Live:** https://irishvisaupdatetracker.pages.dev
 
@@ -17,16 +17,15 @@ The Abuja **31 August–6 September 2026** report, long listed as missing, was r
 ## Product surface
 
 - Application lookup, daily summaries, monthly reports and historical trends.
-- VFS Global appointment-page checks for the India/Ireland VACs. VFS keeps the real booking calendar behind sign-in; the check reports `login_required` or a bot challenge and never invents availability.
+- VFS Global appointment handoff for the India/Ireland VACs. VFS shows the booking calendar only after sign-in; the tracker links to the official portal and never claims availability.
 - PWA install, service worker and offline shell.
-- Accounts, sessions, private watchlists and an in-app notification inbox.
-- A first-run activation path on the New Delhi dashboard: prominent email and
-  Telegram calls to action, a persisted three-step checklist, and privacy-light
+- A browser-local watchlist (no account) plus anonymous Telegram and browser-push alerts.
+- A first-run activation path on the New Delhi dashboard: a prominent Telegram
+  call to action, a persisted three-step checklist, and privacy-light
   conversion events (`/api/events`) that record only a fixed event vocabulary
   and surface name.
-- Email webhook, browser push and Telegram alerts.
 - Monthly email digest with double opt-in and one-click unsubscribe.
-- Private workspace: analytics, document checklist, fee quotes, document field extraction from pasted or text-file content, scheduled CSV/JSON exports and private export tokens.
+- Document checklist, public analytics and a decision-time estimate.
 - ML decision-time estimate from a committed synthetic-data XGBoost model (illustrative, not a guarantee).
 - Agent-facing HTML/Markdown negotiation, `/llms.txt`, sitemap and accessible trust pages.
 
@@ -39,7 +38,6 @@ The important variables are:
 - `APP_BASE_URL`, `SCRAPER_CRON_SECRET`
 - `EMAIL_WEBHOOK_URL`, `EMAIL_WEBHOOK_SECRET`, `EMAIL_FROM`
 - `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`
-- Optional VFS page rendering: `CF_ACCOUNT_ID`, `CF_API_TOKEN`
 - Optional shared monitoring alert destination: `ALERT_WEBHOOK_URL`
 
 The email path is provider-neutral: the app posts to `EMAIL_WEBHOOK_URL`, and this deployment’s secret-protected `/api/email/send` bridge translates that contract to the existing Resend account. No mail credential ever reaches the browser.
@@ -74,7 +72,7 @@ npx wrangler pages deploy .pages-dist --project-name=irishvisaupdatetracker --br
 node tools/smoke-deploy.mjs
 ```
 
-Scheduled GitHub Actions cover scraping, community timelines, Stamp 1G and permit snapshots, decision alerts, monthly digests and due exports. Pages Functions cannot define Cloudflare cron triggers, so these workflows call the authenticated endpoints.
+Scheduled GitHub Actions cover scraping, community timelines, Stamp 1G and permit snapshots, decision alerts and monthly digests. Pages Functions cannot define Cloudflare cron triggers, so these workflows call the secret-protected endpoints.
 
 ## Monitoring
 

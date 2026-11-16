@@ -75,15 +75,13 @@ test("reports a missing delivery channel instead of throwing", async () => {
   assert.match(await response.text(), /No alert delivery channel/);
 });
 
-test("runs with email configured and returns the counters", async () => {
+test("runs with Telegram configured and returns the counters", async () => {
   const restore = stubFetch();
   try {
     const response = await handleAlertsRun(runRequest(), {
       ALERTS_CRON_SECRET: SECRET,
       DB: stubDB(),
-      EMAIL_WEBHOOK_URL: "https://tracker.test/api/email/send",
-      EMAIL_WEBHOOK_SECRET: "webhook-secret",
-      EMAIL_FROM: "alerts@tracker.test",
+      TELEGRAM_BOT_TOKEN: "123456:test-token",
     });
     const body = await response.json();
     assert.equal(response.status, 200);

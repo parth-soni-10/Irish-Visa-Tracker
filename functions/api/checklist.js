@@ -170,23 +170,32 @@ const TB_TEST_COUNTRIES = [
   'Zambia', 'Zimbabwe'
 ];
 
+const APPLICANT_PROFILE_FIELDS = [
+  'age', 'nationality', 'duration_months', 'permit_type', 'regulated_profession',
+  'purpose', 'first_time_applicant', 'dependent_applicant',
+  'child_without_both_parents', 'airside_transit'
+];
+
 export async function onRequestPost(context) {
   const { request } = context;
   
   try {
     const body = await request.json();
-    const { visa_type, embassy, applicant_profile = {} } = body;
+    const visa_type = body && body.visa_type;
+    const embassy = body && body.embassy;
+    const applicant_profile = normalizeApplicantProfile(body);
     
-    if (!visa_type || !VISA_DOCUMENTS[visa_type]) {
+    if (!visa_type || !Object.prototype.hasOwnProperty.call(VISA_DOCUMENTS, visa_type)) {
       return new Response(JSON.stringify({ 
         error: 'Invalid visa_type', 
         valid_types: Object.keys(VISA_DOCUMENTS) 
       }), { status: 400, headers: { 'Content-Type': 'application/json' } });
     }
     
-    const embassySlug = embassy || 'new-delhi';
+    const embassySlug = Object.prototype.hasOwnProperty.call(EMBASSY_RULES, embassy)
+      ? embassy : 'new-delhi';
     const visaDocs = VISA_DOCUMENTS[visa_type];
-    const embassyRules = EMBASSY_RULES[embassySlug] || EMBASSY_RULES['new-delhi'];
+    const embassyRules = EMBASSY_RULES[embassySlug];
     
     // Build personalized checklist
     const checklist = {
@@ -201,12 +210,15 @@ export async function onRequestPost(context) {
         status: 'pending',
         category: doc.category
       })),
-      conditional: visaDocs.conditional.map(doc => ({
-        ...doc,
-        status: 'not_applicable',
-        category: doc.category,
-        applicable: evaluateCondition(doc.condition, applicant_profile)
-      })),
+      conditional: visaDocs.conditional.map(doc => {
+        const applicable = evaluateCondition(doc.condition, applicant_profile);
+        return {
+          ...doc,
+          status: applicable ? 'pending' : 'not_applicable',
+          category: doc.category,
+          applicable
+        };
+      }),
       embassy_specific: embassyRules.additional.map(doc => ({
         ...doc,
         status: 'pending',
@@ -220,18 +232,19 @@ export async function onRequestPost(context) {
       }
     };
     
-    // Add TB test if applicable
-    if (applicant_profile.nationality && TB_TEST_COUNTRIES.includes(applicant_profile.nationality)) {
+    // Add the TB test once; study applications already carry it as a
+    // conditional rule, which becomes applicable for listed countries.
+    if (isTbListedNationality(applicant_profile.nationality) &&
+        !checklist.conditional.some(doc => doc.id === 'tb_test')) {
       checklist.conditional.push({
         id: 'tb_test',
         name: 'TB Test Certificate',
-        description: `Required for ${applicant_profile.nationality} nationals`,
+        description: `Required for ${applicant_profile.nationality.trim()} nationals`,
         category: 'health',
         status: 'pending',
         applicable: true
       });
       checklist.summary.conditional_count++;
-      checklist.summary.total_documents++;
     }
     
     return new Response(JSON.stringify({ success: true, checklist }), {
@@ -253,14 +266,16 @@ function evaluateCondition(condition, profile) {
     // Simple condition evaluation
     if (condition.startsWith('age <')) {
       const age = parseInt(condition.match(/age < (\d+)/)[1]);
-      return (profile.age || 0) < age;
+      if (profile.age === undefined || profile.age === null || profile.age === '') return false;
+      return Number(profile.age) < age;
     }
     if (condition.startsWith('duration >')) {
       const months = parseInt(condition.match(/duration > (\d+)/)[1]);
-      return (profile.duration_months || 0) > months;
+      if (profile.duration_months === undefined || profile.duration_months === null || profile.duration_months === '') return false;
+      return Number(profile.duration_months) > months;
     }
     if (condition === 'country_in_tb_list') {
-      return profile.nationality && TB_TEST_COUNTRIES.includes(profile.nationality);
+      return isTbListedNationality(profile.nationality);
     }
     if (condition === 'purpose == family_friends') {
       return profile.purpose === 'family_friends';
@@ -275,24 +290,49 @@ function evaluateCondition(condition, profile) {
       return profile.permit_type === 'critical_skills' || profile.permit_type === 'general';
     }
     if (condition === 'regulated_profession') {
-      return profile.regulated_profession === true;
+      return isTrue(profile.regulated_profession);
     }
     if (condition === 'first_time_applicant') {
-      return profile.first_time_applicant === true;
+      return isTrue(profile.first_time_applicant);
     }
     if (condition === 'dependent_applicant') {
-      return profile.dependent_applicant === true;
+      return isTrue(profile.dependent_applicant);
     }
     if (condition === 'child_without_both_parents') {
-      return profile.child_without_both_parents === true;
+      return isTrue(profile.child_without_both_parents);
     }
     if (condition === 'airside_transit') {
-      return profile.airside_transit === true;
+      return isTrue(profile.airside_transit);
     }
     return false;
   } catch {
     return false;
   }
+}
+
+function normalizeApplicantProfile(body) {
+  const nested = body && body.applicant_profile;
+  if (nested && typeof nested === 'object' && !Array.isArray(nested)) return nested;
+
+  const profile = {};
+  if (body && typeof body === 'object') {
+    for (const key of APPLICANT_PROFILE_FIELDS) {
+      if (body[key] !== undefined && body[key] !== null && body[key] !== '') {
+        profile[key] = body[key];
+      }
+    }
+  }
+  return profile;
+}
+
+function isTbListedNationality(nationality) {
+  if (typeof nationality !== 'string') return false;
+  const normalized = nationality.trim().toLowerCase();
+  return TB_TEST_COUNTRIES.some(country => country.toLowerCase() === normalized);
+}
+
+function isTrue(value) {
+  return value === true || value === 'true' || value === 'on';
 }
 
 export async function onRequestGet(context) {

@@ -30,9 +30,9 @@ function eventDB() {
 
 test('conversion events accept only the fixed vocabulary', async () => {
   const env = { DB: eventDB() };
-  const accepted = await handleEvents(request({ event: 'alert_email_click', source: 'home' }), env);
+  const accepted = await handleEvents(request({ event: 'alert_telegram_click', source: 'home' }), env);
   assert.equal(accepted.status, 202);
-  assert.deepEqual(env.DB.inserts, [['alert_email_click', 'home', null]]);
+  assert.deepEqual(env.DB.inserts, [['alert_telegram_click', 'home', null]]);
 
   const rejected = await handleEvents(request({ event: 'pasted-free-text', source: 'home' }), env);
   assert.equal(rejected.status, 400);

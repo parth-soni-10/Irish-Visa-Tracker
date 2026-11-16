@@ -8,9 +8,7 @@
 
 const EVENTS = new Set([
   'alert_cta_view',
-  'alert_email_click',
   'alert_telegram_click',
-  'alert_email_submitted',
   'alert_telegram_opened',
   'watchlist_added',
   'application_search',

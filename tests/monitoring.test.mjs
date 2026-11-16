@@ -41,14 +41,14 @@ test('private API responses default to no-store while explicit public caching su
   const privateResponse = withRequestId(
     new Response('{}'),
     'req-12345678',
-    new Request('https://tracker.test/api/auth/me')
+    new Request('https://tracker.test/api/alerts/run')
   );
   assert.equal(privateResponse.headers.get('Cache-Control'), 'no-store');
 
   const publicResponse = withRequestId(
     new Response('{}', { headers: { 'Cache-Control': 'public, max-age=3600' } }),
     'req-12345678',
-    new Request('https://tracker.test/api/user/push/key')
+    new Request('https://tracker.test/api/search')
   );
   assert.equal(publicResponse.headers.get('Cache-Control'), 'public, max-age=3600');
 });

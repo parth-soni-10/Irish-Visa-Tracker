@@ -6,8 +6,12 @@
  * api_logs and error_logs, none of which exist, so every panel returned 500.
  */
 
-import { hashToken } from './auth.js';
+import { sha256 } from './crypto.js';
 import { loadReportData } from './report-data.js';
+
+function hashToken(token) {
+  return sha256(String(token || ''));
+}
 
 function json(body, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -184,28 +188,12 @@ export async function handleSystemMetrics(request, env) {
   if (!auth.authorized) return auth.response;
 
   try {
-    const [users, sessions, email, telegram, push, watchlists, apiTokens, notifications, submissions,
-      communityPosts, organizations, scheduledExports, exportJobs] = await Promise.all([
-      env.DB.prepare(`SELECT COUNT(*) AS count,
-        COUNT(CASE WHEN created_at > datetime('now', '-7 days') THEN 1 END) AS last_week,
-        COUNT(CASE WHEN created_at > datetime('now', '-30 days') THEN 1 END) AS last_month
-        FROM users`).first(),
-      safeCount(env, "SELECT COUNT(*) AS count FROM user_sessions WHERE expires_at > datetime('now')"),
-      env.DB.prepare(`SELECT COUNT(*) AS total,
-        COUNT(CASE WHEN verified = 1 AND unsubscribed = 0 THEN 1 END) AS active
-        FROM email_subscriptions`).first().catch(() => ({ total: 0, active: 0 })),
+    const [telegram, push, submissions] = await Promise.all([
       env.DB.prepare(`SELECT COUNT(*) AS total,
         COUNT(CASE WHEN active = 1 THEN 1 END) AS active
         FROM telegram_subscriptions`).first().catch(() => ({ total: 0, active: 0 })),
       safeCount(env, 'SELECT COUNT(*) AS count FROM push_subscriptions'),
-      safeCount(env, 'SELECT COUNT(*) AS count FROM watchlists'),
-      safeCount(env, 'SELECT COUNT(*) AS count FROM api_tokens WHERE revoked = 0'),
-      safeCount(env, 'SELECT COUNT(*) AS count FROM user_notifications WHERE read_at IS NULL'),
-      safeCount(env, 'SELECT COUNT(*) AS count FROM submissions'),
-      safeCount(env, "SELECT COUNT(*) AS count FROM community_posts WHERE status = 'published'"),
-      safeCount(env, 'SELECT COUNT(*) AS count FROM organizations'),
-      safeCount(env, 'SELECT COUNT(*) AS count FROM scheduled_exports WHERE enabled = 1'),
-      safeCount(env, "SELECT COUNT(*) AS count FROM export_jobs WHERE status = 'ready'")
+      safeCount(env, 'SELECT COUNT(*) AS count FROM submissions')
     ]);
     const report = await loadReportData(env, request);
     const offices = {};
@@ -225,30 +213,15 @@ export async function handleSystemMetrics(request, env) {
     }
     return json({
       timestamp: new Date().toISOString(),
-      users: {
-        total: Number(users && users.count) || 0,
-        lastWeek: Number(users && users.last_week) || 0,
-        lastMonth: Number(users && users.last_month) || 0,
-        activeSessions: sessions
-      },
       subscriptions: {
-        email: { total: Number(email && email.total) || 0, active: Number(email && email.active) || 0 },
         push: { total: push },
         telegram: {
           total: Number(telegram && telegram.total) || 0,
           active: Number(telegram && telegram.active) || 0
         }
       },
-      watchlists,
-      exportTokens: apiTokens,
-      unreadNotifications: notifications,
       submissions,
       product: {
-        telegramChannels: Number(telegram && telegram.active) || 0,
-        communityPosts,
-        organizations,
-        scheduledExports,
-        readyExports: exportJobs,
         conversions,
         conversionWindowDays: 30
       },

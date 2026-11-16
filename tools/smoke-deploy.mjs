@@ -41,11 +41,11 @@ check('comparison asset serves', comparisonFile.status === 200 && /comparison/i.
 const statusPage = await get('/status');
 check('data status page serves', statusPage.status === 200 && /Data status/i.test(statusPage.text), 'HTTP ' + statusPage.status);
 
-const workspace = await get('/workspace');
-check('workspace page serves', workspace.status === 200 && /workspace/i.test(workspace.text), 'HTTP ' + workspace.status);
+const authStatus = await get('/api/auth/me');
+check('removed auth route is not served', authStatus.status === 404, 'HTTP ' + authStatus.status);
 
-const ssoStatus = await get('/api/auth/sso/status');
-check('removed SSO route is not served', ssoStatus.status === 404, 'HTTP ' + ssoStatus.status);
+const workspace = await get('/workspace');
+check('removed workspace route is not served', workspace.status === 404, 'HTTP ' + workspace.status);
 
 const manifest = await get('/manifest.json');
 check('manifest serves', manifest.status === 200 && manifest.json && Array.isArray(manifest.json.icons) && manifest.json.icons.length > 0, 'HTTP ' + manifest.status);
@@ -65,9 +65,6 @@ check('monthly report API serves', report.status === 200 && report.json && repor
 
 const preview = await get('/api/digest/preview?month=' + encodeURIComponent(MONTH));
 check('digest preview API serves', preview.status === 200 && preview.json && preview.json.success === true, 'HTTP ' + preview.status);
-
-const me = await get('/api/auth/me');
-check('auth API is mounted', me.status === 401 || me.status === 200, 'HTTP ' + me.status);
 
 const data = await get('/data/data_manifest.json');
 check('data manifest serves', data.status === 200 && data.json && Array.isArray(data.json.offices), 'HTTP ' + data.status);

@@ -50,7 +50,7 @@ test('different buckets do not share a counter', async () => {
   const env = { DB: counterDB() };
   const base = { subject: '203.0.113.11', limit: 1, windowSeconds: 60 };
   assert.equal((await checkRateLimit(env, { ...base, bucket: 'api' })).allowed, true);
-  assert.equal((await checkRateLimit(env, { ...base, bucket: 'auth' })).allowed, true);
+  assert.equal((await checkRateLimit(env, { ...base, bucket: 'alerts' })).allowed, true);
   assert.equal((await checkRateLimit(env, { ...base, bucket: 'api' })).allowed, false);
 });
 

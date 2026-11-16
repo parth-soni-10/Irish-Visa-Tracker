@@ -1,35 +1,31 @@
 # Irish Visa Tracker — Current Gap Register
 
-Updated 2026-11-12. The earlier “accounts/API/notifications missing” analysis is
-obsolete; those surfaces are implemented. This file now records only gaps that
-still exist after the current tree and release checks.
+Updated 2026-11-13. User accounts, sessions, saved searches, private exports and
+the workspace were removed by product decision. Tracking and alerts are public
+and anonymous; watchlists live only in the visitor's browser. This file records
+only gaps that still exist after the current tree and release checks.
 
 ## Closed gaps
 
-- Accounts, sessions, password change and profile settings: implemented.
-  Account email verification and password reset were removed by product
-  decision; subscriber alert verification remains.
-- Saved watchlists, multiple applications, cross-device sync, private exports
-  and export tokens: implemented.
-- Account-scoped saved searches: implemented with owner-scoped list/get/delete.
-- In-app notifications, alert runner and browser push: implemented.
+- Accounts, sessions, saved searches, in-app notifications and the private
+  workspace were removed by product decision; no sign-in code or routes remain.
+- Browser-local watchlists support multiple applications without an account;
+  Telegram and browser-push delivery are per-application and anonymous.
 - SMS/WhatsApp delivery was removed by product decision; no channel code,
   credentials or UI remain. Existing production rows were left untouched.
-- Referral acceptance and one-credit reward accounting: implemented.
 - Monthly report, email digest and double opt-in: implemented.
-- Scheduled export jobs and delivery endpoint: implemented.
-- Search, fuzzy/nearest filters, sorting, pagination, checklist, fee estimator,
-  document field extraction and workspace: implemented.
+- Search, fuzzy/nearest filters, sorting, pagination, checklist, fee estimator
+  and document field extraction: implemented.
 - Archived and latest report row counts are exposed in the data manifest and
   status page.
 - ML training artifacts and Worker tree-ensemble export: implemented and
   tracked.
 - Accessibility and agent-facing Markdown surfaces: implemented and tested.
-- First-run activation: the New Delhi dashboard now has prominent email and
-  Telegram CTAs, a persisted three-step checklist, and privacy-light conversion
-  events at `/api/events`. The funnel does not store email, IP, cookie or free
-  text; delivery still ends at the existing double opt-in or Telegram `/start`.
-- Per-isolate API/auth limits: replaced by the D1 `rate_limits` fixed-window
+- First-run activation: the New Delhi dashboard now has a prominent Telegram
+  CTA, a persisted three-step checklist, and privacy-light conversion events at
+  `/api/events`. The funnel does not store email, IP, cookie or free text;
+  delivery ends at Telegram `/start`.
+- Per-isolate API limits: replaced by the D1 `rate_limits` fixed-window
   counter, with an in-memory fallback only when D1 or the table is unavailable.
 - Admin API coverage: metrics, bearer-token rejection, named-token hashing,
   listing and immediate revocation are covered by `tests/admin-api.test.mjs`.
@@ -37,9 +33,9 @@ still exist after the current tree and release checks.
   `/styles/*.css`; the CSP forbids inline executable scripts and `<style>`
   elements. Inline style attributes remain only for generated chart/table
   geometry.
-- Dead-export and served-JavaScript syntax gates run in CI. The base schema,
-  portal helpers and user watchlist/push routes are separate modules; the three
-  original API files remain large but no longer own those concerns.
+- Dead-export and served-JavaScript syntax gates run in CI. The base schema and
+  public alert/search routes are separate modules; the API files remain large
+  but no longer own removed account concerns.
 - Error monitoring: Sentry was removed. Pages Functions emit structured JSON
   request/error logs and expose a D1+asset readiness endpoint; a separate
   cron-only Worker provides Workers Logs/Logpush eligibility for persisted
@@ -55,14 +51,14 @@ still exist after the current tree and release checks.
 |---|---|---|
 | Resend key was exposed in an earlier terminal session | The key should be treated as compromised | Rotate it in Resend, update the Pages `RESEND_API_KEY` secret, and redeploy |
 | Monitoring Worker and Logpush job are not deployed | Persisted Workers Logs and Logpush export stay inactive until the Worker is deployed and an account-level Logpush job is created | Run the commands in `docs/monitoring.md`; Logpush needs the Workers Paid plan and a destination |
-| VFS Ireland-India slots are behind VFS sign-in | The public checker can report page state but cannot monitor or guarantee slots | Use the official VFS sign-in; integrate a supported VFS API/partner feed before promising slot alerts |
+| VFS Ireland-India slots are behind VFS sign-in | The tracker cannot see or monitor the calendar; it only hands off to the official portal | Keep the official sign-in/waitlist path; revisit only if VFS offers a supported feed |
 
 ## Product decision
 
 Native iOS/Android apps are deferred. The installable PWA is the mobile product;
-it already covers offline shell, account sync, push and alerts. Revisit native
-only after a measured mobile acquisition/retention need justifies a second
-client and release pipeline.
+it already covers the offline shell, local watchlists, push and alerts. Revisit
+native only after a measured mobile acquisition/retention need justifies a
+second client and release pipeline.
 
 Structured Pages Function logs, the readiness endpoint, the separate Workers
 Logs/Logpush monitor and the admin error endpoint are the supported server error

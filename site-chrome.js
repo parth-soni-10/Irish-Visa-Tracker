@@ -2,16 +2,6 @@
   'use strict';
 
   var menus = Array.prototype.slice.call(document.querySelectorAll('details.sitebar-more'));
-  var nav = document.querySelector('.sitebar-nav');
-  if (nav && !nav.querySelector('a[data-workspace-link]')) {
-    var workspace = document.createElement('a');
-    workspace.href = '/workspace';
-    workspace.textContent = 'Workspace';
-    workspace.className = 'sitebar-link';
-    workspace.setAttribute('data-workspace-link', '');
-    var more = nav.querySelector('details.sitebar-more');
-    nav.insertBefore(workspace, more || null);
-  }
   if (!menus.length) return;
 
   function close(menu, restoreFocus) {

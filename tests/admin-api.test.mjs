@@ -3,9 +3,9 @@
  *
  *   node --test tests/admin-api.test.mjs
  *
- * The admin surface is deliberately separate from user auth: a bearer token is
- * required, named tokens are hashed at rest, revocation is immediate, and the
- * metrics endpoint never throws when an optional table is absent.
+ * The admin surface uses its own bearer token: named tokens are hashed at
+ * rest, revocation is immediate, and the metrics endpoint never throws when an
+ * optional table is absent.
  */
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
@@ -16,7 +16,9 @@ import {
   handleErrorLogs,
   handleSystemMetrics
 } from '../functions/admin-api.js';
-import { hashToken } from '../functions/auth.js';
+import { sha256 } from '../functions/crypto.js';
+
+const hashToken = (token) => sha256(String(token || ''));
 
 const ROOT = new URL('../', import.meta.url);
 const BOOTSTRAP = 'bootstrap-admin-token';
@@ -40,8 +42,6 @@ function adminDB() {
         bind(...args) { this.args = args; return this; },
         async first() {
           if (/SELECT last_used_at FROM admin_tokens/.test(sql)) return { last_used_at: null };
-          if (/FROM users/.test(sql)) return { count: 1, last_week: 1, last_month: 1 };
-          if (/FROM email_subscriptions/.test(sql)) return { total: 2, active: 1 };
           if (/FROM telegram_subscriptions/.test(sql)) return { total: 3, active: 2 };
           if (/FROM admin_tokens\s+WHERE token_hash/.test(sql)) {
             const record = [...tokens.values()].find((item) => item.token_hash === this.args[0]);
@@ -54,7 +54,7 @@ function adminDB() {
             return { results: [...tokens.values()].map(({ token_hash, ...rest }) => rest) };
           }
           if (/FROM conversion_events/.test(sql)) {
-            return { results: [{ event: 'alert_email_click', count: 2 }, { event: 'alert_email_submitted', count: 1 }] };
+            return { results: [{ event: 'alert_telegram_click', count: 2 }, { event: 'alert_telegram_opened', count: 1 }] };
           }
           return { results: [] };
         },
@@ -125,11 +125,9 @@ test('metrics expose subscription counts and conversion events', async () => {
     );
     assert.equal(response.status, 200);
     const body = await response.json();
-    assert.equal(body.users.total, 1);
-    assert.equal(body.subscriptions.email.active, 1);
     assert.equal(body.subscriptions.telegram.active, 2);
-    assert.equal(body.product.conversions.alert_email_click, 2);
-    assert.equal(body.product.conversions.alert_email_submitted, 1);
+    assert.equal(body.product.conversions.alert_telegram_click, 2);
+    assert.equal(body.product.conversions.alert_telegram_opened, 1);
     assert.ok(body.dataVolume.visa_decisions > 0);
     assert.equal(response.headers.get('Cache-Control'), 'no-store');
   } finally {

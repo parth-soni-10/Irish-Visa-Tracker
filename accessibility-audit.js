@@ -17,7 +17,6 @@ const PAGES_TO_TEST = [
   { url: '/', name: 'Home Page' },
   { url: '/vac-transit', name: 'VAC/Transit Page' },
   { url: '/admin', name: 'Admin Page' },
-  { url: '/workspace', name: 'Workspace Page' },
 ];
 
 const VIEWPORTS = [

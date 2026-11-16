@@ -41,8 +41,8 @@ jobs:
 
       - name: Run agent-surface and product tests
         # Content negotiation, Markdown documents, the 404 contract, metadata,
-        # analytics/fees/exports, auth tokens and notifications.
-        run: node --test tests/agent-docs.test.mjs tests/portal.test.mjs tests/export-tokens.test.mjs tests/email-tokens.test.mjs tests/notifications.test.mjs tests/predict.test.mjs tests/reports.test.mjs tests/push.test.mjs tests/email-webhook.test.mjs tests/embassy-pdf-ingestion.test.mjs tests/community-submissions.test.mjs tests/alerts-run.test.mjs tests/telegram.test.mjs tests/digest-schedule.test.mjs
+        # push, reports and alert delivery.
+        run: node --test tests/agent-docs.test.mjs tests/predict.test.mjs tests/reports.test.mjs tests/push.test.mjs tests/email-webhook.test.mjs tests/embassy-pdf-ingestion.test.mjs tests/community-submissions.test.mjs tests/alerts-run.test.mjs tests/telegram.test.mjs tests/digest-schedule.test.mjs
 
       - name: Run admin, durable rate-limit and conversion tests
         # The admin metrics/token surface and the D1-backed limiter had no

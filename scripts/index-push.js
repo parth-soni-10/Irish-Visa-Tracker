@@ -39,22 +39,43 @@
                 applicationServerKey: urlBase64ToUint8Array(key)
               });
             }
-            var response = await fetch('/api/user/push/subscribe', {
+            var response = await fetch('/api/push/subscribe', {
               method: 'POST',
-              credentials: 'include',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
-                endpoint: subscription.endpoint,
-                p256dh: arrayBufferToBase64(subscription.getKey('p256dh')),
-                auth: arrayBufferToBase64(subscription.getKey('auth')),
+                subscription: {
+                  endpoint: subscription.endpoint,
+                  keys: {
+                    p256dh: arrayBufferToBase64(subscription.getKey('p256dh')),
+                    auth: arrayBufferToBase64(subscription.getKey('auth'))
+                  }
+                },
                 application_number: appNumber,
-                embassy_slug: embassy
+                embassy: embassy || 'new-delhi'
               })
             });
             var data = await response.json().catch(function() { return {}; });
             return { ok: response.ok, error: data.error || '' };
           } catch (error) {
             return { ok: false, error: error.message || 'Could not enable browser notifications.' };
+          }
+        };
+        window.disablePushNotifications = async function(appNumber, embassy) {
+          if (!appNumber || !('serviceWorker' in navigator) || !('PushManager' in window)) {
+            return { ok: true };
+          }
+          try {
+            var registration = await navigator.serviceWorker.ready;
+            var subscription = await registration.pushManager.getSubscription();
+            if (!subscription) return { ok: true };
+            var url = '/api/push/unsubscribe?endpoint=' + encodeURIComponent(subscription.endpoint) +
+              '&application_number=' + encodeURIComponent(appNumber) +
+              '&embassy=' + encodeURIComponent(embassy || 'new-delhi');
+            var response = await fetch(url, { headers: { Accept: 'application/json' } });
+            var data = await response.json().catch(function() { return {}; });
+            return { ok: response.ok, error: data.error || '' };
+          } catch (error) {
+            return { ok: false, error: error.message || 'Could not update browser notifications.' };
           }
         };
         fetch('/api/config', { headers: { Accept: 'application/json' } })

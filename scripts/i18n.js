@@ -115,21 +115,15 @@ const TRANSLATIONS = {
     'suggestions.text_placeholder': 'Your suggestion...',
     'suggestions.send': 'Send Suggestion',
     'suggestions.share_timeline': 'Share your timeline',
-    'suggestions.get_alerts': 'Get Decision Alerts',
-    'suggestions.email': 'Email',
-    'suggestions.email_placeholder': 'you@example.com',
+    'suggestions.get_alerts': 'Get Decision Alerts on Telegram',
     'suggestions.app_number': 'Application Number',
     'suggestions.app_placeholder': '12345678',
     'suggestions.visa_office': 'Visa Office',
-    'suggestions.enable_alerts': 'Enable Alerts',
-    'suggestions.enter_email_app': 'Enter your email and application number. We will email you the moment a decision is published.',
-    'alerts.title': 'Get Decision Alerts',
-    'alerts.enter_email': 'Enter your email and application number.',
-    'alerts.we_will_email': 'We will email you the moment a decision is published.',
-    'alerts.email': 'Email',
+    'suggestions.enable_alerts': 'Get alerts on Telegram',
+    'alerts.title': 'Get Decision Alerts on Telegram',
     'alerts.app_number': 'Application Number',
     'alerts.visa_office': 'Visa Office',
-    'alerts.enable': 'Enable Alerts',
+    'alerts.enable': 'Get alerts on Telegram',
     'vac.title': 'VAC & Transit Guidance',
     'vac.subtitle': 'Find your nearest Visa Application Centre, check transit visa requirements, and plan your travel to Ireland.',
     'vac.overview': 'Overview',
@@ -408,6 +402,20 @@ function translatePage() {
   });
   document.title = t('app.title');
   document.documentElement.lang = currentLang;
+  var current = document.querySelector('.lang-current');
+  if (current) {
+    var active = getAvailableLanguages().find(function(l) { return l.code === currentLang; });
+    current.textContent = active ? active.nativeName : currentLang.toUpperCase();
+  }
+  var langBtn = document.querySelector('.lang-btn');
+  if (langBtn) langBtn.setAttribute('aria-label', t('lang.select'));
+  var langList = document.querySelector('.lang-dropdown');
+  if (langList) {
+    langList.setAttribute('aria-label', t('lang.select'));
+    langList.querySelectorAll('li[data-lang]').forEach(function(item) {
+      item.setAttribute('aria-selected', item.getAttribute('data-lang') === currentLang ? 'true' : 'false');
+    });
+  }
 }
 
 function createLanguageSelector() {
@@ -422,7 +430,7 @@ function createLanguageSelector() {
       </button>
       <ul class="lang-dropdown" role="listbox" aria-label="${t('lang.select')}" style="display: none;">
         ${languages.map(l => `
-          <li role="option" data-lang="${l.code}" ${l.code === currentLang ? 'aria-selected="true"' : ''}>
+          <li role="option" data-lang="${l.code}" aria-selected="${l.code === currentLang ? 'true' : 'false'}">
             ${l.nativeName}
           </li>
         `).join('')}
@@ -432,11 +440,14 @@ function createLanguageSelector() {
 }
 
 function getAvailableLanguages() {
-  return Object.keys(TRANSLATIONS).map(code => ({
-    code,
-    name: TRANSLATIONS[code]['lang.select'] || TRANSLATIONS[code]['lang.' + code] || code.toUpperCase(),
-    nativeName: TRANSLATIONS[code]['lang.' + code] || code.toUpperCase()
-  }));
+  const english = TRANSLATIONS.en || {};
+  return Object.keys(TRANSLATIONS).map(code => {
+    const translations = TRANSLATIONS[code] || {};
+    return {
+      code,
+      nativeName: translations['lang.' + code] || english['lang.' + code] || code.toUpperCase()
+    };
+  });
 }
 
 // Export for global access

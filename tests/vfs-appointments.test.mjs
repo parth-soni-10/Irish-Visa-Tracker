@@ -4,146 +4,95 @@ import { test } from 'node:test';
 import {
   OFFICES,
   checkVFSAppointment,
-  classify,
   handleVFSAppointments,
   normalizeOffice
 } from '../functions/vfs-appointments.js';
 
-const LOGIN_HTML = `
-  <html><body>
-    <h1>Sign in</h1>
-    <p>Enter your email and password to continue.</p>
-    <a href="https://visa.vfsglobal.com/ind/en/irl/login">Book now</a>
-  </body></html>`;
-
-const BOOKING_HTML = `
-  <html><body>
-    <h1>Book an appointment</h1>
-    <p>If you're ready to arrange your visa application appointment, see below.</p>
-    <a href="https://visa.vfsglobal.com/ind/en/irl/login">Book now</a>
-  </body></html>`;
-
-function htmlResponse(body, status = 200) {
-  return new Response(body, {
-    status,
-    headers: { 'Content-Type': 'text/html; charset=utf-8' }
-  });
-}
+const BOOKING_URL = 'https://visa.vfsglobal.com/ind/en/irl/book-an-appointment';
+const LOGIN_URL = 'https://visa.vfsglobal.com/ind/en/irl/login';
+const TRACKING_URL = 'https://visa.vfsglobal.com/ind/en/irl/track-application';
 
 test('VFS office names normalize to the supported VAC slugs', () => {
   assert.equal(normalizeOffice('New Delhi'), 'new-delhi');
   assert.equal(normalizeOffice('  bengaluru '), 'bengaluru');
   assert.equal(normalizeOffice(''), 'new-delhi');
   assert.equal(normalizeOffice('not-a-vac'), null);
-  assert.ok(OFFICES['chandigarh']);
+  assert.ok(OFFICES.chandigarh);
   assert.ok(OFFICES.cochin);
 });
 
-test('VFS classifier distinguishes login, challenge, maintenance and slots', () => {
-  assert.equal(classify(LOGIN_HTML, 200).availability, 'login_required');
-  assert.equal(classify(BOOKING_HTML, 200).availability, 'login_required');
-  assert.equal(classify('Just a moment...', 403).availability, 'challenge');
-  assert.equal(classify('Service temporarily unavailable', 200).availability, 'maintenance');
-  assert.equal(classify('No appointments are currently available', 200).availability, 'unavailable');
-  assert.equal(classify('Select a date and time for your appointment', 200).availability, 'available');
-  assert.equal(classify('Welcome to VFS Global', 200).availability, 'unknown');
-});
-
-test('check reports login-required without pretending a slot exists', async () => {
-  const result = await checkVFSAppointment({
-    office: 'new-delhi',
-    fetchImpl: async () => htmlResponse(LOGIN_HTML)
-  });
-
-  assert.equal(result.success, true);
-  assert.equal(result.availability, 'login_required');
-  assert.equal(result.requires_login, true);
-  assert.equal(result.calendar_visible, false);
-  assert.equal(result.public_slots, false);
-  assert.equal(result.source, 'http');
-  assert.match(result.disclaimer, /does not publish/i);
-  assert.ok(result.checked_at);
-  assert.equal(result.login_url, 'https://visa.vfsglobal.com/ind/en/irl/login');
-});
-
-test('check uses Browser Rendering when credentials are present', async () => {
-  const calls = [];
-  const fetchImpl = async (url) => {
-    calls.push(String(url));
-    return new Response(JSON.stringify({ result: LOGIN_HTML }), { status: 200 });
+test('the handoff never calls VFS and never claims a slot', async () => {
+  const originalFetch = globalThis.fetch;
+  let calls = 0;
+  globalThis.fetch = async () => {
+    calls += 1;
+    throw new Error('VFS must not be called');
   };
 
-  const result = await checkVFSAppointment({
-    office: 'mumbai',
-    env: { CF_ACCOUNT_ID: 'account-id', CF_API_TOKEN: 'token' },
-    fetchImpl
-  });
+  try {
+    const result = await checkVFSAppointment({
+      office: 'new-delhi',
+      visaType: 'study'
+    });
 
-  assert.equal(result.success, true);
-  assert.equal(result.source, 'browser-rendering');
-  assert.equal(result.availability, 'login_required');
-  assert.equal(calls.length, 1);
-  assert.match(calls[0], /browser-rendering\/content$/);
+    assert.equal(calls, 0);
+    assert.equal(result.success, true);
+    assert.equal(result.office, 'new-delhi');
+    assert.equal(result.availability, 'login_required');
+    assert.equal(result.requires_login, true);
+    assert.equal(result.public_slots, false);
+    assert.equal(result.calendar_visible, false);
+    assert.equal(result.visa_type, 'study');
+    assert.equal(result.official_url, BOOKING_URL);
+    assert.equal(result.booking_url, BOOKING_URL);
+    assert.equal(result.login_url, LOGIN_URL);
+    assert.equal(result.tracking_url, TRACKING_URL);
+    assert.match(result.message, /only after signing in/i);
+    assert.match(result.message, /cannot see, hold, or book a slot/i);
+    assert.equal('source' in result, false);
+    assert.equal('checked_at' in result, false);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
 });
 
-test('a bot challenge remains a distinct state rather than unavailable', async () => {
-  const result = await checkVFSAppointment({
-    office: 'chennai',
-    fetchImpl: async () => htmlResponse('Just a moment...', 403)
-  });
+test('the compatibility handler returns the static handoff', async () => {
+  const response = await handleVFSAppointments(
+    new Request('https://tracker.test/api/vfs/appointments?office=New%20Delhi&visa_type=study')
+  );
 
-  assert.equal(result.success, true);
-  assert.equal(result.availability, 'challenge');
-  assert.equal(result.http_status, 403);
-  assert.equal(result.requires_login, false);
-  assert.equal(result.public_slots, false);
-});
-
-test('network failure is an explicit unknown, never an invented slot state', async () => {
-  const result = await checkVFSAppointment({
-    office: 'kolkata',
-    fetchImpl: async () => {
-      throw new Error('network down');
-    }
-  });
-
-  assert.equal(result.success, false);
-  assert.equal(result.availability, 'unknown');
-  assert.equal(result.http_status, null);
-  assert.match(result.error, /Could not reach/i);
+  assert.equal(response.status, 200);
+  const body = await response.json();
+  assert.equal(body.office, 'new-delhi');
+  assert.equal(body.office_name, 'New Delhi');
+  assert.equal(body.visa_type, 'study');
+  assert.equal(body.availability, 'login_required');
+  assert.equal(body.requires_login, true);
+  assert.equal(body.public_slots, false);
+  assert.equal(body.calendar_visible, false);
+  assert.equal(body.booking_url, BOOKING_URL);
+  assert.equal(body.login_url, LOGIN_URL);
+  assert.equal(body.tracking_url, TRACKING_URL);
+  assert.match(body.message, /cannot see, hold, or book a slot/i);
 });
 
 test('unknown offices and unsupported methods are rejected', async () => {
   const unknown = await handleVFSAppointments(
-    new Request('https://tracker.test/api/vfs/appointments?office=not-a-vac'),
-    {}
+    new Request('https://tracker.test/api/vfs/appointments?office=not-a-vac')
   );
   assert.equal(unknown.status, 400);
   const unknownBody = await unknown.json();
   assert.equal(unknownBody.error, 'Unknown VFS office');
 
   const post = await handleVFSAppointments(
-    new Request('https://tracker.test/api/vfs/appointments?office=new-delhi', { method: 'POST' }),
-    {}
+    new Request('https://tracker.test/api/vfs/appointments?office=new-delhi', { method: 'POST' })
   );
   assert.equal(post.status, 405);
 });
 
-test('valid handler request returns the normalized VFS result', async () => {
-  const originalFetch = globalThis.fetch;
-  globalThis.fetch = async () => htmlResponse(LOGIN_HTML);
-  try {
-    const response = await handleVFSAppointments(
-      new Request('https://tracker.test/api/vfs/appointments?office=New%20Delhi&visa_type=study'),
-      {}
-    );
-    assert.equal(response.status, 200);
-    const body = await response.json();
-    assert.equal(body.office, 'new-delhi');
-    assert.equal(body.visa_type, 'study');
-    assert.equal(body.availability, 'login_required');
-    assert.equal(body.public_slots, false);
-  } finally {
-    globalThis.fetch = originalFetch;
-  }
+test('an unknown office is rejected by the shared check function', async () => {
+  const result = await checkVFSAppointment({ office: 'not-a-vac' });
+  assert.equal(result.success, false);
+  assert.equal(result.status, 400);
+  assert.equal(result.error, 'Unknown VFS office');
 });
