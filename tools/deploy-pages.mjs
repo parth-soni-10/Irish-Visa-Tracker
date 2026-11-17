@@ -5,6 +5,7 @@
 
 import fs from 'fs';
 import path from 'path';
+import { execSync } from 'child_process';
 import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -156,6 +157,15 @@ async function copyDir(src, dest) {
   }
 }
 
+function buildCommit() {
+  if (process.env.GITHUB_SHA) return process.env.GITHUB_SHA;
+  try {
+    return execSync('git rev-parse HEAD', { cwd: rootDir, encoding: 'utf8' }).trim();
+  } catch {
+    return 'unknown';
+  }
+}
+
 async function main() {
   console.log('Building for Cloudflare Pages...');
   
@@ -178,6 +188,13 @@ async function main() {
     }
   }
   
+  // Record exactly which commit this tree represents. The post-deploy
+  // verifier waits for this marker before comparing the live assets.
+  fs.writeFileSync(
+    path.resolve(distDir, 'build-info.json'),
+    JSON.stringify({ commit: buildCommit(), built_at: new Date().toISOString() }, null, 2) + '\n'
+  );
+
   // Cloudflare reserves /404.html and redirects it to /404. Keep that file
   // for Pages' own fallback, and publish an internal copy the Worker can
   // fetch without triggering the reserved-path redirect.

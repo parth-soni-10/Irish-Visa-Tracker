@@ -11,6 +11,10 @@ on:
     branches: [main]
   workflow_dispatch: {}
 
+concurrency:
+  group: pages-build-verification
+  cancel-in-progress: true
+
 jobs:
   build:
     name: Verify static build
@@ -36,4 +40,46 @@ jobs:
         run: npm run build
 
       - name: Verify build output
-        run: ls -la .pages-dist/ && test -d .pages-dist && test -f .pages-dist/index.html
+        run: ls -la .pages-dist/ && test -d .pages-dist && test -f .pages-dist/index.html && test -f .pages-dist/404-internal.html && test -f .pages-dist/build-info.json
+
+      - name: Upload built site
+        uses: actions/upload-artifact@v4
+        with:
+          name: pages-dist
+          path: .pages-dist
+          if-no-files-found: error
+          include-hidden-files: true
+
+  verify-production:
+    name: Verify production serves this commit
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '20.x'
+
+      - name: Download built site
+        uses: actions/download-artifact@v4
+        with:
+          name: pages-dist
+          path: .pages-dist
+
+      - name: Wait for production and compare artifacts
+        env:
+          VERIFY_BASE_URL: ${{ vars.APP_BASE_URL || 'https://irishvisaupdatetracker.pages.dev' }}
+          VERIFY_COMMIT: ${{ github.sha }}
+        run: node tools/verify-deploy.mjs
+
+      - name: Smoke-test production
+        env:
+          SMOKE_BASE_URL: ${{ vars.APP_BASE_URL || 'https://irishvisaupdatetracker.pages.dev' }}
+          SMOKE_EXPECT_COMMIT: ${{ github.sha }}
+        run: node tools/smoke-deploy.mjs

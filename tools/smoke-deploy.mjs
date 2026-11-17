@@ -11,14 +11,26 @@
 
 const BASE = String(process.env.SMOKE_BASE_URL || 'https://irishvisaupdatetracker.pages.dev').replace(/\/+$/, '');
 const MONTH = process.env.SMOKE_MONTH || '2026-11';
+const EXPECT_COMMIT = String(process.env.SMOKE_EXPECT_COMMIT || '').trim();
 let failures = 0;
+let requestNumber = 0;
 
 async function get(path, options = {}) {
-  const response = await fetch(BASE + path, { redirect: 'follow', ...options });
+  // Each probe gets a unique query so an old edge cache entry cannot make a
+  // removed route look present (or a new asset look stale).
+  const url = new URL(BASE + path);
+  url.searchParams.set('__smoke', String(++requestNumber) + '-' + Date.now().toString(36));
+  const response = await fetch(url, { redirect: 'follow', ...options });
   const text = await response.text();
   let json = null;
   try { json = JSON.parse(text); } catch { /* html or js */ }
-  return { status: response.status, type: response.headers.get('content-type') || '', text, json };
+  return {
+    status: response.status,
+    type: response.headers.get('content-type') || '',
+    location: response.headers.get('location'),
+    text,
+    json
+  };
 }
 
 function check(name, ok, detail) {
@@ -46,6 +58,19 @@ check('removed auth route is not served', authStatus.status === 404, 'HTTP ' + a
 
 const workspace = await get('/workspace');
 check('removed workspace route is not served', workspace.status === 404, 'HTTP ' + workspace.status);
+
+const missing = await get('/__smoke_missing_page__');
+check('unknown route returns the custom 404 body', missing.status === 404 && /Page not found/i.test(missing.text), 'HTTP ' + missing.status + ', ' + missing.text.length + ' bytes');
+check('custom 404 does not redirect', !missing.location, missing.location || 'no Location');
+
+const reserved404 = await get('/404.html');
+check('reserved 404 path still returns the custom body', reserved404.status === 404 && /Page not found/i.test(reserved404.text), 'HTTP ' + reserved404.status + ', ' + reserved404.text.length + ' bytes');
+
+const buildInfo = await get('/build-info.json');
+check('build marker serves', buildInfo.status === 200 && buildInfo.json && typeof buildInfo.json.commit === 'string', 'HTTP ' + buildInfo.status);
+if (EXPECT_COMMIT) {
+  check('build marker matches this commit', buildInfo.json && buildInfo.json.commit === EXPECT_COMMIT, buildInfo.json && buildInfo.json.commit);
+}
 
 const manifest = await get('/manifest.json');
 check('manifest serves', manifest.status === 200 && manifest.json && Array.isArray(manifest.json.icons) && manifest.json.icons.length > 0, 'HTTP ' + manifest.status);
