@@ -2051,6 +2051,35 @@
     .watch-card th { text-align: left; color: var(--ink-soft); font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; padding: 8px; border-bottom: 1px solid var(--border); }
     .watch-card td { padding: 10px 8px; border-bottom: 1px solid var(--border); color: var(--ink); }
     .watch-card .mono { font-size: 12px; }
+    .watch-change-summary {
+        margin: 0 0 10px;
+        padding: 9px 11px;
+        border-left: 3px solid var(--green);
+        border-radius: 0 8px 8px 0;
+        background: var(--green-soft);
+        color: var(--green-text);
+        font-size: 12px;
+        line-height: 1.5;
+    }
+    .watch-change-badge {
+        display: inline-block;
+        margin-top: 6px;
+        padding: 2px 6px;
+        border-radius: 999px;
+        background: var(--green-soft);
+        color: var(--green-text);
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.02em;
+        text-transform: uppercase;
+    }
+    .watch-change-detail {
+        display: block;
+        margin-top: 3px;
+        color: var(--ink-muted);
+        font-size: 11px;
+        line-height: 1.4;
+    }
     .export-btn.tu-btn { margin-left: 8px; }
 
     /* Checklist tab */

@@ -102,6 +102,45 @@ test.describe('SPA shell', () => {
     expect(saved[0].office).toBe('new-delhi');
   });
 
+  test('shows decision changes since the previous visit', async ({ page }) => {
+    await page.route('**/data/visa_decisions.json', (route) => route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify([['2026-01-03', '48850812', 'Approved']]),
+    }));
+    await page.addInitScript(() => {
+      localStorage.setItem('visa-watchlist', JSON.stringify([
+        { number: '48850812', office: 'new-delhi' },
+      ]));
+      localStorage.setItem('visa-watchlist-seen', JSON.stringify({
+        'new-delhi|48850812': {
+          signature: 'new-delhi|Refused|2026-01-02',
+          decision: 'Refused',
+          date: '2026-01-02',
+          seen_at: '2026-01-02T10:00:00.000Z',
+        },
+      }));
+    });
+
+    await openVisaTracker(page);
+    await page.locator('.navpill[data-tab="saved"]').click();
+    const row = page.locator('#watch-local-rows tr[data-office="new-delhi"][data-watch-number="48850812"]');
+    await expect(row).toContainText('Approved');
+    await expect(row.locator('.watch-change-badge')).toHaveText('New since your last visit');
+    await expect(row.locator('.watch-change-detail')).toContainText('Previously Refused');
+    await expect(page.locator('#watch-change-summary')).toContainText('1 saved application changed since your last visit');
+
+    const baseline = await page.evaluate(() => JSON.parse(localStorage.getItem('visa-watchlist-seen') || '{}'));
+    expect(baseline['new-delhi|48850812'].decision).toBe('Approved');
+    expect(baseline['new-delhi|48850812'].signature).toBe('new-delhi|Approved|2026-01-03');
+
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await page.locator('.navpill[data-tab="saved"]').click();
+    await expect(page.locator('#watch-local-rows tr[data-office="new-delhi"][data-watch-number="48850812"]')).toContainText('Approved');
+    await expect(page.locator('#watch-local-rows .watch-change-badge')).toHaveCount(0);
+    await expect(page.locator('#watch-change-summary')).toContainText('No changes since your last visit');
+  });
+
   test('loads the latest decision from a watched office archive', async ({ page }) => {
     await page.route('**/data/visa_decisions.json', (route) => route.fulfill({
       status: 200,

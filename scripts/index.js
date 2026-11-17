@@ -286,6 +286,11 @@
             let staleAt = null; // data being shown is from this timestamp (live refresh failed)
             let dataLoadError = false;
             let officeWatchData = Object.create(null);
+            // Change badges are computed once per page visit, then the stored
+            // baseline is advanced. A later repaint in the same visit keeps the
+            // badge instead of silently dropping it.
+            let watchVisitChanges = Object.create(null);
+            const WATCH_SEEN_KEY = 'visa-watchlist-seen';
             let officeWatchPromises = Object.create(null);
             let officeLookupMeta = null;
             let officeLookupMetaPromise = null;
@@ -1851,6 +1856,7 @@
                     '<h3 class="watch-h3">Saved applications</h3>' +
                     '<div class="note2" id="watch-local-status">Checking saved applications\u2026</div>' +
                     '<div class="note2" id="watch-data-note"></div>' +
+                    '<div class="watch-change-summary" id="watch-change-summary" role="status" aria-live="polite" hidden></div>' +
                     '<div id="watch-local-rows"></div>' +
                     '<p class="note2" style="margin-bottom:0;">For Telegram alerts, use the Alerts tab. Browser notifications can also be enabled per application below.</p>' +
                     '</div>' +
@@ -1936,12 +1942,14 @@
             function paintWatchlist() {
                 var box = document.getElementById('watch-local-rows');
                 var status = document.getElementById('watch-local-status');
+                var summary = document.getElementById('watch-change-summary');
                 if (!box) return;
                 var list = getWatchlist();
                 var note = document.getElementById('watch-data-note');
                 if (note) note.textContent = watchlistDataNote(list);
                 if (!list.length) {
                     if (status) status.textContent = 'No saved applications yet.';
+                    if (summary) { summary.hidden = true; summary.textContent = ''; }
                     box.innerHTML = '<div class="note2">Add an application above to keep it here.</div>';
                     return;
                 }
@@ -1952,9 +1960,8 @@
                     states[item.office] = state;
                     if (state.status === 'loading') checking = true;
                 });
-                if (status) status.textContent = checking
-                    ? 'Checking saved applications\u2026'
-                    : list.length + ' saved application' + (list.length === 1 ? '' : 's');
+                var seen = getWatchSeen();
+                var changed = 0;
                 var html = '<div class="table-wrap watchlist-table-wrap"><table class="results-table"><thead><tr>' +
                     '<th scope="col">Application</th><th scope="col">Office</th>' +
                     '<th scope="col">Nickname</th><th scope="col">Latest decision</th>' +
@@ -1968,10 +1975,20 @@
                     var decision;
                     var date = '\u2014';
                     var pill;
+                    var change = row ? watchChangeFor(item, row, seen) : null;
+                    if (change) changed++;
                     if (row) {
                         decision = escapeHtml(row.decision || '-');
                         date = '<time datetime="' + escapeHtml(row.date) + '">' + escapeHtml(humanDate(row.date)) + '</time>';
                         pill = '<span class="pill ' + (row._pillClass || 'amber') + '">' + decision + '</span>';
+                        if (change) {
+                            var previous = change.previous || {};
+                            var previousDate = lookupFormatDate(previous.date);
+                            pill += '<span class="watch-change-badge">New since your last visit</span>' +
+                                '<span class="watch-change-detail">Previously ' +
+                                escapeHtml(previous.decision || 'not listed') +
+                                (previousDate ? ' on ' + escapeHtml(previousDate) : '') + '</span>';
+                        }
                     } else {
                         decision = state.status === 'loading' ? 'Checking office data\u2026' :
                             state.status === 'error' ? 'Office data unavailable' : 'No decision found';
@@ -1994,7 +2011,22 @@
                         '" data-watch-office="' + escapeHtml(item.office) +
                         '" title="Remove">Remove</button></td>' +
                         '</tr>';
+                    if (row) rememberWatchSeen(item, row, seen);
                 });
+                saveWatchSeen(seen);
+                if (status) {
+                    status.textContent = checking
+                        ? 'Checking saved applications\u2026'
+                        : list.length + ' saved application' + (list.length === 1 ? '' : 's') +
+                            (changed ? ' \u00b7 ' + changed + ' changed since your last visit' : '');
+                }
+                if (summary) {
+                    summary.hidden = false;
+                    summary.textContent = changed
+                        ? changed + ' saved application' + (changed === 1 ? '' : 's') +
+                            ' changed since your last visit. The previous decision is shown below.'
+                        : 'No changes since your last visit.';
+                }
                 box.innerHTML = html + '</tbody></table></div>';
                 box.onclick = function(e) {
                     var pushBtn = e.target && e.target.closest ? e.target.closest('[data-watch-push]') : null;
@@ -4230,14 +4262,71 @@
                     return Array.isArray(raw) ? cleanWatchlist(raw) : [];
                 } catch (e) { return []; }
             }
+            function getWatchSeen() {
+                try {
+                    var raw = JSON.parse(localStorage.getItem(WATCH_SEEN_KEY) || '{}');
+                    return raw && typeof raw === 'object' && !Array.isArray(raw) ? raw : {};
+                } catch (e) { return {}; }
+            }
+            function saveWatchSeen(map) {
+                try {
+                    localStorage.setItem(WATCH_SEEN_KEY, JSON.stringify(map || {}));
+                } catch (e) {
+                    // The saved list itself still works if this optional history
+                    // cannot be stored (private mode or full storage).
+                }
+            }
+            function pruneWatchSeen(list) {
+                var allowed = Object.create(null);
+                (list || []).forEach(function(item) {
+                    allowed[item.office + '|' + item.number] = true;
+                });
+                var seen = getWatchSeen();
+                var changed = false;
+                Object.keys(seen).forEach(function(key) {
+                    if (!allowed[key]) { delete seen[key]; changed = true; }
+                });
+                if (changed) saveWatchSeen(seen);
+            }
             function saveWatchlist(list) {
                 try {
-                    localStorage.setItem('visa-watchlist', JSON.stringify(cleanWatchlist(list)));
+                    var clean = cleanWatchlist(list);
+                    localStorage.setItem('visa-watchlist', JSON.stringify(clean));
+                    pruneWatchSeen(clean);
                     return true;
                 } catch (e) {
                     console.warn('watchlist storage failed:', e);
                     return false;
                 }
+            }
+            function watchSeenKey(item) {
+                return item.office + '|' + item.number;
+            }
+            function watchSeenSignature(row, office) {
+                return [office || row.embassy || 'new-delhi', row.decision || '', row.date || ''].join('|');
+            }
+            function watchChangeFor(item, row, seen) {
+                var key = watchSeenKey(item);
+                var previous = seen[key];
+                if (!previous || previous.signature === watchSeenSignature(row, item.office)) return null;
+                if (!watchVisitChanges[key]) {
+                    watchVisitChanges[key] = {
+                        previous: previous,
+                        current: {
+                            decision: row.decision || '',
+                            date: row.date || ''
+                        }
+                    };
+                }
+                return watchVisitChanges[key];
+            }
+            function rememberWatchSeen(item, row, seen) {
+                seen[watchSeenKey(item)] = {
+                    signature: watchSeenSignature(row, item.office),
+                    decision: row.decision || '',
+                    date: row.date || '',
+                    seen_at: new Date().toISOString()
+                };
             }
             function addWatchItem(value) {
                 var item = normalizeWatchItem(value);
