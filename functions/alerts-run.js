@@ -14,67 +14,21 @@
 
 import { loadReportData } from './report-data.js';
 import { isTelegramConfigured, ensureTelegramSchema, sendTelegram } from './telegram.js';
+import {
+  DIGEST_INTERVALS,
+  buildDigestMessage,
+  dueForDigest,
+  findDecision,
+  shouldSend,
+  shouldSendDigest
+} from './digest.js';
+
+// Kept as named exports because the alert-runner tests and other callers use
+// the runner as the entry point for digest behavior.
+export { buildDigestMessage, dueForDigest, findDecision, shouldSend, shouldSendDigest };
 
 const MAX_ALERTS = 500;
 const DEFAULT_BASE = 'https://irishvisaupdatetracker.pages.dev';
-const DIGEST_INTERVALS = {
-  daily: 24 * 60 * 60 * 1000,
-  weekly: 7 * 24 * 60 * 60 * 1000
-};
-const OFFICE_NAMES = {
-  'new-delhi': 'New Delhi',
-  beijing: 'Beijing',
-  dublin: 'Dublin',
-  'abu-dhabi': 'Abu Dhabi',
-  abuja: 'Abuja',
-  ankara: 'Ankara'
-};
-
-function normalizeNumber(value) {
-  return String(value || '').replace(/\s+/g, '').replace(/^IRL/i, '').toUpperCase();
-}
-
-/**
- * Find the current published row for a subscription. Office and number are
- * matched independently so a subscriber cannot accidentally receive a New
- * Delhi decision for a Beijing application.
- */
-export function findDecision(rows, applicationNumber, embassy) {
-  const number = normalizeNumber(applicationNumber);
-  const office = String(embassy || '').trim();
-  if (!number || !office) return null;
-  return (rows || []).find((row) =>
-    normalizeNumber(row.number) === number &&
-    String(row.office || '').trim() === office
-  ) || null;
-}
-
-/**
- * A decision date is the alert key. Re-running after a successful send is a
- * no-op; a correction with a newer report date gets one more alert.
- */
-export function shouldSend(lastSent, decisionDate) {
-  const sent = String(lastSent || '').slice(0, 10);
-  const date = String(decisionDate || '').slice(0, 10);
-  return Boolean(date) && (!sent || sent < date);
-}
-
-/** True when a chat's digest is due, measured from the last successfully sent digest. */
-export function dueForDigest(lastSent, frequency, now = Date.now()) {
-  if (!DIGEST_INTERVALS[frequency]) return false;
-  if (!lastSent) return true;
-  const sentAt = Date.parse(String(lastSent));
-  if (!Number.isFinite(sentAt)) return true;
-  return now - sentAt >= DIGEST_INTERVALS[frequency];
-}
-
-/** Daily digests are suppressed when nothing changed; weekly digests send a
- *  deliberate no-change summary. */
-export function shouldSendDigest(frequency, changedCount) {
-  if (frequency === 'weekly') return true;
-  if (frequency === 'daily') return Number(changedCount) > 0;
-  return false;
-}
 
 function emptyCounters() {
   return { checked: 0, matched: 0, sent: 0, skipped: 0, failed: 0, would_send: 0 };
@@ -146,7 +100,9 @@ async function telegramRows(env) {
     SELECT s.id, s.chat_id, s.application_number, s.embassy, s.last_alert_sent,
            COALESCE(s.immediate, 1) AS immediate,
            COALESCE(p.digest_frequency, 'off') AS digest_frequency,
-           p.last_digest_sent
+           p.last_digest_sent,
+           COALESCE(p.digest_hour, 9) AS digest_hour,
+           COALESCE(p.digest_timezone, 'UTC') AS digest_timezone
     FROM telegram_subscriptions s
     LEFT JOIN telegram_preferences p ON p.chat_id = s.chat_id
     WHERE s.active = 1
@@ -167,7 +123,9 @@ async function legacyTelegramRows(env) {
     ...row,
     immediate: 1,
     digest_frequency: 'off',
-    last_digest_sent: null
+    last_digest_sent: null,
+    digest_hour: 9,
+    digest_timezone: 'UTC'
   }));
 }
 
@@ -229,56 +187,6 @@ async function runTelegramAlerts(env, report, dryRun) {
   return { checked: rows.length, matched, sent, skipped, failed, would_send: wouldSend };
 }
 
-/**
- * Group one chat's linked applications into a single digest message.
- * No-change offices are stated explicitly; a daily digest with no changes at
- * all is suppressed by the caller, while a weekly digest still sends it.
- */
-export function buildDigestMessage(chatRows, options = {}) {
-  const rows = Array.isArray(chatRows) ? chatRows : [];
-  const base = String(options.baseUrl || DEFAULT_BASE).replace(/\/+$/, '');
-  const now = options.now instanceof Date ? options.now : new Date(options.now || Date.now());
-  const changed = rows.filter((row) => row.decision);
-  const offices = new Map();
-  for (const row of rows) {
-    const office = String(row.embassy || '').trim();
-    if (!offices.has(office)) offices.set(office, []);
-    offices.get(office).push(row);
-  }
-
-  const lines = [
-    'Irish visa decision digest — ' + now.toISOString().slice(0, 10),
-    rows.length + ' tracked application' + (rows.length === 1 ? '' : 's') +
-      ' · ' + changed.length + ' new decision' + (changed.length === 1 ? '' : 's'),
-    ''
-  ];
-
-  if (!changed.length) {
-    lines.push('No new published decisions for your linked applications.');
-  } else {
-    for (const [office, officeRows] of offices) {
-      const changedRows = officeRows.filter((row) => row.decision);
-      const unchanged = officeRows.length - changedRows.length;
-      if (!changedRows.length) {
-        lines.push((OFFICE_NAMES[office] || office) + ': no change (' + unchanged +
-          ' application' + (unchanged === 1 ? '' : 's') + ').');
-        continue;
-      }
-      lines.push((OFFICE_NAMES[office] || office) + ':');
-      for (const row of changedRows) {
-        lines.push('• ' + row.application_number + ' — ' + row.decision.decision +
-          ' (decision ' + row.decision.date + ', published ' + row.decision.report_date + ')');
-      }
-      if (unchanged > 0) lines.push('  No change for ' + unchanged + ' other application' + (unchanged === 1 ? '' : 's') + '.');
-      lines.push('');
-    }
-  }
-
-  lines.push('View or manage: ' + base + '/?tracker=visa&tab=alerts');
-  lines.push('Send /status to review linked applications, /digest off for immediate alerts.');
-  return lines.join('\n').slice(0, 4000);
-}
-
 async function runTelegramDigests(env, report, dryRun) {
   if (!isTelegramConfigured(env)) return emptyCounters();
   await ensureTelegramSchema(env);
@@ -304,7 +212,11 @@ async function runTelegramDigests(env, report, dryRun) {
       skipped += 1;
       continue;
     }
-    if (!dueForDigest(chatRows[0].last_digest_sent, frequency)) {
+    const schedule = {
+      hour: chatRows[0].digest_hour,
+      timeZone: chatRows[0].digest_timezone
+    };
+    if (!dueForDigest(chatRows[0].last_digest_sent, frequency, Date.now(), schedule)) {
       skipped += 1;
       continue;
     }
@@ -332,7 +244,8 @@ async function runTelegramDigests(env, report, dryRun) {
     }
 
     const result = await sendTelegram(env, chatId, buildDigestMessage(states, {
-      baseUrl: env.APP_BASE_URL || DEFAULT_BASE
+      baseUrl: env.APP_BASE_URL || DEFAULT_BASE,
+      timeZone: schedule.timeZone
     }));
     if (!result.sent) {
       failed += 1;

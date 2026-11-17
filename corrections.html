@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Correction ledger | Irish Visa Decision Tracker</title>
+  <meta name="description" content="A public, source-linked ledger of rows added, removed or changed when Irish visa offices republish their decision files.">
+  <link rel="canonical" href="https://irishvisaupdatetracker.pages.dev/corrections">
+  <link rel="describedby" href="/llms.txt" type="text/plain">
+  <meta name="theme-color" content="#ffffff">
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="Correction ledger | Irish Visa Decision Tracker">
+  <meta property="og:description" content="See every recorded difference between consecutive official Irish visa office reports, with a link to the source file.">
+  <meta property="og:url" content="https://irishvisaupdatetracker.pages.dev/corrections">
+  <meta property="og:image" content="https://irishvisaupdatetracker.pages.dev/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <link rel="icon" href="/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <link rel="stylesheet" href="/pages.css">
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "url": "https://irishvisaupdatetracker.pages.dev/corrections",
+    "name": "Correction ledger | Irish Visa Decision Tracker",
+    "inLanguage": "en",
+    "isPartOf": { "@id": "https://irishvisaupdatetracker.pages.dev/#website" }
+  }
+  </script>
+  <link rel="stylesheet" href="/site-chrome.css">
+</head>
+<body>
+  <a class="skip-link" href="#main-content">Skip to content</a>
+
+  <header class="sitebar">
+  <div class="sitebar-inner">
+    <a class="brand" href="/" aria-label="Irish Visa Decision Tracker home">
+      <img src="/icon.svg" alt="" width="24" height="24">
+      <span>Irish Visa Decision Tracker</span>
+    </a>
+    <nav class="sitebar-nav" aria-label="Site">
+      <a href="/">Tracker</a>
+      <a href="/daily-summaries">Daily summaries</a>
+      <a href="/visa-processing-times">Processing times</a>
+      <a href="/about">About</a>
+      <details class="sitebar-more is-current">
+        <summary aria-current="page">More</summary>
+        <div class="sitebar-more-panel">
+          <a href="/status">Data status</a>
+          <a href="/comparison">Method &amp; sources</a>
+          <a href="/monthly-report">Monthly report</a>
+          <a href="/corrections" aria-current="page">Correction ledger</a>
+          <a href="/stamp-1g-processing-dates">Stamp 1G</a>
+          <a href="/employment-permit-processing-dates">Employment permits</a>
+          <a href="/vac-transit">VAC &amp; transit</a>
+          <a href="/help">Help</a>
+          <a href="/contact">Contact</a>
+          <a href="/privacy">Privacy</a>
+          <a href="/terms">Terms</a>
+        </div>
+      </details>
+      <details class="sitebar-prefs">
+        <summary>Preferences</summary>
+        <div class="sitebar-more-panel sitebar-prefs-panel">
+          <div class="sitebar-pref-row">
+            <span class="sitebar-pref-label">Time zone</span>
+            <button class="sitebar-pref-button" type="button" data-time-mode-toggle data-mode="utc" aria-pressed="false">
+              <span data-time-mode-label>UTC</span>
+            </button>
+          </div>
+          <div class="sitebar-pref-row">
+            <span class="sitebar-pref-label">Theme</span>
+            <button class="sitebar-pref-button" type="button" data-theme-toggle aria-pressed="false">
+              <span data-theme-label>Light</span>
+            </button>
+          </div>
+          <label class="sitebar-pref-row" data-language-row hidden>
+            <span class="sitebar-pref-label">Language</span>
+            <select class="sitebar-pref-select" data-language-select aria-label="Language"></select>
+          </label>
+        </div>
+      </details>
+    </nav>
+  </div>
+</header>
+
+  <main id="main-content" tabindex="-1" class="page">
+    <h1>Correction ledger</h1>
+    <p class="page-meta">Public record &bull; Source-linked &bull; Newest first</p>
+
+    <p class="page-lede">
+      When an office republishes a decision file, the tracker compares it with the previous
+      file and records what changed. This page shows every recorded difference, including the
+      office, report date and a link to the official source, so a correction can be checked
+      rather than taken on trust.
+    </p>
+
+    <section aria-labelledby="ledger-title">
+      <h2 id="ledger-title">Reported changes</h2>
+      <p>
+        Counts are report-level. Individual rows appear under <strong>Changed rows</strong> when an
+        application’s published outcome changed between two files. A report with no recorded
+        difference is not listed.
+      </p>
+      <div id="correction-summary" class="correction-summary" role="status" aria-live="polite">Loading changes…</div>
+      <div id="correction-list" class="correction-list"></div>
+      <noscript>
+        <p class="callout">This ledger is rendered from <code>/api/reports/corrections</code>. Enable JavaScript, or read that JSON endpoint directly.</p>
+      </noscript>
+    </section>
+
+    <section id="report-error" aria-labelledby="report-error-title">
+      <h2 id="report-error-title">Report an error</h2>
+      <p>
+        If a row is missing, wrong or attached to the wrong report, use the structured report
+        form. It asks for the office, report date, source URL and what needs checking. Reports are
+        stored privately; this ledger only shows differences detected in the official files.
+      </p>
+      <p><a class="btn primary" href="/contact#report-error">Report a data error</a></p>
+    </section>
+
+    <section aria-labelledby="diff-help-title">
+      <h2 id="diff-help-title">How to read a diff</h2>
+      <ul>
+        <li><strong>Added:</strong> rows present in the newer file but absent from the previous one.</li>
+        <li><strong>Removed:</strong> rows present in the previous file but absent from the newer one.</li>
+        <li><strong>Changed:</strong> the same application number was published with a different outcome.</li>
+      </ul>
+      <p>
+        A large added or removed count can mean a new cumulative file rather than a correction;
+        the source link is the authoritative record. This project does not infer missing rows or
+        rewrite an office’s history.
+      </p>
+    </section>
+  </main>
+
+  <footer class="sitebar-footer">
+  <div class="sitebar-footer-inner">
+    <div class="sitebar-footer-brand">
+      <a class="brand" href="/" aria-label="Irish Visa Decision Tracker home">
+        <img src="/icon.svg" alt="" width="24" height="24">
+        <span>Irish Visa Decision Tracker</span>
+      </a>
+      <p>Independent and unofficial. Not immigration advice.</p>
+    </div>
+    <nav class="sitebar-footer-links" aria-label="Footer">
+      <a href="/status">Data status</a>
+      <a href="/comparison">Method &amp; sources</a>
+      <a href="/corrections">Corrections</a>
+      <a href="/help">Help</a>
+      <a href="/contact">Contact</a>
+      <a href="/privacy">Privacy</a>
+      <a href="/terms">Terms</a>
+      <a href="https://github.com/parth-soni-10/Irish-Visa-Tracker" rel="noopener">GitHub</a>
+    </nav>
+    <p class="sitebar-footer-copy">&copy; 2026 Parth Soni &middot; Dublin, Ireland</p>
+  </div>
+</footer>
+
+  <script src="/scripts/time-mode.js" defer></script>
+  <script src="/site-chrome.js" defer></script>
+  <script src="/scripts/corrections.js" defer></script>
+</body>
+</html>

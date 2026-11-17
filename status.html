@@ -8,6 +8,7 @@
   <link rel="canonical" href="https://irishvisaupdatetracker.pages.dev/status">
   <link rel="alternate" type="application/rss+xml" title="Irish visa official file feed" href="/feed.xml">
   <link rel="alternate" type="application/feed+json" title="Irish visa official file feed (JSON)" href="/official-file-feed.json">
+  <link rel="alternate" type="text/calendar" title="Irish visa office updates" href="/api/calendar/offices.ics">
   <link rel="describedby" href="/llms.txt" type="text/plain">
   <link rel="icon" href="/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
@@ -95,6 +96,26 @@
       <p class="small-note">
         The feed is generated from <a href="/data/reports/index.json">the report archive</a>.
         Feed readers refresh it automatically; no account is needed.
+      </p>
+    </section>
+
+    <section id="calendar-subscription" class="feed-section">
+      <h2>All-office calendar subscription</h2>
+      <p>
+        One rolling webcal feed for New Delhi, Beijing, Dublin, Abu Dhabi, Abuja and Ankara.
+        Expected update windows are labelled <strong>Expected</strong> and marked tentative; when a
+        report file is recorded, a separate <strong>Published</strong> event confirms it. Stable
+        event IDs let a calendar app update the same entry instead of creating duplicates.
+      </p>
+      <div class="feed-links">
+        <a class="btn" href="webcal://irishvisaupdatetracker.pages.dev/api/calendar/offices.ics">Subscribe with webcal</a>
+        <a class="btn" href="/api/calendar/offices.ics">Download .ics</a>
+      </div>
+      <p class="small-note">
+        The feed covers the next eight weeks of expected windows and recent published reports,
+        including the latest report for every office. Expected times are estimates, not
+        publication guarantees. The subscription refreshes from the same public report archive
+        used by the rest of this page.
       </p>
     </section>
 
@@ -225,12 +246,14 @@
         <a href="/data/visa_meta.json">scraper health file</a> and the report dates above.
       </p>
       <p class="feed-links">
-        <a class="btn" href="/api/calendar/next-update.ics">Add the next New Delhi update to your calendar</a>
+        <a class="btn" href="/api/calendar/next-update.ics">Next New Delhi update (.ics)</a>
+        <a class="btn" href="/api/calendar/offices.ics">All six offices (.ics)</a>
       </p>
       <p class="callout">
-        <strong>Spotted a stale or incorrect row?</strong> Email
-        <a href="mailto:soni.soni.parth@gmail.com">soni.soni.parth@gmail.com</a> with the office,
-        application number and report date. Corrections are checked against the official source.
+        <strong>Spotted a stale or incorrect row?</strong> Use the structured
+        <a href="/contact#report-error">data error report</a> with the office, report date and
+        official source URL. Recorded file differences are listed in the public
+        <a href="/corrections">correction ledger</a>.
       </p>
     </section>
   </main>

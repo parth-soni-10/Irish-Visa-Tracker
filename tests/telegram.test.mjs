@@ -220,6 +220,106 @@ test('webhook digest commands explain the grouped mode and per-application immed
   }
 });
 
+test('webhook /digest saves a preferred hour and timezone, reports status and previews without changing state', async () => {
+  const { db, preferenceRows, subscriptionRows } = makeTelegramDb({
+    subscriptions: [
+      { chat_id: '123456789', application_number: '85444062', embassy: 'new-delhi', active: 1 }
+    ]
+  });
+  const api = stubTelegramApi();
+  try {
+    const set = await handleTelegramWebhook(
+      webhookRequest(123456789, '/digest daily 8 Europe/Dublin'),
+      telegramEnv(db, { ASSETS: reportAssets() })
+    );
+    assert.equal(set.status, 200);
+    const preference = preferenceRows.get('123456789');
+    assert.equal(preference.digest_frequency, 'daily');
+    assert.equal(preference.digest_hour, 8);
+    assert.equal(preference.digest_timezone, 'Europe/Dublin');
+    assert.ok(preference.last_digest_sent, 'enabling a digest should record its schedule start');
+    assert.match(api.sent[0].text, /Digest on: a daily digest at 08:00 Europe\/Dublin/);
+    assert.match(api.sent[0].text, /Daily digests are sent only when something changes/);
+
+    const beforePreview = preference.last_digest_sent;
+    const status = await handleTelegramWebhook(
+      webhookRequest(123456789, '/digest status'),
+      telegramEnv(db, { ASSETS: reportAssets() })
+    );
+    assert.equal(status.status, 200);
+    assert.match(api.sent[1].text, /Digest: a daily digest at 08:00 Europe\/Dublin/);
+    assert.match(api.sent[1].text, /Last digest:/);
+    assert.match(api.sent[1].text, /Telegram-only/);
+
+    const preview = await handleTelegramWebhook(
+      webhookRequest(123456789, '/digest preview'),
+      telegramEnv(db, { ASSETS: reportAssets() })
+    );
+    assert.equal(preview.status, 200);
+    assert.match(api.sent[2].text, /Digest preview/);
+    assert.match(api.sent[2].text, /1 tracked application · 1 new decision/);
+    assert.match(api.sent[2].text, /85444062 — Approved/);
+    assert.equal(preference.last_digest_sent, beforePreview, 'preview must not move the next digest');
+    assert.equal(subscriptionRows[0].last_alert_sent, undefined, 'preview must not mark a decision as sent');
+  } finally {
+    api.restore();
+  }
+});
+
+test('webhook /digest rejects bad hours and timezones without saving preferences', async () => {
+  const { db, preferenceRows } = makeTelegramDb({
+    subscriptions: [
+      { chat_id: '123456789', application_number: '85444062', embassy: 'new-delhi', active: 1 }
+    ]
+  });
+  const api = stubTelegramApi();
+  try {
+    await handleTelegramWebhook(
+      webhookRequest(123456789, '/digest daily 25 UTC'),
+      telegramEnv(db)
+    );
+    assert.match(api.sent[0].text, /delivery hour from 0 to 23/);
+    assert.equal(preferenceRows.size, 0);
+
+    await handleTelegramWebhook(
+      webhookRequest(123456789, '/digest daily 8 Not/AZone'),
+      telegramEnv(db)
+    );
+    assert.match(api.sent[1].text, /timezone is not recognized/);
+    assert.equal(preferenceRows.size, 0);
+
+    await handleTelegramWebhook(
+      webhookRequest(123456789, '/digest weekly 18:00 America/New_York'),
+      telegramEnv(db)
+    );
+    const preference = preferenceRows.get('123456789');
+    assert.equal(preference.digest_frequency, 'weekly');
+    assert.equal(preference.digest_hour, 18);
+    assert.equal(preference.digest_timezone, 'America/New_York');
+    assert.match(api.sent[2].text, /Weekly digests include a no-change summary/);
+
+    await handleTelegramWebhook(
+      webhookRequest(123456789, '/digest off'),
+      telegramEnv(db)
+    );
+    const afterOff = preferenceRows.get('123456789');
+    assert.equal(afterOff.digest_frequency, 'off');
+    assert.equal(afterOff.digest_hour, 18, 'turning the digest off must keep the preferred hour');
+    assert.equal(afterOff.digest_timezone, 'America/New_York');
+
+    await handleTelegramWebhook(
+      webhookRequest(123456789, '/digest daily'),
+      telegramEnv(db)
+    );
+    const afterOn = preferenceRows.get('123456789');
+    assert.equal(afterOn.digest_frequency, 'daily');
+    assert.equal(afterOn.digest_hour, 18);
+    assert.equal(afterOn.digest_timezone, 'America/New_York');
+  } finally {
+    api.restore();
+  }
+});
+
 const WEBHOOK_SECRET = 'webhook-secret';
 
 /**
@@ -227,9 +327,16 @@ const WEBHOOK_SECRET = 'webhook-secret';
  * interprets the handful of statements handleTelegramWebhook issues rather
  * than pretending to be SQL, so the assertions can inspect the rows directly.
  */
-function makeTelegramDb({ links = [], subscriptions = [] } = {}) {
+function makeTelegramDb({ links = [], subscriptions = [], preferences = [] } = {}) {
   const linkRows = new Map(links.map((link) => [link.token, { ...link }]));
   const subscriptionRows = subscriptions.map((row) => ({ ...row }));
+  const preferenceRows = new Map(preferences.map((row) => [String(row.chat_id), {
+    digest_frequency: 'off',
+    last_digest_sent: null,
+    digest_hour: 9,
+    digest_timezone: 'UTC',
+    ...row
+  }]));
 
   const db = {
     prepare(sql) {
@@ -281,6 +388,24 @@ function makeTelegramDb({ links = [], subscriptions = [] } = {}) {
               embassy,
               expires_at: expiresAt
             });
+          } else if (/INSERT INTO telegram_preferences/i.test(sql)) {
+            const [chatId, frequency, lastSent, hour, timeZone] = statement.args;
+            preferenceRows.set(String(chatId), {
+              chat_id: String(chatId),
+              digest_frequency: frequency,
+              last_digest_sent: lastSent,
+              digest_hour: hour,
+              digest_timezone: timeZone
+            });
+          } else if (/UPDATE telegram_preferences SET digest_frequency = 'off'/i.test(sql)) {
+            const preference = preferenceRows.get(String(statement.args[0]));
+            if (preference) {
+              preference.digest_frequency = 'off';
+              preference.last_digest_sent = null;
+            }
+          } else if (/UPDATE telegram_preferences SET last_digest_sent = \?/i.test(sql)) {
+            const preference = preferenceRows.get(String(statement.args[1]));
+            if (preference) preference.last_digest_sent = statement.args[0];
           } else if (/DELETE FROM telegram_links WHERE token = \?/i.test(sql)) {
             linkRows.delete(statement.args[0]);
           } else if (/DELETE FROM telegram_links WHERE datetime\(expires_at\)/i.test(sql)) {
@@ -304,13 +429,22 @@ function makeTelegramDb({ links = [], subscriptions = [] } = {}) {
               row.active
             ) ? { linked: 1 } : null;
           }
+          if (/FROM telegram_preferences WHERE chat_id = \?/i.test(sql)) {
+            const preference = preferenceRows.get(String(statement.args[0]));
+            return preference ? { ...preference } : null;
+          }
           return null;
         },
         async all() {
           if (/FROM telegram_subscriptions WHERE chat_id = \?/i.test(sql)) {
             const results = subscriptionRows
               .filter((row) => row.chat_id === statement.args[0] && row.active)
-              .map((row) => ({ application_number: row.application_number, embassy: row.embassy }));
+              .map((row) => ({
+                application_number: row.application_number,
+                embassy: row.embassy,
+                immediate: row.immediate == null ? 1 : row.immediate,
+                last_alert_sent: row.last_alert_sent || null
+              }));
             return { results };
           }
           return { results: [] };
@@ -320,14 +454,15 @@ function makeTelegramDb({ links = [], subscriptions = [] } = {}) {
     }
   };
 
-  return { db, linkRows, subscriptionRows };
+  return { db, linkRows, subscriptionRows, preferenceRows };
 }
 
-function telegramEnv(db) {
+function telegramEnv(db, extra = {}) {
   return {
     DB: db,
     TELEGRAM_BOT_TOKEN: '123:abc',
-    TELEGRAM_WEBHOOK_SECRET: WEBHOOK_SECRET
+    TELEGRAM_WEBHOOK_SECRET: WEBHOOK_SECRET,
+    ...extra
   };
 }
 
@@ -360,6 +495,32 @@ function stubTelegramApi() {
     sent,
     restore() {
       globalThis.fetch = original;
+    }
+  };
+}
+
+/** Serve the report files from memory so /digest preview never uses the network. */
+function reportAssets() {
+  const files = new Map([
+    ['/data/visa_decisions.json', [{ date: '2026-11-16', number: '85444062', decision: 'Approved' }]],
+    ['/data/data_manifest.json', { offices: [] }],
+    ['/data/reports/index.json', { offices: {} }]
+  ]);
+  for (const slug of ['new-delhi', 'beijing', 'dublin', 'abu-dhabi', 'abuja', 'ankara']) {
+    files.set('/data/embassy-' + slug + '.json', {
+      office: slug,
+      report_date: '2026-11-16',
+      decisions: []
+    });
+  }
+  return {
+    async fetch(input) {
+      const path = new URL(typeof input === 'string' ? input : input.url).pathname;
+      if (!files.has(path)) return new Response('{}', { status: 404 });
+      return new Response(JSON.stringify(files.get(path)), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' }
+      });
     }
   };
 }

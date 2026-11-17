@@ -40,6 +40,7 @@ const assetsToCopy = [
   'comparison.html',
   'status.html',
   'contact.html',
+  'corrections.html',
   'daily-summaries.html',
   'employment-permit-processing-dates.html',
   'privacy.html',

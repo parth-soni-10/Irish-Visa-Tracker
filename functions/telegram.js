@@ -13,6 +13,19 @@
  */
 
 import { EMBASSIES, json } from './email-utils.js';
+import { loadReportData } from './report-data.js';
+import {
+  DEFAULT_BASE_URL,
+  buildDigestMessage,
+  describeDigest,
+  digestTimeZone,
+  findDecision,
+  formatDigestHour,
+  normalizeDigestHour,
+  normalizeDigestTimeZone,
+  parseDigestHour,
+  shouldSend
+} from './digest.js';
 
 const API_BASE = 'https://api.telegram.org/bot';
 const LINK_TTL_MS = 15 * 60 * 1000;
@@ -46,6 +59,8 @@ CREATE TABLE IF NOT EXISTS telegram_preferences (
   chat_id TEXT PRIMARY KEY,
   digest_frequency TEXT NOT NULL DEFAULT 'off',
   last_digest_sent TEXT,
+  digest_hour INTEGER NOT NULL DEFAULT 9,
+  digest_timezone TEXT NOT NULL DEFAULT 'UTC',
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 `;
@@ -56,9 +71,12 @@ const HELP_TEXT = [
   'Open the tracker, enter your application number and press “Get alerts on Telegram”, then press Start here.',
   '',
   '/status - list linked applications and their alert mode',
-  '/digest daily - one grouped update a day for applications linked to this chat, only when something changes',
-  '/digest weekly - one weekly summary of linked applications, including “no change”',
+  '/digest daily [hour timezone] - one grouped update a day, only when something changes',
+  '/digest weekly [hour timezone] - one weekly summary, including “no change”',
+  '/digest status - show your frequency, delivery hour, timezone and last send',
+  '/digest preview - send what the next digest would contain now; changes nothing',
   '/digest off - back to immediate alerts',
+  'Example: /digest daily 8 Europe/Dublin',
   '/immediate 12345678 - keep one application immediate while the chat is in digest mode',
   '/stop - turn off every Telegram alert for this chat'
 ].join('\n');
@@ -74,13 +92,20 @@ export async function ensureTelegramSchema(env) {
     await env.DB.prepare(statement).run();
   }
 
-  // Existing deployments created telegram_subscriptions before digest mode.
-  // Add the column once; D1/SQLite reports a duplicate-column error on rerun.
+  // Existing deployments created these tables before digest mode and preferred
+  // delivery hours. Add each column once; D1/SQLite reports a duplicate-column
+  // error on rerun.
+  await addColumnIfMissing(env, 'telegram_subscriptions', 'immediate', 'INTEGER NOT NULL DEFAULT 1');
+  await addColumnIfMissing(env, 'telegram_preferences', 'digest_hour', 'INTEGER NOT NULL DEFAULT 9');
+  await addColumnIfMissing(env, 'telegram_preferences', 'digest_timezone', "TEXT NOT NULL DEFAULT 'UTC'");
+}
+
+async function addColumnIfMissing(env, table, column, definition) {
   try {
-    const info = await env.DB.prepare('PRAGMA table_info(telegram_subscriptions)').all();
+    const info = await env.DB.prepare('PRAGMA table_info(' + table + ')').all();
     const columns = Array.isArray(info && info.results) ? info.results : [];
-    if (!columns.some((column) => String(column.name || '').toLowerCase() === 'immediate')) {
-      await env.DB.prepare('ALTER TABLE telegram_subscriptions ADD COLUMN immediate INTEGER NOT NULL DEFAULT 1').run();
+    if (!columns.some((entry) => String(entry.name || '').toLowerCase() === column.toLowerCase())) {
+      await env.DB.prepare('ALTER TABLE ' + table + ' ADD COLUMN ' + column + ' ' + definition).run();
     }
   } catch (error) {
     if (!/duplicate|already exists/i.test(String(error && error.message || error))) {
@@ -176,17 +201,89 @@ async function botUsername(env) {
 async function chatPreferences(env, chatId) {
   try {
     return await env.DB.prepare(
-      'SELECT digest_frequency, last_digest_sent FROM telegram_preferences WHERE chat_id = ?'
+      'SELECT digest_frequency, last_digest_sent, digest_hour, digest_timezone FROM telegram_preferences WHERE chat_id = ?'
     ).bind(chatId).first();
   } catch {
     return null;
   }
 }
 
-function digestStatus(frequency) {
-  if (frequency === 'daily') return 'a daily digest (only when something changes)';
-  if (frequency === 'weekly') return 'a weekly digest (including a no-change summary)';
-  return 'immediate alerts';
+function preferenceParts(preference) {
+  const frequency = preference && DIGEST_FREQUENCIES.has(preference.digest_frequency)
+    ? preference.digest_frequency : 'off';
+  return {
+    frequency,
+    hour: normalizeDigestHour(preference && preference.digest_hour),
+    timeZone: digestTimeZone(preference && preference.digest_timezone),
+    lastSent: preference && preference.last_digest_sent ? String(preference.last_digest_sent) : null
+  };
+}
+
+function digestStatus(frequency, hour, timeZone) {
+  return describeDigest(frequency, hour, timeZone);
+}
+
+function formatDigestSentAt(value) {
+  if (!value) return 'not sent yet';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value);
+  return new Intl.DateTimeFormat('en-IE', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+    timeZone: 'UTC'
+  }).format(date) + ' UTC';
+}
+
+function digestStatusMessage(preference, linkedCount) {
+  const { frequency, hour, timeZone, lastSent } = preferenceParts(preference);
+  const lines = [];
+  if (frequency === 'off') {
+    lines.push('Digest: off — immediate alerts are on for linked applications.');
+    lines.push('Preferred delivery hour when enabled: ' + formatDigestHour(hour) + ' ' + timeZone + '.');
+  } else {
+    lines.push('Digest: ' + digestStatus(frequency, hour, timeZone) + '.');
+    lines.push('Last digest: ' + formatDigestSentAt(lastSent) + '.');
+  }
+  lines.push('Linked applications: ' + linkedCount + '.');
+  lines.push('Telegram-only: browser watchlist entries stay on the device and are not included.');
+  lines.push('Send /digest preview to see the next message without changing the schedule.');
+  return lines.join('\n');
+}
+
+async function chatDigestRows(env, chatId) {
+  const result = await env.DB.prepare(
+    'SELECT application_number, embassy, last_alert_sent FROM telegram_subscriptions WHERE chat_id = ? AND active = 1 ORDER BY created_at'
+  ).bind(chatId).all();
+  return (result && result.results) || [];
+}
+
+async function buildDigestPreview(env, request, chatId, preference) {
+  const rows = await chatDigestRows(env, chatId);
+  if (!rows.length) {
+    return 'No applications linked. Open the tracker and press “Get alerts on Telegram”.';
+  }
+
+  let report;
+  try {
+    report = await loadReportData(env, request);
+  } catch (error) {
+    console.error('Telegram digest preview data failed:', error.message);
+    return 'Could not build a digest preview right now. Try again later.';
+  }
+
+  const { timeZone } = preferenceParts(preference);
+  const states = rows.map((row) => {
+    const decision = findDecision(report.rows, row.application_number, row.embassy);
+    return {
+      ...row,
+      decision: decision && shouldSend(row.last_alert_sent, decision.date) ? decision : null
+    };
+  });
+  return 'Digest preview — nothing was sent and the schedule is unchanged.\n\n' +
+    buildDigestMessage(states, {
+      baseUrl: env.APP_BASE_URL || DEFAULT_BASE_URL,
+      timeZone
+    });
 }
 
 /**
@@ -276,8 +373,8 @@ export async function handleTelegramWebhook(request, env) {
       return json({ ok: true });
     }
     const preference = await chatPreferences(env, id);
-    const frequency = preference && DIGEST_FREQUENCIES.has(preference.digest_frequency)
-      ? preference.digest_frequency : 'off';
+    const current = preferenceParts(preference);
+    const frequency = current.frequency;
     const immediate = frequency === 'off' ? 1 : 0;
     await env.DB.prepare(`
       INSERT INTO telegram_subscriptions (chat_id, application_number, embassy, active, immediate)
@@ -289,37 +386,93 @@ export async function handleTelegramWebhook(request, env) {
       env,
       id,
       'Alerts enabled for ' + link.application_number + ' (' + link.embassy + ').\n' +
-        'This chat uses ' + digestStatus(frequency) + '.\n' +
+        'This chat uses ' + digestStatus(frequency, current.hour, current.timeZone) + '.\n' +
         'Send /status to see every linked application.'
     );
     return json({ ok: true });
   }
 
   if (command === '/digest') {
-    const frequency = String(argument || '').toLowerCase();
-    if (!DIGEST_FREQUENCIES.has(frequency)) {
-      await reply(env, id, 'Choose a digest frequency for applications linked to this chat:\n/digest daily\n/digest weekly\n/digest off');
+    const action = String(argument || '').toLowerCase();
+
+    if (action === 'status') {
+      const preference = await chatPreferences(env, id);
+      const linked = await chatDigestRows(env, id);
+      await reply(env, id, digestStatusMessage(preference, linked.length));
       return json({ ok: true });
     }
+
+    if (action === 'preview') {
+      const preference = await chatPreferences(env, id);
+      await reply(env, id, await buildDigestPreview(env, request, id, preference));
+      return json({ ok: true });
+    }
+
+    if (!DIGEST_FREQUENCIES.has(action)) {
+      await reply(
+        env,
+        id,
+        'Choose a digest frequency or option for applications linked to this chat:\n' +
+          '/digest daily [hour timezone]\n' +
+          '/digest weekly [hour timezone]\n' +
+          '/digest status\n' +
+          '/digest preview\n' +
+          '/digest off\n' +
+          'Example: /digest daily 8 Europe/Dublin'
+      );
+      return json({ ok: true });
+    }
+
+    const current = preferenceParts(await chatPreferences(env, id));
+    let hour = current.hour;
+    let timeZone = current.timeZone;
+    if (parts[2]) {
+      const parsedHour = parseDigestHour(parts[2]);
+      if (parsedHour === null) {
+        await reply(env, id, 'Use a delivery hour from 0 to 23, for example:\n/digest daily 8 Europe/Dublin');
+        return json({ ok: true });
+      }
+      hour = parsedHour;
+    }
+    if (parts[3]) {
+      const parsedZone = normalizeDigestTimeZone(parts[3]);
+      if (!parsedZone) {
+        await reply(env, id, 'That timezone is not recognized. Use an IANA name such as Europe/Dublin or America/New_York.');
+        return json({ ok: true });
+      }
+      timeZone = parsedZone;
+    }
+    if (parts[4]) {
+      await reply(env, id, 'Use /digest daily 8 Europe/Dublin or /digest weekly 18:00 America/New_York.');
+      return json({ ok: true });
+    }
+
+    const frequency = action;
     const now = new Date().toISOString();
     await env.DB.prepare(`
-      INSERT INTO telegram_preferences (chat_id, digest_frequency, last_digest_sent, updated_at)
-      VALUES (?, ?, ?, datetime('now'))
+      INSERT INTO telegram_preferences (chat_id, digest_frequency, last_digest_sent, digest_hour, digest_timezone, updated_at)
+      VALUES (?, ?, ?, ?, ?, datetime('now'))
       ON CONFLICT(chat_id) DO UPDATE SET
         digest_frequency = excluded.digest_frequency,
         last_digest_sent = excluded.last_digest_sent,
+        digest_hour = excluded.digest_hour,
+        digest_timezone = excluded.digest_timezone,
         updated_at = datetime('now')
-    `).bind(id, frequency, frequency === 'off' ? null : now).run();
+    `).bind(id, frequency, frequency === 'off' ? null : now, hour, timeZone).run();
     await env.DB.prepare('UPDATE telegram_subscriptions SET immediate = ? WHERE chat_id = ?')
       .bind(frequency === 'off' ? 1 : 0, id).run();
     await reply(
       env,
       id,
       frequency === 'off'
-        ? 'Digest off. Each linked application will send immediately when its decision is published.'
-        : 'Digest on: ' + digestStatus(frequency) + '.\n' +
+        ? 'Digest off. Each linked application will send immediately when its decision is published.\n' +
+          'Preferred delivery hour kept for later: ' + formatDigestHour(hour) + ' ' + timeZone + '.'
+        : 'Digest on: ' + digestStatus(frequency, hour, timeZone) + '.\n' +
           'Only applications linked to this chat are included; browser watchlist entries stay on the device.\n' +
-          'Immediate alerts are off for this chat. Use /immediate 12345678 to keep one application immediate.'
+          'Immediate alerts are off for this chat. Use /immediate 12345678 to keep one application immediate.\n' +
+          (frequency === 'daily'
+            ? 'Daily digests are sent only when something changes.'
+            : 'Weekly digests include a no-change summary.')
     );
     return json({ ok: true });
   }
@@ -360,8 +513,7 @@ export async function handleTelegramWebhook(request, env) {
       'SELECT application_number, embassy, COALESCE(immediate, 1) AS immediate FROM telegram_subscriptions WHERE chat_id = ? AND active = 1 ORDER BY created_at'
     ).bind(id).all()).results || [];
     const preference = await chatPreferences(env, id);
-    const frequency = preference && DIGEST_FREQUENCIES.has(preference.digest_frequency)
-      ? preference.digest_frequency : 'off';
+    const current = preferenceParts(preference);
     await reply(
       env,
       id,
@@ -369,7 +521,8 @@ export async function handleTelegramWebhook(request, env) {
         ? 'Linked applications:\n' + rows.map((row) => {
             const mode = Number(row.immediate) === 0 ? 'digest' : 'immediate';
             return '- ' + row.application_number + ' (' + row.embassy + ') — ' + mode;
-          }).join('\n') + '\n\nChat mode: ' + digestStatus(frequency)
+          }).join('\n') + '\n\nChat mode: ' + digestStatus(current.frequency, current.hour, current.timeZone) +
+          '\nDelivery hour: ' + formatDigestHour(current.hour) + ' ' + current.timeZone
         : 'No applications linked. Open the tracker and press “Get alerts on Telegram”.'
     );
     return json({ ok: true });

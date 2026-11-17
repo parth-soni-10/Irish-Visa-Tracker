@@ -8,7 +8,7 @@
 
 import { isEmailConfigured, sendEmail } from './email-send.js';
 import { sha256 } from './crypto.js';
-import { loadReportData, buildMonthlyReport, buildWeeklyChanges } from './report-data.js';
+import { loadReportData, buildMonthlyReport, buildWeeklyChanges, buildCorrectionLedger } from './report-data.js';
 
 const MONTH_RE = /^\d{4}-(0[1-9]|1[0-2])$/;
 
@@ -152,6 +152,15 @@ async function changesResponse(request, env) {
   return json({ success: true, changes });
 }
 
+async function correctionsResponse(request, env) {
+  const data = await loadReportData(env, request);
+  const ledger = buildCorrectionLedger(data.reports, {
+    manifest: data.manifest,
+    officeList: data.officeList
+  });
+  return json({ success: true, ledger });
+}
+
 async function subscribeResponse(request, env) {
   await ensureDigestSchema(env.DB);
   let body;
@@ -288,6 +297,7 @@ export async function handleReports(request, env) {
   const pathname = new URL(request.url).pathname;
   if (pathname === '/api/reports/monthly' && request.method === 'GET') return monthlyResponse(request, env);
   if (pathname === '/api/reports/changes' && request.method === 'GET') return changesResponse(request, env);
+  if (pathname === '/api/reports/corrections' && request.method === 'GET') return correctionsResponse(request, env);
   if (pathname === '/api/digest/preview' && request.method === 'GET') return previewResponse(request, env);
   if (pathname === '/api/digest/subscribe' && request.method === 'POST') return subscribeResponse(request, env);
   if (pathname === '/api/digest/verify' && request.method === 'GET') return verifyResponse(request, env);

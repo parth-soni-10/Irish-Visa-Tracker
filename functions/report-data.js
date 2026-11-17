@@ -381,4 +381,96 @@ export function buildWeeklyChanges(rows, endDate, officeList = [], reports = {},
   };
 }
 
+function safeHttpUrl(value) {
+  const raw = String(value == null ? '' : value).trim();
+  if (!raw || raw.length > 1000) return null;
+  try {
+    const url = new URL(raw);
+    return url.protocol === 'http:' || url.protocol === 'https:' ? url.href : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Public ledger of changes between consecutive official office files.
+ *
+ * `added` and `removed` are counts from the file diff; `changed` carries the
+ * individual application rows whose outcome changed. The source URL is kept on
+ * every entry so a visitor can verify the difference at the office, not only
+ * read the tracker's summary.
+ */
+export function buildCorrectionLedger(reportsDoc, options = {}) {
+  const manifest = options.manifest || {};
+  const officeList = Array.isArray(options.officeList) ? options.officeList : [];
+  const officeNames = new Map();
+  const officePages = new Map();
+  for (const office of officeList) {
+    if (!office || !office.slug) continue;
+    officeNames.set(String(office.slug), office.name || office.slug);
+    officePages.set(String(office.slug), safeHttpUrl(office.source_url));
+  }
+  for (const office of Array.isArray(manifest.offices) ? manifest.offices : []) {
+    if (!office || !office.slug) continue;
+    if (!officeNames.has(office.slug)) officeNames.set(String(office.slug), office.name || office.slug);
+    const sourcePage = safeHttpUrl(office.source_url);
+    if (sourcePage) officePages.set(String(office.slug), sourcePage);
+  }
+
+  const entries = [];
+  const offices = reportsDoc && reportsDoc.offices && typeof reportsDoc.offices === 'object'
+    ? reportsDoc.offices
+    : {};
+  for (const [slug, reports] of Object.entries(offices)) {
+    if (!Array.isArray(reports)) continue;
+    for (const report of reports) {
+      if (!report) continue;
+      const added = Math.max(0, Number(report.added) || 0);
+      const removed = Math.max(0, Number(report.removed) || 0);
+      const changed = (Array.isArray(report.changed) ? report.changed : [])
+        .filter((change) => change && (change.number || change.from || change.to))
+        .map((change) => ({
+          number: String(change.number || ''),
+          from: String(change.from || ''),
+          to: String(change.to || '')
+        }));
+      if (!added && !removed && !changed.length) continue;
+      const sourceFile = safeHttpUrl(report.source_file);
+      const sourcePage = officePages.get(slug) || null;
+      entries.push({
+        office: slug,
+        office_name: officeNames.get(slug) || slug,
+        report_date: isoDate(report.report_date) || null,
+        fetched_at: report.fetched_at || null,
+        decisions: Math.max(0, Number(report.decisions) || 0),
+        approved: Math.max(0, Number(report.approved) || 0),
+        refused: Math.max(0, Number(report.refused) || 0),
+        checksum: String(report.checksum || ''),
+        added,
+        removed,
+        changed,
+        source_file: sourceFile,
+        source_page: sourcePage,
+        source_url: sourceFile || sourcePage
+      });
+    }
+  }
+
+  entries.sort((a, b) => {
+    if (a.report_date !== b.report_date) return String(b.report_date || '').localeCompare(String(a.report_date || ''));
+    return String(a.office_name).localeCompare(String(b.office_name));
+  });
+
+  return {
+    generated_at: new Date().toISOString(),
+    entries,
+    totals: {
+      reports: entries.length,
+      added: entries.reduce((sum, entry) => sum + entry.added, 0),
+      removed: entries.reduce((sum, entry) => sum + entry.removed, 0),
+      changed: entries.reduce((sum, entry) => sum + entry.changed.length, 0)
+    }
+  };
+}
+
 export { monthLabel, dateOffset, summarize };

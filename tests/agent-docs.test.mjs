@@ -343,7 +343,7 @@ test("trust pages are real pages with the expected content", async () => {
 
 test("sitemap, robots and llms.txt point at the published pages", async () => {
   const sitemap = await read("sitemap.xml");
-  for (const path of ["/", "/about", "/contact", "/privacy"]) {
+  for (const path of ["/", "/about", "/contact", "/corrections", "/privacy"]) {
     assert.match(sitemap, new RegExp(`<loc>https://irishvisaupdatetracker\\.pages\\.dev${path}</loc>`));
   }
   const robots = await read("robots.txt");

@@ -6,7 +6,7 @@
  * `_` prefix keeps it out of the routing table: the only route is the catch-all
  * route beside it, which is also why nothing here has to think about a path pattern.
  *
- * This replaces Netlify Forms. The page's three forms (`suggestions`,
+ * This replaces Netlify Forms. The page's forms (`suggestions`, `corrections`,
  * `timelines-visa`, `timelines-1g`) already POST urlencoded bodies to their own
  * path with a `form-name` field - Netlify used to intercept those posts and
  * record them. Nothing in the page changes: the same bodies arrive here.
@@ -34,8 +34,10 @@ import {
   notFoundMarkdown,
 } from "./_agent-docs.js";
 
-const FORM_NAMES = new Set(["suggestions", "timelines-visa", "timelines-1g", "timelines"]);
+const FORM_NAMES = new Set(["suggestions", "corrections", "timelines-visa", "timelines-1g", "timelines"]);
 const TIMELINE_FORMS = ["timelines-visa", "timelines-1g", "timelines"];
+const CORRECTION_OFFICES = new Set(["new-delhi", "beijing", "dublin", "abu-dhabi", "abuja", "ankara"]);
+const CORRECTION_ISSUES = new Set(["wrong_decision", "missing_row", "wrong_date", "wrong_office", "other"]);
 // Read-only feed for the nightly community sync. Deliberately narrow: only the
 // three timeline form names are ever returned, never `suggestions`, which holds
 // a visitor's name and free text.
@@ -48,6 +50,7 @@ const PREDICT_PATH = "/api/predict";
 const PREDICT_FEEDBACK_PATH = "/api/predict/feedback";
 const TELEGRAM_BROADCAST_PATH = "/api/telegram/broadcast";
 const CALENDAR_PATH = "/api/calendar/next-update.ics";
+const OFFICES_CALENDAR_PATH = "/api/calendar/offices.ics";
 const OFFICIAL_FEED_PATHS = new Set(["/feed.xml", "/official-file-feed.json"]);
 const CHECKLIST_PATH = "/api/checklist";
 const VFS_APPOINTMENTS_PATH = "/api/vfs/appointments";
@@ -58,7 +61,7 @@ const CONFIG_PATH = "/api/config";
 const EVENTS_PATH = "/api/events";
 const EMAIL_WEBHOOK_PATH = "/api/email/send";
 const REPORT_PATHS = new Set([
-  "/api/reports/monthly", "/api/reports/changes", "/api/digest/preview",
+  "/api/reports/monthly", "/api/reports/changes", "/api/reports/corrections", "/api/digest/preview",
   "/api/digest/subscribe", "/api/digest/verify", "/api/digest/unsubscribe", "/api/digest/send"
 ]);
 
@@ -138,6 +141,17 @@ function invalidField(formName, fields) {
     if (!fields.name || fields.name.length > 200) return "name";
     if (!fields.suggestion || fields.suggestion.length > 5000) return "suggestion";
   }
+  if (formName === "corrections") {
+    if (!fields.name || fields.name.length > 200) return "name";
+    if (!CORRECTION_OFFICES.has(fields.office)) return "office";
+    if (!isISODate(fields.report_date)) return "report_date";
+    const today = new Date().toISOString().slice(0, 10);
+    if (fields.report_date < "2020-01-01" || fields.report_date > today) return "report_date";
+    if (String(fields.source_url || "").length > 1000 || !isHttpUrl(fields.source_url)) return "source_url";
+    if (!CORRECTION_ISSUES.has(fields.issue)) return "issue";
+    if (fields.application_number && !/^\d{8}$/.test(fields.application_number)) return "application_number";
+    if (!fields.details || fields.details.length > 5000) return "details";
+  }
   if (formName === "timelines-visa" || formName === "timelines-1g" || formName === "timelines") {
     // The current forms submit dates, outcome and tracker. `visa_type` and
     // `embassy` belonged to the old combined form; accept them when present
@@ -164,6 +178,15 @@ function isISODate(value) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(raw)) return false;
   const date = new Date(raw + "T00:00:00Z");
   return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === raw;
+}
+
+function isHttpUrl(value) {
+  try {
+    const url = new URL(String(value || ""));
+    return url.protocol === "http:" || url.protocol === "https:";
+  } catch {
+    return false;
+  }
 }
 
 const json = (body, status = 200) => {
@@ -289,7 +312,8 @@ async function handleRequest(request, env) {
       support_email: env.SUPPORT_EMAIL || '',
       telegram_channel_url: /^https:\/\/t\.me\/[A-Za-z0-9_]{3,64}\/?$/.test(channel) ? channel : '',
       official_feed_url: '/feed.xml',
-      official_feed_json_url: '/official-file-feed.json'
+      official_feed_json_url: '/official-file-feed.json',
+      offices_calendar_url: '/api/calendar/offices.ics'
     });
   }
 
@@ -309,6 +333,14 @@ async function handleRequest(request, env) {
     }
     const { calendarResponse } = await import('./calendar.js');
     return calendarResponse(new Date(), request.method === 'HEAD');
+  }
+
+  if (pathname === OFFICES_CALENDAR_PATH) {
+    if (request.method !== 'GET' && request.method !== 'HEAD') {
+      return new Response('Method not allowed', { status: 405 });
+    }
+    const { officesCalendarResponse } = await import('./calendar.js');
+    return officesCalendarResponse(env, request);
   }
 
   // The email bridge is called by the worker itself for every outbound mail.
@@ -572,6 +604,7 @@ async function handleRequest(request, env) {
     { path: "/help", file: "help.html" },
     { path: "/comparison", file: "comparison.html" },
     { path: "/contact", file: "contact.html" },
+    { path: "/corrections", file: "corrections.html" },
     { path: "/privacy", file: "privacy.html" },
     { path: "/terms", file: "terms.html" },
     { path: "/admin", file: "admin.html" },

@@ -94,13 +94,18 @@ against the application. The hourly alert runner then sends one message per
 published decision date, updating `last_alert_sent` so retries are idempotent.
 `/stop` disables the chat and `/status` lists its linked applications. Chat members
 can switch to `/digest daily`, `/digest weekly` or `/digest off`; a digest groups
-the linked applications by office and includes a no-change line. The digest is
+the linked applications by office and includes a no-change line. Add an optional
+preferred hour and IANA timezone, for example `/digest daily 8 Europe/Dublin`;
+the hourly runner waits for that local hour before sending. `/digest status`
+shows the frequency, delivery hour, timezone and last send, while `/digest
+preview` sends the current digest content immediately without marking anything
+sent or moving the schedule. Daily digests are suppressed when nothing changed;
+weekly digests include an explicit no-change summary. The digest is
 Telegram-only: applications saved only in the browser watchlist are local and
 are never uploaded, so they are delivered by browser push rather than the
-digest. `/immediate
-<8-digit-number>` opts one application back into immediate delivery. No email
-address or phone number is collected, so there is no domain verification,
-opt-in review or per-message fee.
+digest. `/immediate <8-digit-number>` opts one application back into immediate
+delivery. No email address or phone number is collected, so there is no domain
+verification, opt-in review or per-message fee.
 
 For a public low-noise channel, add the bot as a channel administrator and set
 `TELEGRAM_CHANNEL_ID` (numeric `-100...` id or `@channelusername`) plus the public
@@ -108,6 +113,17 @@ For a public low-noise channel, add the bot as a channel administrator and set
 calls `/api/telegram/broadcast`; its first run seeds existing history rather than
 backfilling the channel, and later runs post one message per new official file.
 The feed itself is available at `/feed.xml` and `/official-file-feed.json`.
+
+## Calendar subscription
+
+`GET /api/calendar/offices.ics` is the public rolling webcal feed for all six
+offices. It is generated from `data/reports/index.json`, uses stable UIDs for
+each expected window and report date, marks expected windows `TENTATIVE` and
+published reports `CONFIRMED`, and links each event to the official source.
+The feed covers eight weeks of expected windows and recent published reports
+(plus the latest report for every office). Calendar clients can subscribe with
+`webcal://irishvisaupdatetracker.pages.dev/api/calendar/offices.ics`; the older
+`/api/calendar/next-update.ics` remains as a single New Delhi event.
 
 ## Email bridge
 

@@ -57,6 +57,7 @@
           <a href="/employment-permit-processing-dates">Employment permits</a>
           <a href="/vac-transit">VAC &amp; transit</a>
           <a href="/help">Help</a>
+          <a href="/corrections">Correction ledger</a>
           <a href="/contact" aria-current="page">Contact</a>
           <a href="/privacy">Privacy</a>
           <a href="/terms">Terms</a>
@@ -113,7 +114,60 @@
           <a href="#feedback">Use the feedback form</a>
           <span>Best for a feature request or a general note. It is stored in the site's D1 database.</span>
         </li>
+        <li>
+          <a href="/corrections">Read the correction ledger</a>
+          <span>See every recorded difference between official files, with the office, report date and source URL.</span>
+        </li>
       </ul>
+    </section>
+
+    <section id="report-error">
+      <h2>Report a data error</h2>
+      <p>Use this structured form when a row is missing, has the wrong outcome or is attached to the wrong report. Include the office, report date and the official source URL so the difference can be checked. The report is stored privately and is not published; the public <a href="/corrections">correction ledger</a> shows file differences detected automatically.</p>
+      <form class="contact-form" id="correction-form" name="corrections" action="/contact" method="post" data-async-form>
+        <input type="hidden" name="form-name" value="corrections">
+        <input class="contact-honeypot" type="text" name="bot-field" tabindex="-1" autocomplete="off" aria-hidden="true">
+        <div class="contact-form-fields">
+          <label class="contact-field contact-field-wide" for="correction-name">Name
+            <input id="correction-name" name="name" type="text" maxlength="200" autocomplete="name" required placeholder="Your name">
+          </label>
+          <label class="contact-field" for="correction-office">Office
+            <select id="correction-office" name="office" required>
+              <option value="" selected disabled>Choose an office</option>
+              <option value="new-delhi">New Delhi</option>
+              <option value="beijing">Beijing</option>
+              <option value="dublin">Dublin</option>
+              <option value="abu-dhabi">Abu Dhabi</option>
+              <option value="abuja">Abuja</option>
+              <option value="ankara">Ankara</option>
+            </select>
+          </label>
+          <label class="contact-field" for="correction-report-date">Report date
+            <input id="correction-report-date" name="report_date" type="date" min="2020-01-01" required>
+          </label>
+          <label class="contact-field" for="correction-issue">What is wrong?
+            <select id="correction-issue" name="issue" required>
+              <option value="" selected disabled>Choose an issue</option>
+              <option value="wrong_decision">Wrong decision outcome</option>
+              <option value="missing_row">Application missing</option>
+              <option value="wrong_date">Wrong decision or report date</option>
+              <option value="wrong_office">Wrong office</option>
+              <option value="other">Something else</option>
+            </select>
+          </label>
+          <label class="contact-field" for="correction-application">Application number (optional)
+            <input id="correction-application" name="application_number" type="text" inputmode="numeric" pattern="\d{8}" maxlength="8" placeholder="12345678">
+          </label>
+          <label class="contact-field contact-field-wide" for="correction-source">Official source URL
+            <input id="correction-source" name="source_url" type="url" maxlength="1000" required placeholder="https://www.ireland.ie/...">
+          </label>
+          <label class="contact-field contact-field-wide" for="correction-details">What should it show?
+            <textarea id="correction-details" name="details" maxlength="5000" required placeholder="Describe the row and the difference you found, with the exact report date if possible."></textarea>
+          </label>
+        </div>
+        <button class="btn primary" type="submit">Report data error</button>
+        <p class="contact-form-status" id="correction-status" role="status" aria-live="polite"></p>
+      </form>
     </section>
 
     <section id="feedback">

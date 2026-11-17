@@ -69,12 +69,20 @@ All are public, read-only and same-origin:
 - `GET /data/community_timelines.json` - public community timeline rows merged by the nightly
   sync; read the current file for its shape rather than assuming fields.
 - `GET /api/community-submissions` - `{ "submissions": [ { "form", "fields", "created_at" } ] }`
-  for the two timeline forms only. It never returns the private `suggestions` form.
+  for the two timeline forms only. It never returns the private `suggestions` or `corrections`
+  forms.
+- `GET /api/reports/corrections` - `{ "success": true, "ledger": { "entries": [...] } }` with
+  file-level added/removed counts, changed application rows and the official source URL for each
+  office report. Reports with no recorded difference are omitted.
 - `GET /official-file-feed.json` - JSON Feed 1.1 with one item per published office report
   (office, report date, counts, official source link, checksum). No applicant rows.
 - `GET /feed.xml` - RSS 2.0 representation of the same official-file feed.
 - `GET /api/calendar/next-update.ics` - an .ics event for the next expected New Delhi
   update window. It is an expectation, not a guarantee.
+- `GET /api/calendar/offices.ics` - a rolling webcal feed for all six offices. It has stable
+  UIDs, `Expected` windows marked `TENTATIVE`, and `Published` report events marked
+  `CONFIRMED` with the official source link. The expected windows cover eight weeks; the
+  feed also keeps the latest published report for every office.
 
 ### Watchlists and alerts
 
@@ -105,6 +113,8 @@ an official confirmation.
 - [Help & FAQ](https://irishvisaupdatetracker.pages.dev/help) - number formats, statuses,
   missing results, office coverage, alerts and checklists.
 - [Contact](https://irishvisaupdatetracker.pages.dev/contact) - corrections, bug reports, scope.
+- [Correction ledger](https://irishvisaupdatetracker.pages.dev/corrections) - source-linked file
+  diffs, changed rows and a structured error-report link.
 - [Privacy](https://irishvisaupdatetracker.pages.dev/privacy) - browser storage and form data.
 - [Sitemap](https://irishvisaupdatetracker.pages.dev/sitemap.xml)
 - [GitHub repository](https://github.com/parth-soni-10/Irish-Visa-Tracker)
@@ -120,6 +130,7 @@ current. Community timelines and projections are estimates, not official process
 
 - Email: soni.soni.parth@gmail.com (data corrections, privacy, general questions)
 - GitHub issues: https://github.com/parth-soni-10/Irish-Visa-Tracker/issues
+- Structured error report: https://irishvisaupdatetracker.pages.dev/contact#report-error
 - Feedback form: https://irishvisaupdatetracker.pages.dev/contact#feedback
 - Timeline form: https://irishvisaupdatetracker.pages.dev/contact#share-timeline
 

@@ -85,6 +85,51 @@ test("digest due windows are measured from the last successful digest", () => {
   assert.equal(dueForDigest("2026-11-10T12:00:00Z", "weekly", now), true);
 });
 
+test("preferred hour and timezone gate the digest window", () => {
+  const lastSent = "2026-11-16T09:00:00Z";
+  const dublinEarly = Date.parse("2026-11-17T08:30:00Z");
+  const dublinOnTime = Date.parse("2026-11-17T09:00:00Z");
+  assert.equal(
+    dueForDigest(lastSent, "daily", dublinEarly, { hour: 9, timeZone: "Europe/Dublin" }),
+    false,
+    "08:30 in Dublin is before the preferred 09:00 hour"
+  );
+  assert.equal(
+    dueForDigest(lastSent, "daily", dublinOnTime, { hour: 9, timeZone: "Europe/Dublin" }),
+    true
+  );
+
+  // 13:00 UTC is 08:00 in New York during standard time.
+  assert.equal(
+    dueForDigest(lastSent, "daily", Date.parse("2026-11-17T13:00:00Z"), { hour: 9, timeZone: "America/New_York" }),
+    false
+  );
+  assert.equal(
+    dueForDigest(lastSent, "daily", Date.parse("2026-11-17T14:00:00Z"), { hour: 9, timeZone: "America/New_York" }),
+    true
+  );
+
+  // Dublin is UTC+1 in July, so 08:00 UTC is 09:00 local and 07:30 UTC is 08:30.
+  assert.equal(
+    dueForDigest("2026-07-06T08:00:00Z", "daily", Date.parse("2026-07-07T07:30:00Z"), { hour: 9, timeZone: "Europe/Dublin" }),
+    false
+  );
+  assert.equal(
+    dueForDigest("2026-07-06T08:00:00Z", "daily", Date.parse("2026-07-07T08:00:00Z"), { hour: 9, timeZone: "Europe/Dublin" }),
+    true
+  );
+
+  assert.equal(
+    dueForDigest(null, "daily", Date.parse("2026-11-17T08:00:00Z"), { hour: 9, timeZone: "UTC" }),
+    false,
+    "a new digest waits for the preferred hour"
+  );
+  assert.equal(
+    dueForDigest(null, "daily", Date.parse("2026-11-17T09:00:00Z"), { hour: 9, timeZone: "UTC" }),
+    true
+  );
+});
+
 test("daily sends only changes, weekly sends no-change summaries", () => {
   assert.equal(shouldSendDigest("daily", 0), false);
   assert.equal(shouldSendDigest("daily", 1), true);

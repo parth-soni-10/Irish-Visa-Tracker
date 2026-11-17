@@ -266,6 +266,95 @@ a:focus-visible { outline: 2px solid var(--green); outline-offset: 3px; border-r
   height: 1px;
   overflow: hidden;
 }
+
+/* Public correction ledger. Report-level counts stay neutral: green and red
+   are reserved for decision states, not for a file having changed. */
+.correction-summary {
+  margin-top: 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--raised);
+  color: var(--ink-soft);
+  font-size: 13px;
+}
+.correction-list {
+  display: grid;
+  gap: 16px;
+  margin-top: 16px;
+}
+.correction-entry {
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-container);
+  background: var(--surface);
+}
+.correction-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px 16px;
+}
+.correction-head h3 {
+  margin: 0;
+  font-size: 17px;
+  line-height: 1.3;
+}
+.correction-date {
+  color: var(--ink-muted);
+  font-family: var(--mono);
+  font-size: 12px;
+}
+.correction-meta {
+  margin: 8px 0 0 !important;
+  color: var(--ink-muted) !important;
+  font-size: 12px !important;
+}
+.correction-counts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.correction-counts li {
+  margin: 0;
+  padding: 4px 9px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--raised);
+  color: var(--ink-soft);
+  font-size: 12px;
+}
+.correction-counts strong { color: var(--ink); }
+.correction-table {
+  width: 100%;
+  margin-top: 14px;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.correction-table caption {
+  padding: 0 0 6px;
+  color: var(--ink-muted);
+  font-size: 12px;
+  text-align: left;
+}
+.correction-table th,
+.correction-table td {
+  padding: 8px 10px;
+  border-top: 1px solid var(--border);
+  text-align: left;
+  vertical-align: top;
+}
+.correction-table th {
+  color: var(--ink-muted);
+  font-size: 11px;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+.correction-no-source { color: var(--ink-muted); }
 @media (max-width: 560px) {
   .page .contact-form-fields { grid-template-columns: 1fr; }
   .page .contact-field-wide { grid-column: auto; }

@@ -3076,7 +3076,7 @@
                     '<p>Next expected New Delhi update: weekdays around <strong>' +
                     scheduleTimeNode(NEW_DELHI_UPDATE_HOUR, NEW_DELHI_UPDATE_MINUTE) +
                     '</strong>. The embassy does not publish on weekends or public holidays. ' +
-                    '<a href="/api/calendar/next-update.ics">Add this expected window to your calendar</a>.</p>' +
+                    '<a href="/api/calendar/offices.ics">Subscribe to expected windows for all six offices</a>.</p>' +
                     '</details></section>' +
                     '<section class="home-latest" aria-labelledby="home-latest-title">' +
                     '<div class="home-latest-head"><div>' +
@@ -3617,7 +3617,9 @@
                 return safetyNoticeHTML() +
                     '<p class="alerts-digest-help" role="note"><strong>Telegram-only digest.</strong> The daily and weekly digest groups applications linked to the Telegram bot. Applications saved only in this browser are never uploaded, so they are not included; use browser push for those. After linking, send ' +
                     '<code>/digest weekly</code> in the bot for one grouped summary, or <code>/digest daily</code> for a ' +
-                    'digest only when something changes. <code>/immediate 12345678</code> keeps one application immediate.</p>' +
+                    'digest only when something changes. Add your preferred hour and IANA timezone, for example ' +
+                    '<code>/digest daily 8 Europe/Dublin</code>, then use <code>/digest status</code> or ' +
+                    '<code>/digest preview</code>. <code>/immediate 12345678</code> keeps one application immediate.</p>' +
                     '<div class="alerts-grid">' +
                         '<form class="card alerts-card" id="alert-form" name="telegram-alerts" novalidate style="max-width:100%;">' +
                             ALERT_FORM_HTML +

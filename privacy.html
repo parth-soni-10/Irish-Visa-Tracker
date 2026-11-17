@@ -135,6 +135,13 @@
           public submissions endpoint.
         </li>
         <li>
+          <strong>Data error reports</strong> (<code>corrections</code>) store your name, the office,
+          report date, official source URL, issue type, optional application number and description.
+          They are used to check the published row against the office file, are not published, and
+          are not served by the public submissions endpoint. The <a href="/corrections">correction
+          ledger</a> shows only differences detected automatically between official files.
+        </li>
+        <li>
           <strong>Anonymous calibration dates</strong> (<code>prediction_feedback</code>) store the
           office, visa type, application date, decision date, computed actual days, baseline days,
           baseline error, model version and a timestamp. No application number, name, email or
@@ -146,11 +153,12 @@
         </li>
       </ul>
       <p>
-        Telegram subscriptions store a chat id, application number, office and digest preference
-        so the bot can deliver alerts. They are created only after you press Start in Telegram and
-        can be stopped or changed inside the bot. The Telegram digest covers only those linked
-        subscriptions. Browser watchlists remain in your browser and are never uploaded, so they
-        are not part of the Telegram digest.
+        Telegram subscriptions store a chat id, application number, office, digest preference,
+        preferred delivery hour and IANA timezone so the bot can deliver alerts at the time you
+        choose. They are created only after you press Start in Telegram and can be stopped or
+        changed inside the bot. The Telegram digest covers only those linked subscriptions.
+        Browser watchlists remain in your browser and are never uploaded, so they are not part of
+        the Telegram digest.
       </p>
       <p>
         Rows carry a creation timestamp and are kept until they are no longer useful or you ask for

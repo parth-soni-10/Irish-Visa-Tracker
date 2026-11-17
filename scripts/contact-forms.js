@@ -63,7 +63,9 @@
           form,
           form.id === 'timeline-form'
             ? 'Thanks - your timeline has been shared. It appears after the nightly sync.'
-            : 'Thanks - your feedback has been received.',
+            : form.id === 'correction-form'
+              ? 'Thanks - your data error report has been received.'
+              : 'Thanks - your feedback has been received.',
           'success'
         );
       }).catch(function() {
