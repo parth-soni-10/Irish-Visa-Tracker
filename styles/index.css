@@ -1379,27 +1379,6 @@
             font-size: 12px;
         }
 
-        #visa-dash .theme-toggle {
-            background: var(--surface-raised);
-            border: 1px solid var(--border);
-            color: var(--ink-muted);
-            width: 36px;
-            height: 36px;
-            border-radius: 10px;
-            cursor: pointer;
-            font-size: 16px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1), color 0.2s cubic-bezier(0.4, 0, 0.2, 1), transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-            flex-shrink: 0;
-        }
-        #visa-dash .theme-toggle:hover {
-            background: var(--surface-hover);
-            color: var(--ink);
-            transform: translateY(-1px);
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-        }
         #visa-dash .theme-switch {
             --ss-track: var(--border);
             --ss-track-on: #0077e6;
@@ -1408,10 +1387,6 @@
             flex-shrink: 0;
         }
         #visa-dash .theme-switch:hover { filter: none; }
-        #visa-dash .theme-toggle svg { display: block; }
-        #visa-dash .theme-toggle .icon-moon { display: none; }
-        #visa-dash[data-theme="dark"] .theme-toggle .icon-sun { display: none; }
-        #visa-dash[data-theme="dark"] .theme-toggle .icon-moon { display: block; }
 
         /* ===== scroll-to-top button ===== */
         #visa-dash .scroll-top-btn {

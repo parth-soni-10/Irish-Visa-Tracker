@@ -160,7 +160,14 @@
             }
             let cacheFetchedAt = null;
             let dataPromise = null;
-            let theme = localStorage.getItem('visa-theme') || 'light';
+            function readStoredTheme() {
+                try {
+                    return localStorage.getItem('visa-theme') === 'dark' ? 'dark' : 'light';
+                } catch (error) {
+                    return 'light';
+                }
+            }
+            let theme = readStoredTheme();
 
             function trackConversion(event, source) {
                 var payload = JSON.stringify({ event: event, source: source || 'web' });
@@ -293,7 +300,8 @@
             const DAILY_PAGE_SIZE = 21;
 
             // ---- visit tracking + stale-data state ----
-            let lastVisitAt = Number(localStorage.getItem('visa-last-visit') || '0') || 0;
+            let lastVisitAt = 0;
+            try { lastVisitAt = Number(localStorage.getItem('visa-last-visit') || '0') || 0; } catch (error) { /* private mode */ }
             let visited = false;
             let staleAt = null; // data being shown is from this timestamp (live refresh failed)
             let dataLoadError = false;
@@ -4240,7 +4248,7 @@
 
             function toggleTheme() {
                 theme = theme === 'light' ? 'dark' : 'light';
-                localStorage.setItem('visa-theme', theme);
+                try { localStorage.setItem('visa-theme', theme); } catch (error) { /* private mode */ }
                 root.setAttribute('data-theme', theme);
                 // The switch reads aria-checked, so the thumb follows the
                 // stored theme without rebuilding the header.
