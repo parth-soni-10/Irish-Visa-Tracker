@@ -6,6 +6,8 @@
   <title>Data Status | Irish Visa Decision Tracker</title>
   <meta name="description" content="Coverage, freshness and known limits for the published Irish visa decision data in the Irish Visa Decision Tracker.">
   <link rel="canonical" href="https://irishvisaupdatetracker.pages.dev/status">
+  <link rel="alternate" type="application/rss+xml" title="Irish visa official file feed" href="/feed.xml">
+  <link rel="alternate" type="application/feed+json" title="Irish visa official file feed (JSON)" href="/official-file-feed.json">
   <link rel="describedby" href="/llms.txt" type="text/plain">
   <link rel="icon" href="/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
@@ -16,44 +18,57 @@
   <a class="skip-link" href="#main-content">Skip to content</a>
 
   <header class="sitebar">
-    <div class="sitebar-inner">
-      <a class="brand" href="/" aria-label="Irish Visa Decision Tracker home">
-        <img src="/icon.svg" alt="" width="24" height="24">
-        <span>Irish Visa Decision Tracker</span>
-      </a>
-      <nav class="sitebar-nav" aria-label="Site">
-        <a href="/">Tracker</a>
-        <a href="/comparison">Compare</a>
-        <a href="/daily-summaries">Daily summaries</a>
-        <a href="/monthly-report">Monthly report</a>
-        <a href="/visa-processing-times">Processing times</a>
-        <a href="/about">About</a>
-        <details class="sitebar-more">
-          <summary>More</summary>
-          <div class="sitebar-more-panel">
-            <a href="/status" aria-current="page">Data status</a>
-            <a href="/stamp-1g-processing-dates">Stamp 1G</a>
-            <a href="/employment-permit-processing-dates">Employment permits</a>
-            <a href="/vac-transit">VAC &amp; transit</a>
-            <a href="/help">Help</a>
-            <a href="/contact">Contact</a>
-            <a href="/privacy">Privacy</a>
-            <a href="/terms">Terms</a>
+  <div class="sitebar-inner">
+    <a class="brand" href="/" aria-label="Irish Visa Decision Tracker home">
+      <img src="/icon.svg" alt="" width="24" height="24">
+      <span>Irish Visa Decision Tracker</span>
+    </a>
+    <nav class="sitebar-nav" aria-label="Site">
+      <a href="/">Tracker</a>
+      <a href="/daily-summaries">Daily summaries</a>
+      <a href="/visa-processing-times">Processing times</a>
+      <a href="/about">About</a>
+      <details class="sitebar-more is-current">
+        <summary aria-current="page">More</summary>
+        <div class="sitebar-more-panel">
+          <a href="/status" aria-current="page">Data status</a>
+          <a href="/comparison">Method &amp; sources</a>
+          <a href="/monthly-report">Monthly report</a>
+          <a href="/stamp-1g-processing-dates">Stamp 1G</a>
+          <a href="/employment-permit-processing-dates">Employment permits</a>
+          <a href="/vac-transit">VAC &amp; transit</a>
+          <a href="/help">Help</a>
+          <a href="/contact">Contact</a>
+          <a href="/privacy">Privacy</a>
+          <a href="/terms">Terms</a>
+        </div>
+      </details>
+      <details class="sitebar-prefs">
+        <summary>Preferences</summary>
+        <div class="sitebar-more-panel sitebar-prefs-panel">
+          <div class="sitebar-pref-row">
+            <span class="sitebar-pref-label">Time zone</span>
+            <button class="sitebar-pref-button" type="button" data-time-mode-toggle data-mode="utc" aria-pressed="false">
+              <span data-time-mode-label>UTC</span>
+            </button>
           </div>
-        </details>
-      </nav>
-    </div>
-  </header>
+          <div class="sitebar-pref-row">
+            <span class="sitebar-pref-label">Theme</span>
+            <button class="sitebar-pref-button" type="button" data-theme-toggle aria-pressed="false">
+              <span data-theme-label>Light</span>
+            </button>
+          </div>
+          <label class="sitebar-pref-row" data-language-row hidden>
+            <span class="sitebar-pref-label">Language</span>
+            <select class="sitebar-pref-select" data-language-select aria-label="Language"></select>
+          </label>
+        </div>
+      </details>
+    </nav>
+  </div>
+</header>
 
   <main id="main-content" tabindex="-1" class="page status-page">
-    <nav class="breadcrumbs" aria-label="Breadcrumb">
-      <ol>
-        <li><a href="/">Tracker</a></li>
-        <li><span aria-current="page">Data status</span></li>
-      </ol>
-    </nav>
-
-    <p class="page-kicker">Data transparency</p>
     <h1>Data status</h1>
     <p class="page-meta">Independent and unofficial &bull; Not immigration advice</p>
     <p class="page-lede">
@@ -61,9 +76,27 @@
       coverage is still thin. Every figure comes from the same public files the tracker uses.
     </p>
 
-    <div id="status-summary" class="status-grid" aria-live="polite">
+    <div id="status-summary" class="status-kpis" aria-live="polite">
       <p class="note2">Loading the current data manifest&hellip;</p>
     </div>
+
+    <section id="official-file-feed" class="feed-section">
+      <h2>New official file feed</h2>
+      <p>
+        One low-noise item per newly published office file: office, report date, decision count
+        and the official source link. It contains no applicant rows and is suitable for a reader,
+        a researcher or a Telegram relay.
+      </p>
+      <div class="feed-links">
+        <a class="btn" href="/feed.xml">RSS feed</a>
+        <a class="btn" href="/official-file-feed.json">JSON feed</a>
+        <a class="btn" id="telegram-channel-link" href="#" hidden>Telegram channel</a>
+      </div>
+      <p class="small-note">
+        The feed is generated from <a href="/data/reports/index.json">the report archive</a>.
+        Feed readers refresh it automatically; no account is needed.
+      </p>
+    </section>
 
     <section>
       <h2>Office coverage</h2>
@@ -81,7 +114,7 @@
             </tr>
           </thead>
           <tbody id="status-rows">
-            <tr><td colspan="6" class="note2">Loading office coverage&hellip;</td></tr>
+            <tr><td colspan="8" class="note2">Loading office coverage&hellip;</td></tr>
           </tbody>
         </table>
       </div>
@@ -121,6 +154,56 @@
       </p>
     </section>
 
+    <section id="prediction-model">
+      <h2>Prediction model card</h2>
+      <p class="small-note">
+        The synthetic-tree model is paused. It cannot be shown to beat a transparent baseline on
+        real outcomes, so the public API returns the baseline and withholds a calibrated interval.
+        This card is generated from <a href="/api/predict">GET /api/predict</a>; the feedback
+        endpoint is <code>POST /api/predict/feedback</code>.
+      </p>
+      <div id="model-card-summary" class="model-card" aria-live="polite">
+        Loading the model card&hellip;
+      </div>
+      <form id="model-feedback-form" class="model-feedback">
+        <h3>Help calibrate the baseline</h3>
+        <p>
+          Finished an application? Share four anonymous facts. No application number, name,
+          email or free text is collected; only the dates and the computed error are stored.
+        </p>
+        <div class="model-feedback-grid">
+          <label>Office
+            <select id="model-feedback-office" required>
+              <option value="new-delhi">New Delhi</option>
+              <option value="beijing">Beijing</option>
+              <option value="dublin">Dublin</option>
+              <option value="abu-dhabi">Abu Dhabi</option>
+              <option value="abuja">Abuja</option>
+              <option value="ankara">Ankara</option>
+            </select>
+          </label>
+          <label>Visa type
+            <select id="model-feedback-visa" required>
+              <option value="visit">Visit</option>
+              <option value="study">Study</option>
+              <option value="work">Work</option>
+              <option value="family">Family</option>
+              <option value="transit">Transit</option>
+              <option value="research">Research</option>
+            </select>
+          </label>
+          <label>Applied on
+            <input id="model-feedback-applied" type="date" min="2020-01-01" required>
+          </label>
+          <label>Decided on
+            <input id="model-feedback-decided" type="date" min="2020-01-01" required>
+          </label>
+        </div>
+        <button class="btn" type="submit" id="model-feedback-submit">Share anonymous dates</button>
+        <p id="model-feedback-status" class="contact-form-status" role="status" aria-live="polite"></p>
+      </form>
+    </section>
+
     <section>
       <h2>What the data does and does not show</h2>
       <ul>
@@ -139,6 +222,9 @@
         A successful page load is not proof that a new report was published today; check the
         <a href="/data/visa_meta.json">scraper health file</a> and the report dates above.
       </p>
+      <p class="feed-links">
+        <a class="btn" href="/api/calendar/next-update.ics">Add the next New Delhi update to your calendar</a>
+      </p>
       <p class="callout">
         <strong>Spotted a stale or incorrect row?</strong> Email
         <a href="mailto:soni.soni.parth@gmail.com">soni.soni.parth@gmail.com</a> with the office,
@@ -148,53 +234,26 @@
   </main>
 
   <footer class="sitebar-footer">
-    <div class="sitebar-footer-inner">
-      <div class="sitebar-footer-brand">
-        <a class="brand" href="/" aria-label="Irish Visa Decision Tracker home">
-          <img src="/icon.svg" alt="" width="24" height="24">
-          <span>Irish Visa Decision Tracker</span>
-        </a>
-        <p>Independent and unofficial. Not affiliated with the Embassy of Ireland, ISD or DETE. Not immigration advice.</p>
-      </div>
-      <nav class="sitebar-footer-col" aria-label="Explore">
-        <h2 class="sitebar-footer-title">Explore</h2>
-        <ul>
-          <li><a href="/">Tracker</a></li>
-          <li><a href="/comparison">Compare</a></li>
-          <li><a href="/daily-summaries">Daily summaries</a></li>
-          <li><a href="/monthly-report">Monthly report</a></li>
-          <li><a href="/visa-processing-times">Processing times</a></li>
-          <li><a href="/vac-transit">VAC &amp; transit</a></li>
-        </ul>
-      </nav>
-      <nav class="sitebar-footer-col" aria-label="Data">
-        <h2 class="sitebar-footer-title">Data</h2>
-        <ul>
-          <li><a href="/status" aria-current="page">Data status</a></li>
-          <li><a href="/stamp-1g-processing-dates">Stamp 1G</a></li>
-          <li><a href="/employment-permit-processing-dates">Employment permits</a></li>
-          <li><a href="/data/visa_decisions.json">Visa decisions JSON</a></li>
-          <li><a href="/data/data_manifest.json">Data manifest</a></li>
-          <li><a href="/sitemap.xml">Sitemap</a></li>
-        </ul>
-      </nav>
-      <nav class="sitebar-footer-col" aria-label="About and legal">
-        <h2 class="sitebar-footer-title">About &amp; legal</h2>
-        <ul>
-          <li><a href="/about">About the project</a></li>
-          <li><a href="/help">Help &amp; FAQ</a></li>
-          <li><a href="/contact">Contact &amp; corrections</a></li>
-          <li><a href="/privacy">Privacy</a></li>
-          <li><a href="/terms">Terms</a></li>
-          <li><a href="https://github.com/parth-soni-10/Irish-Visa-Tracker" rel="noopener">GitHub</a></li>
-        </ul>
-      </nav>
+  <div class="sitebar-footer-inner">
+    <div class="sitebar-footer-brand">
+      <a class="brand" href="/" aria-label="Irish Visa Decision Tracker home">
+        <img src="/icon.svg" alt="" width="24" height="24">
+        <span>Irish Visa Decision Tracker</span>
+      </a>
+      <p>Independent and unofficial. Not immigration advice.</p>
     </div>
-    <div class="sitebar-footer-bottom">
-      <p>&copy; 2026 Parth Soni &middot; Dublin, Ireland</p>
-      <p><a href="/sitemap.xml">Sitemap</a><a href="/llms.txt">llms.txt</a><a href="https://github.com/parth-soni-10/Irish-Visa-Tracker" rel="noopener">GitHub</a></p>
-    </div>
-  </footer>
+    <nav class="sitebar-footer-links" aria-label="Footer">
+      <a href="/status">Data status</a>
+      <a href="/comparison">Method &amp; sources</a>
+      <a href="/help">Help</a>
+      <a href="/contact">Contact</a>
+      <a href="/privacy">Privacy</a>
+      <a href="/terms">Terms</a>
+      <a href="https://github.com/parth-soni-10/Irish-Visa-Tracker" rel="noopener">GitHub</a>
+    </nav>
+    <p class="sitebar-footer-copy">&copy; 2026 Parth Soni &middot; Dublin, Ireland</p>
+  </div>
+</footer>
 
   <script src="/site-chrome.js" defer></script>
   <script src="/scripts/time-mode.js" defer></script>

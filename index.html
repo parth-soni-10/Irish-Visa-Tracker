@@ -12,6 +12,8 @@
 <meta name="theme-color" content="#059669">
 <link rel="apple-touch-icon" href="/icon-192.png">
 <link rel="alternate" type="text/markdown" href="/index.md" title="Markdown version">
+<link rel="alternate" type="application/rss+xml" title="Irish visa official file feed" href="/feed.xml">
+<link rel="alternate" type="application/feed+json" title="Irish visa official file feed (JSON)" href="/official-file-feed.json">
 <link rel="describedby" href="/llms.txt" type="text/plain">
 <meta property="og:site_name" content="Irish Visa Decision Tracker">
 <meta property="og:title" content="Irish Visa Decision Tracker - Six Offices, Stamp 1G &amp; Employment Permits">
@@ -123,20 +125,8 @@
      its own mask. Both are same-origin, which is all img-src 'self' needs. -->
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <link rel="stylesheet" href="glide-select.css">
-    <link rel="stylesheet" href="jelly-radio.css" />
     <link rel="stylesheet" href="analytics-chart.css" />
-    <link rel="stylesheet" href="rubber-segment.css" />
-    <link rel="stylesheet" href="squish-switch.css" />
-    <link rel="stylesheet" href="gooey-nav.css" />
-    <link rel="stylesheet" href="time-undo.css" />
-    <link rel="stylesheet" href="stepper.css" />
-    <link rel="stylesheet" href="scroll-island.css" />
-    <link rel="stylesheet" href="scroll-island-theme.css" />
-    <link rel="stylesheet" href="filter-disclosure.css" />
-    <link rel="stylesheet" href="dynamic-button.css" />
     <link rel="stylesheet" href="site-chrome.css" />
-    <link rel="stylesheet" href="calendar-component.css" />
     <link rel="preload" href="/fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="preload" href="/fonts/geist-sans.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="stylesheet" href="/styles/index.css">
@@ -158,14 +148,15 @@
     </a>
     <nav class="sitebar-nav" aria-label="Site">
       <a href="/" aria-current="page">Tracker</a>
-      <a href="/comparison">Compare</a>
       <a href="/daily-summaries">Daily summaries</a>
-      <a href="/monthly-report">Monthly report</a>
       <a href="/visa-processing-times">Processing times</a>
       <a href="/about">About</a>
       <details class="sitebar-more">
         <summary>More</summary>
         <div class="sitebar-more-panel">
+          <a href="/status">Data status</a>
+          <a href="/comparison">Method &amp; sources</a>
+          <a href="/monthly-report">Monthly report</a>
           <a href="/stamp-1g-processing-dates">Stamp 1G</a>
           <a href="/employment-permit-processing-dates">Employment permits</a>
           <a href="/vac-transit">VAC &amp; transit</a>
@@ -173,6 +164,27 @@
           <a href="/contact">Contact</a>
           <a href="/privacy">Privacy</a>
           <a href="/terms">Terms</a>
+        </div>
+      </details>
+      <details class="sitebar-prefs">
+        <summary>Preferences</summary>
+        <div class="sitebar-more-panel sitebar-prefs-panel">
+          <div class="sitebar-pref-row">
+            <span class="sitebar-pref-label">Time zone</span>
+            <button class="sitebar-pref-button" type="button" data-time-mode-toggle data-mode="utc" aria-pressed="false">
+              <span data-time-mode-label>UTC</span>
+            </button>
+          </div>
+          <div class="sitebar-pref-row">
+            <span class="sitebar-pref-label">Theme</span>
+            <button class="sitebar-pref-button" type="button" data-theme-toggle aria-pressed="false">
+              <span data-theme-label>Light</span>
+            </button>
+          </div>
+          <label class="sitebar-pref-row" data-language-row hidden>
+            <span class="sitebar-pref-label">Language</span>
+            <select class="sitebar-pref-select" data-language-select aria-label="Language"></select>
+          </label>
         </div>
       </details>
     </nav>
@@ -183,8 +195,7 @@
            dashboard hydrates. render() replaces this node's contents with the app,
            so it is never shown twice; it is real content, not a noscript shim. -->
       <article class="static-fallback">
-        <p class="static-kicker">Ireland &middot; Six visa offices</p>
-        <h1>Irish Visa Decision Tracker</h1>
+        <h1>Visa decisions and processing dates</h1>
         <p class="static-lede">
           The <strong>Irish Visa Decision Tracker</strong> (also known as the Irish Visa Update
           Tracker) is an independent, unofficial record of visa decisions published by
@@ -231,70 +242,27 @@
         <img src="/icon.svg" alt="" width="24" height="24">
         <span>Irish Visa Decision Tracker</span>
       </a>
-      <p>Independent and unofficial. Not affiliated with the Embassy of Ireland, ISD or DETE. Not immigration advice.</p>
+      <p>Independent and unofficial. Not immigration advice.</p>
     </div>
-    <nav class="sitebar-footer-col" aria-label="Explore">
-      <h2 class="sitebar-footer-title">Explore</h2>
-      <ul>
-        <li><a href="/">Tracker</a></li>
-        <li><a href="/comparison">Compare</a></li>
-        <li><a href="/daily-summaries">Daily summaries</a></li>
-        <li><a href="/monthly-report">Monthly report</a></li>
-        <li><a href="/visa-processing-times">Processing times</a></li>
-        <li><a href="/vac-transit">VAC &amp; transit</a></li>
-      </ul>
+    <nav class="sitebar-footer-links" aria-label="Footer">
+      <a href="/status">Data status</a>
+      <a href="/comparison">Method &amp; sources</a>
+      <a href="/help">Help</a>
+      <a href="/contact">Contact</a>
+      <a href="/privacy">Privacy</a>
+      <a href="/terms">Terms</a>
+      <a href="https://github.com/parth-soni-10/Irish-Visa-Tracker" rel="noopener">GitHub</a>
     </nav>
-    <nav class="sitebar-footer-col" aria-label="Data">
-      <h2 class="sitebar-footer-title">Data</h2>
-      <ul>
-        <li><a href="/stamp-1g-processing-dates">Stamp 1G</a></li>
-        <li><a href="/employment-permit-processing-dates">Employment permits</a></li>
-        <li><a href="/data/visa_decisions.json">Visa decisions JSON</a></li>
-        <li><a href="/status">Data status</a></li>
-        <li><a href="/data/data_manifest.json">Data manifest</a></li>
-        <li><a href="/sitemap.xml">Sitemap</a></li>
-        <li><a href="/llms.txt">llms.txt</a></li>
-      </ul>
-    </nav>
-    <nav class="sitebar-footer-col" aria-label="About and legal">
-      <h2 class="sitebar-footer-title">About &amp; legal</h2>
-      <ul>
-        <li><a href="/about">About the project</a></li>
-        <li><a href="/help">Help &amp; FAQ</a></li>
-        <li><a href="/contact">Contact &amp; corrections</a></li>
-        <li><a href="/privacy">Privacy</a></li>
-        <li><a href="/terms">Terms</a></li>
-        <li><a href="https://github.com/parth-soni-10/Irish-Visa-Tracker" rel="noopener">GitHub</a></li>
-      </ul>
-    </nav>
-  </div>
-  <div class="sitebar-footer-bottom">
-    <p>&copy; 2026 Parth Soni &middot; Dublin, Ireland</p>
-    <p><a href="/sitemap.xml">Sitemap</a><a href="/llms.txt">llms.txt</a><a href="https://github.com/parth-soni-10/Irish-Visa-Tracker" rel="noopener">GitHub</a></p>
+    <p class="sitebar-footer-copy">&copy; 2026 Parth Soni &middot; Dublin, Ireland</p>
   </div>
 </footer>
     <script src="lucide.min.js" defer></script>
-    <script src="glide-select.js" defer></script>
-    <script src="jelly-radio.js" defer></script>
-    <script src="rubber-segment.js" defer></script>
-    <script src="squish-switch.js" defer></script>
-    <script src="gooey-nav.js" defer></script>
     <script src="analytics-chart.js" defer></script>
-    <script src="time-undo.js" defer></script>
-    <script src="stepper.js" defer></script>
-    <script src="filter-disclosure.js" defer></script>
-    <!-- The stale-data banner's "Retry now" says "Retrying…" while it works:
-         the kit cross-fades the two labels and travels between their widths,
-         and the inline handler below writes plain text if this never loads. -->
-    <script src="dynamic-button.js" defer></script>
     <!-- i18n translations are served as a static asset so the CSP can stay strict. -->
 <script src="/scripts/i18n.js" defer></script>
-    <script src="calendar-component.js" defer></script>
     <script src="/scripts/index-icons.js" defer></script>
     <script src="/scripts/time-mode.js" defer></script>
     <script src="/scripts/index.js" defer></script>
-    <script src="scroll-island.js" defer></script>
-    <script src="scroll-island-mount.js" defer></script>
 <script src="/scripts/index-seo.js" defer></script>
 <script src="/scripts/index-sw.js" defer></script>
   <script src="/site-chrome.js" defer></script>

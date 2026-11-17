@@ -23,6 +23,13 @@ async function openVisaTracker(page) {
   await page.waitForTimeout(1000);
 }
 
+async function openPreferences(page) {
+  const prefs = page.locator('details.sitebar-prefs');
+  if (!(await prefs.evaluate((el) => el.open))) {
+    await prefs.locator('summary').click();
+  }
+}
+
 async function seriousA11yViolations(page, selector) {
   const results = await new AxeBuilder({ page })
     .include(selector)
@@ -47,7 +54,7 @@ test.use({ serviceWorkers: 'block' });
 test.describe('SPA shell', () => {
   test('loads the landing page', async ({ page }) => {
     await gotoHome(page);
-    await expect(page.locator('h1').first()).toContainText('Choose your tracker');
+    await expect(page.locator('h1').first()).toContainText('Published Irish visa decisions');
     await expect(page.locator('.tracker-card')).toHaveCount(3);
   });
 
@@ -361,6 +368,7 @@ test.describe('Time zone toggle', () => {
     });
 
     await gotoHome(page);
+    await openPreferences(page);
     const toggle = page.locator('[data-time-mode-toggle]');
     await expect(toggle).toBeVisible();
     await expect(toggle).toHaveAttribute('data-mode', 'utc');
@@ -379,6 +387,7 @@ test.describe('Time zone toggle', () => {
 
     await page.goto(`${BASE_URL}/?tracker=visa&tab=search`, { waitUntil: 'networkidle' });
     await expect(page.locator('#home-search')).toBeVisible({ timeout: 15000 });
+    await openPreferences(page);
     await expect(toggle).toHaveAttribute('data-mode', 'local');
     await expect(page.locator('#meta-box')).toContainText('03:20');
     await expect(page.locator('#meta-box')).not.toContainText('UTC');
@@ -415,6 +424,7 @@ test.describe('Status page clocks', () => {
 
     await page.goto(`${BASE_URL}/status`, { waitUntil: 'networkidle' });
     await expect(page.locator('#status-summary')).toContainText('17 Nov 2026, 16:50 UTC');
+    await openPreferences(page);
 
     const toggle = page.locator('[data-time-mode-toggle]');
     await toggle.click();
@@ -465,7 +475,8 @@ test.describe('ML Predict API', () => {
     expect(json.success).toBe(true);
     expect(json.prediction.predicted_days).toBeGreaterThan(0);
     expect(json.prediction.estimated_decision_date).toBeTruthy();
-    expect(json.prediction.inference).toBe('xgboost-tree-ensemble');
+    expect(json.prediction.inference).toBe('transparent-baseline');
+    expect(json.prediction.confidence_interval).toBeNull();
   });
 
   test('rejects invalid input', async ({ request }) => {
@@ -492,7 +503,7 @@ test.describe('Mobile responsiveness', () => {
 
   test('renders the landing page on a mobile viewport', async ({ page }) => {
     await gotoHome(page);
-    await expect(page.locator('h1').first()).toContainText('Choose your tracker');
+    await expect(page.locator('h1').first()).toContainText('Published Irish visa decisions');
     await expect(page.locator('.tracker-card')).toHaveCount(3);
   });
 
@@ -649,6 +660,7 @@ test.describe('All-office search result cards', () => {
     await expect(card).toContainText('Last checked');
     const checked = card.locator('.lookup-result-fact').filter({ hasText: 'Last checked' });
     await expect(checked).toContainText('09:31 UTC');
+    await openPreferences(page);
     await page.locator('[data-time-mode-toggle]').click();
     await expect(checked).toContainText('01:31');
     await expect(checked).not.toContainText('UTC');

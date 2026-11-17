@@ -162,7 +162,7 @@
             opacity: 0;
         }
         #visa-dash .navpill.rippling::after {
-            animation: nav-ripple 0.5s ease-out;
+            animation: nav-ripple 0.3s ease-out;
         }
         @keyframes nav-ripple {
             0% { transform: translate(-50%, -50%) scale(0); opacity: 0.4; }
@@ -3118,4 +3118,593 @@
     #visa-dash .checklist-result { border: 0; padding: 0; }
     #visa-dash .checklist-result h3 { margin-top: 0; }
     #visa-dash .checklist-items li { break-inside: avoid; }
+}
+
+/* Anti-scam notice: shown on results, checklists, alerts and home lookups. */
+#visa-dash .safety-notice {
+    margin: 0 0 16px;
+    padding: 12px 14px;
+    border: 1px solid #fde68a;
+    border-radius: var(--r-container);
+    background: #fffbeb;
+    color: #713f12;
+    font-size: 13px;
+    line-height: 1.55;
+}
+#visa-dash .safety-lead { margin: 0; }
+#visa-dash .safety-lead strong { color: #78350f; }
+#visa-dash .safety-sources { margin-top: 8px; font-size: 12px; }
+#visa-dash .safety-sources summary { cursor: pointer; font-weight: 650; }
+#visa-dash .safety-sources p { margin: 8px 0 4px; }
+#visa-dash .safety-sources ul {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 14px;
+    margin: 0;
+    padding: 0 0 0 18px;
+}
+#visa-dash .safety-sources a { color: #854d0e; font-weight: 650; }
+#visa-dash[data-theme="dark"] .safety-notice {
+    border-color: rgba(251, 191, 36, .42);
+    background: rgba(120, 53, 15, .18);
+    color: #fde68a;
+}
+#visa-dash[data-theme="dark"] .safety-lead strong { color: #fef3c7; }
+#visa-dash[data-theme="dark"] .safety-sources a { color: #fcd34d; }
+#visa-dash .alerts-digest-help {
+    margin: 0 0 14px;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--r-container);
+    background: var(--surface-raised);
+    color: var(--ink-soft);
+    font-size: 12px;
+    line-height: 1.55;
+}
+#visa-dash .alerts-digest-help strong { color: var(--ink); }
+#visa-dash .alerts-digest-help code {
+    padding: 1px 5px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: var(--surface);
+    color: var(--green-text);
+    font-size: 11px;
+}
+#visa-dash .home-freshness-links {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    flex: 0 0 auto;
+}
+#visa-dash .home-freshness-link { white-space: nowrap; font-size: 13px; }
+@media (max-width: 760px) {
+    #visa-dash .safety-notice { font-size: 12.5px; }
+    #visa-dash .home-freshness-links { width: 100%; margin-top: 8px; }
+}
+
+/* ---- Design cleanup, 2026-11 -------------------------------------------
+   One task header, one plain segmented tab bar, aligned stat rows, and one
+   link/button/badge language. The dashboard is a reference tool, not a
+   component showcase, so decorative motion and card chrome are removed. */
+
+#visa-dash .eyebrow,
+#visa-dash .titlerow > div,
+#visa-dash .theme-switch,
+#visa-dash .lang-selector,
+#visa-dash .stats-bar,
+#visa-dash .landing-alert-cta,
+#visa-dash .embassy-status-cards,
+#visa-dash .quick-actions,
+#visa-dash .community-wait-section,
+#visa-dash .recent-decisions-section { display: none !important; }
+
+#visa-dash a:not(.btn):not(.navpill):not(.tracker-card) {
+  color: var(--green-deep);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+#visa-dash a:not(.btn):not(.navpill):not(.tracker-card):hover { color: var(--green); }
+#visa-dash a.btn,
+#visa-dash a.tracker-card { text-decoration: none; }
+
+#visa-dash .page-title-block {
+  max-width: 1080px;
+  margin: 0 auto 18px;
+  padding: 0;
+}
+#visa-dash .page-title-block h1 {
+  margin: 0 0 6px;
+  font-size: clamp(28px, 4vw, 38px);
+  line-height: 1.14;
+  letter-spacing: -.025em;
+  font-weight: 750;
+  color: var(--ink);
+  text-wrap: balance;
+}
+#visa-dash .page-task {
+  max-width: 64ch;
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 15px;
+  line-height: 1.55;
+}
+#visa-dash .page-meta {
+  margin: 7px 0 0;
+  color: var(--ink-muted);
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+#visa-dash .back-btn {
+  display: inline-block;
+  margin: 0 0 12px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--ink-muted);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+#visa-dash .back-btn:hover {
+  background: transparent;
+  color: var(--green-deep);
+  transform: none;
+  box-shadow: none;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+#visa-dash .landing-wrap { min-height: 0; display: block; }
+#visa-dash .landing-wrap .tracker-grid { flex: none; align-content: normal; }
+
+/* Plain tracker rows, not three marketing cards. */
+#visa-dash .tracker-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0;
+  max-width: 1080px;
+  margin: 16px auto 20px;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+#visa-dash .tracker-card {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  width: 100%;
+  margin: 0;
+  padding: 14px 2px;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  text-align: left;
+  cursor: pointer;
+  transition: none;
+}
+#visa-dash .tracker-card:last-child { border-bottom: 0; }
+#visa-dash .tracker-card:hover,
+#visa-dash .tracker-card.g1:hover,
+#visa-dash .tracker-card.permits:hover {
+  transform: none;
+  border-color: var(--border);
+  box-shadow: none;
+  background: transparent;
+}
+#visa-dash .tracker-card:hover .tracker-title,
+#visa-dash .tracker-card:focus-visible .tracker-title { color: var(--green-deep); }
+#visa-dash .tracker-row-copy { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+#visa-dash .tracker-title { color: var(--ink); font-size: 15px; font-weight: 700; line-height: 1.3; }
+#visa-dash .tracker-desc { color: var(--ink-soft); font-size: 13px; line-height: 1.45; }
+#visa-dash .tracker-row-meta {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1px;
+  text-align: right;
+   max-width: 44%;
+}
+#visa-dash .tracker-meta,
+#visa-dash .tracker-card.g1 .tracker-meta,
+#visa-dash .tracker-card.permits .tracker-meta {
+  color: var(--ink-muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+#visa-dash .tracker-cta,
+#visa-dash .tracker-card.g1 .tracker-cta,
+#visa-dash .tracker-card.permits .tracker-cta {
+  color: var(--green-deep);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+/* Landing search: one row, no panel chrome. */
+#visa-dash .landing-search {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 190px auto;
+  gap: 8px;
+  align-items: center;
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+#visa-dash .landing-search .searchbar { min-height: 42px; }
+#visa-dash .landing-office-select {
+  min-height: 42px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-control);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 14px;
+}
+#visa-dash .landing-search-hint {
+  max-width: 1080px;
+  margin: 6px auto 0;
+  color: var(--ink-muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+#visa-dash .landing-status {
+  max-width: 1080px;
+  margin: 8px auto 12px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ink-soft);
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+#visa-dash .landing-alert-line {
+  max-width: 1080px;
+  margin: 0 auto 18px;
+  padding: 10px 0;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  color: var(--ink-soft);
+  font-size: 13px;
+  line-height: 1.5;
+}
+#visa-dash .landing-alert-line strong { color: var(--ink); font-weight: 700; }
+#visa-dash .landing-publications {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 2px 0 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+#visa-dash .landing-publications-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 6px;
+}
+#visa-dash .landing-publications-head h2 { margin: 0; font-size: 18px; line-height: 1.25; letter-spacing: -.015em; }
+#visa-dash .landing-publications-head .note2 { margin: 2px 0 0; font-size: 12px; }
+#visa-dash .embassy-status-grid { margin: 4px 0 0; }
+#visa-dash .coverage-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+#visa-dash .coverage-table caption {
+  caption-side: top;
+  padding: 0 0 6px;
+  color: var(--ink-muted);
+  font-size: 11.5px;
+  text-align: left;
+}
+#visa-dash .coverage-table th,
+#visa-dash .coverage-table td {
+  padding: 8px 10px 8px 0;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  vertical-align: top;
+}
+#visa-dash .coverage-table thead th {
+  color: var(--ink-muted);
+  font-size: 10.5px;
+  font-weight: 750;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+}
+#visa-dash .coverage-table .num { text-align: right; }
+#visa-dash .coverage-table tbody th,
+#visa-dash .coverage-table tbody td { color: var(--ink-soft); }
+#visa-dash .coverage-table tbody td:first-of-type { color: var(--ink); }
+#visa-dash .landing-foot {
+  max-width: 1080px;
+  margin: 18px auto 0;
+  color: var(--ink-muted);
+  font-size: 11.5px;
+  line-height: 1.45;
+}
+
+/* Plain segmented tabs. */
+#visa-dash .navpills {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 0;
+  max-width: 1080px;
+  margin: 0 auto 18px;
+  padding: 0;
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+#visa-dash .navpills::-webkit-scrollbar { display: none; }
+#visa-dash .navpill {
+  flex: 0 0 auto;
+  position: static;
+  overflow: visible;
+  min-height: 38px;
+  margin: 0;
+  padding: 8px 12px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  background: transparent;
+  color: var(--ink-muted);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: none;
+}
+#visa-dash .navpill::after,
+#visa-dash .navpill .gn-goo,
+#visa-dash .navpill .gn-svg { display: none !important; }
+#visa-dash .navpill:hover { color: var(--ink); background: transparent; }
+#visa-dash .navpill:focus-visible { outline: 2px solid var(--green); outline-offset: -2px; }
+#visa-dash .navpill.active,
+#visa-dash .navpill[aria-current="page"] {
+  color: var(--green-deep);
+  border-bottom-color: var(--green);
+  background: transparent;
+  box-shadow: none;
+  transform: none;
+}
+#visa-dash .navpill.rippling { animation: none; }
+
+/* Search tab: one search panel, then a definition-style freshness table. */
+#visa-dash .home-lookup {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 0 0 18px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+#visa-dash .home-lookup-head { align-items: flex-end; margin-bottom: 2px; }
+#visa-dash .home-lookup-head h2 { margin: 0; font-size: 18px; letter-spacing: -.015em; }
+#visa-dash .home-lookup-copy { margin: 2px 0 12px; color: var(--ink-muted); font-size: 12.5px; }
+#visa-dash .home-lookup-form { gap: 8px; }
+#visa-dash .home-lookup-coverage { margin-top: 8px; color: var(--ink-muted); font-size: 11.5px; }
+#visa-dash .home-lookup-help { margin-top: 8px; }
+#visa-dash .home-freshness,
+#visa-dash .home-latest,
+#visa-dash .g1-chart,
+#visa-dash .readme {
+  max-width: 1080px;
+  margin: 20px auto 0;
+  padding: 16px 0 0;
+  border: 0;
+  border-top: 1px solid var(--border);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+#visa-dash .home-freshness-head,
+#visa-dash .home-latest-head { align-items: flex-start; }
+#visa-dash .landing-h3 { margin: 0 0 4px; font-size: 16px; letter-spacing: -.01em; }
+#visa-dash .advanced-search {
+  max-width: 1080px;
+  margin: 12px auto 0;
+  padding: 0;
+  border: 0;
+  border-top: 1px solid var(--border);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+#visa-dash .advanced-search > summary { padding: 10px 0; font-size: 12.5px; color: var(--ink-muted); }
+
+/* Stat strips replace equal-weight cards. */
+#visa-dash .cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0;
+  margin: 20px auto;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+#visa-dash .cards .card {
+  min-width: 0;
+  padding: 14px 18px 14px 0;
+  border: 0;
+  border-right: 1px solid var(--border);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  transform: none;
+}
+#visa-dash .cards .card + .card { padding-left: 18px; }
+#visa-dash .cards .card:last-child { border-right: 0; }
+#visa-dash .cards .card .label {
+  display: block;
+  color: var(--ink-muted);
+  font-size: 10.5px;
+  font-weight: 750;
+  letter-spacing: .06em;
+  line-height: 1.35;
+  text-transform: uppercase;
+}
+#visa-dash .cards .card .label i,
+#visa-dash .cards .card .label svg { display: none; }
+#visa-dash .cards .card .value { margin-top: 4px; font-size: 21px; line-height: 1.3; font-weight: 700; }
+#visa-dash .cards .card .hint { margin-top: 2px; color: var(--ink-muted); font-size: 11.5px; }
+
+/* One global button hierarchy. */
+#visa-dash .btn,
+#visa-dash button.btn {
+  min-height: 38px;
+  padding: 8px 14px;
+  border: 1px solid var(--green-deep);
+  border-radius: var(--r-control);
+  background: var(--green-deep);
+  color: #fff;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 650;
+  line-height: 1.2;
+  text-decoration: none;
+  cursor: pointer;
+  box-shadow: none;
+  transform: none;
+}
+#visa-dash .btn:hover { background: var(--green); border-color: var(--green); color: #fff; transform: none; }
+#visa-dash .btn.secondary {
+  background: var(--surface);
+  border-color: var(--border);
+  color: var(--ink);
+}
+#visa-dash .btn.secondary:hover { background: var(--surface-raised); border-color: var(--ink-muted); color: var(--ink); }
+#visa-dash .btn.ghost {
+  background: transparent;
+  border-color: transparent;
+  color: var(--green-deep);
+  padding-left: 4px;
+  padding-right: 4px;
+}
+#visa-dash .btn.ghost:hover { background: transparent; text-decoration: underline; text-underline-offset: 3px; }
+#visa-dash .btn:disabled { opacity: .55; cursor: not-allowed; }
+
+/* One decision badge; blue is informational, not a second brand colour. */
+#visa-dash .pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 1px 7px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.5;
+  letter-spacing: 0;
+  white-space: nowrap;
+}
+#visa-dash .pill.green { background: var(--green-soft); border-color: #bbf7d0; color: var(--green-text); }
+#visa-dash .pill.red { background: var(--red-soft); border-color: #fecaca; color: var(--red-text); }
+#visa-dash .pill.amber { background: var(--amber-soft); border-color: #fde68a; color: var(--amber-text); }
+#visa-dash .pill.blue {
+  background: var(--surface-raised);
+  border-color: var(--border);
+  color: var(--ink-soft);
+}
+#visa-dash .pill:not(.green):not(.red):not(.amber):not(.blue) {
+  background: var(--surface-raised);
+  border-color: var(--border);
+  color: var(--ink-soft);
+}
+
+/* Category and mode switches are plain text buttons. */
+#visa-dash .category-tabs,
+#visa-dash .segmented {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0;
+  margin: 0 0 14px;
+  border-bottom: 1px solid var(--border);
+}
+#visa-dash .recent-chip.mode-chip {
+  min-height: 34px;
+  padding: 6px 10px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  background: transparent;
+  color: var(--ink-muted);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+}
+#visa-dash .recent-chip.mode-chip.active,
+#visa-dash .recent-chip.mode-chip[aria-pressed="true"] {
+  color: var(--green-deep);
+  border-bottom-color: var(--green);
+  background: transparent;
+}
+#visa-dash .g1-buffer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+}
+#visa-dash .g1-buffer input {
+  width: 72px;
+  min-height: 34px;
+  padding: 5px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-control);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+}
+#visa-dash .status-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ink-muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+#visa-dash .status-filter select {
+  min-height: 34px;
+  padding: 5px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-control);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+}
+
+/* No decorative entrance or hover motion. */
+#visa-dash .hero { display: none !important; }
+#visa-dash .tracker-card,
+#visa-dash .card,
+#visa-dash .navpill,
+#visa-dash .btn { animation: none !important; }
+
+@media (max-width: 720px) {
+  #visa-dash .landing-search { grid-template-columns: 1fr; }
+  #visa-dash .landing-search .btn { width: 100%; }
+  #visa-dash .tracker-card { align-items: flex-start; gap: 12px; }
+  #visa-dash .tracker-row-meta { max-width: 46%; }
+  #visa-dash .landing-publications { overflow-x: auto; }
+  #visa-dash .coverage-table { min-width: 620px; }
+  #visa-dash .cards { grid-template-columns: 1fr; }
+  #visa-dash .cards .card,
+  #visa-dash .cards .card + .card {
+    padding: 12px 0;
+    border-right: 0;
+    border-bottom: 1px solid var(--border);
+  }
+  #visa-dash .cards .card:last-child { border-bottom: 0; }
 }

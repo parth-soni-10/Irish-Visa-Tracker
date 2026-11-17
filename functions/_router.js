@@ -45,6 +45,10 @@ const PUSH_PATHS = new Set(["/api/push/subscribe", "/api/push/unsubscribe"]);
 const TELEGRAM_PATHS = new Set(["/api/telegram/start", "/api/telegram/webhook"]);
 const ADMIN_PATHS = new Set(["/api/admin/health", "/api/admin/quality", "/api/admin/metrics", "/api/admin/errors", "/api/admin/trigger", "/api/admin/tokens"]);
 const PREDICT_PATH = "/api/predict";
+const PREDICT_FEEDBACK_PATH = "/api/predict/feedback";
+const TELEGRAM_BROADCAST_PATH = "/api/telegram/broadcast";
+const CALENDAR_PATH = "/api/calendar/next-update.ics";
+const OFFICIAL_FEED_PATHS = new Set(["/feed.xml", "/official-file-feed.json"]);
 const CHECKLIST_PATH = "/api/checklist";
 const VFS_APPOINTMENTS_PATH = "/api/vfs/appointments";
 const SEARCH_PATH = "/api/search";
@@ -277,12 +281,34 @@ async function handleRequest(request, env) {
   // Public browser configuration. Only publishable values belong here; the
   // VAPID private key and every mail secret stay server-side.
   if (pathname === CONFIG_PATH && (request.method === 'GET' || request.method === 'HEAD')) {
+    const channel = String(env.TELEGRAM_CHANNEL_URL || '').trim();
     return json({
       vapid_public_key: env.VAPID_PUBLIC_KEY || '',
       brand_name: env.BRAND_NAME || 'Irish Visa Decision Tracker',
       brand_color: env.BRAND_COLOR || '#047857',
-      support_email: env.SUPPORT_EMAIL || ''
+      support_email: env.SUPPORT_EMAIL || '',
+      telegram_channel_url: /^https:\/\/t\.me\/[A-Za-z0-9_]{3,64}\/?$/.test(channel) ? channel : '',
+      official_feed_url: '/feed.xml',
+      official_feed_json_url: '/official-file-feed.json'
     });
+  }
+
+  // Public official-file feeds. These are intentionally outside /api/ so feed
+  // readers and aggregators can use them without an API key or CORS dance.
+  if (OFFICIAL_FEED_PATHS.has(pathname)) {
+    if (request.method !== 'GET' && request.method !== 'HEAD') {
+      return new Response('Method not allowed', { status: 405 });
+    }
+    const { officialFeedResponse } = await import('./official-feed.js');
+    return officialFeedResponse(env, request);
+  }
+
+  if (pathname === CALENDAR_PATH) {
+    if (request.method !== 'GET' && request.method !== 'HEAD') {
+      return new Response('Method not allowed', { status: 405 });
+    }
+    const { calendarResponse } = await import('./calendar.js');
+    return calendarResponse(new Date(), request.method === 'HEAD');
   }
 
   // The email bridge is called by the worker itself for every outbound mail.
@@ -340,11 +366,23 @@ async function handleRequest(request, env) {
     return handleAlertsRun(request, env);
   }
 
-  // Prediction route (ML timeline predictor)
+  // Prediction route (published baseline + model card)
   if (pathname === PREDICT_PATH) {
     const { onRequest } = await import("./api/predict.js");
     const handler = onRequest[request.method] || onRequest.POST;
     return handler({ request, env });
+  }
+
+  if (pathname === PREDICT_FEEDBACK_PATH) {
+    const { onRequest } = await import("./api/predict-feedback.js");
+    const handler = onRequest[request.method];
+    if (!handler) return new Response("Method not allowed", { status: 405 });
+    return handler({ request, env });
+  }
+
+  if (pathname === TELEGRAM_BROADCAST_PATH) {
+    const { handleTelegramBroadcast } = await import("./telegram-broadcast.js");
+    return handleTelegramBroadcast(request, env);
   }
 
   // Document Checklist Generator

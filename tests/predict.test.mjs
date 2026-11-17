@@ -12,7 +12,7 @@ function post(body) {
   });
 }
 
-test('predict returns a bounded estimate from the exported tree ensemble', async () => {
+test('predict returns the transparent baseline, not the unvalidated tree ensemble', async () => {
   const response = await post({
     application_number: 'IRL2026123456',
     application_date: '2026-01-15',
@@ -22,10 +22,13 @@ test('predict returns a bounded estimate from the exported tree ensemble', async
   assert.equal(response.status, 200);
   const data = await response.json();
   assert.equal(data.success, true);
-  assert.equal(data.prediction.inference, 'xgboost-tree-ensemble');
+  assert.equal(data.prediction.inference, 'transparent-baseline');
+  assert.equal(data.prediction.estimate_kind, 'baseline');
+  assert.equal(data.prediction.confidence_interval, null);
   assert.ok(data.prediction.predicted_days >= 5 && data.prediction.predicted_days <= 180);
   assert.match(data.prediction.estimated_decision_date, /^2026-\d{2}-\d{2}$/);
-  assert.ok(data.prediction.confidence_interval.lower <= data.prediction.predicted_days);
+  assert.equal(data.prediction.gate.eligible_for_individual_estimates, false);
+  assert.match(data.prediction.gate.reason, /baseline/);
 });
 
 test('predict rejects missing dates and unknown embassies', async () => {
@@ -39,5 +42,8 @@ test('predict metadata describes a synthetic prototype, not a guarantee', async 
   const response = await onRequestGet();
   const data = await response.json();
   assert.equal(data.model.training_data, 'synthetic-illustrative');
-  assert.match(data.model.disclaimer, /Illustrative estimate/);
+  assert.match(data.model.disclaimer, /Illustrative/);
+  assert.equal(data.model.validation.eligible_for_individual_estimates, false);
+  assert.equal(data.model.metrics, null);
+  assert.match(data.model.validation.backtesting, /cannot be shown/);
 });

@@ -9,16 +9,6 @@
     <link rel="canonical" href="https://irishvisaupdatetracker.pages.dev/vac-transit">
     <link rel="manifest" href="/manifest.json">
     <link rel="stylesheet" href="pages.css">
-    <link rel="stylesheet" href="analytics-chart.css">
-    <link rel="stylesheet" href="filter-disclosure.css">
-    <link rel="stylesheet" href="dynamic-button.css">
-    <link rel="stylesheet" href="stepper.css">
-    <link rel="stylesheet" href="rubber-segment.css">
-    <link rel="stylesheet" href="jelly-radio.css">
-    <link rel="stylesheet" href="gooey-nav.css">
-    <link rel="stylesheet" href="squish-switch.css">
-    <link rel="stylesheet" href="time-undo.css">
-    <link rel="stylesheet" href="glide-select.css">
     <link rel="stylesheet" href="site-chrome.css">
 </head>
 <body>
@@ -31,14 +21,15 @@
     </a>
     <nav class="sitebar-nav" aria-label="Site">
       <a href="/">Tracker</a>
-      <a href="/comparison">Compare</a>
       <a href="/daily-summaries">Daily summaries</a>
-      <a href="/monthly-report">Monthly report</a>
       <a href="/visa-processing-times">Processing times</a>
       <a href="/about">About</a>
       <details class="sitebar-more is-current">
-        <summary>More</summary>
+        <summary aria-current="page">More</summary>
         <div class="sitebar-more-panel">
+          <a href="/status">Data status</a>
+          <a href="/comparison">Method &amp; sources</a>
+          <a href="/monthly-report">Monthly report</a>
           <a href="/stamp-1g-processing-dates">Stamp 1G</a>
           <a href="/employment-permit-processing-dates">Employment permits</a>
           <a href="/vac-transit" aria-current="page">VAC &amp; transit</a>
@@ -48,22 +39,43 @@
           <a href="/terms">Terms</a>
         </div>
       </details>
+      <details class="sitebar-prefs">
+        <summary>Preferences</summary>
+        <div class="sitebar-more-panel sitebar-prefs-panel">
+          <div class="sitebar-pref-row">
+            <span class="sitebar-pref-label">Time zone</span>
+            <button class="sitebar-pref-button" type="button" data-time-mode-toggle data-mode="utc" aria-pressed="false">
+              <span data-time-mode-label>UTC</span>
+            </button>
+          </div>
+          <div class="sitebar-pref-row">
+            <span class="sitebar-pref-label">Theme</span>
+            <button class="sitebar-pref-button" type="button" data-theme-toggle aria-pressed="false">
+              <span data-theme-label>Light</span>
+            </button>
+          </div>
+          <label class="sitebar-pref-row" data-language-row hidden>
+            <span class="sitebar-pref-label">Language</span>
+            <select class="sitebar-pref-select" data-language-select aria-label="Language"></select>
+          </label>
+        </div>
+      </details>
     </nav>
   </div>
 </header>
 <main id="main-content" tabindex="-1" class="vac-page">
-  <p class="eyebrow">Ireland &middot; Visa Application Centres &amp; Transit</p>
-  <div class="titlerow"><h1>VAC &amp; Transit Guidance</h1></div>
-  <p class="sub">Find your nearest Visa Application Centre, check transit visa requirements, and plan your travel to Ireland.</p>
-  <div class="navpills" role="tablist" aria-label="VAC destinations" data-gooey-nav>
-            <button type="button" class="navpill active" id="tab-overview" data-tab="overview" role="tab" aria-selected="true" aria-controls="tab-body" tabindex="0"><i data-lucide="map-pin"></i> Overview</button>
-            <button type="button" class="navpill" id="tab-new-delhi" data-tab="new-delhi" role="tab" aria-selected="false" aria-controls="tab-body" tabindex="-1"><i data-lucide="flag"></i> New Delhi</button>
-            <button type="button" class="navpill" id="tab-beijing" data-tab="beijing" role="tab" aria-selected="false" aria-controls="tab-body" tabindex="-1"><i data-lucide="flag"></i> Beijing</button>
-            <button type="button" class="navpill" id="tab-dublin" data-tab="dublin" role="tab" aria-selected="false" aria-controls="tab-body" tabindex="-1"><i data-lucide="flag"></i> Dublin</button>
-            <button type="button" class="navpill" id="tab-abu-dhabi" data-tab="abu-dhabi" role="tab" aria-selected="false" aria-controls="tab-body" tabindex="-1"><i data-lucide="flag"></i> Abu Dhabi</button>
-            <button type="button" class="navpill" id="tab-abuja" data-tab="abuja" role="tab" aria-selected="false" aria-controls="tab-body" tabindex="-1"><i data-lucide="flag"></i> Abuja</button>
-            <button type="button" class="navpill" id="tab-ankara" data-tab="ankara" role="tab" aria-selected="false" aria-controls="tab-body" tabindex="-1"><i data-lucide="flag"></i> Ankara</button>
-            <button type="button" class="navpill" id="tab-transit" data-tab="transit" role="tab" aria-selected="false" aria-controls="tab-body" tabindex="-1"><i data-lucide="plane"></i> Transit Visas</button>
+  <h1>VAC &amp; transit guidance</h1>
+  <p class="page-meta">Visa Application Centres &middot; Transit visa requirements &middot; Official links only</p>
+  <p class="page-lede">Find the Visa Application Centre for your country of residence, check transit requirements, and plan travel to Ireland.</p>
+  <div class="navpills" role="tablist" aria-label="VAC destinations">
+    <button type="button" class="navpill active" id="tab-overview" data-tab="overview" role="tab" aria-selected="true" aria-controls="tab-body" tabindex="0">Overview</button>
+    <button type="button" class="navpill" id="tab-new-delhi" data-tab="new-delhi" role="tab" aria-selected="false" aria-controls="tab-body" tabindex="-1">New Delhi</button>
+    <button type="button" class="navpill" id="tab-beijing" data-tab="beijing" role="tab" aria-selected="false" aria-controls="tab-body" tabindex="-1">Beijing</button>
+    <button type="button" class="navpill" id="tab-dublin" data-tab="dublin" role="tab" aria-selected="false" aria-controls="tab-body" tabindex="-1">Dublin</button>
+    <button type="button" class="navpill" id="tab-abu-dhabi" data-tab="abu-dhabi" role="tab" aria-selected="false" aria-controls="tab-body" tabindex="-1">Abu Dhabi</button>
+    <button type="button" class="navpill" id="tab-abuja" data-tab="abuja" role="tab" aria-selected="false" aria-controls="tab-body" tabindex="-1">Abuja</button>
+    <button type="button" class="navpill" id="tab-ankara" data-tab="ankara" role="tab" aria-selected="false" aria-controls="tab-body" tabindex="-1">Ankara</button>
+    <button type="button" class="navpill" id="tab-transit" data-tab="transit" role="tab" aria-selected="false" aria-controls="tab-body" tabindex="-1">Transit visas</button>
   </div>
   <div id="tab-body" role="tabpanel" aria-labelledby="tab-overview" aria-live="polite"></div>
 </main>
@@ -74,55 +86,25 @@
         <img src="/icon.svg" alt="" width="24" height="24">
         <span>Irish Visa Decision Tracker</span>
       </a>
-      <p>Independent and unofficial. Not affiliated with the Embassy of Ireland, ISD or DETE. Not immigration advice.</p>
+      <p>Independent and unofficial. Not immigration advice.</p>
     </div>
-    <nav class="sitebar-footer-col" aria-label="Explore">
-      <h2 class="sitebar-footer-title">Explore</h2>
-      <ul>
-        <li><a href="/">Tracker</a></li>
-        <li><a href="/comparison">Compare</a></li>
-        <li><a href="/daily-summaries">Daily summaries</a></li>
-        <li><a href="/monthly-report">Monthly report</a></li>
-        <li><a href="/visa-processing-times">Processing times</a></li>
-        <li><a href="/vac-transit">VAC &amp; transit</a></li>
-      </ul>
+    <nav class="sitebar-footer-links" aria-label="Footer">
+      <a href="/status">Data status</a>
+      <a href="/comparison">Method &amp; sources</a>
+      <a href="/help">Help</a>
+      <a href="/contact">Contact</a>
+      <a href="/privacy">Privacy</a>
+      <a href="/terms">Terms</a>
+      <a href="https://github.com/parth-soni-10/Irish-Visa-Tracker" rel="noopener">GitHub</a>
     </nav>
-    <nav class="sitebar-footer-col" aria-label="Data">
-      <h2 class="sitebar-footer-title">Data</h2>
-      <ul>
-        <li><a href="/stamp-1g-processing-dates">Stamp 1G</a></li>
-        <li><a href="/employment-permit-processing-dates">Employment permits</a></li>
-        <li><a href="/data/visa_decisions.json">Visa decisions JSON</a></li>
-        <li><a href="/status">Data status</a></li>
-        <li><a href="/data/data_manifest.json">Data manifest</a></li>
-        <li><a href="/sitemap.xml">Sitemap</a></li>
-        <li><a href="/llms.txt">llms.txt</a></li>
-      </ul>
-    </nav>
-    <nav class="sitebar-footer-col" aria-label="About and legal">
-      <h2 class="sitebar-footer-title">About &amp; legal</h2>
-      <ul>
-        <li><a href="/about">About the project</a></li>
-        <li><a href="/help">Help &amp; FAQ</a></li>
-        <li><a href="/contact">Contact &amp; corrections</a></li>
-        <li><a href="/privacy">Privacy</a></li>
-        <li><a href="/terms">Terms</a></li>
-        <li><a href="https://github.com/parth-soni-10/Irish-Visa-Tracker" rel="noopener">GitHub</a></li>
-      </ul>
-    </nav>
-  </div>
-  <div class="sitebar-footer-bottom">
-    <p>&copy; 2026 Parth Soni &middot; Dublin, Ireland</p>
-    <p><a href="/sitemap.xml">Sitemap</a><a href="/llms.txt">llms.txt</a><a href="https://github.com/parth-soni-10/Irish-Visa-Tracker" rel="noopener">GitHub</a></p>
+    <p class="sitebar-footer-copy">&copy; 2026 Parth Soni &middot; Dublin, Ireland</p>
   </div>
 </footer>
-  <script src="lucide.min.js"></script>
-    <script src="gooey-nav.js" defer></script>
-    <script src="/scripts/vac-transit-1.js" defer></script>
 
     <script src="/scripts/vac-transit-2.js" defer></script>
 
     <link rel="stylesheet" href="/styles/vac-transit.css">
+  <script src="/scripts/time-mode.js" defer></script>
   <script src="/site-chrome.js" defer></script>
 </body>
 </html>

@@ -69,34 +69,10 @@ const assetsToCopy = [
   'llms.txt',
   // JS modules
   'analytics-chart.js',
-  'calendar-component.js',
-  'calendar-component.css',
-  'dynamic-button.js',
-  'filter-disclosure.js',
-  'glide-select.js',
-  'gooey-nav.js',
-  'jelly-radio.js',
   'lucide.min.js',
-  'rubber-segment.js',
-  'scroll-island.js',
-  'scroll-island-mount.js',
-  'squish-switch.js',
-  'stepper.js',
-  'time-undo.js',
   'site-chrome.js',
   // CSS files
   'analytics-chart.css',
-  'dynamic-button.css',
-  'filter-disclosure.css',
-  'glide-select.css',
-  'gooey-nav.css',
-  'jelly-radio.css',
-  'rubber-segment.css',
-  'scroll-island.css',
-  'scroll-island-theme.css',
-  'squish-switch.css',
-  'stepper.css',
-  'time-undo.css',
   'pages.css',
   'site-chrome.css',
   // Data files
@@ -167,6 +143,56 @@ function buildCommit() {
   }
 }
 
+// Keep the checked-in page modular for local development, but serve a single
+// stylesheet and script in production. This removes 35 render/fetch requests
+// from the tracker's first load without adding a framework or bundler.
+function bundleIndexAssets() {
+  const indexPath = path.resolve(distDir, 'index.html');
+  let html = fs.readFileSync(indexPath, 'utf8');
+  const cssFiles = [];
+  let cssInserted = false;
+  html = html.replace(/<link\b[^>]*\brel="stylesheet"[^>]*>/gi, (tag) => {
+    const match = tag.match(/\bhref="([^"]+)"/i);
+    const file = localDistPath(match && match[1]);
+    if (!file || !fs.existsSync(file)) return tag;
+    cssFiles.push(file);
+    if (cssInserted) return '';
+    cssInserted = true;
+    return '<link rel="stylesheet" href="/styles/index-bundle.css">';
+  });
+  if (cssFiles.length) {
+    fs.writeFileSync(
+      path.resolve(distDir, 'styles', 'index-bundle.css'),
+      cssFiles.map((file) => fs.readFileSync(file, 'utf8')).join('\n')
+    );
+  }
+
+  const scriptFiles = [];
+  let scriptInserted = false;
+  html = html.replace(/<script\b[^>]*\bsrc="([^"]+)"[^>]*>\s*<\/script>/gi, (tag, href) => {
+    const file = localDistPath(href);
+    if (!file || !fs.existsSync(file)) return tag;
+    scriptFiles.push(file);
+    if (scriptInserted) return '';
+    scriptInserted = true;
+    return '<script src="/scripts/index-bundle.js" defer></script>';
+  });
+  if (scriptFiles.length) {
+    fs.writeFileSync(
+      path.resolve(distDir, 'scripts', 'index-bundle.js'),
+      scriptFiles.map((file) => fs.readFileSync(file, 'utf8')).join('\n;\n')
+    );
+  }
+  fs.writeFileSync(indexPath, html);
+  console.log(`Bundled ${cssFiles.length} stylesheets and ${scriptFiles.length} scripts for index.html`);
+}
+
+function localDistPath(href) {
+  if (!href || /^(?:[a-z]+:)?\/\//i.test(href) || href.startsWith('data:')) return null;
+  const pathname = decodeURIComponent(href.split(/[?#]/)[0]).replace(/^\/+/, '');
+  return path.resolve(distDir, pathname);
+}
+
 async function main() {
   console.log('Building for Cloudflare Pages...');
   
@@ -213,6 +239,8 @@ async function main() {
       console.warn(`Warning: Directory not found: ${dir}`);
     }
   }
+
+  bundleIndexAssets();
   
   const fallback = buildSearchFallback({
     dataDir: path.resolve(assetsRootDir, 'data'),

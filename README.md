@@ -25,8 +25,9 @@ The Abuja **31 August–6 September 2026** report, long listed as missing, was r
   conversion events (`/api/events`) that record only a fixed event vocabulary
   and surface name.
 - Monthly email digest with double opt-in and one-click unsubscribe.
-- Document checklist, public analytics and a decision-time estimate.
-- ML decision-time estimate from a committed synthetic-data XGBoost model (illustrative, not a guarantee).
+- Document checklist, public analytics and a transparent decision-time baseline.
+- A model card with a minimum-sample calibration gate and anonymous finished-application feedback; the synthetic-data ML tree is paused until it can beat the baseline on real outcomes.
+- A public RSS/JSON feed of new official office files, optional Telegram channel announcements, and an .ics export for the next expected New Delhi update.
 - Agent-facing HTML/Markdown negotiation, `/llms.txt`, sitemap and accessible trust pages.
 
 ## Services and configuration
@@ -38,6 +39,7 @@ The important variables are:
 - `APP_BASE_URL`, `SCRAPER_CRON_SECRET`
 - `EMAIL_WEBHOOK_URL`, `EMAIL_WEBHOOK_SECRET`, `EMAIL_FROM`
 - `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`
+- `TELEGRAM_BOT_TOKEN`, `TELEGRAM_WEBHOOK_SECRET`; optional `TELEGRAM_BOT_USERNAME`, `TELEGRAM_CHANNEL_ID`, `TELEGRAM_CHANNEL_URL`
 - Optional shared monitoring alert destination: `ALERT_WEBHOOK_URL`
 
 The email path is provider-neutral: the app posts to `EMAIL_WEBHOOK_URL`, and this deployment’s secret-protected `/api/email/send` bridge translates that contract to the existing Resend account. No mail credential ever reaches the browser.

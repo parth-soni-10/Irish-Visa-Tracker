@@ -70,6 +70,11 @@ All are public, read-only and same-origin:
   sync; read the current file for its shape rather than assuming fields.
 - `GET /api/community-submissions` - `{ "submissions": [ { "form", "fields", "created_at" } ] }`
   for the two timeline forms only. It never returns the private `suggestions` form.
+- `GET /official-file-feed.json` - JSON Feed 1.1 with one item per published office report
+  (office, report date, counts, official source link, checksum). No applicant rows.
+- `GET /feed.xml` - RSS 2.0 representation of the same official-file feed.
+- `GET /api/calendar/next-update.ics` - an .ics event for the next expected New Delhi
+  update window. It is an expectation, not a guarantee.
 
 ### Watchlists and alerts
 

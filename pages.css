@@ -579,3 +579,257 @@ a:focus-visible { outline: 2px solid var(--green); outline-offset: 3px; border-r
   .dublin-queue-table th,
   .dublin-queue-table td { padding: 7px 6px; }
 }
+
+/* Public official-file feed, model card and anonymous calibration form. */
+.feed-section .feed-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 14px 0 10px;
+}
+.feed-section .btn { text-decoration: none; }
+.feed-links [hidden] { display: none !important; }
+.model-card {
+  margin: 16px 0 18px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-container);
+  background: var(--raised);
+  font-size: 14px;
+  line-height: 1.6;
+}
+.model-card h3 { margin: 0 0 6px; font-size: 17px; }
+.model-card p { margin: 0 0 10px; color: var(--ink-soft); }
+.model-card dl {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 18px;
+  margin: 12px 0 0;
+}
+.model-card dl div { min-width: 0; }
+.model-card dt {
+  color: var(--ink-muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.model-card dd { margin: 2px 0 0; color: var(--ink); overflow-wrap: anywhere; }
+.model-card .model-gate {
+  display: inline-block;
+  padding: 3px 8px;
+  border: 1px solid #fde68a;
+  border-radius: 999px;
+  background: #fffbeb;
+  color: #92400e;
+  font-size: 11px;
+  font-weight: 700;
+}
+.model-feedback {
+  margin: 18px 0 0;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-container);
+  background: var(--raised);
+}
+.model-feedback h3 { margin: 0 0 6px; font-size: 17px; }
+.model-feedback > p { margin: 0 0 12px; color: var(--ink-soft); font-size: 13px; }
+.model-feedback-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.model-feedback-grid label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: var(--ink-soft);
+  font-size: 12px;
+  font-weight: 700;
+}
+.model-feedback-grid input,
+.model-feedback-grid select {
+  width: 100%;
+  min-width: 0;
+  min-height: 42px;
+  padding: 9px 11px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-control);
+  background: var(--surface);
+  color: var(--ink);
+  font: 14px/1.4 var(--sans);
+}
+.model-feedback-grid input:focus-visible,
+.model-feedback-grid select:focus-visible {
+  outline: 2px solid var(--green);
+  outline-offset: 2px;
+  border-color: var(--green);
+}
+.model-feedback .btn { margin-top: 12px; }
+@media (max-width: 560px) {
+  .model-card dl,
+  .model-feedback-grid { grid-template-columns: 1fr; }
+}
+
+/* ---- Compact reference layout, 2026-11 ---------------------------------
+   Static pages use one task-sized H1, one metadata line and body copy. Cards
+   are reserved for content that genuinely needs a boundary; comparable
+   figures sit in aligned rows or tables instead. */
+
+.page {
+  max-width: 800px;
+  padding: 40px 24px 64px;
+}
+.page h1 {
+  margin: 0 0 10px;
+  max-width: 24ch;
+  font-size: clamp(28px, 4vw, 38px);
+  line-height: 1.16;
+  letter-spacing: -.025em;
+}
+.page-meta {
+  margin: 0 0 16px;
+  color: var(--ink-muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+.page-lede {
+  max-width: 66ch;
+  margin: 0 0 28px;
+  color: var(--ink-soft);
+  font-size: 16px;
+  line-height: 1.65;
+}
+.page section { margin-top: 34px; }
+.page h2 {
+  margin: 0 0 10px;
+  font-size: 20px;
+  line-height: 1.25;
+  letter-spacing: -.015em;
+}
+.page h3 { margin: 18px 0 6px; font-size: 16px; }
+.page p, .page li { font-size: 15px; line-height: 1.7; }
+.page p { margin: 12px 0 0; }
+.page ul, .page ol { margin: 10px 0 0; }
+.page .page-lede + section { margin-top: 24px; }
+.page-kicker, .kicker, .eyebrow, .breadcrumbs { display: none; }
+
+/* Tables are the primary comparison surface. */
+.compare-table-wrap { margin-top: 14px; }
+.compare-table { font-size: 13.5px; }
+.compare-table th, .compare-table td { padding: 10px 12px; vertical-align: top; }
+.compare-table thead th {
+  color: var(--ink-muted);
+  font-size: 11px;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+.compare-table tbody th { font-weight: 700; color: var(--ink); }
+.compare-table .note { display: block; margin-top: 3px; font-size: 12px; }
+.compare-table .is-us { background: transparent; }
+.source-table td:nth-child(2) { min-width: 200px; }
+
+/* Three primary status metrics, then the detail tables. */
+.status-kpis {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 24px 0 8px;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+.status-metric {
+  min-width: 0;
+  padding: 16px 18px 16px 0;
+  border-right: 1px solid var(--border);
+}
+.status-metric + .status-metric { padding-left: 18px; }
+.status-metric:last-child { border-right: 0; }
+.status-metric-label {
+  display: block;
+  color: var(--ink-muted);
+  font-size: 10.5px;
+  font-weight: 750;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.status-metric strong {
+  display: block;
+  margin-top: 4px;
+  color: var(--ink);
+  font-size: 22px;
+  line-height: 1.25;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+.status-metric > span:last-child {
+  display: block;
+  margin-top: 3px;
+  color: var(--ink-muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+.status-page .compare-table th,
+.status-page .compare-table td { padding: 9px 10px; }
+.status-page .feed-section { padding-top: 4px; }
+.feed-links { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+
+/* Card strips: aligned values, no floating boxes or icon tiles. */
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(165px, 1fr));
+  gap: 0;
+  margin: 20px 0;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+.cards .card {
+  min-width: 0;
+  padding: 14px 18px 14px 0;
+  border: 0;
+  border-right: 1px solid var(--border);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.cards .card + .card { padding-left: 18px; }
+.cards .card:last-child { border-right: 0; }
+.cards .card .label i,
+.cards .card .label svg { display: none; }
+.cards .card .label {
+  display: block;
+  color: var(--ink-muted);
+  font-size: 10.5px;
+  font-weight: 750;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+}
+.cards .card .value {
+  margin-top: 4px;
+  color: var(--ink);
+  font-size: 20px;
+  line-height: 1.3;
+  font-weight: 700;
+}
+.cards .card .hint { margin-top: 3px; color: var(--ink-muted); font-size: 12px; }
+.page .card, .page .cards { box-shadow: none; }
+.method-steps { padding-left: 20px; }
+.method-steps li { margin: 9px 0; }
+
+@media (max-width: 640px) {
+  .page { padding: 30px 18px 48px; }
+  .page h1 { font-size: 28px; }
+  .status-kpis { grid-template-columns: 1fr; }
+  .status-metric, .status-metric + .status-metric {
+    padding: 12px 0;
+    border-right: 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .status-metric:last-child { border-bottom: 0; }
+  .cards { grid-template-columns: 1fr; }
+  .cards .card, .cards .card + .card {
+    padding: 12px 0;
+    border-right: 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .cards .card:last-child { border-bottom: 0; }
+}

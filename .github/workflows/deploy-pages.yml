@@ -89,3 +89,12 @@ jobs:
           SMOKE_BASE_URL: ${{ vars.APP_BASE_URL || 'https://irishvisaupdatetracker.pages.dev' }}
           SMOKE_EXPECT_COMMIT: ${{ github.sha }}
         run: node tools/smoke-deploy.mjs
+
+      # Optional channel announcement. The endpoint seeds existing history on
+      # its first run and skips cleanly when TELEGRAM_CHANNEL_ID is not set.
+      - name: Announce new official files
+        if: steps.verify.outputs.superseded != 'true'
+        env:
+          OFFICIAL_FEED_BASE_URL: ${{ vars.APP_BASE_URL || 'https://irishvisaupdatetracker.pages.dev' }}
+          BROADCAST_SECRET: ${{ secrets.ALERTS_CRON_SECRET || secrets.SCRAPER_CRON_SECRET }}
+        run: node tools/broadcast-official-feed.mjs

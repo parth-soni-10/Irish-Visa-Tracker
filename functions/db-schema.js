@@ -107,6 +107,23 @@ CREATE TABLE IF NOT EXISTS conversion_events (
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 CREATE INDEX IF NOT EXISTS idx_conversion_events_event ON conversion_events(event, created_at);
+
+-- Anonymous, finished-application dates used only to calibrate the published
+-- timeline baseline. No application number, email, IP or free text is stored.
+CREATE TABLE IF NOT EXISTS prediction_feedback (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  model_version TEXT NOT NULL,
+  office TEXT NOT NULL,
+  visa_type TEXT NOT NULL,
+  application_date TEXT NOT NULL,
+  decision_date TEXT NOT NULL,
+  actual_days INTEGER NOT NULL,
+  baseline_days INTEGER NOT NULL,
+  baseline_error INTEGER NOT NULL,
+  within_14_days INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_prediction_feedback_model ON prediction_feedback(model_version, created_at);
 `;
 
 let schemaReady = false;

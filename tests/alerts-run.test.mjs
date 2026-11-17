@@ -13,7 +13,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { test } from "node:test";
 
-import { handleAlertsRun } from "../functions/alerts-run.js";
+import { buildDigestMessage, dueForDigest, handleAlertsRun } from "../functions/alerts-run.js";
 
 const ROOT = new URL("../", import.meta.url);
 const SECRET = "test-cron-secret";
@@ -73,6 +73,28 @@ test("reports a missing delivery channel instead of throwing", async () => {
   });
   assert.equal(response.status, 503);
   assert.match(await response.text(), /No alert delivery channel/);
+});
+
+test("digest due windows are measured from the last successful digest", () => {
+  const now = Date.parse("2026-11-17T12:00:00Z");
+  assert.equal(dueForDigest(null, "off", now), false);
+  assert.equal(dueForDigest(null, "daily", now), true);
+  assert.equal(dueForDigest("2026-11-17T01:00:00Z", "daily", now), false);
+  assert.equal(dueForDigest("2026-11-16T01:00:00Z", "daily", now), true);
+  assert.equal(dueForDigest("2026-11-10T12:00:00Z", "weekly", now), true);
+});
+
+test("digest groups by office and states no-change applications", () => {
+  const message = buildDigestMessage([
+    { application_number: "12345678", embassy: "new-delhi", decision: { decision: "Approved", date: "2026-11-16", report_date: "2026-11-16" } },
+    { application_number: "87654321", embassy: "new-delhi", decision: null },
+    { application_number: "11112222", embassy: "beijing", decision: null }
+  ], { baseUrl: "https://tracker.test", now: new Date("2026-11-17T12:00:00Z") });
+  assert.match(message, /3 tracked applications · 1 new decision/);
+  assert.match(message, /New Delhi:/);
+  assert.match(message, /12345678 — Approved/);
+  assert.match(message, /No change for 1 other application/);
+  assert.match(message, /Beijing: no change \(1 application\)/);
 });
 
 test("runs with Telegram configured and returns the counters", async () => {

@@ -147,6 +147,14 @@
 
             const root = document.getElementById('visa-dash');
             let cache = null;
+            let dataVersion = 0;
+            let datasetModel = null;
+            let analyticsModel = null;
+            let analyticsBuildScheduledVersion = 0;
+            let pastLayoutCache = null;
+            let pastRowsCache = null;
+            let analyticsChartInstances = [];
+            let analyticsChartObservers = [];
 
             // WCAG: scrollable regions must be keyboard-focusable (Safari).
             function ensureScrollableFocusable() {
@@ -389,31 +397,34 @@
             // Precompute status + cell HTML once per row at fetch time so render
             // paths become pure filter + string concatenation (no regex per keystroke).
             function preloadRow(r) {
-                if (r._html) return r;
+                if (r._preloaded) return r;
+                r._preloaded = true;
                 const c = classify(r.decision);
                 r._status = c;
                 r._pillClass = c === 'accepted' ? 'green' : c === 'rejected' ? 'red' : 'amber';
                 r._placeholder = isPlaceholderRow(r);
                 
-                // Visa type detection
+                // Visa type detection is metadata used by aggregates. Row HTML
+                // is deliberately built only for rows that are actually painted.
                 if (!r._placeholder && r.irl) {
                     const detection = detectVisaType(r.irl, r.embassy);
                     r._visaType = detection.type;
                     r._visaSubtype = detection.subtype;
                     r._visaConfidence = detection.confidence;
                 }
-                
+                return r;
+            }
+
+            function rowHTML(r) {
                 var dateLabel = humanDate(r.date);
                 var dateCell = '<time datetime="' + escapeHtml(r.date) + '">' + escapeHtml(dateLabel) + '</time>';
                 if (r._placeholder) {
                     // Notice rows render their message, not an application number.
-                    r._html = '<tr class="ph-row"><td class="mono">' + dateCell + '</td><td colspan="2">' +
+                    return '<tr class="ph-row"><td class="mono">' + dateCell + '</td><td colspan="2">' +
                         placeholderNote(r.decision) + '</td></tr>';
-                } else {
-                    r._html = '<tr><td class="mono">' + dateCell + '</td><td class="mono">' + r.irl +
-                        '</td><td><span class="pill ' + r._pillClass + '">' + (r.decision || '-') + '</span></td></tr>';
                 }
-                return r;
+                return '<tr><td class="mono">' + dateCell + '</td><td class="mono">' + r.irl +
+                    '</td><td><span class="pill ' + r._pillClass + '">' + (r.decision || '-') + '</span></td></tr>';
             }
 
             function escapeHtml(value) {
@@ -435,13 +446,6 @@
             // month arrays - Intl.DateTimeFormat owns locale + format).
             const _monthFmt = new Intl.DateTimeFormat('en-GB', { month: 'short' });
             function shortMonth(d) { return _monthFmt.format(d); }
-
-            // Decision dates are New Delhi calendar days; compare against the
-            // same wall clock so visitors west of India do not lose a day.
-            function daysAgo(dateStr) {
-                const today = newDelhiDateStr(Date.now());
-                return Math.floor((new Date(today + 'T00:00:00Z') - new Date(dateStr + 'T00:00:00Z')) / 86400000);
-            }
 
             function weekdayLong(dateStr) {
                 const d = new Date(dateStr + 'T00:00:00');
@@ -696,26 +700,140 @@
                 box.innerHTML = '<div class="meta-card">' + html.join('') + '</div>';
             }
 
-            function groupByDate(rows) {
-                const m = new Map();
-                rows.forEach(r => { if (!m.has(r.date)) m.set(r.date, []);
-                    m.get(r.date).push(r); });
-                return [...m.entries()].sort((a, b) => b[0].localeCompare(a[0]));
+            function localIsoDate(date) {
+                return date.getFullYear() + '-' + String(date.getMonth() + 1).padStart(2, '0') +
+                    '-' + String(date.getDate()).padStart(2, '0');
             }
 
-            function avgDailyApps(byDate) {
-                // Days that only contain placeholder notices (no decisions file)
-                // are not "application days" - exclude them and their zero counts.
-                var filtered = byDate.filter(function(e) {
-                    if (e[0] === EXCLUDE_FROM_AVERAGES) return false;
-                    return e[1].some(function(r) { return !r._placeholder; });
-                });
-                if (!filtered.length) return 0;
-                var sum = 0;
-                for (var i = 0; i < filtered.length; i++) {
-                    sum += realRows(filtered[i][1]).length;
+            // One read-only summary per dataset. Every tab uses this instead of
+            // re-filtering and re-grouping the full history on each paint.
+            function buildDatasetModel(rows, version) {
+                const byDateMap = new Map();
+                const real = [];
+                const realByDate = new Map();
+                const acceptedByDate = new Map();
+                const rejectedByDate = new Map();
+                for (const r of rows) {
+                    if (!byDateMap.has(r.date)) byDateMap.set(r.date, []);
+                    byDateMap.get(r.date).push(r);
+                    if (r._placeholder) continue;
+                    real.push(r);
+                    if (!realByDate.has(r.date)) {
+                        realByDate.set(r.date, []);
+                        acceptedByDate.set(r.date, 0);
+                        rejectedByDate.set(r.date, 0);
+                    }
+                    realByDate.get(r.date).push(r);
+                    if (r._status === 'accepted') acceptedByDate.set(r.date, acceptedByDate.get(r.date) + 1);
+                    else if (r._status === 'rejected') rejectedByDate.set(r.date, rejectedByDate.get(r.date) + 1);
                 }
-                return sum / filtered.length;
+                const byDate = [...byDateMap.entries()].sort((a, b) => b[0].localeCompare(a[0]));
+
+                // Decision rows are dated in New Delhi, so rolling windows
+                // must use that wall-clock date rather than the visitor's local
+                // date. A visitor in Los Angeles can otherwise gain or lose a
+                // day at the window boundary.
+                const newDelhiToday = newDelhiNow();
+                const today = newDelhiToday
+                    ? newDelhiToday.date
+                    : localIsoDate(new Date());
+                function cutoff(days) {
+                    const d = new Date(today + 'T00:00:00Z');
+                    d.setUTCDate(d.getUTCDate() - days);
+                    return d.toISOString().slice(0, 10);
+                }
+                const cutoff7 = cutoff(7);
+                const cutoff14 = cutoff(14);
+                const cutoff30 = cutoff(30);
+
+                let accepted = 0;
+                let rejected = 0;
+                let last7 = 0;
+                let last7Accepted = 0;
+                let last30 = 0;
+                let last30Accepted = 0;
+                let thisWeek = 0;
+                let previousWeek = 0;
+                for (const r of real) {
+                    if (r._status === 'accepted') {
+                        accepted += 1;
+                        if (r.date > cutoff7) last7Accepted += 1;
+                        if (r.date > cutoff30) last30Accepted += 1;
+                    } else if (r._status === 'rejected') {
+                        rejected += 1;
+                    }
+                    if (r.date > cutoff7) {
+                        last7 += 1;
+                        thisWeek += 1;
+                    } else if (r.date > cutoff14) {
+                        previousWeek += 1;
+                    }
+                    if (r.date > cutoff30) last30 += 1;
+                }
+
+                let latestRealDay = null;
+                let latestCount = 0;
+                let previousRealCount = 0;
+                let averageSum = 0;
+                let averageDays = 0;
+                for (const entry of byDate) {
+                    const count = realByDate.get(entry[0]) ? realByDate.get(entry[0]).length : 0;
+                    if (count) {
+                        if (!latestRealDay) {
+                            latestRealDay = entry;
+                            latestCount = count;
+                        } else if (!previousRealCount) {
+                            previousRealCount = count;
+                        }
+                        if (entry[0] !== EXCLUDE_FROM_AVERAGES) {
+                            averageSum += count;
+                            averageDays += 1;
+                        }
+                    }
+                }
+                const latestDay = byDate.length ? byDate[0] : null;
+                const latestPlaceholder = latestDay && !(realByDate.get(latestDay[0]) || []).length
+                    ? latestDay[1][0] : null;
+
+                return {
+                    version,
+                    rows,
+                    byDate,
+                    byDateMap,
+                    real,
+                    realByDate,
+                    acceptedByDate,
+                    rejectedByDate,
+                    total: real.length,
+                    accepted,
+                    rejected,
+                    last7,
+                    last7Accepted,
+                    last30,
+                    last30Accepted,
+                    thisWeek,
+                    previousWeek,
+                    wow: previousWeek ? (thisWeek - previousWeek) / previousWeek : null,
+                    averageDaily: averageDays ? averageSum / averageDays : 0,
+                    latestDay,
+                    latestRealDay,
+                    latestCount,
+                    previousRealCount,
+                    latestPlaceholder
+                };
+            }
+
+            function getDatasetModel(rows) {
+                if (datasetModel && datasetModel.version === dataVersion && datasetModel.rows === rows) return datasetModel;
+                datasetModel = buildDatasetModel(rows || [], dataVersion);
+                return datasetModel;
+            }
+
+            function invalidateDataModels() {
+                datasetModel = null;
+                analyticsModel = null;
+                pastLayoutCache = null;
+                pastRowsCache = null;
             }
 
             async function loadData(options) {
@@ -735,35 +853,23 @@
                         // Pre-compute classify + row HTML once per row, then sort by
                         // date desc so render paths are pure filter + string concat.
                         cache = raw.map(r => preloadRow(Array.isArray(r) ? { date: r[0], irl: r[1], decision: r[2] } : r));
-                        // Apply visa type classification to all cached rows
-                        cache.forEach(r => {
-                            if (!r._placeholder && r.irl && !r._visaType) {
-                                const detection = detectVisaType(r.irl, r.embassy);
-                                r._visaType = detection.type;
-                                r._visaSubtype = detection.subtype;
-                                r._visaConfidence = detection.confidence;
-                            }
-                        });
                         cache.sort((a, b) => b.date.localeCompare(a.date));
                         cacheFetchedAt = Date.now();
+                        dataVersion += 1;
+                        invalidateDataModels();
+                        scheduleAnalyticsModel();
                     } catch (e) {
                         console.warn('loadData failed:', e);
                         dataLoadError = true;
                         const snap = await restoreSnapshot();
                         if (snap) {
                             cache = snap.rows.map(r => preloadRow(Array.isArray(r) ? { date: r[0], irl: r[1], decision: r[2] } : r));
-                            // Apply visa type classification to restored rows
-                            cache.forEach(r => {
-                                if (!r._placeholder && r.irl && !r._visaType) {
-                                    const detection = detectVisaType(r.irl, r.embassy);
-                                    r._visaType = detection.type;
-                                    r._visaSubtype = detection.subtype;
-                                    r._visaConfidence = detection.confidence;
-                                }
-                            });
                             cache.sort((a, b) => b.date.localeCompare(a.date));
                             cacheFetchedAt = snap.fetchedAt;
                             staleAt = snap.fetchedAt;
+                            dataVersion += 1;
+                            invalidateDataModels();
+                            scheduleAnalyticsModel();
                         } else if (cache === null) cache = [];
                     } finally {
                         dataPromise = null;
@@ -783,6 +889,27 @@
                 return WATCH_OFFICE_NAMES[slug] || slug || '';
             }
 
+            // Visa applicants are targeted by payment, OTP and fake-agent scams.
+            // Keep this notice on every result, checklist and alert surface; the
+            // tracker itself never needs a passport copy, payment or one-time code.
+            function safetyNoticeHTML() {
+                var sources = WATCH_OFFICES.map(function(office) {
+                    var url = OFFICE_SOURCE_URLS[office];
+                    return url
+                        ? '<li><a href="' + escapeHtml(url) + '" target="_blank" rel="noopener noreferrer">' +
+                            escapeHtml(WATCH_OFFICE_NAMES[office]) + '</a></li>'
+                        : '';
+                }).join('');
+                return '<aside class="safety-notice" role="note" aria-label="Fraud warning">' +
+                    '<p class="safety-lead"><strong>This tracker will never ask for payment, OTPs, or passport copies.</strong> ' +
+                    'A decision is published by the visa office, not released by a “helper”. Do not pay anyone to reveal a decision ' +
+                    'or to speed up an application.</p>' +
+                    '<details class="safety-sources"><summary>Check an official office source</summary>' +
+                    '<p>Confirm the application and decision on the office’s own page, or with the VFS centre that handled your application.</p>' +
+                    '<ul>' + sources + '</ul></details>' +
+                    '</aside>';
+            }
+
             function officeOptionsHTML(selected) {
                 selected = selected === 'all' || WATCH_OFFICES.indexOf(selected) !== -1 ? selected : 'all';
                 return '<option value="all"' + (selected === 'all' ? ' selected' : '') +
@@ -796,24 +923,19 @@
 
             // ===== hero builder (Mockup C) - per-tab hero with real data =====
             function buildHeroHTML(tabId, rows) {
-                const byDate = groupByDate(rows);
-                const real = realRows(rows);
-                const total = real.length;
-                const accepted = real.filter(r => classify(r.decision) === 'accepted').length;
-                const rejected = real.filter(r => classify(r.decision) === 'rejected').length;
+                const model = getDatasetModel(rows);
+                const byDate = model.byDate;
+                const total = model.total;
+                const accepted = model.accepted;
+                const rejected = model.rejected;
                 const accPct = total ? accepted / total : 0;
                 const rejPct = total ? rejected / total : 0;
-                const avg = avgDailyApps(byDate);
-                // The newest day on record may be a placeholder notice; compute
-                // the snapshot from the newest day that has REAL data.
-                const latest = byDate.length ? byDate[0] : null;
-                const latestPlaceholder = latest && !realRows(latest[1]).length ? latest[1][0] : null;
-                const latestRealDay = byDate.find(function(d) { return realRows(d[1]).length; });
-                const latestCount = latestRealDay ? realRows(latestRealDay[1]).length : 0;
-                const prevRealDay = latestRealDay
-                    ? byDate.slice(byDate.indexOf(latestRealDay) + 1).find(function(d) { return realRows(d[1]).length; })
-                    : null;
-                const dayDiff = prevRealDay ? latestCount - realRows(prevRealDay[1]).length : 0;
+                const avg = model.averageDaily;
+                // The newest day on record may be a placeholder notice; the
+                // snapshot therefore comes from the newest day with real data.
+                const latestPlaceholder = model.latestPlaceholder;
+                const latestCount = model.latestCount;
+                const dayDiff = model.latestRealDay ? latestCount - model.previousRealCount : 0;
 
                 const states = {
                     search: {
@@ -827,7 +949,7 @@
                             return byDate.length + ' days on record, ' + fmtPct(accPct) + ' accepted across ' + total.toLocaleString() + ' decisions.';
                         })(),
                         visual: '<div class="wave">' + byDate.slice(0, 7).reverse().map(function(d) {
-                            var n = realRows(d[1]).length;
+                            var n = (model.realByDate.get(d[0]) || []).length;
                             return '<div class="wave-bar" style="height:' + Math.max(8, Math.min(120, n)) + 'px"></div>';
                         }).join('') + '</div>'
                     },
@@ -887,10 +1009,10 @@
                                          String(d.getDate()).padStart(2, '0');
                                 weekDays.push([ds, byDateMap.get(ds) || []]);
                             }
-                            var maxApps = Math.max.apply(null, weekDays.map(function(d) { return realRows(d[1]).length; }).concat([1]));
-                            return '<div class="wave">' + weekDays.map(function(d, i) {
-                                var dayRows = realRows(d[1]);
-                                return '<div class="wave-bar" style="height:' + Math.max(8, (dayRows.length / maxApps) * 120) + 'px; animation-delay:' + (i * 0.07) + 's"></div>';
+                            var counts = weekDays.map(function(d) { return (model.realByDate.get(d[0]) || []).length; });
+                            var maxApps = Math.max.apply(null, counts.concat([1]));
+                            return '<div class="wave">' + counts.map(function(count, i) {
+                                return '<div class="wave-bar" style="height:' + Math.max(8, (count / maxApps) * 120) + 'px; animation-delay:' + (i * 0.07) + 's"></div>';
                             }).join('') + '</div>';
                         })()
                     },
@@ -927,16 +1049,13 @@
                                 last7.push([ds, byDateMap.get(ds) || []]);
                             }
                             var maxVal = Math.max.apply(null, last7.map(function(d) {
-                                var dr = d[1];
-                                return dr.filter(function(r) { return classify(r.decision) === 'accepted'; }).length +
-                                       dr.filter(function(r) { return classify(r.decision) === 'rejected'; }).length;
+                                return (model.acceptedByDate.get(d[0]) || 0) + (model.rejectedByDate.get(d[0]) || 0);
                             }).concat([1]));
                             var scale = Math.min(1, 104 / Math.max(maxVal, 1));
                             var days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
                             return '<div class="wf">' + last7.map(function(d, i) {
-                                var dayRows = d[1];
-                                var acc = dayRows.filter(function(r) { return classify(r.decision) === 'accepted'; }).length;
-                                var rej = dayRows.filter(function(r) { return classify(r.decision) === 'rejected'; }).length;
+                                var acc = model.acceptedByDate.get(d[0]) || 0;
+                                var rej = model.rejectedByDate.get(d[0]) || 0;
                                 var total = acc + rej;
                                 var accPct = total ? Math.round(acc / total * 100) : 0;
                                 var parts = d[0].split('-');
@@ -980,18 +1099,20 @@
             function animateHeroSwitch(tabId, rows) {
                 var hero = document.getElementById('hero');
                 if (!hero) return;
-                if (hero._switchTimer) clearTimeout(hero._switchTimer);
                 var state = buildHeroHTML(tabId, rows);
-                hero.style.transition = 'opacity 0.18s ease';
-                hero.style.opacity = '0.4';
-                hero._switchTimer = setTimeout(function() {
-                    hero._switchTimer = null;
-                    hero.setAttribute('data-id', tabId);
-                    hero.querySelector('.hero-title').innerHTML = state.title;
-                    hero.querySelector('.hero-sub').textContent = state.sub;
-                    hero.querySelector('.visual').innerHTML = state.visual;
-                    hero.style.opacity = '1';
-                }, 180);
+                var token = (hero._switchToken || 0) + 1;
+                hero._switchToken = token;
+                hero.setAttribute('data-id', tabId);
+                hero.querySelector('.hero-title').innerHTML = state.title;
+                hero.querySelector('.hero-sub').textContent = state.sub;
+                hero.querySelector('.visual').innerHTML = state.visual;
+                hero.style.transition = 'opacity 0.12s ease';
+                hero.style.opacity = '0.65';
+                requestAnimationFrame(function() {
+                    requestAnimationFrame(function() {
+                        if (token === hero._switchToken) hero.style.opacity = '1';
+                    });
+                });
             }
 
             var _searchDebounce = null;
@@ -1165,34 +1286,13 @@
                     if (activeTab === 'history' && activeView === 'past') paintPastRows();
                     syncUrl('replace');
                 });
-                // The decision filter: one funnel for the same single choice the
-                // table's pills would spell out, with the counts in the panel.
                 var statusHost = document.getElementById('past-status-filter');
-                if (statusHost && window.FilterDisclosure) {
-                    var real = realRows(cache || []);
-                    var sc = { all: real.length, accepted: 0, rejected: 0 };
-                    real.forEach(function(r) {
-                        var s = r._status || classify(r.decision);
-                        if (sc[s] !== undefined) sc[s] += 1;
-                    });
-                    FilterDisclosure.mount(statusHost, {
-                        label: 'Filter past decisions',
-                        size: 'sm',
-                        head: 'Decision',
-                        showValue: true,
-                        value: PAST_STATUSES.indexOf(pastStatusFilter) === -1 ? 'all' : pastStatusFilter,
-                        defaultId: 'all',
-                        choices: [
-                            { id: 'all', label: 'All decisions', glyph: 'grid', hint: sc.all },
-                            { id: 'accepted', label: 'Accepted', glyph: 'check', hint: sc.accepted },
-                            { id: 'rejected', label: 'Rejected', glyph: 'x', hint: sc.rejected }
-                        ].filter(function(c) { return c.id === 'all' || c.hint > 0 || c.id === pastStatusFilter; }),
-                        onChange: function(id) {
-                            pastStatusFilter = id;
-                            pastVisibleLimit = pastPageSize;
-                            paintPastRows();
-                            syncUrl('replace');
-                        }
+                if (statusHost) {
+                    statusHost.addEventListener('change', function() {
+                        pastStatusFilter = PAST_STATUSES.indexOf(statusHost.value) === -1 ? 'all' : statusHost.value;
+                        pastVisibleLimit = pastPageSize;
+                        paintPastRows();
+                        syncUrl('replace');
                     });
                 }
                 var pageSizeEl = document.getElementById('past-page-size');
@@ -1212,7 +1312,7 @@
                     var dateWrap = dateInput && dateInput.parentElement;
                     if (dateWrap) dateWrap.classList.remove('has-filter');
                     var statusHost = document.getElementById('past-status-filter');
-                    if (statusHost) statusHost.innerHTML = '';
+                    if (statusHost) statusHost.value = 'all';
                     if (activeTab === 'history' && activeView === 'past') {
                         switchTab('history', { noUrl: true });
                     }
@@ -1343,35 +1443,14 @@
                 // It lives in the toolbar, outside the table paint, so the click
                 // that clears the search is still there to bring it back.
                 var homeClear = document.getElementById('home-search-clear');
-                var clearedSearch = null;
-                if (homeClear && window.TimeUndo) {
-                    TimeUndo.mount(homeClear, {
-                        seconds: 6,
-                        onStart: function() {
-                            if (!homeSearchTerm.trim()) return false;
-                            var input = document.getElementById('home-search');
-                            clearedSearch = { term: homeSearchTerm, field: input ? input.value : homeSearchTerm };
-                            homeClear.hidden = false;
-                            homeSearchTerm = '';
-                            if (input) input.value = '';
-                            runHomeLookup();
-                            syncUrl('replace');
-                            return true;
-                        },
-                        onCancel: function() {
-                            if (!clearedSearch) return;
-                            homeSearchTerm = clearedSearch.term;
-                            var input = document.getElementById('home-search');
-                            if (input) input.value = clearedSearch.field;
-                            clearedSearch = null;
-                            runHomeLookup();
-                            syncUrl('replace');
-                        },
-                        onCommit: function() {
-                            clearedSearch = null;
-                            var input = document.getElementById('home-search');
-                            homeClear.hidden = !(input && input.value.trim());
-                        }
+                if (homeClear) {
+                    homeClear.addEventListener('click', function() {
+                        var input = document.getElementById('home-search');
+                        homeSearchTerm = '';
+                        if (input) input.value = '';
+                        homeClear.hidden = true;
+                        runHomeLookup();
+                        syncUrl('replace');
                     });
                     if (!homeSearchTerm.trim()) homeClear.hidden = true;
                 }
@@ -1450,6 +1529,10 @@
             function paintTabBody(tabId, rows) {
                 var tabBody = document.getElementById('tab-body');
                 if (!tabBody) return;
+                // Chart.js instances belong to the canvases being replaced.
+                // Destroy them before the tab body is cleared so repeat visits
+                // cannot accumulate detached charts and their observers.
+                destroyAnalyticsCharts();
                 if (tabId === 'search') tabBody.innerHTML = renderHomeLayout(rows);
                 else if (tabId === 'history') tabBody.innerHTML = renderHistoryLayout(rows);
                 else if (tabId === 'analytics') tabBody.innerHTML = renderAnalyticsLayout(rows);
@@ -1470,7 +1553,7 @@
             }
 
             async function switchTab(tabId, opts) {
-                if (!document.getElementById('hero')) return;
+                if (!document.getElementById('tab-body')) return;
                 activeTab = tabId;
                 if (tabId === 'history' || tabId === 'tools') activeView = resolveTabView(tabId, activeView);
                 if (!(opts && opts.noUrl)) syncUrl('push');
@@ -1482,7 +1565,6 @@
                     else pills[i].removeAttribute('aria-current');
                 }
                 var rows = cache && cache.length ? cache : await loadData();
-                animateHeroSwitch(tabId, rows);
                 paintTabBody(tabId, rows);
                 markVisited();
             }
@@ -1493,6 +1575,7 @@
                 return '<div class="checklist-layout">' +
                     '<h2 class="checklist-title">Document Checklist Generator</h2>' +
                     '<p class="checklist-sub">Generate a personalized document checklist for your Irish visa application.</p>' +
+                    safetyNoticeHTML() +
                     '<form id="checklist-form" class="checklist-form" novalidate>' +
                     '<div class="checklist-field"><label for="cl-visa-type">Visa type <span class="required">*</span></label>' +
                     '<select id="cl-visa-type" name="visa_type" required>' +
@@ -1591,7 +1674,7 @@
 
             function renderChecklistResult(data, container) {
                 container.hidden = false;
-                var html = '<h3>Your Document Checklist</h3>';
+                var html = '<h3>Your Document Checklist</h3>' + safetyNoticeHTML();
                 var checklist = data && data.checklist;
                 var groups = [];
                 if (checklist && typeof checklist === 'object') {
@@ -1785,6 +1868,7 @@
                 var html = '<div class="search-results-header">' +
                     '<strong>' + data.results.length + '</strong> of <strong>' + data.pagination.total + '</strong> results' +
                     '</div>';
+                html += safetyNoticeHTML();
                 html += '<div class="search-results-table"><table class="results-table"><thead>' +
                     '<tr><th>Decision date</th><th>Application No.</th><th>Decision</th><th>Office</th><th>Report date</th><th>Official source</th></tr></thead><tbody>';
                 var officeNames = {
@@ -2286,11 +2370,10 @@
                     : 'Choose a number and office. All six offices are searched by default.';
                 return '<section class="home-lookup" aria-labelledby="home-lookup-title">' +
                     '<div class="home-lookup-head">' +
-                    '<div><p class="home-lookup-kicker">Published decisions</p>' +
+                    '<div>' +
                     '<h2 id="home-lookup-title">Find your application</h2></div>' +
-                    '<a class="home-lookup-advanced" href="#advanced-search" data-open-advanced>Advanced filters</a>' +
                     '</div>' +
-                    '<p class="home-lookup-copy" id="home-lookup-copy">Search all six offices at once, or choose the office that handled your application. One search, one result card, and a link to the official report.</p>' +
+                    '<p class="home-lookup-copy" id="home-lookup-copy">Search all six offices at once. Use the application number on your receipt; an IRL prefix is optional.</p>' +
                     '<form class="home-lookup-form" id="home-lookup-form" role="search" novalidate>' +
                     '<div class="home-lookup-field home-lookup-number">' +
                     '<label for="home-search">Application number</label>' +
@@ -2793,7 +2876,7 @@
                 var countText = total + ' published match' + (total === 1 ? '' : 'es') +
                     ' across ' + scope + (rows.length < total ? ' \u00b7 showing first ' + rows.length : '');
                 if (status) status.textContent = countText + (fallback ? ' \u00b7 fallback index' : '');
-                box.innerHTML = fallbackNote + '<div class="home-lookup-result-list">' +
+                box.innerHTML = fallbackNote + safetyNoticeHTML() + '<div class="home-lookup-result-list">' +
                     rows.map(function(row) { return lookupResultCardHTML(row, metas); }).join('') + '</div>' +
                     '<p class="home-lookup-foot">Decision and report dates come from the office\'s published report. Always confirm details with the official source and your decision letter.</p>';
             }
@@ -2968,15 +3051,14 @@
             function renderHomeLayout(rows) {
                 const empty = '<div class="empty">No New Delhi decisions recorded yet. The all-office search above still checks the other offices.</div>';
                 if (!rows.length) return staleBannerHTML() + homeLookupHTML() + empty;
-                const byDate = groupByDate(rows);
-                const latest = byDate[0];
+                const model = getDatasetModel(rows);
+                const latest = model.latestDay;
                 if (!latest) return staleBannerHTML() + homeLookupHTML() + empty;
                 // Newest day with real data (the latest Excel file's date); the
                 // top day may instead be a placeholder notice like "no file yet".
-                const latestRealDay = byDate.find(d => realRows(d[1]).length);
-                const latestPlaceholder = !realRows(latest[1]).length ? latest[1][0] : null;
-                const latestDate = latestRealDay ? latestRealDay[0] : latest[0];
-                const latestCount = latestRealDay ? realRows(latestRealDay[1]).length : 0;
+                const latestPlaceholder = model.latestPlaceholder;
+                const latestDate = model.latestRealDay ? model.latestRealDay[0] : latest[0];
+                const latestCount = model.latestCount;
 
                 return staleBannerHTML() +
                     homeLookupHTML() +
@@ -2986,13 +3068,15 @@
                     '<h2 class="landing-h3" id="home-freshness-title">Data freshness</h2>' +
                     '<p class="note2">Latest New Delhi file: <strong>' + escapeHtml(humanDate(latestDate)) +
                     '</strong> (' + latestCount.toLocaleString() + ' decisions). Other offices publish on their own schedules.</p>' +
-                    '</div><a class="home-freshness-link" href="/status">Data status</a></div>' +
+                    '</div><div class="home-freshness-links"><a class="home-freshness-link" href="/status">Data status</a>' +
+                    '<a class="home-freshness-link" href="/feed.xml">Official file feed</a></div></div>' +
                     '<div id="meta-box" aria-live="polite"></div>' +
                     '<details class="home-freshness-details"><summary>How to read these dates</summary>' +
                     '<p>Decision date is the date attached to an individual row. Report date is the date of the office file that published it. They can differ, especially for weekly reports.</p>' +
                     '<p>Next expected New Delhi update: weekdays around <strong>' +
                     scheduleTimeNode(NEW_DELHI_UPDATE_HOUR, NEW_DELHI_UPDATE_MINUTE) +
-                    '</strong>. The embassy does not publish on weekends or public holidays.</p>' +
+                    '</strong>. The embassy does not publish on weekends or public holidays. ' +
+                    '<a href="/api/calendar/next-update.ics">Add this expected window to your calendar</a>.</p>' +
                     '</details></section>' +
                     '<section class="home-latest" aria-labelledby="home-latest-title">' +
                     '<div class="home-latest-head"><div>' +
@@ -3020,15 +3104,10 @@
                 if (tbody._sentinelObs) { tbody._sentinelObs.disconnect(); tbody._sentinelObs = null; }
                 while (tbody.firstChild) tbody.removeChild(tbody.firstChild);
                 var rows = cache || [];
-                var byDate = groupByDate(rows);
-                var latest = byDate.length ? byDate[0] : null;
-                var latestPlaceholder = null;
-                var visible = [];
-                if (latest) {
-                    var latestReal = realRows(latest[1]);
-                    if (!latestReal.length) latestPlaceholder = latest[1][0];
-                    visible = latestReal;
-                }
+                var model = getDatasetModel(rows);
+                var latest = model.latestDay;
+                var latestPlaceholder = model.latestPlaceholder;
+                var visible = model.latestRealDay ? (model.realByDate.get(model.latestRealDay[0]) || []) : [];
                 // Keep the newest file as a compact preview on Search. The full
                 // day stays one click away in History, which keeps Search and
                 // Saved applications close together on a phone.
@@ -3158,10 +3237,10 @@
                     return;
                 }
                 if (rows.length <= CHUNK) {
-                    tbody.innerHTML = rows.map(function(r) { return r._html; }).join('');
+                    tbody.innerHTML = rows.map(rowHTML).join('');
                     return;
                 }
-                tbody.innerHTML = rows.slice(0, CHUNK).map(function(r) { return r._html; }).join('');
+                tbody.innerHTML = rows.slice(0, CHUNK).map(rowHTML).join('');
                 var sentinel = document.createElement('tr');
                 sentinel.className = 'row-sentinel';
                 sentinel.innerHTML = '<td colspan="3" style="height:18px;"></td>';
@@ -3176,7 +3255,7 @@
                         return;
                     }
                     var next = rows.slice(rendered, rendered + CHUNK);
-                    sentinel.insertAdjacentHTML('beforebegin', next.map(function(r) { return r._html; }).join(''));
+                    sentinel.insertAdjacentHTML('beforebegin', next.map(rowHTML).join(''));
                     rendered += next.length;
                     if (rendered >= rows.length) {
                         sentinel.remove();
@@ -3318,10 +3397,10 @@
 
             // Busiest-days heatmap: a GitHub-style grid of the last ~14 weeks,
             // each column a Sun-Sat week, shaded by decision volume.
-            function heatmapHTML(byDate) {
+            function heatmapHTML(byDate, realByDate) {
                 const counts = new Map();
-                byDate.forEach(([date, dayRows]) => {
-                    counts.set(date, dayRows.filter(r => !r._placeholder).length);
+                byDate.forEach(([date]) => {
+                    counts.set(date, (realByDate.get(date) || []).length);
                 });
                 const newDelhiToday = newDelhiNow();
                 const today = newDelhiToday ? newDelhiToday.date : new Date().toISOString().slice(0, 10);
@@ -3348,10 +3427,11 @@
 
             function renderDailySummary(rows) {
                 if (!rows.length) return '<div class="empty">No decisions recorded yet.</div>';
-                const byDate = groupByDate(rows);
+                const model = getDatasetModel(rows);
+                const byDate = model.byDate;
                 const days = byDate.slice(0, dailyVisibleLimit);
                 const trs = days.map(([date, dayRows], idx) => {
-                    const real = dayRows.filter(r => !r._placeholder);
+                    const real = model.realByDate.get(date) || [];
                     if (!real.length) {
                         // Notice day (no file / office closed): show the real
                         // message instead of counting the notice as 1 application.
@@ -3362,11 +3442,11 @@
                     }
                     // Day-on-day compares against the previous day that has REAL
                     // data, so placeholder days don't skew the delta.
-                    const prevReal = byDate.slice(idx + 1).find(d => d[1].some(r => !r._placeholder));
-                    const prevCount = prevReal ? realRows(prevReal[1]).length : null;
+                    const prevReal = byDate.slice(idx + 1).find(d => (model.realByDate.get(d[0]) || []).length);
+                    const prevCount = prevReal ? model.realByDate.get(prevReal[0]).length : null;
                     const diff = prevCount === null ? null : real.length - prevCount;
-                    const acc = real.filter(r => classify(r.decision) === 'accepted').length / real.length;
-                    const rej = real.filter(r => classify(r.decision) === 'rejected').length / real.length;
+                    const acc = (model.acceptedByDate.get(date) || 0) / real.length;
+                    const rej = (model.rejectedByDate.get(date) || 0) / real.length;
                     return '<tr><td class="mono dd-toggle" role="button" tabindex="0" aria-expanded="false" title="Show the applications behind this day\u2019s numbers">' +
                         '<span class="dd-caret" aria-hidden="true">\u25b8</span><time datetime="' + escapeHtml(date) + '">' +
                         escapeHtml(humanDate(date)) + '</time></td><td>' + real.length + '</td><td>' +
@@ -3380,7 +3460,7 @@
                                 '</span><span class="pill ' + r._pillClass + '">' + escapeHtml(r.decision || '-') + '</span></div>';
                         }).join('') + '</div></td></tr>';
                 }).join('');
-                return heatmapHTML(byDate) +
+                return heatmapHTML(byDate, model.realByDate) +
                     '<div class="table-wrap"><table class="daily-table"><thead><tr><th>Date</th><th>Applications Processed</th><th>Day-on-Day</th><th>Accepted Share</th><th>Refused Share</th></tr></thead>' +
                     '<tbody>' + trs + '</tbody></table></div>' +
                     '<p class="note2 rate-sample-note">Accepted and refused shares are calculated from <strong>Applications Processed</strong> in the same row. That count is the sample size; days with few decisions can swing widely.</p>' +
@@ -3398,25 +3478,24 @@
             // cursor restoration is needed.
             function renderPastLayout(rows) {
                 if (!rows.length) return '<div class="empty">No decisions recorded yet.</div>';
-                const real = realRows(rows);
-                const total = real.length;
-                const accepted = real.filter(r => r._status === 'accepted').length;
-                const rejected = real.filter(r => r._status === 'rejected').length;
-                const byDate = groupByDate(rows);
-                const avg = avgDailyApps(byDate);
-                const thisWeek = real.filter(r => daysAgo(r.date) < 7).length;
-                const lastWeek = real.filter(r => daysAgo(r.date) >= 7 && daysAgo(r.date) < 14).length;
-                const wow = lastWeek ? (thisWeek - lastWeek) / lastWeek : null;
-                // Rolling windows so a trend doesn't drown in all-time history.
-                const last7 = real.filter(r => daysAgo(r.date) < 7);
-                const last30 = real.filter(r => daysAgo(r.date) < 30);
-                const acc7 = last7.length ? last7.filter(r => r._status === 'accepted').length / last7.length : null;
-                const acc30 = last30.length ? last30.filter(r => r._status === 'accepted').length / last30.length : null;
+                const cacheKey = dataVersion + '|' + pastDateFilter + '|' + pastPageSize + '|' + pastStatusFilter;
+                if (pastLayoutCache && pastLayoutCache.key === cacheKey) return pastLayoutCache.html;
 
-                return '<div class="cards">' +
+                const model = getDatasetModel(rows);
+                const total = model.total;
+                const accepted = model.accepted;
+                const rejected = model.rejected;
+                const avg = model.averageDaily;
+                const wow = model.wow;
+                const last7 = model.last7;
+                const last30 = model.last30;
+                const acc7 = last7 ? model.last7Accepted / last7 : null;
+                const acc30 = last30 ? model.last30Accepted / last30 : null;
+
+                const html = '<div class="cards">' +
                     '<div class="card"><div class="label"><i data-lucide="check-circle"></i>Accepted share</div><div class="value green">' + fmtPct(accepted / total) + '</div><div class="hint">' + sampleSizeText(total) + '</div></div>' +
-                    '<div class="card"><div class="label"><i data-lucide="calendar-check"></i>7-day accepted share</div><div class="value ' + (acc7 === null ? '' : 'green') + '">' + (acc7 === null ? '-' : fmtPct(acc7)) + '</div><div class="hint">' + sampleSizeText(last7.length, 'in the last 7 days') + '</div></div>' +
-                    '<div class="card"><div class="label"><i data-lucide="calendar-days"></i>30-day accepted share</div><div class="value ' + (acc30 === null ? '' : 'green') + '">' + (acc30 === null ? '-' : fmtPct(acc30)) + '</div><div class="hint">' + sampleSizeText(last30.length, 'in the last 30 days') + '</div></div>' +
+                    '<div class="card"><div class="label"><i data-lucide="calendar-check"></i>7-day accepted share</div><div class="value ' + (acc7 === null ? '' : 'green') + '">' + (acc7 === null ? '-' : fmtPct(acc7)) + '</div><div class="hint">' + sampleSizeText(last7, 'in the last 7 days') + '</div></div>' +
+                    '<div class="card"><div class="label"><i data-lucide="calendar-days"></i>30-day accepted share</div><div class="value ' + (acc30 === null ? '' : 'green') + '">' + (acc30 === null ? '-' : fmtPct(acc30)) + '</div><div class="hint">' + sampleSizeText(last30, 'in the last 30 days') + '</div></div>' +
                     '<div class="card"><div class="label"><i data-lucide="x-circle"></i>Refused share</div><div class="value red">' + fmtPct(rejected / total) + '</div><div class="hint">' + sampleSizeText(total) + '</div></div>' +
                     '<div class="card"><div class="label"><i data-lucide="calendar-check"></i>Avg applications/day</div><div class="value">' + avg.toFixed(1) + '</div></div>' +
                     '<div class="card"><div class="label"><i data-lucide="percent"></i>Week-on-week</div><div class="value ' + (wow === null ? '' : (wow >= 0 ? 'green' : 'red')) + '">' + (wow === null ? '-' : ((wow >= 0 ? '+' : '') + fmtPct(wow))) + '</div></div>' +
@@ -3424,8 +3503,12 @@
                     '<div class="filter-row">' +
                     '<div class="note" style="margin-top:0;">Use <a href="?tracker=visa&amp;tab=search">Search</a> for one application number. This view is the full published history.</div>' +
                     '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">' +
-                    '<span id="past-status-filter"></span>' +
-                    '<div class="datefilter' + (pastDateFilter ? ' has-filter' : '') + '"><label class="visually-hidden" for="past-date-filter">Filter by date</label><input type="date" id="past-date-filter" name="date" autocomplete="off" aria-label="Filter by date" value="' + escapeHtml(pastDateFilter) + '" data-calendar>' +
+                    '<label class="status-filter">Decision <select id="past-status-filter">' +
+                    '<option value="all"' + (pastStatusFilter === 'all' ? ' selected' : '') + '>All</option>' +
+                    '<option value="accepted"' + (pastStatusFilter === 'accepted' ? ' selected' : '') + '>Accepted</option>' +
+                    '<option value="rejected"' + (pastStatusFilter === 'rejected' ? ' selected' : '') + '>Rejected</option>' +
+                    '</select></label>' +
+                    '<div class="datefilter' + (pastDateFilter ? ' has-filter' : '') + '"><label class="visually-hidden" for="past-date-filter">Filter by date</label><input type="date" id="past-date-filter" name="date" autocomplete="off" aria-label="Filter by date" value="' + escapeHtml(pastDateFilter) + '">' +
                     '<button type="button" class="clear-btn" id="past-date-clear" aria-label="Clear date filter" title="Clear date filter">\u00d7</button>' +
                     '</div>' +
                     '</div>' +
@@ -3445,6 +3528,8 @@
                     '<div class="table-wrap"><table class="results-table past-results-table"><thead><tr><th>Date</th><th>Application No.</th><th>Decision</th></tr></thead>' +
                     '<tbody id="past-rows"></tbody></table></div>' +
                     '<div id="past-show-more" class="show-more-wrap"></div>';
+                pastLayoutCache = { key: cacheKey, html: html };
+                return html;
             }
 
             function paintPastRows() {
@@ -3452,17 +3537,24 @@
                 if (!tbody) return;
                 if (tbody._sentinelObs) { tbody._sentinelObs.disconnect(); tbody._sentinelObs = null; }
                 while (tbody.firstChild) tbody.removeChild(tbody.firstChild);
-                var rows = (cache || []).filter(function(r) { return !r._placeholder; });
-                var visible = pastDateFilter
-                    ? rows.filter(function(r) { return r.date === pastDateFilter; })
-                    : rows;
-                if (pastStatusFilter !== 'all') {
-                    visible = visible.filter(function(r) { return (r._status || classify(r.decision)) === pastStatusFilter; });
+                var model = getDatasetModel(cache || []);
+                var filterKey = dataVersion + '|' + pastDateFilter + '|' + pastStatusFilter;
+                var visible;
+                if (pastRowsCache && pastRowsCache.key === filterKey) {
+                    visible = pastRowsCache.rows;
+                } else {
+                    visible = pastDateFilter
+                        ? model.real.filter(function(r) { return r.date === pastDateFilter; })
+                        : model.real;
+                    if (pastStatusFilter !== 'all') {
+                        visible = visible.filter(function(r) { return r._status === pastStatusFilter; });
+                    }
+                    pastRowsCache = { key: filterKey, rows: visible };
                 }
                 var phNote = null;
                 if (pastDateFilter && !visible.length) {
-                    var ph = (cache || []).find(function(r) { return r._placeholder && r.date === pastDateFilter; });
-                    if (ph) phNote = ph;
+                    var dayRows = model.byDateMap.get(pastDateFilter) || [];
+                    phNote = dayRows.find(function(r) { return r._placeholder; }) || null;
                 }
                 var countNote = document.getElementById('past-results-count');
                 var shown = visible.slice(0, pastVisibleLimit);
@@ -3522,7 +3614,11 @@
             }
 
             function renderAlertsLayout() {
-                return '<div class="alerts-grid">' +
+                return safetyNoticeHTML() +
+                    '<p class="alerts-digest-help" role="note"><strong>Too many messages?</strong> After linking, send ' +
+                    '<code>/digest weekly</code> in the bot for one grouped summary, or <code>/digest daily</code> for a ' +
+                    'digest only when something changes. <code>/immediate 12345678</code> keeps one application immediate.</p>' +
+                    '<div class="alerts-grid">' +
                         '<form class="card alerts-card" id="alert-form" name="telegram-alerts" novalidate style="max-width:100%;">' +
                             ALERT_FORM_HTML +
                         '</form>' +
@@ -3596,8 +3692,8 @@
                     '<p class="note2">No unusual patterns were detected in the last 14 days.</p></div>';
             }
 
-            function renderAnomalyAlerts(rows) {
-                const anomalies = detectAnomalies(rows);
+            function renderAnomalyAlerts(model) {
+                const anomalies = model.anomalies;
                 if (!anomalies.length) return renderAnomalyEmptyHTML();
                 
                 const recent = anomalies.filter(a => {
@@ -3628,33 +3724,32 @@
             }
 
             // ====== DECISION BREAKDOWN BY VISA TYPE ======
-
-            // ====== DECISION BREAKDOWN BY VISA TYPE ======
-            function renderVisaTypeBreakdown(rows) {
-                const real = realRows(rows);
-                if (!real.length) return '';
-                
-                const byType = {};
+            function computeVisaTypes(real) {
+                const byType = new Map();
                 real.forEach(r => {
                     const type = r._visaType || 'Unknown';
-                    if (!byType[type]) byType[type] = { total: 0, accepted: 0, rejected: 0, other: 0 };
-                    byType[type].total++;
-                    if (r._status === 'accepted') byType[type].accepted++;
-                    else if (r._status === 'rejected') byType[type].rejected++;
-                    else byType[type].other++;
+                    if (!byType.has(type)) byType.set(type, { type, total: 0, accepted: 0, rejected: 0, other: 0 });
+                    const row = byType.get(type);
+                    row.total++;
+                    if (r._status === 'accepted') row.accepted++;
+                    else if (r._status === 'rejected') row.rejected++;
+                    else row.other++;
                 });
-                
-                if (!Object.keys(byType).length) return '';
-                
+                return [...byType.values()].sort((a, b) => a.type.localeCompare(b.type));
+            }
+
+            function renderVisaTypeBreakdown(model) {
+                const byType = model.visaTypes;
+                if (!byType.length) return '';
+
                 let html = '<h3>Decisions by Visa Type</h3>';
                 html += '<div class="table-wrap visa-type-breakdown"><table class="results-table"><thead>' +
                     '<tr><th>Visa Type</th><th>Total</th><th>Approved</th><th>Refused</th><th>Other</th><th>Approved Share</th></tr></thead><tbody>';
-                
-                Object.keys(byType).sort().forEach(type => {
-                    const d = byType[type];
+
+                byType.forEach(d => {
                     const rate = d.total ? ((d.accepted / d.total) * 100).toFixed(1) : 0;
                     html += '<tr>' +
-                        '<td><strong>' + escapeHtml(type) + '</strong></td>' +
+                        '<td><strong>' + escapeHtml(d.type) + '</strong></td>' +
                         '<td>' + d.total.toLocaleString() + '</td>' +
                         '<td class="green">' + d.accepted.toLocaleString() + '</td>' +
                         '<td class="red">' + d.rejected.toLocaleString() + '</td>' +
@@ -3662,131 +3757,44 @@
                         '<td title="Based on ' + d.total.toLocaleString() + ' published decisions"><strong>' + rate + '%</strong></td>' +
                         '</tr>';
                 });
-                
+
                 html += '</tbody></table></div>' +
                     '<p class="note2 rate-sample-note">Approved share uses the <strong>Total</strong> column for each visa type; that total is the sample size. Small groups can swing widely.</p>';
                 return html;
             }
 
             // ====== DECISION TRENDS VISUALIZATION ======
-
-            // ====== DECISION TRENDS VISUALIZATION ======
-            function renderDecisionTrendsChart(rows) {
-                const real = realRows(rows);
-                if (!real.length) return '<p class="note2">No data for trends</p>';
-
-                // Group by week. Counts are plotted separately from the rate so
-                // the rate never shares a y-axis with application volume.
-                const byWeek = {};
+            function computeWeekly(real) {
+                const byWeek = new Map();
                 real.forEach(r => {
                     if (!r.date) return;
                     const dt = new Date(r.date + 'T00:00:00');
                     const weekStart = new Date(dt);
                     weekStart.setDate(dt.getDate() - dt.getDay()); // Sunday
                     const key = weekStart.toISOString().slice(0, 10);
-                    if (!byWeek[key]) byWeek[key] = { accepted: 0, rejected: 0, total: 0 };
-                    byWeek[key].total++;
-                    if (r._status === 'accepted') byWeek[key].accepted++;
-                    else if (r._status === 'rejected') byWeek[key].rejected++;
+                    if (!byWeek.has(key)) byWeek.set(key, { accepted: 0, rejected: 0, total: 0 });
+                    const week = byWeek.get(key);
+                    week.total++;
+                    if (r._status === 'accepted') week.accepted++;
+                    else if (r._status === 'rejected') week.rejected++;
                 });
 
-                const weeks = Object.keys(byWeek).sort().slice(-12); // Last 12 weeks
-                const labels = weeks.map(w => {
-                    const d = new Date(w + 'T00:00:00');
-                    return d.toLocaleDateString('en-GB', { month: 'short', day: 'numeric' });
-                });
-                const accepted = weeks.map(w => byWeek[w].accepted);
-                const rejected = weeks.map(w => byWeek[w].rejected);
-                const rate = weeks.map(w => byWeek[w].total
-                    ? Number(((byWeek[w].accepted / byWeek[w].total) * 100).toFixed(1))
-                    : 0);
-
-                const baseId = 'trends-chart-' + Math.random().toString(36).slice(2);
-                const countId = baseId + '-counts';
-                const rateId = baseId + '-rate';
-                const draw = () => {
-                    const countCanvas = document.getElementById(countId);
-                    const rateCanvas = document.getElementById(rateId);
-                    if (!countCanvas || !rateCanvas) return;
-
-                    if (!countCanvas.chart) {
-                        countCanvas.chart = new Chart(countCanvas, {
-                            type: 'bar',
-                            data: {
-                                labels: labels,
-                                datasets: [
-                                    { label: 'Approved', data: accepted, backgroundColor: '#059669', borderColor: '#047857', borderWidth: 0, borderRadius: 3, maxBarThickness: 28 },
-                                    { label: 'Refused', data: rejected, backgroundColor: '#dc2626', borderColor: '#b91c1c', borderWidth: 0, borderRadius: 3, maxBarThickness: 28 }
-                                ]
-                            },
-                            options: {
-                                responsive: true,
-                                maintainAspectRatio: false,
-                                interaction: { mode: 'index', intersect: false },
-                                scales: {
-                                    y: { beginAtZero: true, ticks: { precision: 0 }, title: { display: true, text: 'Applications' }, grid: { color: 'rgba(148,163,184,0.18)' } },
-                                    x: { grid: { display: false }, ticks: { maxTicksLimit: 8, maxRotation: 0, autoSkip: true } }
-                                },
-                                plugins: {
-                                    legend: { position: 'top', labels: { usePointStyle: true, boxWidth: 8, boxHeight: 8, padding: 14 } },
-                                    tooltip: { callbacks: { label: function(ctx) { return ctx.dataset.label + ': ' + ctx.parsed.y.toLocaleString() + ' decisions'; } } }
-                                }
-                            }
-                        });
-                    }
-
-                    if (!rateCanvas.chart) {
-                        rateCanvas.chart = new Chart(rateCanvas, {
-                            type: 'line',
-                            data: {
-                                labels: labels,
-                                datasets: [{
-                                    label: 'Approved share',
-                                    data: rate,
-                                    borderColor: '#2563eb',
-                                    backgroundColor: 'rgba(37,99,235,0.08)',
-                                    borderWidth: 2,
-                                    fill: false,
-                                    tension: 0,
-                                    pointRadius: 3,
-                                    pointHoverRadius: 5,
-                                    pointBackgroundColor: '#ffffff',
-                                    pointBorderColor: '#2563eb',
-                                    pointBorderWidth: 2
-                                }]
-                            },
-                            options: {
-                                responsive: true,
-                                maintainAspectRatio: false,
-                                interaction: { mode: 'index', intersect: false },
-                                scales: {
-                                    y: { min: 0, max: 100, ticks: { stepSize: 25, callback: function(v) { return v + '%'; } }, title: { display: true, text: 'Approved share' }, grid: { color: 'rgba(148,163,184,0.18)' } },
-                                    x: { grid: { display: false }, ticks: { maxTicksLimit: 8, maxRotation: 0, autoSkip: true } }
-                                },
-                                plugins: {
-                                    legend: { display: false },
-                                    tooltip: { callbacks: { label: function(ctx) {
-                                        var week = weeks[ctx.dataIndex];
-                                        var total = week && byWeek[week] ? byWeek[week].total : 0;
-                                        return 'Approved share: ' + ctx.parsed.y + '% of ' + total.toLocaleString() + ' published decisions';
-                                    } } }
-                                }
-                            }
-                        });
-                    }
+                const weeks = [...byWeek.keys()].sort().slice(-12); // Last 12 weeks
+                return {
+                    weeks,
+                    byWeek,
+                    labels: weeks.map(w => new Date(w + 'T00:00:00').toLocaleDateString('en-GB', { month: 'short', day: 'numeric' })),
+                    accepted: weeks.map(w => byWeek.get(w).accepted),
+                    rejected: weeks.map(w => byWeek.get(w).rejected),
+                    rate: weeks.map(w => byWeek.get(w).total
+                        ? Number(((byWeek.get(w).accepted / byWeek.get(w).total) * 100).toFixed(1))
+                        : 0)
                 };
-                if (typeof Chart !== 'undefined') {
-                    setTimeout(draw, 0);
-                } else {
-                    // Render the canvases first, then draw once the lazy loader resolves.
-                    LazyLoader.chart().then(() => setTimeout(draw, 0)).catch((err) => {
-                        console.error('Failed to load Chart.js for trends:', err);
-                        const host = document.getElementById(countId);
-                        const panel = host && host.closest('.decision-trends-chart');
-                        if (panel) panel.innerHTML = '<div class="chart-placeholder">Chart.js not loaded</div>';
-                    });
-                }
+            }
 
+            function renderDecisionTrendsChart(model) {
+                if (!model.real.length) return '<p class="note2">No data for trends</p>';
+                if (!model.weekly.weeks.length) return '<p class="note2">No data for trends</p>';
                 return '<div class="chart-container decision-trends-chart">' +
                     '<div class="decision-trends-head">' +
                     '<h3>Weekly decisions and approved share</h3>' +
@@ -3794,22 +3802,63 @@
                     '</div>' +
                     '<div class="decision-trends-panel">' +
                     '<div class="decision-trends-panel-title"><span>Decisions per week</span><span>applications</span></div>' +
-                    '<canvas id="' + countId + '" class="decision-trends-count-canvas" role="img" aria-label="Weekly approved and refused decisions"></canvas>' +
+                    '<canvas id="trends-count-chart" class="decision-trends-count-canvas" role="img" aria-label="Weekly approved and refused decisions"></canvas>' +
                     '</div>' +
                     '<div class="decision-trends-panel">' +
                     '<div class="decision-trends-panel-title"><span>Approved share</span><span>percent</span></div>' +
-                    '<canvas id="' + rateId + '" class="decision-trends-rate-canvas" role="img" aria-label="Weekly approved share of published decisions"></canvas>' +
+                    '<canvas id="trends-rate-chart" class="decision-trends-rate-canvas" role="img" aria-label="Weekly approved share of published decisions"></canvas>' +
                     '</div>' +
                     '</div>';
             }
 
             // ====== ANALYTICS TAB ======
+            function buildAnalyticsModel(rows, version) {
+                const dataset = getDatasetModel(rows);
+                const real = dataset.real;
+                return {
+                    version,
+                    rows,
+                    real,
+                    visaTypes: computeVisaTypes(real),
+                    weekly: computeWeekly(real),
+                    anomalies: detectAnomalies(real),
+                    monthly: computeMonthly(real),
+                    rolling30: computeRolling30(real),
+                    dailyDelta: computeDailyDelta(real),
+                    queueDensity: computeQueueDensity(real)
+                };
+            }
+
+            function getAnalyticsModel(rows) {
+                if (analyticsModel && analyticsModel.version === dataVersion && analyticsModel.rows === rows) {
+                    return analyticsModel;
+                }
+                analyticsModel = buildAnalyticsModel(rows, dataVersion);
+                return analyticsModel;
+            }
+
+            function scheduleAnalyticsModel() {
+                if (!cache || !cache.length) return;
+                const version = dataVersion;
+                if ((analyticsModel && analyticsModel.version === version) ||
+                    analyticsBuildScheduledVersion === version) return;
+                analyticsBuildScheduledVersion = version;
+                const build = function() {
+                    if (version !== dataVersion) return;
+                    analyticsBuildScheduledVersion = 0;
+                    getAnalyticsModel(cache);
+                };
+                if (window.requestIdleCallback) window.requestIdleCallback(build, { timeout: 1200 });
+                else setTimeout(build, 200);
+            }
+
             function renderAnalyticsLayout(rows) {
                 if (!rows.length) return '<div class="empty">No decisions recorded yet.</div>';
-                
-                return renderVisaTypeBreakdown(rows) +
-                    renderDecisionTrendsChart(rows) +
-                    renderAnomalyAlerts(rows) +
+                const model = getAnalyticsModel(rows);
+
+                return renderVisaTypeBreakdown(model) +
+                    renderDecisionTrendsChart(model) +
+                    renderAnomalyAlerts(model) +
                     '<div class="analytics-grid">' +
                         '<div class="chart-container">' +
                             '<h3>Month-by-Month Approved Share</h3>' +
@@ -3832,31 +3881,70 @@
                     '</div>';
             }
 
+            function destroyAnalyticsCharts() {
+                analyticsChartObservers.forEach(function(observer) { observer.disconnect(); });
+                analyticsChartObservers = [];
+                analyticsChartInstances.forEach(function(chart) {
+                    try { chart.destroy(); } catch (error) { /* already detached */ }
+                });
+                analyticsChartInstances = [];
+                document.querySelectorAll('#tab-body canvas').forEach(function(canvas) {
+                    canvas._chart = null;
+                });
+            }
+
+            function registerAnalyticsChart(canvas, config) {
+                if (!canvas || canvas._chart) return canvas && canvas._chart;
+                var chart = new Chart(canvas, config);
+                canvas._chart = chart;
+                analyticsChartInstances.push(chart);
+                return chart;
+            }
+
+            function drawChartWhenNear(canvas, draw) {
+                if (!canvas || canvas._chart) return;
+                if (!('IntersectionObserver' in window)) {
+                    draw(canvas);
+                    return;
+                }
+                var observer = new IntersectionObserver(function(entries) {
+                    if (!entries[0] || !entries[0].isIntersecting) return;
+                    observer.disconnect();
+                    analyticsChartObservers = analyticsChartObservers.filter(function(item) { return item !== observer; });
+                    if (canvas.isConnected && activeTab === 'analytics') draw(canvas);
+                }, { rootMargin: '300px' });
+                analyticsChartObservers.push(observer);
+                observer.observe(canvas);
+            }
+
             function paintAnalyticsCharts() {
                 var rows = cache || [];
                 if (!rows.length) return;
-                
-                // Compute analytics data
-                var monthly = computeMonthly(rows);
-                var rolling30 = computeRolling30(rows);
-                var dailyDelta = computeDailyDelta(rows);
-                var queueDensity = computeQueueDensity(rows);
-                
-                // Load Chart.js using LazyLoader
+                var model = getAnalyticsModel(rows);
+
+                // Render the tab shell immediately; Chart.js and chart creation
+                // happen after the next frame, and each canvas initialises only
+                // when it approaches the viewport.
                 LazyLoader.chart().then(function() {
-                    drawCharts(monthly, rolling30, dailyDelta, queueDensity);
+                    requestAnimationFrame(function() {
+                        if (activeTab === 'analytics') drawCharts(model);
+                    });
                 }).catch(function(err) {
                     console.error('Failed to load Chart.js:', err);
                 });
             }
             
-            function drawCharts(monthly, rolling30, dailyDelta, queueDensity) {
+            function drawCharts(model) {
+                var monthly = model.monthly;
+                var rolling30 = model.rolling30;
+                var dailyDelta = model.dailyDelta;
+                var queueDensity = model.queueDensity;
                 var ctx;
                 
                 // Monthly chart (bar + line)
                 ctx = document.getElementById('chart-monthly');
                 if (ctx) {
-                    new Chart(ctx, {
+                    drawChartWhenNear(ctx, function(canvas) { registerAnalyticsChart(canvas, {
                         type: 'bar',
                         data: {
                             labels: monthly.map(m => m.month),
@@ -3904,13 +3992,13 @@
                                 } } }
                             }
                         }
-                    });
+                    }); });
                 }
                 
                 // Rolling 30-day chart
                 ctx = document.getElementById('chart-rolling30');
                 if (ctx) {
-                    new Chart(ctx, {
+                    drawChartWhenNear(ctx, function(canvas) { registerAnalyticsChart(canvas, {
                         type: 'line',
                         data: {
                             labels: rolling30.map(r => r.date),
@@ -3941,13 +4029,13 @@
                                 } } }
                             }
                         }
-                    });
+                    }); });
                 }
                 
                 // Daily delta chart
                 ctx = document.getElementById('chart-daily-delta');
                 if (ctx) {
-                    new Chart(ctx, {
+                    drawChartWhenNear(ctx, function(canvas) { registerAnalyticsChart(canvas, {
                         type: 'bar',
                         data: {
                             labels: dailyDelta.map(d => d.date),
@@ -3968,13 +4056,13 @@
                             },
                             plugins: { legend: { display: false } }
                         }
-                    });
+                    }); });
                 }
                 
                 // Queue density chart
                 ctx = document.getElementById('chart-queue-density');
                 if (ctx) {
-                    new Chart(ctx, {
+                    drawChartWhenNear(ctx, function(canvas) { registerAnalyticsChart(canvas, {
                         type: 'bar',
                         data: {
                             labels: queueDensity.bins.map(b => b.label),
@@ -3996,6 +4084,79 @@
                             },
                             plugins: { legend: { display: false } }
                         }
+                    }); });
+                }
+
+                var weekly = model.weekly;
+                var countCanvas = document.getElementById('trends-count-chart');
+                if (countCanvas) {
+                    drawChartWhenNear(countCanvas, function(canvas) {
+                        registerAnalyticsChart(canvas, {
+                            type: 'bar',
+                            data: {
+                                labels: weekly.labels,
+                                datasets: [
+                                    { label: 'Approved', data: weekly.accepted, backgroundColor: '#059669', borderColor: '#047857', borderWidth: 0, borderRadius: 3, maxBarThickness: 28 },
+                                    { label: 'Refused', data: weekly.rejected, backgroundColor: '#dc2626', borderColor: '#b91c1c', borderWidth: 0, borderRadius: 3, maxBarThickness: 28 }
+                                ]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                interaction: { mode: 'index', intersect: false },
+                                scales: {
+                                    y: { beginAtZero: true, ticks: { precision: 0 }, title: { display: true, text: 'Applications' }, grid: { color: 'rgba(148,163,184,0.18)' } },
+                                    x: { grid: { display: false }, ticks: { maxTicksLimit: 8, maxRotation: 0, autoSkip: true } }
+                                },
+                                plugins: {
+                                    legend: { position: 'top', labels: { usePointStyle: true, boxWidth: 8, boxHeight: 8, padding: 14 } },
+                                    tooltip: { callbacks: { label: function(ctx) { return ctx.dataset.label + ': ' + ctx.parsed.y.toLocaleString() + ' decisions'; } } }
+                                }
+                            }
+                        });
+                    });
+                }
+
+                var rateCanvas = document.getElementById('trends-rate-chart');
+                if (rateCanvas) {
+                    drawChartWhenNear(rateCanvas, function(canvas) {
+                        registerAnalyticsChart(canvas, {
+                            type: 'line',
+                            data: {
+                                labels: weekly.labels,
+                                datasets: [{
+                                    label: 'Approved share',
+                                    data: weekly.rate,
+                                    borderColor: '#2563eb',
+                                    backgroundColor: 'rgba(37,99,235,0.08)',
+                                    borderWidth: 2,
+                                    fill: false,
+                                    tension: 0,
+                                    pointRadius: 3,
+                                    pointHoverRadius: 5,
+                                    pointBackgroundColor: '#ffffff',
+                                    pointBorderColor: '#2563eb',
+                                    pointBorderWidth: 2
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                interaction: { mode: 'index', intersect: false },
+                                scales: {
+                                    y: { min: 0, max: 100, ticks: { stepSize: 25, callback: function(v) { return v + '%'; } }, title: { display: true, text: 'Approved share' }, grid: { color: 'rgba(148,163,184,0.18)' } },
+                                    x: { grid: { display: false }, ticks: { maxTicksLimit: 8, maxRotation: 0, autoSkip: true } }
+                                },
+                                plugins: {
+                                    legend: { display: false },
+                                    tooltip: { callbacks: { label: function(ctx) {
+                                        var week = weekly.weeks[ctx.dataIndex];
+                                        var total = week && weekly.byWeek.has(week) ? weekly.byWeek.get(week).total : 0;
+                                        return 'Approved share: ' + ctx.parsed.y + '% of ' + total.toLocaleString() + ' published decisions';
+                                    } } }
+                                }
+                            }
+                        });
                     });
                 }
             }
@@ -4004,9 +4165,8 @@
             function computeMonthly(rows) {
                 var byMonth = {};
                 rows.forEach(function(r) {
-                    if (r._placeholder) return;
-                    var d = r._dateObj || new Date(r.date);
-                    var month = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+                    if (r._placeholder || !r.date) return;
+                    var month = String(r.date).slice(0, 7);
                     if (!byMonth[month]) byMonth[month] = { total: 0, approved: 0, rejected: 0 };
                     byMonth[month].total++;
                     if (r._status === 'accepted') byMonth[month].approved++;
@@ -4028,14 +4188,15 @@
                 });
                 var dates = Object.keys(byDate).sort();
                 var result = [];
+                var total = 0;
+                var approved = 0;
                 for (var i = 0; i < dates.length; i++) {
-                    var start = Math.max(0, i - 29);
-                    var window = dates.slice(start, i + 1);
-                    var total = 0, approved = 0;
-                    window.forEach(function(d) {
-                        total += byDate[d].total;
-                        approved += byDate[d].approved;
-                    });
+                    total += byDate[dates[i]].total;
+                    approved += byDate[dates[i]].approved;
+                    if (i >= 30) {
+                        total -= byDate[dates[i - 30]].total;
+                        approved -= byDate[dates[i - 30]].approved;
+                    }
                     result.push({ date: dates[i], rate: total ? (approved / total * 100).toFixed(1) : 0, total: total });
                 }
                 return result;
@@ -4067,7 +4228,7 @@
             
             function computeQueueDensity(rows) {
                 var real = rows.filter(function(r) { return !r._placeholder; });
-                var nums = real.map(function(r) { return parseInt(r.number, 10); }).sort(function(a, b) { return a - b; });
+                var nums = real.map(function(r) { return parseInt(r.number || r.irl, 10); }).filter(function(n) { return Number.isFinite(n); }).sort(function(a, b) { return a - b; });
                 if (!nums.length) return { bins: [] };
                 
                 var min = nums[0], max = nums[nums.length - 1];
@@ -4104,8 +4265,8 @@
                 '<h3 class="readme-title" style="margin-top:0;">Share your 1G timeline</h3>' +
                 '<p class="note2">Stamp 1G renewals only - when did you apply, and when was it decided? Published anonymously in aggregate.</p>' +
                 '<input type="hidden" name="tracker" value="1g" />' +
-                '<p><label>Applied on <input type="date" id="time-applied-1g" name="applied" data-calendar /></label></p>' +
-                '<p><label>Decided on <input type="date" id="time-decided-1g" name="decided" data-calendar /></label></p>' +
+                '<p><label>Applied on <input type="date" id="time-applied-1g" name="applied" /></label></p>' +
+                '<p><label>Decided on <input type="date" id="time-decided-1g" name="decided" /></label></p>' +
                 '<p><label>Outcome <select id="time-outcome-1g" name="outcome" aria-label="Outcome" data-glide data-glide-size="sm" data-glide-menu-width="150"><option value="granted">Granted</option><option value="refused">Refused</option></select></label></p>' +
                 '<button class="btn" type="submit" id="time-submit-1g">Share Timeline</button>' +
                 '<div class="note" id="time-status-1g" aria-live="polite"></div>';
@@ -4238,25 +4399,12 @@
             // (date picker, inputs, scrollbars) and the browser UI color.
             function applyChrome() {
                 document.documentElement.style.colorScheme = theme === 'dark' ? 'dark' : 'light';
-                // The dashboard owns the theme toggle, but the shared sitebar
+                // The shared Preferences menu toggles the theme, but the sitebar
                 // and footer sit outside #visa-dash. Mirror the choice on the
-                // document so those shared surfaces can follow it too.
+                // document so those shared surfaces follow it too.
                 document.documentElement.setAttribute('data-theme', theme);
                 const meta = document.querySelector('meta[name="theme-color"]');
                 if (meta) meta.setAttribute('content', theme === 'dark' ? '#0b1220' : '#ffffff');
-            }
-
-            function toggleTheme() {
-                theme = theme === 'light' ? 'dark' : 'light';
-                try { localStorage.setItem('visa-theme', theme); } catch (error) { /* private mode */ }
-                root.setAttribute('data-theme', theme);
-                // The switch reads aria-checked, so the thumb follows the
-                // stored theme without rebuilding the header.
-                const toggle = document.getElementById('theme-toggle');
-                if (toggle) toggle.setAttribute('aria-checked', String(theme === 'dark'));
-                // Theme switch is instant via CSS variables; the sun/moon SVG
-                // icon swaps via CSS on [data-theme], so no JS or DOM rebuild.
-                applyChrome();
             }
 
             // ===== tracker landing + Stamp 1G =====
@@ -4264,10 +4412,7 @@
             // tracker cards; 'visa' is the existing embassy-decisions tracker
             // (untouched below); '1g' is the Stamp 1G processing-date tracker
             // fed by data/stamp_1g.json (written daily by track_1g.py).
-            const THEME_BTN_HTML = '<button class="theme-switch" id="theme-toggle" role="switch" aria-checked="' + (theme === 'dark') + '" aria-label="Dark mode" title="Dark mode" data-squish-switch data-ss-bare data-ss-size="sm">' +
-                '<svg class="icon-sun" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8"/></svg>' +
-                '<svg class="icon-moon" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5a8.5 8.5 0 1 0 11 11z"/></svg></button>';
-            const BACK_BTN_HTML = '<button type="button" class="back-btn" id="back-btn"><i data-lucide="arrow-left"></i> All trackers</button>';
+            const BACK_BTN_HTML = '<button type="button" class="back-btn" id="back-btn">← All trackers</button>';
 
             function setTracker(id, opts) {
                 activeTracker = id;
@@ -4276,8 +4421,6 @@
             }
 
             function wireChrome() {
-                const themeToggle = document.getElementById('theme-toggle');
-                if (themeToggle) themeToggle.addEventListener('click', toggleTheme);
                 const backBtn = document.getElementById('back-btn');
                 if (backBtn) backBtn.addEventListener('click', function() { setTracker('home'); });
             }
@@ -4824,15 +4967,17 @@
                 } catch (e) { return 0; }
             }
             function paintG1Buffer() {
-                var host = document.getElementById('g1-buffer');
-                if (!host || !window.Stepper || Stepper.get(host) !== null) return;
-                Stepper.mount(host, {
-                    value: g1StoredBuffer(), min: 0, max: 12, step: 1,
-                    label: 'Buffer', unit: 'week', size: 'sm',
-                    onChange: function (n) {
-                        try { localStorage.setItem('stamp1g-buffer', String(n)); } catch (e) { /* private mode */ }
-                        paintG1Estimate();
-                    }
+                var input = document.getElementById('g1-buffer-input');
+                if (!input) return;
+                input.value = String(g1StoredBuffer());
+                if (input.dataset.wired === '1') return;
+                input.dataset.wired = '1';
+                input.addEventListener('change', function () {
+                    var n = parseInt(input.value, 10);
+                    n = isFinite(n) ? Math.max(0, Math.min(12, n)) : 0;
+                    input.value = String(n);
+                    try { localStorage.setItem('stamp1g-buffer', String(n)); } catch (e) { /* private mode */ }
+                    paintG1Estimate();
                 });
             }
 
@@ -4908,17 +5053,17 @@
                 cats = cats && cats.length ? cats : ['1G'];
                 activeCat = activeCat || '1G';
                 var head = BACK_BTN_HTML +
-                    '<div class="eyebrow">Ireland \u00b7 Immigration Service Delivery</div>' +
-                    '<div class="titlerow"><h1>Stamp ' + escapeHtml(activeCat) + ' Tracker</h1>' +
-                    '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">' + THEME_BTN_HTML + '</div></div>' +
-                    '<div class="sub">' + (rows.length ? rows.length + ' observation' + (rows.length === 1 ? '' : 's') + ' on record' : 'Awaiting data') + '</div>';
+                    '<div class="page-title-block">' +
+                    '<h1>Stamp ' + escapeHtml(activeCat) + ' processing</h1>' +
+                    '<p class="page-task">The application date ISD is processing, the current lag, and a date estimate.</p>' +
+                    '<p class="page-meta">' + (rows.length ? rows.length + ' observation' + (rows.length === 1 ? '' : 's') + ' on record' : 'Awaiting data') + '</p>' +
+                    '</div>';
                 if (!rows.length) {
                     return head +
                         '<div class="empty">No observations recorded yet. The daily job writes to <code>data/stamp_1g.json</code> - check back after its first run.</div>';
                 }
                 var catPills = cats.length > 1
-                    ? '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;" id="g1-cats" role="group" aria-label="Stamp category"' +
-                      ' data-rubber-segment data-rs-key="g1-cats" data-rs-size="sm" data-rs-inset="0" data-rs-radius="999" data-rs-stretch="80" data-rs-squash="2">' +
+                    ? '<div class="category-tabs" id="g1-cats" role="group" aria-label="Stamp category">' +
                       cats.map(function(c) {
                           return '<button type="button" class="recent-chip mode-chip' + (c === activeCat ? ' active' : '') +
                               '" data-cat="' + escapeHtml(c) + '" aria-pressed="' + (c === activeCat) + '">' + escapeHtml(c) + '</button>';
@@ -4926,17 +5071,6 @@
                     : '';
                 var proj = computeG1Projections(rows);
                 var latest = rows[rows.length - 1];
-                var heroTitle = 'Processing ' + fmtG1Date(latest.processing_date) + '.';
-                var heroSub = latest.lag_days + ' days (~' + fmtLagMonths(latest.lag_days) + ' mo) behind today' +
-                    (proj.ok && proj.recentWeek !== null ? ', advancing ~' + proj.recentWeek.toFixed(1) + ' days/week.' : '.');
-                var hero = '<div class="hero" id="hero" data-id="g1" style="opacity:0">' +
-                    '<div class="hero-body"><div>' +
-                    '<h2 class="hero-title">' + heroTitle + '</h2>' +
-                    '<div class="hero-sub">' + heroSub + '</div>' +
-                    '</div><div class="visual">' +
-                    '<div class="ring"></div><div class="ring"></div><div class="ring"></div>' +
-                    '<div class="ring-core">' + latest.lag_days + '</div>' +
-                    '</div></div></div>';
                 var cards = '<div class="cards">' +
                     '<div class="card"><div class="label"><i data-lucide="calendar-check"></i>ISD processing date</div><div class="value">' + fmtG1Date(latest.processing_date) + '</div></div>' +
                     '<div class="card"><div class="label"><i data-lucide="hourglass"></i>Current lag</div><div class="value">' + latest.lag_days + ' days <span style="font-size:13px;font-weight:600;">(~' + fmtLagMonths(latest.lag_days) + ' mo)</span></div></div>' +
@@ -4985,43 +5119,43 @@
                 var estimatorHtml = '<div class="g1-chart"><h3>Your application</h3>' +
                     '<div class="note2">When did you apply - or when do you plan to? Your tentative outcome date updates itself as the lag moves.</div>' +
                     '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:12px;">' +
-                    '<span class="g1-mode" style="display:inline-flex;align-items:center;gap:8px;" data-jelly-radio data-jelly-bare data-jelly-size="sm" data-jelly-radius="999" data-jelly-swell="0.08" data-jelly-barge="2" data-jelly-shrink="0.03">' +
+                    '<span class="g1-mode segmented">' +
                     '<button type="button" class="recent-chip mode-chip' + (storedMode === 'applied' ? ' active' : '') + '" data-mode="applied" aria-pressed="' + (storedMode === 'applied') + '">I applied</button>' +
                     '<button type="button" class="recent-chip mode-chip' + (storedMode === 'plan' ? ' active' : '') + '" data-mode="plan" aria-pressed="' + (storedMode === 'plan') + '">I plan to apply</button>' +
                     '</span>' +
                     '<div class="datefilter"><label class="visually-hidden" for="g1-apply-date">Application date</label>' +
-                    '<input type="date" id="g1-apply-date" autocomplete="off" aria-label="Your application date" value="' + escapeHtml(storedDate) + '" data-calendar>' +
+                    '<input type="date" id="g1-apply-date" autocomplete="off" aria-label="Your application date" value="' + escapeHtml(storedDate) + '">' +
                     '<button type="button" class="clear-btn" id="g1-apply-clear" aria-label="Clear application date" title="Clear application date">\u00d7</button>' +
                     '</div></div>' +
-                    '<div class="g1-buffer"><span class="note2">Buffer</span>' +
-                    '<div id="g1-buffer" class="stp-host"></div>' +
+                    '<div class="g1-buffer"><label class="note2" for="g1-buffer-input">Buffer</label>' +
+                    '<input type="number" id="g1-buffer-input" min="0" max="12" step="1" value="' + g1StoredBuffer() + '" inputmode="numeric" aria-label="Buffer in weeks">' +
                     '<span class="note2">weeks on top of the current lag</span></div>' +
                     '<div id="g1-estimate" aria-live="polite"></div>' +
                     '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:10px;">' +
                     '<label for="g1-expiry-date" style="font-size:12px;color:var(--ink-muted);">IRP expiry (optional)</label>' +
                     '<div class="datefilter"><label class="visually-hidden" for="g1-expiry-date">IRP expiry date</label>' +
-                    '<input type="date" id="g1-expiry-date" autocomplete="off" aria-label="Your IRP expiry date" value="' + escapeHtml(storedExpiry) + '" data-calendar>' +
+                    '<input type="date" id="g1-expiry-date" autocomplete="off" aria-label="Your IRP expiry date" value="' + escapeHtml(storedExpiry) + '">' +
                     '<button type="button" class="clear-btn" id="g1-expiry-clear" aria-label="Clear expiry date" title="Clear expiry date">\u00d7</button>' +
                     '</div></div>' +
                     '<div id="g1-expiry" aria-live="polite"></div></div>' +
                     '<div id="g1-timeline-form" style="margin-top:24px;"></div>';
-                return head + catPills + hero + cards + estimatorHtml + projHtml + chart + hist + '<div id="community-box"></div>' + note;
+                return head + catPills + cards + estimatorHtml + projHtml + chart + hist + '<div id="community-box"></div>' + note;
             }
 
             async function renderG1Page() {
                 document.title = 'Stamp 1G Processing Tracker | Irish Visa Decision Tracker';
                 if (!g1Cache) {
                     root.innerHTML = BACK_BTN_HTML +
-                        '<div class="eyebrow">Ireland \u00b7 Immigration Service Delivery</div>' +
-                        '<div class="titlerow"><h1>Stamp 1G Tracker</h1>' +
-                        '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">' + THEME_BTN_HTML + '</div></div>' +
-                        '<div class="cards">' +
-                        '<div class="skel skel-card" style="animation-delay:0.02s"></div>' +
-                        '<div class="skel skel-card" style="animation-delay:0.07s"></div>' +
-                        '<div class="skel skel-card" style="animation-delay:0.12s"></div>' +
-                        '<div class="skel skel-card" style="animation-delay:0.17s"></div>' +
+                        '<div class="page-title-block">' +
+                        '<h1>Stamp 1G processing</h1>' +
+                        '<p class="page-task">The application date ISD is processing, the current lag, and a date estimate.</p>' +
+                        '<p class="page-meta">Loading the current observations…</p>' +
+                        '</div>' +
+                        '<div class="skel-wrap">' +
+                        '<div class="skel skel-row" style="width:65%"></div>' +
+                        '<div class="skel skel-row" style="width:45%"></div>' +
                         '</div>';
-                    wireChrome();
+                                        wireChrome();
                 }
                 await loadG1Data();
                 // A visa-tab switch may have rendered while we fetched.
@@ -5115,16 +5249,17 @@
             function renderPermitsLayout(rows, cats, activeCat) {
                 cats = cats && cats.length ? cats : [];
                 var head = BACK_BTN_HTML +
-                    '<div class="eyebrow">Ireland \u00b7 Dept. of Enterprise (DETE)</div>' +
-                    '<div class="titlerow"><h1>Employment Permit Tracker</h1>' +
-                    '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">' + THEME_BTN_HTML + '</div></div>' +
-                    '<div class="sub">' + (rows.length ? rows.length + ' observation' + (rows.length === 1 ? '' : 's') + ' on record' : 'Awaiting data') + '</div>';
+                    '<div class="page-title-block">' +
+                    '<h1>Employment permit processing</h1>' +
+                    '<p class="page-task">The processing date and current lag for each DETE permit category.</p>' +
+                    '<p class="page-meta">' + (rows.length ? rows.length + ' observation' + (rows.length === 1 ? '' : 's') + ' on record' : 'Awaiting data') + '</p>' +
+                    '</div>';
                 if (!rows.length) {
                     return head +
                         '<div class="empty">No observations recorded yet. The daily job writes to <code>data/work_permits.json</code> - check back after its first run.</div>';
                 }
                 var catPills = cats.length > 1
-                    ? '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;" id="permits-cats" role="group" aria-label="Permit category">' +
+                    ? '<div class="category-tabs" id="permits-cats" role="group" aria-label="Permit category">' +
                       cats.map(function(c) {
                           return '<button type="button" class="recent-chip mode-chip' + (c === activeCat ? ' active' : '') +
                               '" data-cat="' + escapeHtml(c) + '" aria-pressed="' + (c === activeCat) + '">' + escapeHtml(c) + '</button>';
@@ -5132,15 +5267,6 @@
                     : '';
                 var proj = computeG1Projections(rows);
                 var latest = rows[rows.length - 1];
-                var hero = '<div class="hero" id="hero" data-id="permits" style="opacity:0">' +
-                    '<div class="hero-body"><div>' +
-                    '<h2 class="hero-title">Processing ' + fmtG1Date(latest.processing_date) + '.</h2>' +
-                    '<div class="hero-sub">' + latest.lag_days + ' days (~' + fmtLagMonths(latest.lag_days) + ' mo) behind today' +
-                    (proj.ok && proj.recentWeek !== null ? ', advancing ~' + proj.recentWeek.toFixed(1) + ' days/week.' : '.') + '</div>' +
-                    '</div><div class="visual">' +
-                    '<div class="ring"></div><div class="ring"></div><div class="ring"></div>' +
-                    '<div class="ring-core">' + latest.lag_days + '</div>' +
-                    '</div></div></div>';
                 var cards = '<div class="cards">' +
                     '<div class="card"><div class="label"><i data-lucide="calendar-check"></i>Permit date</div><div class="value">' + fmtG1Date(latest.processing_date) + '</div></div>' +
                     '<div class="card"><div class="label"><i data-lucide="hourglass"></i>Current lag</div><div class="value">' + latest.lag_days + ' days <span style="font-size:13px;font-weight:600;">(~' + fmtLagMonths(latest.lag_days) + ' mo)</span></div></div>' +
@@ -5158,23 +5284,23 @@
                 var note = '<div class="readme"><h3 class="readme-title">How this tracker works</h3>' +
                     '<p>Every day, an automated job reads DETE\u2019s current processing dates and appends one row per permit category to ' +
                     '<a href="data/work_permits.json" target="_blank" rel="noopener"><code>data/work_permits.json</code></a> in this repo.</p></div>';
-                return head + catPills + hero + cards + hist + note;
+                return head + catPills + cards + hist + note;
             }
 
             async function renderPermitsPage() {
                 document.title = 'Employment Permit Tracker | Irish Visa Decision Tracker';
                 if (!permitsCache) {
                     root.innerHTML = BACK_BTN_HTML +
-                        '<div class="eyebrow">Ireland \u00b7 Dept. of Enterprise (DETE)</div>' +
-                        '<div class="titlerow"><h1>Employment Permit Tracker</h1>' +
-                        '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">' + THEME_BTN_HTML + '</div></div>' +
-                        '<div class="cards">' +
-                        '<div class="skel skel-card" style="animation-delay:0.02s"></div>' +
-                        '<div class="skel skel-card" style="animation-delay:0.07s"></div>' +
-                        '<div class="skel skel-card" style="animation-delay:0.12s"></div>' +
-                        '<div class="skel skel-card" style="animation-delay:0.17s"></div>' +
+                        '<div class="page-title-block">' +
+                        '<h1>Employment permit processing</h1>' +
+                        '<p class="page-task">The processing date and current lag for each DETE permit category.</p>' +
+                        '<p class="page-meta">Loading the current observations…</p>' +
+                        '</div>' +
+                        '<div class="skel-wrap">' +
+                        '<div class="skel skel-row" style="width:65%"></div>' +
+                        '<div class="skel skel-row" style="width:45%"></div>' +
                         '</div>';
-                    wireChrome();
+                                        wireChrome();
                 }
                 await loadPermitsData();
                 if (activeTracker !== 'permits') return;
@@ -5193,11 +5319,11 @@
             }
 
             function trackerCardHTML(id, icon, title, desc, meta, metaId, accent) {
-                return '<button type="button" class="tracker-card' + (accent ? ' ' + accent : '') + '" data-tracker="' + id + '">' +
-                    '<span class="tracker-chip"><i data-lucide="' + icon + '"></i></span>' +
-                    '<h2>' + title + '</h2><p>' + desc + '</p>' +
-                    '<span class="tracker-meta" id="' + metaId + '" aria-live="polite">' + meta + '</span>' +
-                    '<span class="tracker-cta">Open tracker \u2192</span></button>';
+                return '<button type="button" class="tracker-card tracker-row' + (accent ? ' ' + accent : '') + '" data-tracker="' + id + '">' +
+                    '<span class="tracker-row-copy"><span class="tracker-title">' + title + '</span>' +
+                    '<span class="tracker-desc">' + desc + '</span></span>' +
+                    '<span class="tracker-row-meta"><span class="tracker-meta" id="' + metaId + '" aria-live="polite">' + meta + '</span>' +
+                    '<span class="tracker-cta">Open →</span></span></button>';
             }
 
             // Landing status strip: one glanceable line built from the tiny
@@ -5337,74 +5463,26 @@
                 var container = document.getElementById('embassy-status-grid');
                 if (!container) return;
 
-                var embassies = [
-                    { slug: 'new-delhi', name: 'New Delhi', flag: '\uD83C\uDDEE\uD83C\uDDF3' },
-                    { slug: 'beijing', name: 'Beijing', flag: '\uD83C\uDDE8\uD83C\uDDF3' },
-                    { slug: 'dublin', name: 'Dublin', flag: '\uD83C\uDDEE\uD83C\uDDEA' },
-                    { slug: 'abu-dhabi', name: 'Abu Dhabi', flag: '\uD83C\uDDE6\uD83C\uDDEA' },
-                    { slug: 'abuja', name: 'Abuja', flag: '\uD83C\uDDF3\uD83C\uDDEC' },
-                    { slug: 'ankara', name: 'Ankara', flag: '\uD83C\uDDF9\uD83C\uDDF7' }
-                ];
-
-                var html = '<h3 class="landing-h3">Embassy status</h3><div class="embassy-status-cards">';
-                embassies.forEach(function(emb) {
-                    html += '<div class="embassy-status-card" data-embassy="' + emb.slug + '">' +
-                        '<div class="embassy-header">' +
-                        '<span class="embassy-flag" aria-hidden="true">' + emb.flag + '</span>' +
-                        '<span class="embassy-name">' + emb.name + '</span>' +
-                        '</div>' +
-                        '<div class="embassy-meta" id="embassy-meta-' + emb.slug + '">Loading\u2026</div>' +
-                        '</div>';
-                });
-                container.innerHTML = html + '</div>' +
-                    '<div class="embassy-coverage">' +
-                    '<div class="table-wrap coverage-table-wrap" role="region" aria-label="Per-office coverage" tabindex="0">' +
+                container.innerHTML =
+                    '<div class="table-wrap coverage-table-wrap" role="region" aria-label="Latest official publications" tabindex="0">' +
                     '<table class="coverage-table">' +
-                    '<caption>Latest published total and report date for each office.</caption>' +
-                    '<thead><tr><th scope="col">Office</th><th scope="col" class="num">Decisions</th><th scope="col">Report date</th><th scope="col">History range</th></tr></thead>' +
-                    '<tbody id="embassy-coverage-body"><tr><td colspan="4" class="coverage-empty">Loading coverage\u2026</td></tr></tbody>' +
-                    '</table></div></div>';
-
-                function paint(office) {
-                    var el = document.getElementById('embassy-meta-' + office.slug);
-                    if (!el) return;
-                    if (office.status && office.status !== 'official') {
-                        el.innerHTML = '<span class="embassy-status stale">' + escapeHtml(String(office.status).replace(/_/g, ' ')) + '</span>' +
-                            '<span class="embassy-count">' + escapeHtml(office.note || 'Not currently ingested') + '</span>';
-                        return;
-                    }
-                    el.innerHTML = '<span class="embassy-status live">As of ' + escapeHtml(office.report_date || office.as_of || '\u2014') + '</span>' +
-                        '<span class="embassy-count">' + Number(office.decisions || 0).toLocaleString() + ' decisions</span>' +
-                        (office.corrections ? '<span class="embassy-count">' + office.corrections + ' correction(s)</span>' : '');
-                }
+                    '<caption>Latest official publication from each office, with a link to the source.</caption>' +
+                    '<thead><tr><th scope="col">Office</th><th scope="col">Latest report</th><th scope="col" class="num">Decisions</th><th scope="col">Source</th><th scope="col">Fetched</th></tr></thead>' +
+                    '<tbody id="embassy-coverage-body"><tr><td colspan="5" class="coverage-empty">Loading publications…</td></tr></tbody>' +
+                    '</table></div>';
 
                 fetch('data/data_manifest.json', { cache: 'no-store' })
                     .then(function(r) { return r.ok ? r.json() : null; })
                     .then(function(manifest) {
                         var offices = (manifest && manifest.offices) || [];
                         if (!offices.length) throw new Error('no manifest');
-                        var bySlug = {};
-                        offices.forEach(function(o) { bySlug[o.slug] = o; });
-                        embassies.forEach(function(emb) { if (bySlug[emb.slug]) paint(bySlug[emb.slug]); });
                         _embassyManifest = offices;
                         renderEmbassyCoverageTable();
                     })
                     .catch(function() {
                         _embassyManifest = null;
                         var coverageBody = document.getElementById('embassy-coverage-body');
-                        if (coverageBody) coverageBody.innerHTML = '<tr><td colspan="4" class="coverage-empty">Coverage data is unavailable right now.</td></tr>';
-                        embassies.forEach(function(emb) {
-                            fetch('data/embassy-' + emb.slug + '.json', { cache: 'no-store' })
-                                .then(function(r) { return r.ok ? r.json() : null; })
-                                .then(function(data) {
-                                    var el = document.getElementById('embassy-meta-' + emb.slug);
-                                    if (!el) return;
-                                    var rows = (data && data.decisions) || [];
-                                    el.innerHTML = rows.length
-                                        ? '<span class="embassy-status live">' + rows.length.toLocaleString() + ' decisions</span>'
-                                        : '<span class="embassy-status stale">No data</span>';
-                                });
-                        });
+                        if (coverageBody) coverageBody.innerHTML = '<tr><td colspan="5" class="coverage-empty">Coverage data is unavailable right now. <a href="/data/data_manifest.json">Open the manifest</a>.</td></tr>';
                     });
             }
 
@@ -5418,49 +5496,34 @@
                 var bySlug = {};
                 _embassyManifest.forEach(function(office) { bySlug[office.slug] = office; });
 
-                var ndRange = null;
-                if (Array.isArray(cache) && cache.length) {
-                    var min = '', max = '';
-                    cache.forEach(function(row) {
-                        var date = row && row.date;
-                        if (!/^\d{4}-\d{2}-\d{2}$/.test(String(date || ''))) return;
-                        if (!/^(Approved|Refused)$/i.test(String(row.decision || ''))) return;
-                        if (!min || date < min) min = date;
-                        if (!max || date > max) max = date;
-                    });
-                    if (min && max) ndRange = { start: min, end: max };
-                }
-
                 var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-                function monthName(value) { return months[Number(value) - 1] || ''; }
                 function formatDate(value) {
                     var match = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(value || ''));
-                    if (!match) return '\u2014';
-                    return Number(match[3]) + ' ' + monthName(match[2]) + ' ' + match[1];
+                    if (!match) return '—';
+                    return Number(match[3]) + ' ' + (months[Number(match[2]) - 1] || '') + ' ' + match[1];
                 }
-                function formatRange(range) {
-                    if (!range) return 'Loading decision history\u2026';
-                    if (range.start === range.end) return formatDate(range.start);
-                    var start = range.start.split('-'), end = range.end.split('-');
-                    if (start[0] === end[0]) {
-                        return Number(start[2]) + ' ' + monthName(start[1]) + ' \u2013 ' + Number(end[2]) + ' ' + monthName(end[1]) + ' ' + end[0];
+                function sourceCell(office) {
+                    var links = [];
+                    if (office.source_url) {
+                        links.push('<a href="' + escapeHtml(office.source_url) + '" target="_blank" rel="noopener noreferrer">Office page</a>');
                     }
-                    return formatDate(range.start) + ' \u2013 ' + formatDate(range.end);
+                    if (office.source_file) {
+                        links.push('<a href="' + escapeHtml(office.source_file) + '" target="_blank" rel="noopener noreferrer">Published file</a>');
+                    }
+                    return links.length ? links.join(' · ') : 'Not recorded';
                 }
 
                 body.innerHTML = order.map(function(slug) {
                     var office = bySlug[slug];
                     if (!office) {
-                        return '<tr><td><strong>' + escapeHtml(slug.replace(/-/g, ' ')) + '</strong></td><td class="num">\u2014</td><td>\u2014</td><td class="coverage-empty">Not published</td></tr>';
+                        return '<tr><td><strong>' + escapeHtml(slug.replace(/-/g, ' ')) + '</strong></td><td>—</td><td class="num">—</td><td>—</td><td>—</td></tr>';
                     }
-                    var history = slug === 'new-delhi'
-                        ? formatRange(ndRange)
-                        : formatDate(office.report_date) + ' <span class="coverage-snapshot">snapshot</span>';
                     return '<tr>' +
                         '<td><strong>' + escapeHtml(office.name || slug) + '</strong></td>' +
-                        '<td class="num">' + Number(office.decisions || 0).toLocaleString() + '</td>' +
                         '<td>' + formatDate(office.report_date) + '</td>' +
-                        '<td>' + history + '</td>' +
+                        '<td class="num">' + Number(office.decisions || 0).toLocaleString() + '</td>' +
+                        '<td>' + sourceCell(office) + '</td>' +
+                        '<td>' + (office.fetched_at ? fmtISTStamp(office.fetched_at) : '—') + '</td>' +
                         '</tr>';
                 }).join('');
             }
@@ -5601,58 +5664,36 @@ async function renderLandingPage() {
                 // fast; the full visa history still loads on tracker entry).
                 // Clicking a card works from the first paint.
                 root.innerHTML =
-                    '<div class="landing-wrap">' +
-                    '<div class="eyebrow">Ireland \u00b7 Live trackers</div>' +
-                    '<div class="titlerow"><h1>Choose your tracker</h1>' +
-                    '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">' + THEME_BTN_HTML + '</div></div>' +
-                    '<div class="sub">Three daily trackers, one dashboard.</div>' +
-                    '<div class="landing-status" id="landing-status" aria-live="polite"><span class="note2">Checking today\u2019s updates\u2026</span></div>' +
+                    '<div class="landing-wrap page-title-block">' +
+                    '<h1>Published Irish visa decisions</h1>' +
+                    '<p class="page-task">Search six offices by application number, or open a processing-date tracker.</p>' +
+                    '<div class="landing-status" id="landing-status" aria-live="polite"><span class="note2">Checking today’s updates…</span></div>' +
                     '<form class="landing-search" id="landing-search" role="search" novalidate>' +
                     '<div class="searchbar landing-search-number">' + searchIcon() +
                     '<input type="text" id="landing-q" name="q" autocomplete="off" maxlength="200" aria-label="Search by application number" placeholder="Application number" required></div>' +
                     '<select class="landing-office-select" id="landing-office" name="office" aria-label="Visa office to search">' +
                     officeOptionsHTML(homeSearchOffice) + '</select>' +
                     '<button class="btn" type="submit">Search</button></form>' +
-                    '<p class="landing-search-hint">All six Irish visa offices are searched by default. Use the 8-digit number on your receipt (IRL prefix optional). <a href="/help#find-number">Where do I find it?</a></p>' +
-                    '<div class="tracker-grid">' +
-                    trackerCardHTML('visa', 'plane', 'I applied for a visa',
-                        'Search published decisions from six Irish visa offices by application number, with report dates, trends and summaries.', 'Loading\u2026', 'visa-meta', '') +
-                    trackerCardHTML('1g', 'stamp', 'I am renewing Stamp 1G',
-                        'See which application date ISD is processing now, how far behind it is, and when it may catch up.', 'Loading\u2026', 'g1-meta', 'g1') +
-                    trackerCardHTML('permits', 'briefcase', 'My employer applied for a permit',
-                        'Check the DETE queue for each employment-permit type, including the current lag and trend.', 'Loading\u2026', 'permits-meta', 'permits') +
+                    '<p class="landing-search-hint">Use the 8-digit number on your receipt; an IRL prefix is optional. <a href="/help#find-number">Where do I find it?</a></p>' +
+                    '<div class="tracker-grid" aria-label="Trackers">' +
+                    trackerCardHTML('visa', 'plane', 'Visa decisions',
+                        'Search published decisions from six offices by application number.', 'Loading…', 'visa-meta', '') +
+                    trackerCardHTML('1g', 'stamp', 'Stamp 1G processing',
+                        'ISD processing date, current lag and a date estimate.', 'Loading…', 'g1-meta', 'g1') +
+                    trackerCardHTML('permits', 'briefcase', 'Employment permits',
+                        'DETE queue by permit category, with the current lag.', 'Loading…', 'permits-meta', 'permits') +
                     '</div>' +
-                    // Activation CTA visible before the visitor opens a tracker.
-                    '<div class="landing-alert-cta" role="region" aria-label="Decision alerts">' +
-                    '<div><p class="activation-kicker">Never miss a decision</p>' +
-                    '<strong>Get decision alerts on Telegram</strong>' +
-                    '<span>Free, one message when your application appears. No email address needed.</span></div>' +
-                    '<div class="landing-alert-actions">' +
-                    '<a class="btn activation-telegram" href="/?tracker=visa&amp;tab=alerts">Telegram alerts</a>' +
-                    '</div></div>' +
-                    // New: Stats Bar
-                    '<div class="stats-bar" role="region" id="landing-stats-bar" aria-label="Live statistics">' +
-                    '<div class="stat"><span class="stat-value" id="stat-decisions">--</span><span class="stat-label">Decisions Tracked</span></div>' +
-                    '<div class="stat"><span class="stat-value" id="stat-approval">--</span><span class="stat-label">Approval share</span><span class="stat-sample" id="stat-approval-sample">Waiting for data</span></div>' +
-                    '<div class="stat"><span class="stat-value" id="stat-embassies">6</span><span class="stat-label">Visa offices</span></div>' +
-                    '<div class="stat"><span class="stat-value" id="stat-updated">--</span><span class="stat-label">Last updated</span></div>' +
-                    '</div>' +
-                    // New: Embassy Status Cards
-                    '<div class="embassy-status-grid" role="region" id="embassy-status-grid" aria-label="Embassy Status"></div>' +
-                    '<p class="note2" id="embassy-coverage-note">Latest report dates vary by office. New Delhi, Abu Dhabi, Abuja and Ankara include dated decision history; Beijing and Dublin show their latest published snapshot. <a href="/visa-processing-times">See Dublin queue dates by category and the submit-by planner</a>.</p>' +
-                    // New: Community Wait Times
-                    '<div class="community-wait-section" role="region" id="community-wait-section" aria-label="Community Wait Times"></div>' +
-                    // New: Recent Decisions Feed
-                    '<div class="recent-decisions-section" role="region" id="recent-decisions-section" aria-label="Latest Decisions"></div>' +
-                    // New: Quick Actions
-                    '<div class="quick-actions" role="region" aria-label="Quick Actions">' +
-                    '<a class="quick-action" href="/help"><i data-lucide="help-circle"></i><span>Help &amp; FAQ</span></a>' +
-                    '<a class="quick-action" href="/?tab=analytics" data-tracker="analytics"><i data-lucide="bar-chart-2"></i><span>View Analytics</span></a>' +
-                    '<a class="quick-action" href="/?tracker=1g" data-tracker="1g"><i data-lucide="calendar"></i><span>Check IRP Expiry</span></a>' +
-                    '<a class="quick-action" href="#" id="pwa-install-btn" hidden><i data-lucide="download"></i><span>Install as App</span></a>' +
-                    '</div>' +
-                    '<div class="landing-foot">Source: official Irish visa office reports. Updated when sources publish.</div></div>';
-                wireChrome();
+                    '<p class="landing-alert-line"><strong>Decision alerts on Telegram.</strong> One message when your application is published. <a href="/?tracker=visa&amp;tab=alerts">Set up alerts</a>.</p>' +
+                    '<section class="landing-publications" aria-labelledby="landing-publications-title">' +
+                    '<div class="landing-publications-head"><div>' +
+                    '<h2 id="landing-publications-title">Latest official publications</h2>' +
+                    '<p class="note2">Last checked <span id="stat-updated">—</span></p>' +
+                    '</div><a href="/status">Data status</a></div>' +
+                    '<div class="embassy-status-grid" id="embassy-status-grid" role="region" aria-label="Latest official publications"></div>' +
+                    '<p class="note2">Report dates vary by office. New Delhi, Abu Dhabi, Abuja and Ankara keep dated history; Beijing and Dublin publish a latest snapshot. <a href="/visa-processing-times">Dublin queue dates</a>.</p>' +
+                    '</section>' +
+                    '<div class="landing-foot">Source: official Irish visa office reports. Updated when the offices publish.</div></div>';
+                wireChrome();                wireChrome();
                 var cards = root.querySelectorAll('.tracker-card');
                 for (var i = 0; i < cards.length; i++) {
                     cards[i].addEventListener('click', function() {
@@ -5725,9 +5766,8 @@ async function renderLandingPage() {
                 ensureScrollableFocusable();
             }
 
-            // Initial mount: build the chrome (eyebrow, title, navpills, hero) and
-            // delegate all tab-content rendering to switchTab() so the layout/rows
-            // split is the single source of truth.
+            // Initial mount: build the task header and tab bar, then delegate all
+            // tab-content rendering to the same painter used by switchTab().
             async function render() {
                 // Landing + trackers own their skeleton/load/paint cycle and
                 // return early - everything below is the visa tracker.
@@ -5736,83 +5776,58 @@ async function renderLandingPage() {
                 if (activeTracker === 'permits') { await renderPermitsPage(); return; }
                 document.title = 'Visa Decision Search - Six Offices | Irish Visa Decision Tracker';
                 if (!cache) {
-                    root.innerHTML = '<div class="eyebrow">Ireland \u00b7 Visa decisions</div>' +
-                        '<div class="titlerow"><h1>Irish Visa Decision Tracker</h1>' +
-                        '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">' +
-                        THEME_BTN_HTML +
-                        (typeof createLanguageSelector === 'function' ? createLanguageSelector() : '') + '</div></div>' +
-                        '<div class="topbar"><div class="topbar-fill"></div></div>' +
-                        '<div class="navpills">' +
-                        '<div class="skel skel-pill"></div><div class="skel skel-pill"></div><div class="skel skel-pill"></div>' +
-                        '<div class="skel skel-pill"></div><div class="skel skel-pill"></div><div class="skel skel-pill"></div>' +
+                    root.innerHTML =
+                        '<div class="page-title-block">' +
+                        '<h1>Visa decisions</h1>' +
+                        '<p class="page-task">Search published decisions from six Irish offices by application number.</p>' +
+                        '<p class="page-meta">Loading the current official files…</p>' +
                         '</div>' +
-                        '<div class="cards">' +
-                        '<div class="skel skel-card" style="grid-column:span 2;animation-delay:0.02s"></div>' +
-                        '<div class="skel skel-card" style="animation-delay:0.07s"></div>' +
-                        '<div class="skel skel-card" style="animation-delay:0.12s"></div>' +
-                        '<div class="skel skel-card" style="animation-delay:0.17s"></div>' +
+                        '<div class="navpills" aria-hidden="true">' +
+                        '<div class="skel skel-pill"></div><div class="skel skel-pill"></div><div class="skel skel-pill"></div>' +
+                        '<div class="skel skel-pill"></div><div class="skel skel-pill"></div><div class="skel skel-pill"></div>' +
                         '</div>' +
                         '<div class="skel-wrap">' +
                         '<div class="skel skel-row" style="width:70%"></div>' +
                         '<div class="skel skel-row" style="width:55%"></div>' +
                         '<div class="skel skel-row" style="width:65%"></div>' +
-                        '<div class="skel skel-row" style="width:45%"></div>' +
-                        '<div class="skel skel-row" style="width:60%"></div>' +
                         '</div>';
                 }
                 await loadData();
                 loadMeta(); // health card / reconciliation / closures (non-blocking)
 
-                const heroState = buildHeroHTML(activeTab, cache || []);
-
+                destroyAnalyticsCharts();
                 root.innerHTML =
                     BACK_BTN_HTML +
-                    '<div class="eyebrow">Ireland \u00b7 Visa decisions</div>' +
-                    '<div class="titlerow"><h1>Irish Visa Decision Tracker</h1>' +
-                    '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">' +
-                    THEME_BTN_HTML +
-                    (typeof createLanguageSelector === 'function' ? createLanguageSelector() : '') + '</div>' +
+                    '<div class="page-title-block">' +
+                    '<h1>Visa decisions</h1>' +
+                    '<p class="page-task">Search published decisions from six Irish offices by application number.</p>' +
+                    '<p class="page-meta">' + (cache && cache.length ? cache.length.toLocaleString() + ' decisions on record' : 'Awaiting data') +
+                    ' · Compare each result with the official report date</p>' +
                     '</div>' +
-                    '<div class="sub">' + (cache && cache.length ? cache.length + ' decisions on record' :
-                        'Awaiting data') + '</div>' +
-                    '<div class="navpills" data-gooey-nav>' + TABS.map(function(tab) {
+                    '<nav class="navpills" aria-label="Visa tracker sections">' + TABS.map(function(tab) {
                         return '<button type="button" class="navpill ' + (activeTab === tab.id ? 'active' : '') +
                             '" data-tab="' + tab.id + '"' + (activeTab === tab.id ? ' aria-current="page"' : '') +
-                            '><i data-lucide="' + tab.icon + '"></i> ' + tab.label + '</button>';
-                    }).join('') + '</div>' +
-                    '<div class="hero" id="hero" data-id="' + activeTab + '" style="opacity:0">' +
-                        '<div class="hero-body">' +
-                            '<div>' +
-                                '<h2 class="hero-title">' + heroState.title + '</h2>' +
-                                '<div class="hero-sub">' + heroState.sub + '</div>' +
-                            '</div>' +
-                            '<div class="visual">' + heroState.visual + '</div>' +
-                        '</div>' +
-                    '</div>' +
+                            '>' + tab.label + '</button>';
+                    }).join('') + '</nav>' +
                     '<div id="tab-body"></div>' +
-                    '<button class="scroll-top-btn" id="scroll-top-btn" title="Back to top" aria-label="Back to top">\u2191</button>';
+                    '<button class="scroll-top-btn" id="scroll-top-btn" title="Back to top" aria-label="Back to top">↑</button>';
 
                 TABS.forEach(function(tab) {
                     var pill = root.querySelector('.navpill[data-tab="' + tab.id + '"]');
-                    pill.addEventListener('click', function() {
-                        pill.classList.add('rippling');
-                        setTimeout(function() { pill.classList.remove('rippling'); }, 520);
-                        switchTab(tab.id);
-                    });
+                    pill.addEventListener('click', function() { switchTab(tab.id); });
                 });
-                const themeToggle = document.getElementById('theme-toggle');
-                if (themeToggle) themeToggle.addEventListener('click', toggleTheme);
-                const backBtn = document.getElementById('back-btn');
-                if (backBtn) backBtn.addEventListener('click', function() { setTracker('home'); });
-                morphHero();
-                // Initial paint bypasses switchTab (no hero cross-fade dip), so
-                // it uses the same body painter without the animation.
+                wireChrome();
                 paintTabBody(activeTab, cache || []);
                 markVisited();
             }
 
             root.setAttribute('data-theme', theme);
             applyChrome();
+            document.addEventListener('visa:themechange', function (event) {
+                theme = event.detail && event.detail.theme === 'dark' ? 'dark' : 'light';
+                root.setAttribute('data-theme', theme);
+                applyChrome();
+            });
 
             // Browser back/forward restores the tracker, tab and filters from
             // the URL. A tracker change needs a full render (different page),

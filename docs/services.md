@@ -11,7 +11,8 @@ never stored in this repository and must not be pasted into chat or committed.
 - Existing production secrets (names only): `APP_BASE_URL`, `RESEND_API_KEY`,
   `EMAIL_WEBHOOK_URL`, `EMAIL_WEBHOOK_SECRET`, `EMAIL_FROM`,
   `SCRAPER_CRON_SECRET`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_WEBHOOK_SECRET`,
-  `VAPID_PRIVATE_KEY`, `VAPID_PUBLIC_KEY`, `VAPID_SUBJECT`.
+  `VAPID_PRIVATE_KEY`, `VAPID_PUBLIC_KEY`, `VAPID_SUBJECT`. Optional channel
+  announcement settings: `TELEGRAM_CHANNEL_ID`, `TELEGRAM_CHANNEL_URL`.
 - Optional monitoring secret: `ALERT_WEBHOOK_URL` (GitHub Actions and the
   separate monitoring Worker).
 
@@ -45,6 +46,8 @@ D1 also stores the operational counters and the activation funnel:
 | `TELEGRAM_BOT_TOKEN` | Configured (deployment secret) | Telegram alerts report disabled |
 | `TELEGRAM_WEBHOOK_SECRET` | Configured (deployment secret) | The Telegram webhook rejects every update with 503 |
 | `TELEGRAM_BOT_USERNAME` | Optional | The worker calls `getMe` to resolve the bot handle |
+| `TELEGRAM_CHANNEL_ID` | Optional | `/api/telegram/broadcast` skips without posting to a public channel |
+| `TELEGRAM_CHANNEL_URL` | Optional | The Data status page does not show a public channel link |
 | `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` / `VAPID_SUBJECT` | Configured | Browser push reports disabled |
 
 ## VFS appointment handoff
@@ -87,9 +90,19 @@ Telegram”. The site creates a single-use token that expires in 15 minutes and
 opens `https://t.me/<bot>?start=<token>`; pressing Start stores that chat id
 against the application. The hourly alert runner then sends one message per
 published decision date, updating `last_alert_sent` so retries are idempotent.
-`/stop` disables the chat and `/status` lists its linked applications. No email
+`/stop` disables the chat and `/status` lists its linked applications. Chat members
+can switch to `/digest daily`, `/digest weekly` or `/digest off`; a digest groups
+the linked applications by office and includes a no-change line. `/immediate
+<8-digit-number>` opts one application back into immediate delivery. No email
 address or phone number is collected, so there is no domain verification,
 opt-in review or per-message fee.
+
+For a public low-noise channel, add the bot as a channel administrator and set
+`TELEGRAM_CHANNEL_ID` (numeric `-100...` id or `@channelusername`) plus the public
+`TELEGRAM_CHANNEL_URL`. After a verified production deploy, the deploy workflow
+calls `/api/telegram/broadcast`; its first run seeds existing history rather than
+backfilling the channel, and later runs post one message per new official file.
+The feed itself is available at `/feed.xml` and `/official-file-feed.json`.
 
 ## Email bridge
 

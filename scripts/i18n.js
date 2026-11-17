@@ -402,42 +402,8 @@ function translatePage() {
   });
   document.title = t('app.title');
   document.documentElement.lang = currentLang;
-  var current = document.querySelector('.lang-current');
-  if (current) {
-    var active = getAvailableLanguages().find(function(l) { return l.code === currentLang; });
-    current.textContent = active ? active.nativeName : currentLang.toUpperCase();
-  }
-  var langBtn = document.querySelector('.lang-btn');
-  if (langBtn) langBtn.setAttribute('aria-label', t('lang.select'));
-  var langList = document.querySelector('.lang-dropdown');
-  if (langList) {
-    langList.setAttribute('aria-label', t('lang.select'));
-    langList.querySelectorAll('li[data-lang]').forEach(function(item) {
-      item.setAttribute('aria-selected', item.getAttribute('data-lang') === currentLang ? 'true' : 'false');
-    });
-  }
 }
 
-function createLanguageSelector() {
-  const languages = getAvailableLanguages();
-  return `
-    <div class="lang-selector" style="position: relative;">
-      <button class="lang-btn" aria-label="${t('lang.select')}" aria-expanded="false" aria-haspopup="listbox">
-        <span class="lang-current">${languages.find(l => l.code === currentLang)?.nativeName || currentLang.toUpperCase()}</span>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-          <polyline points="6 9 12 15 18 9"></polyline>
-        </svg>
-      </button>
-      <ul class="lang-dropdown" role="listbox" aria-label="${t('lang.select')}" style="display: none;">
-        ${languages.map(l => `
-          <li role="option" data-lang="${l.code}" aria-selected="${l.code === currentLang ? 'true' : 'false'}">
-            ${l.nativeName}
-          </li>
-        `).join('')}
-      </ul>
-    </div>
-  `;
-}
 
 function getAvailableLanguages() {
   const english = TRANSLATIONS.en || {};
@@ -458,40 +424,8 @@ window.setLanguage = setLanguage;
 window.getLanguage = getLanguage;
 window.getAvailableLanguages = getAvailableLanguages;
 window.initLanguage = initLanguage;
-window.translatePage = translatePage;
-window.createLanguageSelector = createLanguageSelector;
+window.translatePage = translatePage;
 
 // Initialize language immediately
 initLanguage();
 translatePage();
-
-// Create language selector after DOM is ready
-document.addEventListener('DOMContentLoaded', () => {
-  var langBtn = document.querySelector('.lang-btn');
-  if (langBtn && typeof createLanguageSelector === 'function') {
-    langBtn.outerHTML = createLanguageSelector();
-  }
-});
-
-// Language selector dropdown toggle
-document.addEventListener('click', function(e) {
-  var btn = e.target.closest('.lang-btn');
-  if (btn) {
-    var dropdown = btn.nextElementSibling;
-    if (dropdown && dropdown.classList.contains('lang-dropdown')) {
-      var isOpen = dropdown.style.display === 'block';
-      document.querySelectorAll('.lang-dropdown').forEach(d => d.style.display = 'none');
-      dropdown.style.display = isOpen ? 'none' : 'block';
-    }
-  } else if (!e.target.closest('.lang-dropdown')) {
-    document.querySelectorAll('.lang-dropdown').forEach(d => d.style.display = 'none');
-  }
-  var langItem = e.target.closest('.lang-dropdown li[data-lang]');
-  if (langItem) {
-    var lang = langItem.getAttribute('data-lang');
-    if (setLanguage(lang)) {
-      translatePage();
-    }
-    langItem.closest('.lang-dropdown').style.display = 'none';
-  }
-});

@@ -1,8 +1,6 @@
 (function() {
         const embassyData = {
-            'new-delhi': {
-                flag: '🇮🇳',
-                name: 'New Delhi',
+            'new-delhi': {                name: 'New Delhi',
                 countries: ['India', 'Bangladesh', 'Nepal', 'Sri Lanka'],
                 vacs: [
                     { city: 'New Delhi', address: 'VFS Global, 3rd Floor, Tower A, Building No. 10, DLF Cyber City, Phase II, Gurugram, Haryana 122002', hours: 'Mon-Fri: 08:00-15:00', phone: '+91-124-4859900', email: 'info.ind@vfsglobal.com' },
@@ -31,9 +29,7 @@
                 processing: '15-20 working days',
                 fee: '€60 + VFS service charge ₹1,500'
             },
-            'beijing': {
-                flag: '🇨🇳',
-                name: 'Beijing',
+            'beijing': {                name: 'Beijing',
                 countries: ['China', 'Hong Kong', 'Macau', 'Mongolia'],
                 vacs: [
                     { city: 'Beijing', address: 'VFS Global, 1st Floor, Building 1, No. 15 Sanlitun Road, Chaoyang District, Beijing 100027', hours: 'Mon-Fri: 08:00-15:00', phone: '+86-10-85318500', email: 'info.chn@vfsglobal.com' },
@@ -56,9 +52,7 @@
                 processing: '15-25 working days',
                 fee: '€60 + VFS service charge ¥350'
             },
-            'dublin': {
-                flag: '🇮🇪',
-                name: 'Dublin Visa Office',
+            'dublin': {                name: 'Dublin Visa Office',
                 countries: ['Pakistan', 'Transfers from all offices'],
                 vacs: [
                     { city: 'Dublin (INIS)', address: 'Irish Naturalisation and Immigration Service, 13-14 Burgh Quay, Dublin 2, D02 XK70', hours: 'Mon-Fri: 09:30-16:00 (by appointment)', phone: '+353-1-6167700', email: 'info@inis.gov.ie' },
@@ -76,9 +70,7 @@
                 processing: '8-12 weeks (Pakistan), varies for transfers',
                 fee: '€60 + VFS service charge'
             },
-            'abu-dhabi': {
-                flag: '🇦🇪',
-                name: 'Abu Dhabi',
+            'abu-dhabi': {                name: 'Abu Dhabi',
                 countries: ['UAE', 'Afghanistan', 'Algeria', 'Bahrain', 'Jordan', 'Kuwait', 'Lebanon', 'Libya', 'Morocco', 'Oman', 'Qatar', 'Sudan', 'Syria', 'Tunisia'],
                 vacs: [
                     { city: 'Abu Dhabi', address: 'VFS Global, 3rd Floor, Al Falah Tower, Al Falah Street, Abu Dhabi', hours: 'Mon-Fri: 08:00-15:00', phone: '+971-2-6448500', email: 'info.are@vfsglobal.com' },
@@ -99,9 +91,7 @@
                 processing: '15-20 working days',
                 fee: '€60 + VFS service charge AED 250'
             },
-            'abuja': {
-                flag: '🇳🇬',
-                name: 'Abuja',
+            'abuja': {                name: 'Abuja',
                 countries: ['Nigeria', 'Ghana', 'Côte d\'Ivoire', 'Senegal'],
                 vacs: [
                     { city: 'Abuja', address: 'VFS Global, 2nd Floor, Nicon Luxury Hotel, Plot 903, Central Business District, Abuja', hours: 'Mon-Fri: 08:00-15:00', phone: '+234-9-4618500', email: 'info.nga@vfsglobal.com' },
@@ -124,9 +114,7 @@
                 processing: '20-30 working days',
                 fee: '€60 + VFS service charge ₦25,000'
             },
-            'ankara': {
-                flag: '🇹🇷',
-                name: 'Ankara',
+            'ankara': {                name: 'Ankara',
                 countries: ['Türkiye', 'Azerbaijan', 'Saudi Arabia residents'],
                 vacs: [
                     { city: 'Ankara', address: 'VFS Global, 3rd Floor, Akay Building, Cinnah Caddesi No:19, Kavaklidere, Çankaya, Ankara', hours: 'Mon-Fri: 08:00-15:00', phone: '+90-312-4688500', email: 'info.tur@vfsglobal.com' },
@@ -175,10 +163,10 @@
                     <p class="note2">Ireland uses VFS Global to operate Visa Application Centres worldwide. You must submit your application at the VAC designated for your country of residence.</p>
                 </div>
                 <div class="cards">
-                    <div class="card"><div class="label"><i data-lucide="map-pin"></i>Total VACs Worldwide</div><div class="value">140+</div></div>
-                    <div class="card"><div class="label"><i data-lucide="users"></i>Countries Served</div><div class="value">130+</div></div>
-                    <div class="card"><div class="label"><i data-lucide="clock"></i>Processing Time</div><div class="value">Varies by country</div></div>
-                    <div class="card"><div class="label"><i data-lucide="credit-card"></i>Service Fee</div><div class="value">€25–€60 + visa fee</div></div>
+                    <div class="card"><div class="label">Total VACs Worldwide</div><div class="value">140+</div></div>
+                    <div class="card"><div class="label">Countries Served</div><div class="value">130+</div></div>
+                    <div class="card"><div class="label">Processing Time</div><div class="value">Varies by country</div></div>
+                    <div class="card"><div class="label">Service Fee</div><div class="value">€25–€60 + visa fee</div></div>
                 </div>
                 <div class="note" style="margin-top:16px;">
                     <strong>Key Points:</strong>
@@ -198,27 +186,27 @@
             
             return `
                 <div class="card" style="grid-column:1/-1;">
-                    <h2 style="margin-top:0;">${data.flag} ${data.name} - Visa Application Centres</h2>
+                    <h2 style="margin-top:0;">${data.name} - Visa Application Centres</h2>
                     <p class="note2">Countries served: ${data.countries.join(', ')}</p>
                 </div>
                 <div class="card" style="grid-column:1/-1;">
-                    <h3><i data-lucide="building"></i> VAC Locations</h3>
+                    <h3> VAC Locations</h3>
                     ${data.vacs.map(v => `
                         <div class="vac-item">
-                            <div class="vac-name"><i data-lucide="map-pin"></i> ${v.city}</div>
+                            <div class="vac-name"> ${v.city}</div>
                             <div class="vac-address">${v.address}</div>
-                            <div class="vac-hours"><i data-lucide="clock"></i> ${v.hours}</div>
-                            <div class="vac-contact"><i data-lucide="phone"></i> ${v.phone} | <i data-lucide="mail"></i> ${v.email}</div>
+                            <div class="vac-hours"> ${v.hours}</div>
+                            <div class="vac-contact"> ${v.phone} | ${v.email}</div>
                         </div>
                     `).join('')}
                 </div>
                 <div class="cards">
-                    <div class="card"><div class="label"><i data-lucide="file-text"></i> Documents Required</div><div class="value">${data.docs.length} items</div></div>
-                    <div class="card"><div class="label"><i data-lucide="clock"></i> Avg Processing</div><div class="value">${data.processing}</div></div>
-                    <div class="card"><div class="label"><i data-lucide="credit-card"></i> Service Fee</div><div class="value">${data.fee}</div></div>
+                    <div class="card"><div class="label"> Documents Required</div><div class="value">${data.docs.length} items</div></div>
+                    <div class="card"><div class="label"> Avg Processing</div><div class="value">${data.processing}</div></div>
+                    <div class="card"><div class="label"> Service Fee</div><div class="value">${data.fee}</div></div>
                 </div>
                 <div class="card" style="grid-column:1/-1;">
-                    <h3><i data-lucide="file-text"></i> Required Documents</h3>
+                    <h3> Required Documents</h3>
                     <ul style="margin:0; padding-left:18px;">
                         ${data.docs.map(d => `<li>${d}</li>`).join('')}
                     </ul>
@@ -229,24 +217,24 @@
         function renderTransit() {
             return `
                 <div class="card" style="grid-column:1/-1;">
-                    <h2 style="margin-top:0;"><i data-lucide="plane"></i> Irish Transit Visa Requirements</h2>
+                    <h2 style="margin-top:0;"> Irish Transit Visa Requirements</h2>
                     <p class="note2">Check if you need a transit visa when connecting through Irish airports.</p>
                 </div>
                 <div class="card" style="grid-column:1/-1;">
-                    <h3><i data-lucide="shield-check"></i> Who Needs a Transit Visa?</h3>
+                    <h3> Who Needs a Transit Visa?</h3>
                     <p>You need an Irish transit visa if you are a citizen of the following countries and are transiting through an Irish airport:</p>
-                    <div class="note" style="background:#fef3c7; border-color:#fcd34d; color:#92400e;">
+                    <div class="note" >
                         Afghanistan, Albania, Algeria, Angola, Bangladesh, Belarus, Burma/Myanmar, Burundi, Cameroon, Central African Republic, Chad, China, Colombia, Congo (DRC), Congo (Republic), Cuba, Djibouti, Dominican Republic, Egypt, Equatorial Guinea, Eritrea, Ethiopia, Gambia, Georgia, Ghana, Guinea, Guinea-Bissau, Haiti, India, Iran, Iraq, Ivory Coast, Jamaica, Jordan, Kazakhstan, Kenya, Kosovo, Kyrgyzstan, Lebanon, Liberia, Libya, Mali, Moldova, Mongolia, Montenegro, Morocco, Nepal, Nigeria, North Korea, North Macedonia, Pakistan, Palestinian Territory, Peru, Philippines, Russia, Rwanda, Senegal, Serbia, Sierra Leone, Somalia, South Africa, South Sudan, Sri Lanka, Sudan, Syria, Tajikistan, Tanzania, Thailand, Togo, Tunisia, Turkey, Turkmenistan, Uganda, Ukraine, Uzbekistan, Vietnam, Yemen, Zambia, Zimbabwe
                     </div>
                 </div>
                 <div class="cards">
-                    <div class="card"><div class="label"><i data-lucide="shield"></i> Exemptions</div><div class="value">EU/EEA/Swiss citizens, UK residents, valid Schengen/UK/US/Canada visa holders</div></div>
-                    <div class="card"><div class="label"><i data-lucide="clock"></i> Max Stay</div><div class="value">24 hours (airside transit)</div></div>
-                    <div class="card"><div class="label"><i data-lucide="file-text"></i> Visa Type</div><div class="value">Transit Visa (single/double entry)</div></div>
-                    <div class="card"><div class="label"><i data-lucide="credit-card"></i> Fee</div><div class="value">€25</div></div>
+                    <div class="card"><div class="label"> Exemptions</div><div class="value">EU/EEA/Swiss citizens, UK residents, valid Schengen/UK/US/Canada visa holders</div></div>
+                    <div class="card"><div class="label"> Max Stay</div><div class="value">24 hours (airside transit)</div></div>
+                    <div class="card"><div class="label"> Visa Type</div><div class="value">Transit Visa (single/double entry)</div></div>
+                    <div class="card"><div class="label"> Fee</div><div class="value">€25</div></div>
                 </div>
                 <div class="card" style="grid-column:1/-1;">
-                    <h3><i data-lucide="info"></i> Important Notes</h3>
+                    <h3> Important Notes</h3>
                     <ul style="margin:0; padding-left:18px;">
                         <li>Airside transit (not leaving the airport) still requires a transit visa for listed nationalities</li>
                         <li>If you leave the airport (landside), you need a regular short-stay 'C' visa</li>
@@ -276,10 +264,7 @@
                 p.classList.toggle('active', selected);
                 p.setAttribute('aria-selected', selected ? 'true' : 'false');
                 p.tabIndex = selected ? 0 : -1;
-            });
-            
-            if (window.lucide) lucide.createIcons({ nameAttr: 'data-lucide', attrs: { 'aria-hidden': 'true' } });
-        }
+            });        }
         
         // Event listeners
         document.querySelectorAll('.navpill').forEach(pill => {

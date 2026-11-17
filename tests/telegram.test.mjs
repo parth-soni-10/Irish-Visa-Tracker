@@ -188,6 +188,35 @@ test('webhook rejects an unsigned update when a secret is configured', async () 
   assert.equal(response.status, 401);
 });
 
+test('webhook digest commands explain the grouped mode and per-application immediate opt-in', async () => {
+  const { db } = makeTelegramDb({
+    subscriptions: [
+      { chat_id: '123456789', application_number: '85444062', embassy: 'new-delhi', active: 1 }
+    ]
+  });
+  const api = stubTelegramApi();
+  try {
+    const daily = await handleTelegramWebhook(webhookRequest(123456789, '/digest daily'), telegramEnv(db));
+    assert.equal(daily.status, 200);
+    assert.match(api.sent[0].text, /Digest on/);
+    assert.match(api.sent[0].text, /daily/);
+
+    const immediate = await handleTelegramWebhook(webhookRequest(123456789, '/immediate 85444062'), telegramEnv(db));
+    assert.equal(immediate.status, 200);
+    assert.match(api.sent[1].text, /Immediate alerts enabled for 85444062/);
+
+    const invalid = await handleTelegramWebhook(webhookRequest(123456789, '/digest sometimes'), telegramEnv(db));
+    assert.equal(invalid.status, 200);
+    assert.match(api.sent[2].text, /Choose a digest frequency/);
+
+    const missing = await handleTelegramWebhook(webhookRequest(123456789, '/immediate 99999999'), telegramEnv(db));
+    assert.equal(missing.status, 200);
+    assert.match(api.sent[3].text, /No active alert is linked/);
+  } finally {
+    api.restore();
+  }
+});
+
 const WEBHOOK_SECRET = 'webhook-secret';
 
 /**
@@ -229,6 +258,18 @@ function makeTelegramDb({ links = [], subscriptions = [] } = {}) {
             for (const row of subscriptionRows) {
               if (row.chat_id === statement.args[0]) row.active = 0;
             }
+          } else if (/UPDATE telegram_subscriptions SET immediate = 1 WHERE chat_id = \? AND application_number = \?/i.test(sql)) {
+            for (const row of subscriptionRows) {
+              if (
+                row.chat_id === statement.args[0] &&
+                row.application_number === statement.args[1] &&
+                row.active
+              ) row.immediate = 1;
+            }
+          } else if (/UPDATE telegram_subscriptions SET immediate = \? WHERE chat_id = \?/i.test(sql)) {
+            for (const row of subscriptionRows) {
+              if (row.chat_id === statement.args[1]) row.immediate = Number(statement.args[0]);
+            }
           } else if (/INSERT INTO telegram_links/i.test(sql)) {
             const [token, applicationNumber, embassy, expiresAt] = statement.args;
             linkRows.set(token, {
@@ -252,6 +293,13 @@ function makeTelegramDb({ links = [], subscriptions = [] } = {}) {
             if (!link) return null;
             if (new Date(link.expires_at).getTime() <= Date.now()) return null;
             return { application_number: link.application_number, embassy: link.embassy };
+          }
+          if (/SELECT 1 AS linked FROM telegram_subscriptions WHERE chat_id = \?/i.test(sql)) {
+            return subscriptionRows.some((row) =>
+              row.chat_id === statement.args[0] &&
+              row.application_number === statement.args[1] &&
+              row.active
+            ) ? { linked: 1 } : null;
           }
           return null;
         },

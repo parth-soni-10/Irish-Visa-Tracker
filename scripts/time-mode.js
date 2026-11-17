@@ -224,19 +224,6 @@
     setMode(mode === 'utc' ? 'local' : 'utc', true);
   }
 
-  function createButton() {
-    var nav = document.querySelector('.sitebar-nav');
-    if (!nav || nav.querySelector('[data-time-mode-toggle]')) return;
-    var button = document.createElement('button');
-    button.type = 'button';
-    button.className = 'time-mode-toggle';
-    button.setAttribute('data-time-mode-toggle', '');
-    button.innerHTML = '<span class="time-mode-toggle-kicker">Time</span> ' +
-      '<span data-time-mode-label>UTC</span>';
-    button.addEventListener('click', toggleMode);
-    nav.appendChild(button);
-  }
-
   window.IVTimeMode = {
     node: node,
     newDelhiNode: newDelhiNode,
@@ -252,6 +239,12 @@
     applyMode();
   });
 
-  createButton();
+  document.addEventListener('click', function (event) {
+    var button = event.target && event.target.closest
+      ? event.target.closest('[data-time-mode-toggle]')
+      : null;
+    if (button) toggleMode();
+  });
+
   applyMode();
 })();

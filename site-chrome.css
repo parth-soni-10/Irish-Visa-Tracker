@@ -334,3 +334,153 @@ html[data-theme="dark"] .sitebar-footer .brand img {
 @media (prefers-reduced-motion: reduce) {
   .sitebar-more > summary::after { transition: none; }
 }
+
+/* ---- Shared chrome cleanup, 2026-11 -------------------------------------
+   Brand + primary navigation + More + Preferences. Current pages are marked
+   with an underline, not a filled pill. The footer is one compact row. */
+
+.sitebar-inner {
+  flex-wrap: nowrap;
+  padding: 10px 24px;
+  gap: 16px;
+}
+.sitebar-nav {
+  flex-wrap: nowrap;
+  gap: 2px;
+  min-width: 0;
+}
+.sitebar-nav > a,
+.sitebar-more > summary,
+.sitebar-prefs > summary {
+  min-height: 36px;
+  padding: 8px 9px;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: inset 0 -2px 0 transparent;
+}
+.sitebar-nav > a:hover,
+.sitebar-more > summary:hover,
+.sitebar-prefs > summary:hover {
+  background: transparent;
+  color: var(--sc-ink);
+  box-shadow: inset 0 -2px 0 var(--sc-border);
+}
+.sitebar-nav > a[aria-current="page"],
+.sitebar-more.is-current > summary,
+.sitebar-prefs[open] > summary {
+  background: transparent;
+  color: var(--sc-green-deep);
+  box-shadow: inset 0 -2px 0 var(--sc-green);
+}
+.sitebar-more.is-current > summary { font-weight: 750; }
+.sitebar-prefs { position: relative; }
+.sitebar-prefs > summary { list-style: none; cursor: pointer; }
+.sitebar-prefs > summary::-webkit-details-marker { display: none; }
+.sitebar-prefs > summary::after {
+  content: '';
+  width: 6px;
+  height: 6px;
+  margin-left: 4px;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: rotate(45deg) translateY(-1px);
+}
+.sitebar-prefs[open] > summary::after { transform: rotate(-135deg) translateY(-1px); }
+.sitebar-prefs-panel {
+  min-width: 250px;
+  padding: 10px;
+  gap: 2px;
+}
+.sitebar-pref-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 34px;
+  padding: 3px 2px;
+  color: var(--sc-ink);
+  font-size: 13px;
+  font-weight: 600;
+}
+.sitebar-pref-label { color: var(--sc-ink-soft); font-weight: 650; }
+.sitebar-pref-button,
+.sitebar-pref-select {
+  min-height: 30px;
+  padding: 4px 8px;
+  border: 1px solid var(--sc-border);
+  border-radius: 6px;
+  background: var(--sc-surface);
+  color: var(--sc-ink);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 650;
+}
+.sitebar-pref-button { cursor: pointer; }
+.sitebar-pref-button:hover { border-color: var(--sc-green); }
+.sitebar-pref-select { max-width: 145px; }
+.sitebar-pref-row[hidden] { display: none; }
+
+.sitebar-footer-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  max-width: 1120px;
+  padding: 14px 24px;
+}
+.sitebar-footer-brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+.sitebar-footer-brand .brand { margin: 0; }
+.sitebar-footer-brand p {
+  max-width: none;
+  color: var(--sc-muted);
+  font-size: 12px;
+  line-height: 1.35;
+  white-space: nowrap;
+}
+.sitebar-footer-links {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+}
+.sitebar-footer-links a {
+  color: var(--sc-ink-soft);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.4;
+  text-decoration: none;
+}
+.sitebar-footer-links a:hover { color: var(--sc-green-deep); text-decoration: underline; text-underline-offset: 3px; }
+.sitebar-footer-copy {
+  margin: 0;
+  color: var(--sc-muted);
+  font-size: 12px;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+@media (max-width: 960px) {
+  .sitebar-footer-inner { flex-wrap: wrap; }
+  .sitebar-footer-copy { width: 100%; }
+}
+@media (max-width: 760px) {
+  .sitebar-inner { flex-wrap: wrap; padding: 10px 16px; }
+  .sitebar-nav {
+    order: 3;
+    width: 100%;
+    overflow-x: auto;
+    padding-bottom: 2px;
+    scrollbar-width: none;
+  }
+  .sitebar-nav::-webkit-scrollbar { display: none; }
+  .sitebar-nav > a, .sitebar-more > summary, .sitebar-prefs > summary { white-space: nowrap; }
+  .sitebar-footer-inner { padding: 14px 16px; gap: 12px; }
+  .sitebar-footer-brand { flex-wrap: wrap; gap: 8px 14px; }
+  .sitebar-footer-brand p { white-space: normal; }
+  .sitebar-footer-copy { white-space: normal; }
+}

@@ -22,36 +22,57 @@
   <a class="skip-link" href="#main-content">Skip to content</a>
 
   <header class="sitebar">
-    <div class="sitebar-inner">
-      <a class="brand" href="/" aria-label="Irish Visa Decision Tracker home">
-        <img src="/icon.svg" alt="" width="24" height="24">
-        <span>Irish Visa Decision Tracker</span>
-      </a>
-      <nav class="sitebar-nav" aria-label="Site">
-        <a href="/">Tracker</a>
-        <a href="/comparison">Compare</a>
-        <a href="/daily-summaries">Daily summaries</a>
-        <a href="/monthly-report">Monthly report</a>
-        <a href="/visa-processing-times">Processing times</a>
-        <a href="/about">About</a>
-        <details class="sitebar-more">
-          <summary>More</summary>
-          <div class="sitebar-more-panel">
-            <a href="/help" aria-current="page">Help</a>
-            <a href="/stamp-1g-processing-dates">Stamp 1G</a>
-            <a href="/employment-permit-processing-dates">Employment permits</a>
-            <a href="/vac-transit">VAC &amp; transit</a>
-            <a href="/contact">Contact</a>
-            <a href="/privacy">Privacy</a>
-            <a href="/terms">Terms</a>
+  <div class="sitebar-inner">
+    <a class="brand" href="/" aria-label="Irish Visa Decision Tracker home">
+      <img src="/icon.svg" alt="" width="24" height="24">
+      <span>Irish Visa Decision Tracker</span>
+    </a>
+    <nav class="sitebar-nav" aria-label="Site">
+      <a href="/">Tracker</a>
+      <a href="/daily-summaries">Daily summaries</a>
+      <a href="/visa-processing-times">Processing times</a>
+      <a href="/about">About</a>
+      <details class="sitebar-more is-current">
+        <summary aria-current="page">More</summary>
+        <div class="sitebar-more-panel">
+          <a href="/status">Data status</a>
+          <a href="/comparison">Method &amp; sources</a>
+          <a href="/monthly-report">Monthly report</a>
+          <a href="/stamp-1g-processing-dates">Stamp 1G</a>
+          <a href="/employment-permit-processing-dates">Employment permits</a>
+          <a href="/vac-transit">VAC &amp; transit</a>
+          <a href="/help" aria-current="page">Help</a>
+          <a href="/contact">Contact</a>
+          <a href="/privacy">Privacy</a>
+          <a href="/terms">Terms</a>
+        </div>
+      </details>
+      <details class="sitebar-prefs">
+        <summary>Preferences</summary>
+        <div class="sitebar-more-panel sitebar-prefs-panel">
+          <div class="sitebar-pref-row">
+            <span class="sitebar-pref-label">Time zone</span>
+            <button class="sitebar-pref-button" type="button" data-time-mode-toggle data-mode="utc" aria-pressed="false">
+              <span data-time-mode-label>UTC</span>
+            </button>
           </div>
-        </details>
-      </nav>
-    </div>
-  </header>
+          <div class="sitebar-pref-row">
+            <span class="sitebar-pref-label">Theme</span>
+            <button class="sitebar-pref-button" type="button" data-theme-toggle aria-pressed="false">
+              <span data-theme-label>Light</span>
+            </button>
+          </div>
+          <label class="sitebar-pref-row" data-language-row hidden>
+            <span class="sitebar-pref-label">Language</span>
+            <select class="sitebar-pref-select" data-language-select aria-label="Language"></select>
+          </label>
+        </div>
+      </details>
+    </nav>
+  </div>
+</header>
 
   <main id="main-content" tabindex="-1" class="page">
-    <p class="page-kicker">Help &amp; FAQ</p>
     <h1>Using the Irish Visa Decision Tracker</h1>
     <p class="page-meta">Independent, unofficial record of published decisions &bull; Not immigration advice</p>
 
@@ -144,11 +165,13 @@
       <ul>
         <li><strong>Telegram:</strong> add an application number in the <a href="/?tracker=visa&amp;tab=alerts">Alerts tab</a>, then open the Telegram bot link. The bot sends one message when the number appears in a later published report.</li>
         <li><strong>Browser push:</strong> save an application in <a href="/?tracker=visa&amp;tab=saved">Saved</a>, enable notifications for that browser, and allow notifications when prompted. Push is per browser and per application.</li>
-        <li><strong>Management:</strong> Saved shows what this browser remembers. Telegram subscriptions are managed inside the Telegram bot; this site does not receive a server-side list of your Telegram chats.</li>
+        <li><strong>Digest:</strong> if you track several applications, send <code>/digest weekly</code> or <code>/digest daily</code> in the Telegram bot. One message groups them by office and says which applications have no change. Use <code>/immediate 12345678</code> to keep one application immediate while the others are in the digest.</li>
+        <li><strong>Management:</strong> Saved shows what this browser remembers. Telegram subscriptions and digest frequency are managed inside the Telegram bot; this site does not receive a server-side list of your Telegram chats.</li>
       </ul>
       <p>
         Alerts only work after an office publishes a decision. They cannot see an unpublished
-        case and cannot speed up an application.
+        case and cannot speed up an application. The tracker will never ask for payment, OTPs
+        or passport copies. Verify a decision on the official office page before acting on it.
       </p>
     </section>
 
@@ -177,55 +200,28 @@
   </main>
 
   <footer class="sitebar-footer">
-    <div class="sitebar-footer-inner">
-      <div class="sitebar-footer-brand">
-        <a class="brand" href="/" aria-label="Irish Visa Decision Tracker home">
-          <img src="/icon.svg" alt="" width="24" height="24">
-          <span>Irish Visa Decision Tracker</span>
-        </a>
-        <p>Independent and unofficial. Not affiliated with the Embassy of Ireland, ISD or DETE. Not immigration advice.</p>
-      </div>
-      <nav class="sitebar-footer-col" aria-label="Explore">
-        <h2 class="sitebar-footer-title">Explore</h2>
-        <ul>
-          <li><a href="/">Tracker</a></li>
-          <li><a href="/comparison">Compare</a></li>
-          <li><a href="/daily-summaries">Daily summaries</a></li>
-          <li><a href="/monthly-report">Monthly report</a></li>
-          <li><a href="/visa-processing-times">Processing times</a></li>
-          <li><a href="/vac-transit">VAC &amp; transit</a></li>
-        </ul>
-      </nav>
-      <nav class="sitebar-footer-col" aria-label="Data">
-        <h2 class="sitebar-footer-title">Data</h2>
-        <ul>
-          <li><a href="/stamp-1g-processing-dates">Stamp 1G</a></li>
-          <li><a href="/employment-permit-processing-dates">Employment permits</a></li>
-          <li><a href="/data/visa_decisions.json">Visa decisions JSON</a></li>
-          <li><a href="/status">Data status</a></li>
-          <li><a href="/data/data_manifest.json">Data manifest</a></li>
-          <li><a href="/sitemap.xml">Sitemap</a></li>
-          <li><a href="/llms.txt">llms.txt</a></li>
-        </ul>
-      </nav>
-      <nav class="sitebar-footer-col" aria-label="About and legal">
-        <h2 class="sitebar-footer-title">About &amp; legal</h2>
-        <ul>
-          <li><a href="/about">About the project</a></li>
-          <li><a href="/help">Help &amp; FAQ</a></li>
-          <li><a href="/contact">Contact &amp; corrections</a></li>
-          <li><a href="/privacy">Privacy</a></li>
-          <li><a href="/terms">Terms</a></li>
-          <li><a href="https://github.com/parth-soni-10/Irish-Visa-Tracker" rel="noopener">GitHub</a></li>
-        </ul>
-      </nav>
+  <div class="sitebar-footer-inner">
+    <div class="sitebar-footer-brand">
+      <a class="brand" href="/" aria-label="Irish Visa Decision Tracker home">
+        <img src="/icon.svg" alt="" width="24" height="24">
+        <span>Irish Visa Decision Tracker</span>
+      </a>
+      <p>Independent and unofficial. Not immigration advice.</p>
     </div>
-    <div class="sitebar-footer-bottom">
-      <p>&copy; 2026 Parth Soni &middot; Dublin, Ireland</p>
-      <p><a href="/sitemap.xml">Sitemap</a><a href="/llms.txt">llms.txt</a><a href="https://github.com/parth-soni-10/Irish-Visa-Tracker" rel="noopener">GitHub</a></p>
-    </div>
-  </footer>
+    <nav class="sitebar-footer-links" aria-label="Footer">
+      <a href="/status">Data status</a>
+      <a href="/comparison">Method &amp; sources</a>
+      <a href="/help">Help</a>
+      <a href="/contact">Contact</a>
+      <a href="/privacy">Privacy</a>
+      <a href="/terms">Terms</a>
+      <a href="https://github.com/parth-soni-10/Irish-Visa-Tracker" rel="noopener">GitHub</a>
+    </nav>
+    <p class="sitebar-footer-copy">&copy; 2026 Parth Soni &middot; Dublin, Ireland</p>
+  </div>
+</footer>
 
+  <script src="/scripts/time-mode.js" defer></script>
   <script src="/site-chrome.js" defer></script>
 </body>
 </html>
