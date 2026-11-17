@@ -113,6 +113,7 @@ CREATE INDEX IF NOT EXISTS idx_conversion_events_event ON conversion_events(even
 CREATE TABLE IF NOT EXISTS prediction_feedback (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   model_version TEXT NOT NULL,
+  source_submission_id INTEGER,
   office TEXT NOT NULL,
   visa_type TEXT NOT NULL,
   application_date TEXT NOT NULL,
@@ -150,5 +151,17 @@ export async function ensureSchema(db) {
       }
     }
   }
+
+  // Existing deployments created prediction_feedback before it carried the
+  // community-timeline link. Add the column in place; a fresh table already has
+  // it. The unique index makes one community timeline count at most once, while
+  // leaving legacy unverified rows (NULL) readable but outside the gate.
+  try {
+    await db.prepare('ALTER TABLE prediction_feedback ADD COLUMN source_submission_id INTEGER').run();
+  } catch (error) {
+    if (!/duplicate column|already exists/i.test(String(error.message))) throw error;
+  }
+  await db.prepare('CREATE UNIQUE INDEX IF NOT EXISTS idx_prediction_feedback_source ON prediction_feedback(source_submission_id)').run();
+
   schemaReady = true;
 }

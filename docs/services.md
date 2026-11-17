@@ -26,8 +26,10 @@ npx wrangler pages secret put NAME --project-name=irishvisaupdatetracker < path/
 D1 also stores the operational counters and the activation funnel:
 
 - `rate_limits` — shared fixed-window API counters (`bucket`, `subject`,
-  `window_start`, `count`). Old rows are pruned opportunistically; losing this
-  table only degrades the limiter to a per-isolate fallback.
+  `window_start`, `count`). The subject is the client IP for the general API
+  bucket; `predict-feedback` is a separate, stricter bucket. Old rows are pruned
+  opportunistically; losing this table only degrades the limiter to a
+  per-isolate fallback.
 - `conversion_events` — fixed-vocabulary funnel events (`alert_cta_view`,
   Telegram click and open, watchlist add, search, activation step, PWA install).
   It stores no email address, IP address, cookie or free text.
@@ -92,7 +94,10 @@ against the application. The hourly alert runner then sends one message per
 published decision date, updating `last_alert_sent` so retries are idempotent.
 `/stop` disables the chat and `/status` lists its linked applications. Chat members
 can switch to `/digest daily`, `/digest weekly` or `/digest off`; a digest groups
-the linked applications by office and includes a no-change line. `/immediate
+the linked applications by office and includes a no-change line. The digest is
+Telegram-only: applications saved only in the browser watchlist are local and
+are never uploaded, so they are delivered by browser push rather than the
+digest. `/immediate
 <8-digit-number>` opts one application back into immediate delivery. No email
 address or phone number is collected, so there is no domain verification,
 opt-in review or per-message fee.

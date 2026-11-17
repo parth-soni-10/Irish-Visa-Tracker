@@ -56,8 +56,8 @@ const HELP_TEXT = [
   'Open the tracker, enter your application number and press “Get alerts on Telegram”, then press Start here.',
   '',
   '/status - list linked applications and their alert mode',
-  '/digest daily - one grouped update a day, only when something changes',
-  '/digest weekly - one weekly summary, including “no change”',
+  '/digest daily - one grouped update a day for applications linked to this chat, only when something changes',
+  '/digest weekly - one weekly summary of linked applications, including “no change”',
   '/digest off - back to immediate alerts',
   '/immediate 12345678 - keep one application immediate while the chat is in digest mode',
   '/stop - turn off every Telegram alert for this chat'
@@ -298,7 +298,7 @@ export async function handleTelegramWebhook(request, env) {
   if (command === '/digest') {
     const frequency = String(argument || '').toLowerCase();
     if (!DIGEST_FREQUENCIES.has(frequency)) {
-      await reply(env, id, 'Choose a digest frequency:\n/digest daily\n/digest weekly\n/digest off');
+      await reply(env, id, 'Choose a digest frequency for applications linked to this chat:\n/digest daily\n/digest weekly\n/digest off');
       return json({ ok: true });
     }
     const now = new Date().toISOString();
@@ -318,6 +318,7 @@ export async function handleTelegramWebhook(request, env) {
       frequency === 'off'
         ? 'Digest off. Each linked application will send immediately when its decision is published.'
         : 'Digest on: ' + digestStatus(frequency) + '.\n' +
+          'Only applications linked to this chat are included; browser watchlist entries stay on the device.\n' +
           'Immediate alerts are off for this chat. Use /immediate 12345678 to keep one application immediate.'
     );
     return json({ ok: true });

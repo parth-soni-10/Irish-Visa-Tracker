@@ -122,45 +122,55 @@
         })
         .catch(function () { /* feed links remain available */ });
 
+      function calibrationDate(value) {
+        if (!value) return 'No verified samples yet';
+        var raw = String(value);
+        var parsed = new Date(raw.indexOf('T') >= 0 ? raw : raw.replace(' ', 'T') + 'Z');
+        if (isNaN(parsed.getTime())) return raw;
+        return parsed.toLocaleDateString('en-IE', { day: 'numeric', month: 'short', year: 'numeric' });
+      }
+
       function initModelCard() {
         var box = document.getElementById('model-card-summary');
         if (!box) return;
-        Promise.all([
-          fetch('/api/predict', { headers: { Accept: 'application/json' } })
-            .then(function (response) { return response.ok ? response.json() : null; }),
-          fetch('/api/predict/feedback', { headers: { Accept: 'application/json' } })
-            .then(function (response) { return response.ok ? response.json() : null; })
-            .catch(function () { return null; })
-        ]).then(function (results) {
-          var data = results[0];
-          var feedback = results[1];
-          if (!data || !data.model) throw new Error('Model card unavailable');
-          var model = data.model;
-          var validation = model.validation || {};
-          var calibration = feedback && feedback.calibration ? feedback.calibration : {};
-          var samples = Number(calibration.samples) || 0;
-          var gateText = samples >= Number(calibration.minimum_samples || 200)
-            ? 'Calibration sample gate met'
-            : 'Calibration gate not met (' + samples + '/' + (calibration.minimum_samples || 200) + ')';
-          var calibrationText = calibration.meets_minimum_samples
-            ? 'Baseline MAE ' + calibration.baseline_mae + ' days; ' + calibration.within_14_day_share + '% within 14 days.'
-            : (calibration.note || 'No real-outcome calibration is published yet.');
-          box.innerHTML =
-            '<h3>Transparent baseline is live; the synthetic ML model is paused.</h3>' +
-            '<p><span class="model-gate">' + esc(gateText) + '</span></p>' +
-            '<p>' + esc(validation.backtesting || 'No real-outcome backtest is available.') + '</p>' +
-            '<p>' + esc(calibrationText) + '</p>' +
-            '<dl>' +
-              '<div><dt>Published estimate</dt><dd>' + esc(model.baseline && model.baseline.name || 'Office wait + seasonal baseline') + '</dd></div>' +
-              '<div><dt>Model version</dt><dd>' + esc(model.version || 'Not recorded') + '</dd></div>' +
-              '<div><dt>Synthetic prototype data</dt><dd>' + esc(model.training_data || 'Not recorded') + '</dd></div>' +
-              '<div><dt>Synthetic holdout MAE</dt><dd>' + esc(model.training_metrics && model.training_metrics.mae != null ? model.training_metrics.mae + ' days (not validation)' : 'Not published') + '</dd></div>' +
-              '<div><dt>Real-outcome samples</dt><dd>' + samples + ' / ' + (calibration.minimum_samples || 200) + '</dd></div>' +
-              '<div><dt>Uncertainty</dt><dd>No calibrated interval is shown.</dd></div>' +
-            '</dl>';
-        }).catch(function () {
-          box.innerHTML = '<p>Model card data is unavailable right now. The endpoint remains <a href="/api/predict">/api/predict</a>.</p>';
-        });
+        fetch('/api/predict', { headers: { Accept: 'application/json' } })
+          .then(function (response) { return response.ok ? response.json() : null; })
+          .then(function (data) {
+            if (!data || !data.model) throw new Error('Model card unavailable');
+            var model = data.model;
+            var validation = model.validation || {};
+            var calibration = model.calibration || data.calibration || {};
+            var available = calibration.available !== false;
+            var samples = Number(calibration.samples) || 0;
+            var minimum = Number(calibration.minimum_samples) || 200;
+            var gateMet = available && calibration.meets_minimum_samples === true;
+            var gateText = !available
+              ? 'Calibration data unavailable'
+              : gateMet
+                ? 'Calibration sample gate met'
+                : 'Calibration gate not met (' + samples + '/' + minimum + ')';
+            var calibrationText = !available
+              ? (calibration.note || 'The verified sample count could not be loaded.')
+              : gateMet
+                ? 'Baseline MAE ' + calibration.baseline_mae + ' days; ' + calibration.within_14_day_share + '% within 14 days.'
+                : (calibration.note || 'No real-outcome calibration is published yet.');
+            box.innerHTML =
+              '<h3>Transparent baseline is live; the synthetic ML model is paused.</h3>' +
+              '<p><span class="model-gate">' + esc(gateText) + '</span></p>' +
+              '<p>' + esc(validation.backtesting || 'No real-outcome backtest is available.') + '</p>' +
+              '<p>' + esc(calibrationText) + '</p>' +
+              '<dl>' +
+                '<div><dt>Published estimate</dt><dd>' + esc(model.baseline && model.baseline.name || 'Office wait + seasonal baseline') + '</dd></div>' +
+                '<div><dt>Model version</dt><dd>' + esc(model.version || 'Not recorded') + '</dd></div>' +
+                '<div><dt>Synthetic prototype data</dt><dd>' + esc(model.training_data || 'Not recorded') + '</dd></div>' +
+                '<div><dt>Synthetic holdout MAE</dt><dd>' + esc(model.training_metrics && model.training_metrics.mae != null ? model.training_metrics.mae + ' days (not validation)' : 'Not published') + '</dd></div>' +
+                '<div><dt>Real-outcome samples</dt><dd>' + (available ? samples + ' / ' + minimum : 'Unavailable') + '</dd></div>' +
+                '<div><dt>Last calibrated</dt><dd>' + (available ? esc(calibrationDate(calibration.last_calibrated_at)) : 'Unavailable') + '</dd></div>' +
+                '<div><dt>Uncertainty</dt><dd>No calibrated interval is shown.</dd></div>' +
+              '</dl>';
+          }).catch(function () {
+            box.innerHTML = '<p>Model card data is unavailable right now. The endpoint remains <a href="/api/predict">/api/predict</a>.</p>';
+          });
 
         var form = document.getElementById('model-feedback-form');
         if (!form) return;
@@ -182,7 +192,7 @@
             return;
           }
           submit.disabled = true;
-          status.textContent = 'Sharing anonymous dates\u2026';
+          status.textContent = 'Checking the community timeline\u2026';
           status.className = 'contact-form-status';
           fetch('/api/predict/feedback', {
             method: 'POST',
@@ -199,7 +209,7 @@
               return body;
             });
           }).then(function (body) {
-            status.textContent = 'Thanks. The baseline error for this timeline was ' +
+            status.textContent = 'Thanks. The dates matched a community timeline. The baseline error for it was ' +
               body.baseline_error_days + ' days' + (body.within_14_days ? ' (within 14 days).' : '.') +
               ' It is stored anonymously.';
             status.className = 'contact-form-status is-success';

@@ -168,8 +168,10 @@
       <form id="model-feedback-form" class="model-feedback">
         <h3>Help calibrate the baseline</h3>
         <p>
-          Finished an application? Share four anonymous facts. No application number, name,
-          email or free text is collected; only the dates and the computed error are stored.
+          Finished an application? Add the office and visa type for a timeline you already
+          shared on the <a href="/contact#share-timeline">community timeline form</a>. The API
+          matches the dates to that published timeline and rejects unmatched or duplicate
+          submissions. No application number, name, email or free text is collected.
         </p>
         <div class="model-feedback-grid">
           <label>Office
@@ -199,7 +201,7 @@
             <input id="model-feedback-decided" type="date" min="2020-01-01" required>
           </label>
         </div>
-        <button class="btn" type="submit" id="model-feedback-submit">Share anonymous dates</button>
+        <button class="btn" type="submit" id="model-feedback-submit">Verify timeline dates</button>
         <p id="model-feedback-status" class="contact-form-status" role="status" aria-live="polite"></p>
       </form>
     </section>

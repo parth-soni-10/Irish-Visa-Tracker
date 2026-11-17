@@ -68,6 +68,14 @@ export function dueForDigest(lastSent, frequency, now = Date.now()) {
   return now - sentAt >= DIGEST_INTERVALS[frequency];
 }
 
+/** Daily digests are suppressed when nothing changed; weekly digests send a
+ *  deliberate no-change summary. */
+export function shouldSendDigest(frequency, changedCount) {
+  if (frequency === 'weekly') return true;
+  if (frequency === 'daily') return Number(changedCount) > 0;
+  return false;
+}
+
 function emptyCounters() {
   return { checked: 0, matched: 0, sent: 0, skipped: 0, failed: 0, would_send: 0 };
 }
@@ -314,7 +322,7 @@ async function runTelegramDigests(env, report, dryRun) {
 
     // A daily "no change" every day is exactly the alert fatigue the digest is
     // meant to reduce. Weekly digests still send the explicit no-change summary.
-    if (!changes.length && frequency !== 'weekly') {
+    if (!shouldSendDigest(frequency, changes.length)) {
       skipped += 1;
       continue;
     }

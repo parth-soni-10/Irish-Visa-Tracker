@@ -19,14 +19,14 @@ The Abuja **31 August–6 September 2026** report, long listed as missing, was r
 - Application lookup, daily summaries, monthly reports and historical trends.
 - VFS Global appointment handoff for the India/Ireland VACs. VFS shows the booking calendar only after sign-in; the tracker links to the official portal and never claims availability.
 - PWA install and push notifications; the service worker keeps no fetch cache, so a fresh deploy is shown on the next load.
-- A browser-local watchlist (no account) plus anonymous Telegram and browser-push alerts.
+- A browser-local watchlist (no account) plus anonymous Telegram and browser-push alerts; the Telegram daily/weekly digest covers linked bot applications only.
 - A first-run activation path on the New Delhi dashboard: a prominent Telegram
   call to action, a persisted three-step checklist, and privacy-light
   conversion events (`/api/events`) that record only a fixed event vocabulary
   and surface name.
 - Monthly email digest with double opt-in and one-click unsubscribe.
 - Document checklist, public analytics and a transparent decision-time baseline.
-- A model card with a minimum-sample calibration gate and anonymous finished-application feedback; the synthetic-data ML tree is paused until it can beat the baseline on real outcomes.
+- A model card with a minimum-sample calibration gate and anonymous finished-application feedback verified against shared community timelines; the synthetic-data ML tree is paused until it can beat the baseline on real outcomes.
 - A public RSS/JSON feed of new official office files, optional Telegram channel announcements, and an .ics export for the next expected New Delhi update.
 - Agent-facing HTML/Markdown negotiation, `/llms.txt`, sitemap and accessible trust pages.
 

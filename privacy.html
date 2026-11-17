@@ -137,16 +137,20 @@
         <li>
           <strong>Anonymous calibration dates</strong> (<code>prediction_feedback</code>) store the
           office, visa type, application date, decision date, computed actual days, baseline days,
-          baseline error, model version and a timestamp. No application number, name, email, IP
-          address or free text is accepted. Aggregate error metrics are published only after the
-          minimum sample gate is met.
+          baseline error, model version and a timestamp. No application number, name, email or
+          free text is accepted, and the calibration row itself stores no IP address. Dates must
+          match a visa timeline already shared with the community, each timeline can calibrate at
+          most once, and the endpoint keeps a fixed-window client-IP counter in
+          <code>rate_limits</code> to stop one client manufacturing samples. Aggregate error
+          metrics are published only after the minimum verified-sample gate is met.
         </li>
       </ul>
       <p>
         Telegram subscriptions store a chat id, application number, office and digest preference
         so the bot can deliver alerts. They are created only after you press Start in Telegram and
-        can be stopped or changed inside the bot. Browser watchlists remain in your browser and
-        are never uploaded.
+        can be stopped or changed inside the bot. The Telegram digest covers only those linked
+        subscriptions. Browser watchlists remain in your browser and are never uploaded, so they
+        are not part of the Telegram digest.
       </p>
       <p>
         Rows carry a creation timestamp and are kept until they are no longer useful or you ask for

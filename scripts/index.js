@@ -3615,7 +3615,7 @@
 
             function renderAlertsLayout() {
                 return safetyNoticeHTML() +
-                    '<p class="alerts-digest-help" role="note"><strong>Too many messages?</strong> After linking, send ' +
+                    '<p class="alerts-digest-help" role="note"><strong>Telegram-only digest.</strong> The daily and weekly digest groups applications linked to the Telegram bot. Applications saved only in this browser are never uploaded, so they are not included; use browser push for those. After linking, send ' +
                     '<code>/digest weekly</code> in the bot for one grouped summary, or <code>/digest daily</code> for a ' +
                     'digest only when something changes. <code>/immediate 12345678</code> keeps one application immediate.</p>' +
                     '<div class="alerts-grid">' +

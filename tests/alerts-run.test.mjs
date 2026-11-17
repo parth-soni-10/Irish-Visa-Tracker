@@ -13,7 +13,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { test } from "node:test";
 
-import { buildDigestMessage, dueForDigest, handleAlertsRun } from "../functions/alerts-run.js";
+import { buildDigestMessage, dueForDigest, handleAlertsRun, shouldSendDigest } from "../functions/alerts-run.js";
 
 const ROOT = new URL("../", import.meta.url);
 const SECRET = "test-cron-secret";
@@ -81,7 +81,16 @@ test("digest due windows are measured from the last successful digest", () => {
   assert.equal(dueForDigest(null, "daily", now), true);
   assert.equal(dueForDigest("2026-11-17T01:00:00Z", "daily", now), false);
   assert.equal(dueForDigest("2026-11-16T01:00:00Z", "daily", now), true);
+  assert.equal(dueForDigest("2026-11-17T01:00:00Z", "weekly", now), false);
   assert.equal(dueForDigest("2026-11-10T12:00:00Z", "weekly", now), true);
+});
+
+test("daily sends only changes, weekly sends no-change summaries", () => {
+  assert.equal(shouldSendDigest("daily", 0), false);
+  assert.equal(shouldSendDigest("daily", 1), true);
+  assert.equal(shouldSendDigest("weekly", 0), true);
+  assert.equal(shouldSendDigest("weekly", 2), true);
+  assert.equal(shouldSendDigest("off", 1), false);
 });
 
 test("digest groups by office and states no-change applications", () => {
@@ -95,6 +104,15 @@ test("digest groups by office and states no-change applications", () => {
   assert.match(message, /12345678 — Approved/);
   assert.match(message, /No change for 1 other application/);
   assert.match(message, /Beijing: no change \(1 application\)/);
+});
+
+test("a digest with no changes states that explicitly", () => {
+  const message = buildDigestMessage([
+    { application_number: "12345678", embassy: "new-delhi", decision: null },
+    { application_number: "87654321", embassy: "beijing", decision: null }
+  ], { baseUrl: "https://tracker.test", now: new Date("2026-11-17T12:00:00Z") });
+  assert.match(message, /2 tracked applications · 0 new decisions/);
+  assert.match(message, /No new published decisions for your linked applications\./);
 });
 
 test("runs with Telegram configured and returns the counters", async () => {

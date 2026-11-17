@@ -200,6 +200,8 @@ test('webhook digest commands explain the grouped mode and per-application immed
     assert.equal(daily.status, 200);
     assert.match(api.sent[0].text, /Digest on/);
     assert.match(api.sent[0].text, /daily/);
+    assert.match(api.sent[0].text, /linked to this chat/);
+    assert.match(api.sent[0].text, /browser watchlist entries stay on the device/);
 
     const immediate = await handleTelegramWebhook(webhookRequest(123456789, '/immediate 85444062'), telegramEnv(db));
     assert.equal(immediate.status, 200);
@@ -208,6 +210,7 @@ test('webhook digest commands explain the grouped mode and per-application immed
     const invalid = await handleTelegramWebhook(webhookRequest(123456789, '/digest sometimes'), telegramEnv(db));
     assert.equal(invalid.status, 200);
     assert.match(api.sent[2].text, /Choose a digest frequency/);
+    assert.match(api.sent[2].text, /linked to this chat/);
 
     const missing = await handleTelegramWebhook(webhookRequest(123456789, '/immediate 99999999'), telegramEnv(db));
     assert.equal(missing.status, 200);

@@ -8,6 +8,8 @@
  * endpoint are the path back to a validated estimate.
  */
 
+import { MINIMUM_SAMPLES, emptyCalibration, readCalibration } from '../calibration.js';
+
 const MODEL_VERSION = '1.1.0-baseline';
 
 const OFFICE_DAYS = {
@@ -33,8 +35,6 @@ const SEASONAL_ADJUSTMENTS = {
   holiday: 5,
   normal: 0
 };
-
-const MINIMUM_SAMPLES = 200;
 
 export const MODEL_METADATA = {
   version: MODEL_VERSION,
@@ -74,6 +74,34 @@ export const MODEL_METADATA = {
   disclaimer: 'Illustrative planning baseline only. It is not a prediction of an individual application, has no calibrated confidence interval, and has not been validated on real outcomes.',
   inference: 'transparent-baseline'
 };
+
+/** Build the public model document from the same calibration view the feedback
+ *  endpoint returns. The static metadata keeps the baseline definition; only
+ *  the live calibration fields are replaced. */
+export function modelMetadataFor(calibration) {
+  const cal = calibration || emptyCalibration(MODEL_VERSION);
+  return {
+    ...MODEL_METADATA,
+    validation: {
+      ...MODEL_METADATA.validation,
+      real_outcome_samples: cal.samples,
+      meets_minimum_samples: cal.meets_minimum_samples,
+      baseline_mae: cal.baseline_mae,
+      last_calibrated_at: cal.last_calibrated_at
+    },
+    calibration: cal
+  };
+}
+
+async function safeCalibration(env) {
+  if (!env || !env.DB) return emptyCalibration(MODEL_VERSION);
+  try {
+    return await readCalibration(env, MODEL_VERSION);
+  } catch (error) {
+    console.warn('Calibration read failed:', error.message);
+    return emptyCalibration(MODEL_VERSION);
+  }
+}
 
 /**
  * The published baseline. Kept in one place so feedback calibration measures
@@ -125,7 +153,7 @@ function json(body, status = 200) {
 }
 
 export async function onRequestPost(context) {
-  const { request } = context;
+  const { request, env } = context || {};
 
   try {
     let body;
@@ -161,9 +189,11 @@ export async function onRequestPost(context) {
     });
     const estimatedDate = new Date(appDate);
     estimatedDate.setUTCDate(estimatedDate.getUTCDate() + baseline.days);
+    const calibration = await safeCalibration(env);
 
     return json({
       success: true,
+      calibration,
       prediction: {
         predicted_days: baseline.days,
         estimated_decision_date: estimatedDate.toISOString().slice(0, 10),
@@ -178,8 +208,11 @@ export async function onRequestPost(context) {
         gate: {
           eligible_for_individual_estimates: false,
           reason: 'The ML model has not beaten the transparent baseline on real outcomes.',
-          minimum_samples: MINIMUM_SAMPLES,
-          real_outcome_samples: 0
+          minimum_samples: calibration.minimum_samples,
+          real_outcome_samples: calibration.samples,
+          meets_minimum_samples: calibration.meets_minimum_samples,
+          baseline_mae: calibration.baseline_mae,
+          last_calibrated_at: calibration.last_calibrated_at
         },
         disclaimer: MODEL_METADATA.disclaimer,
         feedback_endpoint: 'POST /api/predict/feedback'
@@ -191,9 +224,11 @@ export async function onRequestPost(context) {
   }
 }
 
-export async function onRequestGet() {
+export async function onRequestGet(context = {}) {
+  const calibration = await safeCalibration(context.env);
   return json({
-    model: MODEL_METADATA,
+    model: modelMetadataFor(calibration),
+    calibration,
     baseline: {
       name: MODEL_METADATA.baseline.name,
       description: MODEL_METADATA.baseline.description,
