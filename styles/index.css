@@ -1892,6 +1892,19 @@
             box-shadow: 0 12px 40px -12px rgba(16, 185, 129, 0.35), inset 0 1px 0 rgba(255,255,255,0.08);
             border: 1px solid rgba(255,255,255,0.08);
         }
+        #visa-dash[data-theme="dark"] .paper {
+            background: var(--surface-raised);
+            color: var(--ink);
+            border: 1px solid var(--border);
+            box-shadow: 0 8px 24px rgba(0,0,0,.35);
+        }
+        #visa-dash[data-theme="dark"] .landing-alert-cta {
+            border-color: var(--border);
+            background: linear-gradient(135deg, rgba(52, 211, 153, 0.14), var(--surface-raised));
+        }
+        #visa-dash[data-theme="dark"] .landing-alert-cta .activation-kicker {
+            color: var(--green-light);
+        }
         #visa-dash[data-theme="dark"] .skel {
             background: linear-gradient(90deg, var(--border) 25%, var(--surface-raised) 37%, var(--border) 63%);
         }

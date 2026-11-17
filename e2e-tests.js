@@ -331,6 +331,94 @@ test.describe('SPA shell', () => {
   });
 });
 
+test.describe('Time zone toggle', () => {
+  test.use({ timezoneId: 'America/Los_Angeles' });
+
+  test('switches every freshness clock between UTC and local time', async ({ page }) => {
+    await page.route('**/data/visa_meta.json', (route) => route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        lastRunAt: '2026-11-17T16:50:57',
+        sheetRows: 2,
+        newRows: 1,
+        fileDate: '2026-11-17',
+        fileRows: 2,
+        ok: true,
+        closureDates: [],
+      }),
+    }));
+    await page.route('**/data/visa_decisions.json', (route) => route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify([
+        ['2026-11-17', '12345678', 'Approved'],
+        ['2026-11-16', '87654321', 'Refused'],
+      ]),
+    }));
+    await page.addInitScript(() => {
+      localStorage.setItem('visa-last-visit', String(Date.UTC(2026, 10, 16, 22, 15)));
+    });
+
+    await gotoHome(page);
+    const toggle = page.locator('[data-time-mode-toggle]');
+    await expect(toggle).toBeVisible();
+    await expect(toggle).toHaveAttribute('data-mode', 'utc');
+    await expect(toggle).toHaveAttribute('aria-pressed', 'false');
+    await expect(page.locator('#stat-updated')).toContainText('17 Nov 2026, 11:20 UTC');
+
+    await toggle.click();
+    await expect(toggle).toHaveAttribute('data-mode', 'local');
+    await expect(toggle).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.locator('#stat-updated')).toContainText('03:20');
+    await expect(page.locator('#stat-updated')).not.toContainText('UTC');
+
+    await page.goto(`${BASE_URL}/?tracker=visa&tab=search`, { waitUntil: 'networkidle' });
+    await expect(page.locator('#home-search')).toBeVisible({ timeout: 15000 });
+    await expect(toggle).toHaveAttribute('data-mode', 'local');
+    await expect(page.locator('#meta-box')).toContainText('03:20');
+    await expect(page.locator('#meta-box')).not.toContainText('UTC');
+    await expect(page.locator('.home-freshness-details')).toContainText('21:30');
+
+    await toggle.click();
+    await expect(toggle).toHaveAttribute('data-mode', 'utc');
+    await expect(page.locator('#meta-box')).toContainText('11:20 UTC');
+    await expect(page.locator('.home-freshness-details')).toContainText('05:30 UTC');
+  });
+});
+
+test.describe('Status page clocks', () => {
+  test.use({ timezoneId: 'America/Los_Angeles' });
+
+  test('switches the last ingest time between UTC and local time', async ({ page }) => {
+    await page.route('**/data/data_manifest.json', (route) => route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        offices: [{
+          slug: 'new-delhi',
+          name: 'New Delhi',
+          status: 'official',
+          report_date: '2026-11-17',
+          as_of: '2026-11-17',
+          fetched_at: '2026-11-17T16:50:57Z',
+          decisions: 2,
+          archive_decisions: 2,
+          archive_reports: [],
+        }],
+      }),
+    }));
+
+    await page.goto(`${BASE_URL}/status`, { waitUntil: 'networkidle' });
+    await expect(page.locator('#status-summary')).toContainText('17 Nov 2026, 16:50 UTC');
+
+    const toggle = page.locator('[data-time-mode-toggle]');
+    await toggle.click();
+    await expect(page.locator('#status-summary')).toContainText('17 Nov 2026, 08:50');
+    await expect(page.locator('#status-summary')).not.toContainText('UTC');
+  });
+});
+
 test.describe('Removed account surface', () => {
   test('no account API is mounted', async ({ request }) => {
     for (const path of ['/api/auth/me', '/api/user/watchlist', '/api/portal/overview']) {
@@ -482,6 +570,8 @@ test.describe('Six-tab deep links', () => {
 });
 
 test.describe('All-office search result cards', () => {
+  test.use({ timezoneId: 'America/Los_Angeles' });
+
   test('shows a Beijing match and its watch, share and alert actions', async ({ page }) => {
     let searchRequest = null;
     await page.addInitScript(() => {
@@ -553,6 +643,13 @@ test.describe('All-office search result cards', () => {
     await expect(card).toContainText('Decision date');
     await expect(card).toContainText('Report date');
     await expect(card).toContainText('Last checked');
+    const checked = card.locator('.lookup-result-fact').filter({ hasText: 'Last checked' });
+    await expect(checked).toContainText('09:31 UTC');
+    await page.locator('[data-time-mode-toggle]').click();
+    await expect(checked).toContainText('01:31');
+    await expect(checked).not.toContainText('UTC');
+    await page.locator('[data-time-mode-toggle]').click();
+    await expect(checked).toContainText('09:31 UTC');
     await expect(card).toContainText('Official source');
     await expect(card.locator('.lookup-result-source a[href="https://www.ireland.ie/en/china/beijing/services/visas/visa-decisions/"]')).toBeVisible();
     await expect(card.locator('[data-lookup-source-file]')).toHaveAttribute(

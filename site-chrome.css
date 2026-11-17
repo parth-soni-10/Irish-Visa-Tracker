@@ -36,6 +36,23 @@
   --sc-sans: 'Inter', 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
 }
 
+/* The dashboard stores its theme on both #visa-dash and the document root.
+   These variables keep the shared header and footer in the same dark shell. */
+html[data-theme="dark"] {
+  --sc-ink: #e6edf5;
+  --sc-ink-soft: #a8b4c4;
+  --sc-muted: #8b98ab;
+  --sc-surface: #0b1220;
+  --sc-raised: #101a2e;
+  --sc-border: #1e2c47;
+  --sc-green: #34d399;
+  --sc-green-deep: #6ee7b7;
+  --sc-green-soft: rgba(52, 211, 153, 0.15);
+  color-scheme: dark;
+  background: #0b1220;
+}
+html[data-theme="dark"] body { background: #0b1220; }
+
 .sitebar {
   position: relative;
   z-index: 50;
@@ -72,6 +89,11 @@
   width: 24px;
   height: 24px;
   flex: 0 0 auto;
+}
+html[data-theme="dark"] .sitebar .brand img,
+html[data-theme="dark"] .sitebar-footer .brand img {
+  border-radius: 6px;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.16);
 }
 .sitebar .brand:hover,
 .sitebar-footer .brand:hover { color: var(--sc-green-deep); }
@@ -112,9 +134,42 @@
 }
 .sitebar-nav > a:focus-visible,
 .sitebar-more > summary:focus-visible,
-.sitebar-more-panel a:focus-visible {
+.sitebar-more-panel a:focus-visible,
+.sitebar .time-mode-toggle:focus-visible {
   outline: 2px solid var(--sc-green);
   outline-offset: 2px;
+}
+.sitebar .time-mode-toggle {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  min-height: 34px;
+  padding: 7px 10px;
+  border: 1px solid var(--sc-border);
+  border-radius: 7px;
+  background: var(--sc-surface);
+  color: var(--sc-green-deep);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 750;
+  line-height: 1.2;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.sitebar .time-mode-toggle:hover {
+  background: var(--sc-raised);
+  border-color: var(--sc-green);
+}
+.sitebar .time-mode-toggle[data-mode="local"] {
+  background: var(--sc-green-soft);
+  border-color: var(--sc-green);
+}
+.sitebar .time-mode-toggle-kicker {
+  color: var(--sc-muted);
+  font-size: 10px;
+  font-weight: 650;
+  letter-spacing: .04em;
+  text-transform: uppercase;
 }
 .sitebar-more { position: relative; }
 .sitebar-more > summary::-webkit-details-marker { display: none; }
@@ -222,7 +277,7 @@
 .sitebar-footer-bottom a { color: var(--sc-ink-soft); text-decoration: none; }
 .sitebar-footer-bottom a:hover { color: var(--sc-green-deep); text-decoration: underline; }
 .sitebar-footer-bottom a:focus-visible { outline: 2px solid var(--sc-green); outline-offset: 2px; border-radius: 3px; }
-.sitebar-footer-bottom p a + a { margin-left: 8px; padding-left: 8px; border-left: 1px solid #9aa6b2; }
+.sitebar-footer-bottom p a + a { margin-left: 8px; padding-left: 8px; border-left: 1px solid var(--sc-border); }
 
 .skip-link {
   position: absolute;

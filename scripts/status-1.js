@@ -19,9 +19,10 @@
 
       function fmtStamp(value) {
         if (!value) return 'Not recorded';
+        if (window.IVTimeMode) return window.IVTimeMode.node(value, 'full');
         var date = new Date(value);
-        if (Number.isNaN(date.getTime())) return String(value);
-        return date.toLocaleString('en-IE', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'UTC' }) + ' UTC';
+        if (Number.isNaN(date.getTime())) return esc(String(value));
+        return esc(date.toLocaleString('en-IE', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'UTC', hourCycle: 'h23' }) + ' UTC');
       }
 
       function isThin(office) {
@@ -49,7 +50,7 @@
           document.getElementById('status-summary').innerHTML =
             '<div class="status-card"><span class="status-kicker">Offices covered</span><strong>' + offices.length + '</strong><span>Named official sources</span></div>' +
             '<div class="status-card"><span class="status-kicker">Latest report</span><strong>' + esc(fmtDate(latestReport)) + '</strong><span>Most recent office report</span></div>' +
-            '<div class="status-card"><span class="status-kicker">Last ingest</span><strong>' + esc(fmtStamp(latestFetch)) + '</strong><span>When the data was fetched</span></div>' +
+            '<div class="status-card"><span class="status-kicker">Last ingest</span><strong>' + fmtStamp(latestFetch) + '</strong><span>When the data was fetched</span></div>' +
             '<div class="status-card"><span class="status-kicker">Latest report rows</span><strong>' + total.toLocaleString('en-IE') + '</strong><span>Across all offices</span></div>' +
             '<div class="status-card"><span class="status-kicker">Archive rows</span><strong>' + archiveTotal.toLocaleString('en-IE') + '</strong><span>All dated official history</span></div>';
 

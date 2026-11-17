@@ -435,30 +435,74 @@
                 return d.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
             }
 
-            // ---- Home status lines: publish-time awareness + since-last-visit ----
-            // IST = UTC+5:30; a Date shifted by 5.5h makes toISOString() read as IST.
-            function istNow() {
-                return new Date(Date.now() + 330 * 60000);
+            // ---- Timezone display helpers ----
+            // The shared time-mode module defaults to UTC and can switch every
+            // clock to local time. New Delhi schedule times are wall-clock
+            // values in Asia/Kolkata; the module converts them through Intl so
+            // offset and daylight-saving rules stay current.
+            const NEW_DELHI_UPDATE_HOUR = 11;
+            const NEW_DELHI_UPDATE_MINUTE = 0;
+            const NEW_DELHI_FOLLOW_UP_MINUTE = 15;
+
+            // All clock KPIs go through the shared time-mode module. It renders
+            // <time> nodes that can switch between UTC and the visitor's local
+            // zone in place, without rebuilding the current tab or results.
+            function fallbackTime(value, preset) {
+                const date = value instanceof Date ? value : new Date(value);
+                if (Number.isNaN(date.getTime())) return 'Not recorded';
+                const format = preset === 'time'
+                    ? { hour: '2-digit', minute: '2-digit', timeZone: 'UTC', hourCycle: 'h23' }
+                    : { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'UTC', hourCycle: 'h23' };
+                return date.toLocaleString('en-GB', format) + ' UTC';
             }
+            function timeNode(value, preset) {
+                return window.IVTimeMode
+                    ? window.IVTimeMode.node(value, preset)
+                    : escapeHtml(fallbackTime(value, preset));
+            }
+            function newDelhiTimeNode(value, preset) {
+                return window.IVTimeMode
+                    ? window.IVTimeMode.newDelhiNode(value, preset)
+                    : escapeHtml(String(value || 'Not recorded'));
+            }
+            function scheduleTimeNode(hour, minute, preset) {
+                if (window.IVTimeMode) return window.IVTimeMode.scheduleNode(hour, minute, preset || 'time');
+                return escapeHtml(String(hour).padStart(2, '0') + ':' + String(minute).padStart(2, '0') + ' IST');
+            }
+            function newDelhiNow() {
+                return window.IVTimeMode && window.IVTimeMode.newDelhiParts
+                    ? window.IVTimeMode.newDelhiParts(new Date())
+                    : null;
+            }
+
+            // ---- Home status lines: publish-time awareness + since-last-visit ----
+            // New Delhi's reporting day and schedule are evaluated in its own
+            // wall clock, then displayed in the zone selected by the visitor.
             function publishStatusHTML(rows) {
-                const ist = istNow();
-                const istDate = ist.toISOString().slice(0, 10);
-                const hhmm = ist.toISOString().slice(11, 16);
-                const wd = ist.getUTCDay();
+                const newDelhiNowValue = newDelhiNow();
+                if (!newDelhiNowValue) return '';
+                const newDelhiDate = newDelhiNowValue.date;
+                const wd = newDelhiNowValue.weekdayIndex;
                 if (wd === 0 || wd === 6) {
-                    return '<div class="status-line">Embassy closed today (' + weekdayLong(istDate) +
-                        '). The next file is expected Monday after <strong>11:00 AM IST</strong>.</div>';
+                    return '<div class="status-line">Embassy closed today (' + weekdayLong(newDelhiDate) +
+                        '). The next file is expected Monday after <strong>' +
+                        scheduleTimeNode(NEW_DELHI_UPDATE_HOUR, NEW_DELHI_UPDATE_MINUTE) + '</strong>.</div>';
                 }
-                const todayReal = rows.filter(r => !r._placeholder && r.date === istDate);
+                const todayReal = rows.filter(r => !r._placeholder && r.date === newDelhiDate);
                 if (todayReal.length) {
                     return '<div class="status-line pub-live">Today\u2019s file: <strong>published</strong>, ' +
                         todayReal.length + ' decision' + (todayReal.length === 1 ? '' : 's') + ' recorded today.</div>';
                 }
-                if (hhmm < '11:00') {
-                    return '<div class="status-line">Today\u2019s file: <strong>expected at 11:00 AM IST</strong> (now ' + hhmm + ' IST).</div>';
+                const now = new Date();
+                const newDelhiMinutes = newDelhiNowValue.hour * 60 + newDelhiNowValue.minute;
+                if (newDelhiMinutes < NEW_DELHI_UPDATE_HOUR * 60 + NEW_DELHI_UPDATE_MINUTE) {
+                    return '<div class="status-line">Today\u2019s file: <strong>expected at ' +
+                        scheduleTimeNode(NEW_DELHI_UPDATE_HOUR, NEW_DELHI_UPDATE_MINUTE) +
+                        '</strong> (now ' + timeNode(now, 'time') + ').</div>';
                 }
                 return '<div class="status-line pub-late">Today\u2019s file: <strong>not published yet</strong>. ' +
-                    'It usually appears by 11:00 AM IST; check back after 11:15.</div>';
+                    'It usually appears by ' + scheduleTimeNode(NEW_DELHI_UPDATE_HOUR, NEW_DELHI_UPDATE_MINUTE) +
+                    '; check back after ' + scheduleTimeNode(NEW_DELHI_UPDATE_HOUR, NEW_DELHI_FOLLOW_UP_MINUTE) + '.</div>';
             }
             function localDateStr(ts) {
                 const d = new Date(ts);
@@ -471,8 +515,7 @@
                 const fresh = rows.filter(r => !r._placeholder && r.date > localDateStr(lastVisitAt));
                 if (!fresh.length) return '';
                 const refused = fresh.filter(r => classify(r.decision) === 'rejected').length;
-                const d = new Date(lastVisitAt);
-                const when = d.toLocaleString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+                const when = timeNode(lastVisitAt, 'weekday');
                 return '<div class="status-line pub-live">Since you last checked (' + when + '): <strong>' + fresh.length +
                     ' new decision' + (fresh.length === 1 ? '' : 's') + '</strong>' +
                     (refused ? ' \u00b7 ' + refused + ' refused' : '') + '.</div>';
@@ -545,8 +588,7 @@
             }
             function staleBannerHTML() {
                 if (!staleAt) return '';
-                const d = new Date(staleAt);
-                const when = d.toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+                const when = timeNode(staleAt, 'short');
                 return '<div class="stale-banner" aria-live="polite">Showing data from ' + when +
                     '. Live refresh failed.' +
                     '<button type="button" class="stale-retry" id="stale-retry">Retry now</button></div>';
@@ -560,11 +602,9 @@
             let metaData = null;
 
             function fmtISTStamp(s) {
-                // s is an IST wall-clock "YYYY-MM-DDTHH:MM:SS" from the scraper.
-                const [y, m, d] = String(s).slice(0, 10).split('-').map(Number);
-                const dt = new Date(Date.UTC(y, m - 1, d));
-                const dateStr = dt.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' });
-                return dateStr + ', ' + String(s).slice(11, 16) + ' IST';
+                // The scraper stores an IST wall clock; the shared formatter
+                // converts it to the selected display zone.
+                return newDelhiTimeNode(s, 'short');
             }
             function fmtClosureDates(dates) {
                 const parse = iso => { const [y, m, d] = iso.split('-').map(Number); return { y, m, d, dt: new Date(Date.UTC(y, m - 1, d)) }; };
@@ -597,8 +637,9 @@
                 if (!box || !metaData) return;
                 const m = metaData;
                 const html = [];
-                const today = istNow().toISOString().slice(0, 10);
-                const isToday = String(m.lastRunAt).slice(0, 10) === today;
+                const newDelhiNowValue = newDelhiNow();
+                const today = newDelhiNowValue ? newDelhiNowValue.date : '';
+                const isToday = Boolean(today) && String(m.lastRunAt).slice(0, 10) === today;
                 let dot = 'ok', health;
                 if (m.ok === false) {
                     dot = 'bad';
@@ -610,7 +651,8 @@
                     dot = 'stale';
                     health = 'Last updated: <strong>' + fmtISTStamp(m.lastRunAt) + '</strong>. Nothing recorded today yet.';
                 }
-                health += ' \u00b7 Next expected New Delhi update: a weekday morning around 11:00 IST.';
+                health += ' \u00b7 Next expected New Delhi update: a weekday around ' +
+                    scheduleTimeNode(NEW_DELHI_UPDATE_HOUR, NEW_DELHI_UPDATE_MINUTE) + '.';
                 html.push('<div class="meta-line"><span class="meta-dot ' + dot + '" aria-hidden="true"></span><span>' + health + '</span></div>');
                 const latestDataDate = (cache || []).reduce(function(latest, row) {
                     return row && !row._placeholder && row.date && row.date > latest ? row.date : latest;
@@ -1893,10 +1935,7 @@
                 });
                 if (!hasNewDelhi) return '';
                 if (staleAt) {
-                    var when = new Date(staleAt).toLocaleString('en-GB', {
-                        day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'
-                    });
-                    return 'Showing cached New Delhi data from ' + when + '. Live refresh failed.';
+                    return 'Showing cached New Delhi data from ' + timeNode(staleAt, 'short') + '. Live refresh failed.';
                 }
                 if (dataLoadError) return 'Live New Delhi decision data could not be loaded.';
                 return '';
@@ -2395,14 +2434,9 @@
                 if (!value) return 'Not recorded';
                 if (/^\d{4}-\d{2}-\d{2}$/.test(String(value))) {
                     var day = lookupFormatDate(value);
-                    return day ? day + ' (date only)' : 'Not recorded';
+                    return day ? escapeHtml(day) + ' (date only)' : 'Not recorded';
                 }
-                var date = new Date(value);
-                if (isNaN(date.getTime())) return 'Not recorded';
-                return date.toLocaleString('en-GB', {
-                    day: 'numeric', month: 'short', year: 'numeric',
-                    hour: '2-digit', minute: '2-digit', timeZone: 'UTC'
-                }) + ' UTC';
+                return timeNode(value, 'full');
             }
 
             function lookupOfficeMeta(office, metas) {
@@ -2537,7 +2571,6 @@
                 var decisionDate = lookupFormatDate(row.date);
                 var checked = meta.fetched_at ? lookupFormatChecked(meta.fetched_at) :
                     (meta.as_of ? lookupFormatChecked(meta.as_of) : 'Not recorded');
-                var checkedTime = meta.fetched_at || meta.as_of || '';
                 var sourceName = meta.source_name || ('Published report for ' + officeName(office));
                 var source = meta.source_url
                     ? '<a href="' + escapeHtml(meta.source_url) + '" target="_blank" rel="noopener noreferrer">' +
@@ -2566,8 +2599,7 @@
                     (decisionDate ? '<time datetime="' + escapeHtml(row.date) + '">' + decisionDate + '</time>' : 'Not listed') + '</dd></div>' +
                     '<div class="lookup-result-fact"><dt>Report date</dt><dd>' +
                     (reportDate ? '<time datetime="' + escapeHtml(meta.report_date) + '">' + reportDate + '</time>' : 'Not listed') + '</dd></div>' +
-                    '<div class="lookup-result-fact"><dt>Last checked</dt><dd>' +
-                    (checked === 'Not recorded' ? checked : '<time datetime="' + escapeHtml(checkedTime) + '">' + escapeHtml(checked) + '</time>') + '</dd></div>' +
+                    '<div class="lookup-result-fact"><dt>Last checked</dt><dd>' + checked + '</dd></div>' +
                     '</dl>' +
                     '<p class="lookup-result-source"><span class="lookup-result-source-label">Official source</span>' + source + '</p>' +
                     exactSource +
@@ -2940,7 +2972,9 @@
                     '<div id="meta-box" aria-live="polite"></div>' +
                     '<details class="home-freshness-details"><summary>How to read these dates</summary>' +
                     '<p>Decision date is the date attached to an individual row. Report date is the date of the office file that published it. They can differ, especially for weekly reports.</p>' +
-                    '<p>Next expected New Delhi update: weekday mornings around <strong>11:00 IST</strong>. The embassy does not publish on weekends or public holidays.</p>' +
+                    '<p>Next expected New Delhi update: weekdays around <strong>' +
+                    scheduleTimeNode(NEW_DELHI_UPDATE_HOUR, NEW_DELHI_UPDATE_MINUTE) +
+                    '</strong>. The embassy does not publish on weekends or public holidays.</p>' +
                     '</details></section>' +
                     '<section class="home-latest" aria-labelledby="home-latest-title">' +
                     '<div class="home-latest-head"><div>' +
@@ -3271,13 +3305,15 @@
                 byDate.forEach(([date, dayRows]) => {
                     counts.set(date, dayRows.filter(r => !r._placeholder).length);
                 });
-                const ist = istNow();
-                const start = new Date(ist);
+                const newDelhiToday = newDelhiNow();
+                const today = newDelhiToday ? newDelhiToday.date : new Date().toISOString().slice(0, 10);
+                const todayDate = new Date(today + 'T00:00:00Z');
+                const start = new Date(todayDate);
                 start.setUTCDate(start.getUTCDate() - 90);
                 start.setUTCDate(start.getUTCDate() - start.getUTCDay()); // back to Sunday
                 const cells = [];
                 const cur = new Date(start);
-                while (cur <= ist) {
+                while (cur <= todayDate) {
                     const iso = cur.toISOString().slice(0, 10);
                     const n = counts.get(iso) || 0;
                     const lvl = n === 0 ? 0 : n <= 2 ? 1 : n <= 5 ? 2 : n <= 10 ? 3 : 4;
@@ -4184,6 +4220,10 @@
             // (date picker, inputs, scrollbars) and the browser UI color.
             function applyChrome() {
                 document.documentElement.style.colorScheme = theme === 'dark' ? 'dark' : 'light';
+                // The dashboard owns the theme toggle, but the shared sitebar
+                // and footer sit outside #visa-dash. Mirror the choice on the
+                // document so those shared surfaces can follow it too.
+                document.documentElement.setAttribute('data-theme', theme);
                 const meta = document.querySelector('meta[name="theme-color"]');
                 if (meta) meta.setAttribute('content', theme === 'dark' ? '#0b1220' : '#ffffff');
             }
@@ -5146,20 +5186,21 @@
             // meta file + 1G history (never the full visa payload). Pure
             // function of its inputs so it can be unit-tested; numbers only,
             // no user-controlled strings - no escaping needed.
-            function landingStatusHTML(meta, g1Rows, todayIST) {
+            function landingStatusHTML(meta, g1Rows, todayNewDelhi) {
                 var parts = [];
                 // Ticker tracks the headline 1G series even once other stamp
                 // categories share the file.
                 g1Rows = g1RowsFor(g1Rows, '1G');
-                var wd = new Date(todayIST + 'T00:00:00').getDay();
+                var wd = new Date(todayNewDelhi + 'T00:00:00').getDay();
                 if (wd === 0 || wd === 6) {
                     parts.push('Embassy closed today - back Monday');
                 } else if (meta && meta.lastRunAt) {
-                    if (String(meta.lastRunAt).slice(0, 10) === todayIST) {
+                    if (String(meta.lastRunAt).slice(0, 10) === todayNewDelhi) {
                         parts.push('Today\u2019s embassy file is in' +
                             (meta.newRows ? ' \u00b7 <strong>' + meta.newRows + ' new decisions</strong>' : ''));
                     } else {
-                        parts.push('Today\u2019s embassy file not yet published (expected ~11:00 AM IST)');
+                        parts.push('Today\u2019s embassy file not yet published (expected ~' +
+                            scheduleTimeNode(NEW_DELHI_UPDATE_HOUR, NEW_DELHI_UPDATE_MINUTE) + ')');
                     }
                 } else {
                     parts.push('Visa decisions updated daily');
@@ -5261,8 +5302,7 @@
                     var n = res[0], meta = res[1];
                     if (decisionsEl && n) decisionsEl.textContent = n.toLocaleString();
                     if (updatedEl && meta && meta.lastRunAt) {
-                        updatedEl.textContent = humanDate(String(meta.lastRunAt).slice(0, 10)) +
-                            ', ' + String(meta.lastRunAt).slice(11, 16) + ' IST';
+                        updatedEl.innerHTML = newDelhiTimeNode(meta.lastRunAt, 'full');
                     }
                 });
 
@@ -5654,9 +5694,11 @@ async function renderLandingPage() {
                     var strip = document.getElementById('landing-status');
                     if (strip) {
                         try {
-                            strip.innerHTML = landingStatusHTML(meta, grows, istNow().toISOString().slice(0, 10));
+                            const newDelhiToday = newDelhiNow();
+                            strip.innerHTML = landingStatusHTML(meta, grows, newDelhiToday ? newDelhiToday.date : '');
                         } catch (e) {
-                            strip.innerHTML = '<span class="note2">Trackers updated daily ~11:15 IST.</span>';
+                            strip.innerHTML = '<span class="note2">Trackers updated daily ~' +
+                                scheduleTimeNode(NEW_DELHI_UPDATE_HOUR, NEW_DELHI_FOLLOW_UP_MINUTE) + '.</span>';
                         }
                     }
                 });
