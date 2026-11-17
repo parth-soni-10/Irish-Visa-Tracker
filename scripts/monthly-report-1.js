@@ -41,9 +41,9 @@
     }
     officeRows.innerHTML = report.offices.map(function (office) {
       var status = office.status === 'ocr_required' ? ' <span class="pill missing">OCR required</span>' : '';
-      return '<tr><td><strong>' + esc(office.name) + '</strong>' + status + '</td>' +
-        '<td class="num">' + num(office.total) + '</td><td class="num">' + pct(office.approval_rate) + '</td>' +
-        '<td class="num">' + num(office.reported_total) + '</td><td class="num">' + esc(office.report_date || '—') + '</td></tr>';
+      return '<tr><td data-label="Office"><strong>' + esc(office.name) + '</strong>' + status + '</td>' +
+        '<td class="num" data-label="Dated">' + num(office.total) + '</td><td class="num" data-label="Dated approval">' + pct(office.approval_rate) + '</td>' +
+        '<td class="num" data-label="Latest report">' + num(office.reported_total) + '</td><td class="num" data-label="Report date">' + esc(office.report_date || '—') + '</td></tr>';
     }).join('');
     var asOf = report.offices.filter(function (o) { return o.report_date; }).map(function (o) { return o.name + ' ' + o.report_date; }).join('; ');
     officeNote.textContent = 'Dated counts use official report-period dates for Abu Dhabi, Abuja and Ankara. New Delhi tracker additions are observation-dated and excluded from dated monthly totals. New Delhi, Beijing and Dublin are shown under "Latest report" only; that column is the size of each file, not a month count.' + (asOf ? ' Latest reports: ' + asOf + '.' : '');
@@ -52,7 +52,7 @@
   function renderDaily(report) {
     var daily = report.daily || [];
     dailyRows.innerHTML = daily.length ? daily.slice().reverse().map(function (day) {
-      return '<tr><td>' + esc(day.date) + '</td><td class="num">' + num(day.total) + '</td><td class="num">' + num(day.approved) + '</td><td class="num">' + num(day.refused) + '</td></tr>';
+      return '<tr><td data-label="Date">' + esc(day.date) + '</td><td class="num" data-label="Decisions">' + num(day.total) + '</td><td class="num" data-label="Approved">' + num(day.approved) + '</td><td class="num" data-label="Refused">' + num(day.refused) + '</td></tr>';
     }).join('') : '<tr><td colspan="4" class="empty">No decisions in this month.</td></tr>';
     var max = daily.reduce(function (m, day) { return Math.max(m, day.total); }, 0) || 1;
     barsEl.innerHTML = daily.slice(-31).map(function (day) {

@@ -60,11 +60,11 @@
             var history = datedHistory[office.slug] ? 'Dated history' : 'Latest report only';
             return '<tr>' +
               '<th scope="row">' + esc(office.name || office.slug) + '</th>' +
-              '<td><span class="status-pill' + (thin ? ' is-thin' : '') + '">' + label + (thin ? ' &middot; small office' : '') + '</span></td>' +
-              '<td>' + esc(fmtDate(office.report_date)) + '</td>' +
-              '<td>' + (Number(office.decisions) || 0).toLocaleString('en-IE') + '</td>' +
-              '<td>' + (Number(office.archive_decisions) || Number(office.decisions) || 0).toLocaleString('en-IE') + '</td>' +
-              '<td>' + history + '</td>' +
+              '<td data-label="Status"><span class="status-pill' + (thin ? ' is-thin' : '') + '">' + label + (thin ? ' &middot; small office' : '') + '</span></td>' +
+              '<td data-label="Latest report">' + esc(fmtDate(office.report_date)) + '</td>' +
+              '<td data-label="Latest report rows">' + (Number(office.decisions) || 0).toLocaleString('en-IE') + '</td>' +
+              '<td data-label="Archive rows">' + (Number(office.archive_decisions) || Number(office.decisions) || 0).toLocaleString('en-IE') + '</td>' +
+              '<td data-label="History">' + history + '</td>' +
             '</tr>';
           }).join('');
 
@@ -92,9 +92,9 @@
                 var basis = periodicOffices[office.slug] ? 'Period end' : 'Latest snapshot';
                 return '<tr>' +
                   '<th scope="row">' + esc(office.name || office.slug) + '</th>' +
-                  '<td><time datetime="' + esc(String(report.report_date || '').slice(0, 10)) + '">' + esc(fmtDate(report.report_date)) + '</time></td>' +
-                  '<td>' + (Number(report.decisions) || 0).toLocaleString('en-IE') + '</td>' +
-                  '<td>' + basis + '</td>' +
+                  '<td data-label="Archived report date"><time datetime="' + esc(String(report.report_date || '').slice(0, 10)) + '">' + esc(fmtDate(report.report_date)) + '</time></td>' +
+                  '<td data-label="Archived rows">' + (Number(report.decisions) || 0).toLocaleString('en-IE') + '</td>' +
+                  '<td data-label="Basis">' + basis + '</td>' +
                 '</tr>';
               }).join('')
             : '<tr><td colspan="4" class="note2">No archived report dates are recorded in the manifest.</td></tr>';

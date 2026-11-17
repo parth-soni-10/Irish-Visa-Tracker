@@ -35,21 +35,21 @@
       var asOf = data.as_of || '';
       var asOfEl = document.getElementById('dublin-queue-as-of');
       if (asOfEl) asOfEl.textContent = fmt(asOf);
-      var html = '<table style="width:100%;border-collapse:collapse">' +
+      var html = '<div class="table-wrap dublin-queue-table" role="region" aria-label="Dublin Visa Office queue" tabindex="0"><table>' +
         '<thead><tr>' +
-        '<th style="text-align:left;padding:8px;border-bottom:1px solid #e5e7eb">Category</th>' +
-        '<th style="text-align:left;padding:8px;border-bottom:1px solid #e5e7eb">Applications received</th>' +
-        '<th style="text-align:left;padding:8px;border-bottom:1px solid #e5e7eb">Queue lag</th>' +
+        '<th scope="col">Category</th>' +
+        '<th scope="col">Received</th>' +
+        '<th scope="col">Queue lag</th>' +
         '</tr></thead><tbody>';
       data.categories.forEach(function (c) {
         var lag = Math.max(0, Math.round((new Date(asOf) - new Date(c.applications_received)) / 86400000));
         html += '<tr>' +
-          '<td style="padding:8px;border-bottom:1px solid #f1f5f9">' + esc(c.category) + '</td>' +
-          '<td style="padding:8px;border-bottom:1px solid #f1f5f9">' + fmt(c.applications_received) + '</td>' +
-          '<td style="padding:8px;border-bottom:1px solid #f1f5f9">' + lag + ' days (~' + (lag / 7).toFixed(1) + ' weeks)</td>' +
+          '<td>' + esc(c.category) + '</td>' +
+          '<td>' + fmt(c.applications_received) + '</td>' +
+          '<td><span class="queue-lag-value">' + lag + ' days</span><span class="queue-lag-sub">(~' + (lag / 7).toFixed(1) + ' weeks)</span></td>' +
           '</tr>';
       });
-      box.innerHTML = html + '</tbody></table>';
+      box.innerHTML = html + '</tbody></table></div>';
       queueData = data;
       if (plannerSelect) {
         plannerSelect.innerHTML = '<option value="">Select a category…</option>' +

@@ -363,3 +363,157 @@ a:focus-visible { outline: 2px solid var(--green); outline-offset: 3px; border-r
   .status-grid { grid-template-columns: 1fr; }
   .status-card { min-height: 0; }
 }
+
+/* Dublin queue table: three columns should wrap inside the page on a phone,
+   rather than forcing the whole document wider than the viewport. */
+.dublin-queue-table { margin-top: 12px; }
+.dublin-queue-table table {
+  width: 100%;
+  min-width: 0;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: 13px;
+  line-height: 1.45;
+}
+.dublin-queue-table th,
+.dublin-queue-table td {
+  padding: 8px;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  vertical-align: top;
+  overflow-wrap: anywhere;
+}
+.dublin-queue-table th {
+  color: var(--ink-muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  overflow-wrap: normal;
+  word-break: normal;
+}
+.dublin-queue-table th:nth-child(1),
+.dublin-queue-table td:nth-child(1) { width: 38%; }
+.dublin-queue-table th:nth-child(2),
+.dublin-queue-table td:nth-child(2) { width: 32%; }
+.dublin-queue-table th:nth-child(3),
+.dublin-queue-table td:nth-child(3) { width: 30%; }
+.dublin-queue-table .queue-lag-value { display: block; }
+.dublin-queue-table .queue-lag-sub {
+  display: block;
+  color: var(--ink-muted);
+  font-size: 11.5px;
+}
+
+/* Comparison and status tables become one labelled card per row on a phone. */
+@media (max-width: 700px) {
+  .compare-table-wrap {
+    border: 0;
+    border-radius: 0;
+    overflow: visible;
+    background: transparent;
+  }
+  .compare-table {
+    display: block;
+    min-width: 0;
+    font-size: 14px;
+  }
+  .compare-table caption {
+    display: block;
+    width: 100%;
+    padding: 0 0 10px;
+    border: 0;
+    font-size: 12px;
+  }
+  .compare-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
+  }
+  .compare-table tbody,
+  .compare-table tr,
+  .compare-table th,
+  .compare-table td {
+    display: block;
+    width: auto;
+  }
+  .compare-table tbody tr {
+    margin: 0 0 12px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    background: var(--surface);
+  }
+  .compare-table tbody th {
+    width: auto;
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--border);
+    background: var(--raised);
+    font-size: 14px;
+  }
+  .compare-table tbody td {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+  }
+  .compare-table tbody td:last-child { border-bottom: 0; }
+  .compare-table tbody td::before {
+    content: attr(data-label);
+    display: block;
+    margin-bottom: 2px;
+    color: var(--ink-muted);
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: .08em;
+    line-height: 1.35;
+    text-transform: uppercase;
+  }
+  .compare-table tbody td[colspan]::before { display: none; }
+  .comparison-page .compare-table tbody td:nth-child(2)::before { content: "This tracker"; }
+  .comparison-page .compare-table tbody td:nth-child(3)::before { content: "VisaRelay"; }
+  .comparison-page .compare-table tbody td:nth-child(4)::before { content: "Snifox / Visastat"; }
+  .comparison-page .compare-table tbody td:nth-child(5)::before { content: "Official sources"; }
+  .compare-table .note { font-size: 12px; }
+
+  /* The archive can contain dozens of report dates. Keep each one compact:
+     office on its own line, then date / rows / basis separated by middots. */
+  .archive-table tbody tr {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 2px 8px;
+    padding: 8px 10px;
+  }
+  .archive-table tbody th {
+    flex: 1 0 100%;
+    padding: 0 0 2px;
+    border: 0;
+    background: transparent;
+    font-size: 13px;
+  }
+  .archive-table tbody td {
+    display: inline;
+    width: auto;
+    padding: 0;
+    border: 0;
+    color: var(--ink-soft);
+    font-size: 12px;
+  }
+  .archive-table tbody td::before { content: none; display: none; }
+  .archive-table tbody td + td::before {
+    content: "·";
+    display: inline;
+    margin: 0 4px;
+    color: var(--border);
+  }
+}
+
+@media (max-width: 360px) {
+  .dublin-queue-table th,
+  .dublin-queue-table td { padding: 7px 6px; }
+}
