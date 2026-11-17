@@ -7,6 +7,7 @@ import fs from 'fs';
 import path from 'path';
 import { execSync } from 'child_process';
 import { fileURLToPath } from 'url';
+import { buildSearchFallback } from './build-search-fallback.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -213,6 +214,13 @@ async function main() {
     }
   }
   
+  const fallback = buildSearchFallback({
+    dataDir: path.resolve(assetsRootDir, 'data'),
+    manifestPath: path.resolve(assetsRootDir, 'data', 'data_manifest.json'),
+    outFile: path.resolve(distDir, 'data', 'search_fallback.json')
+  });
+  console.log(`Search fallback: ${fallback.rows} rows (${(fallback.bytes / 1024 / 1024).toFixed(2)} MiB)`);
+
   console.log(`Build complete! Copied ${copied} files to ${outDir}`);
   console.log(`Output directory: ${distDir}`);
 }

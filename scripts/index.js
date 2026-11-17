@@ -17,6 +17,7 @@
             const WATCH_LIMIT = 10;
             const OFFICE_ARCHIVE_PREFIX = 'data/embassy-';
             const DATA_MANIFEST_URL = 'data/data_manifest.json';
+            const OFFLINE_INDEX_URL = 'data/search_fallback.json';
             const OFFICE_SOURCE_URLS = {
                 'new-delhi': 'https://www.ireland.ie/en/india/newdelhi/services/visas/processing-times-and-decisions/',
                 beijing: 'https://www.ireland.ie/en/china/beijing/services/visas/visa-decisions/',
@@ -305,6 +306,9 @@
             let officeWatchPromises = Object.create(null);
             let officeLookupMeta = null;
             let officeLookupMetaPromise = null;
+            let offlineSearchIndex = null;
+            let offlineSearchIndexPromise = null;
+            let offlineWarmStarted = false;
 
             function classify(decision) {
                 const s = (decision || '').toLowerCase();
@@ -2286,6 +2290,111 @@
                 return officeLookupMetaPromise;
             }
 
+            function loadOfflineSearchIndex() {
+                if (offlineSearchIndex) return Promise.resolve(offlineSearchIndex);
+                if (offlineSearchIndexPromise) return offlineSearchIndexPromise;
+                offlineSearchIndexPromise = fetch(OFFLINE_INDEX_URL, { cache: 'no-cache' })
+                    .then(function(res) {
+                        if (!res.ok) throw new Error('HTTP ' + res.status);
+                        return res.json();
+                    })
+                    .then(function(payload) {
+                        if (!payload || !Array.isArray(payload.rows) || !payload.offices) {
+                            throw new Error('invalid fallback index');
+                        }
+                        offlineSearchIndex = payload;
+                        return payload;
+                    })
+                    .catch(function(error) {
+                        console.warn('Offline search index failed:', error);
+                        offlineSearchIndexPromise = null;
+                        throw error;
+                    });
+                return offlineSearchIndexPromise;
+            }
+
+            function warmOfflineSearchIndex() {
+                if (offlineWarmStarted || navigator.onLine === false) return;
+                offlineWarmStarted = true;
+                var warm = function() {
+                    loadOfflineSearchIndex().catch(function() { /* fallback remains unavailable */ });
+                };
+                if (typeof window.requestIdleCallback === 'function') {
+                    window.requestIdleCallback(warm, { timeout: 4000 });
+                } else {
+                    setTimeout(warm, 1500);
+                }
+            }
+
+            function prepareLookupRow(row) {
+                var office = row.embassy || 'new-delhi';
+                var number = normalizeIRL(row.irl || row.number) || String(row.irl || row.number || '');
+                var status = classify(row.decision);
+                return Object.assign({}, row, {
+                    irl: row.number || row.irl || '',
+                    number: number,
+                    embassy: office,
+                    _status: status,
+                    _pillClass: status === 'accepted' ? 'green' : status === 'rejected' ? 'red' : 'amber',
+                    _placeholder: false
+                });
+            }
+
+            function offlineLookup(term, office) {
+                var query = normalizeIRL(term);
+                var raw = String(term || '').trim().toLowerCase();
+                return loadOfflineSearchIndex().then(function(index) {
+                    var matches = [];
+                    (index.rows || []).forEach(function(row) {
+                        if (!Array.isArray(row) || row.length < 4) return;
+                        var slug = String(row[0] || '');
+                        if (office !== 'all' && slug !== office) return;
+                        var number = normalizeIRL(row[1]);
+                        if (!number) return;
+                        var score;
+                        if (query) {
+                            if (number === query) score = 0;
+                            else if (number.indexOf(query) === 0) score = 1;
+                            else if (number.indexOf(query) !== -1) score = 2;
+                            else return;
+                        } else {
+                            if (String(row[3] || '').toLowerCase().indexOf(raw) === -1) return;
+                            score = 3;
+                        }
+                        matches.push({
+                            score: score,
+                            row: prepareLookupRow({
+                                date: row[2],
+                                number: number,
+                                decision: row[3],
+                                embassy: slug,
+                                source: (index.offices[slug] && index.offices[slug].status === 'official') ? 'official' : 'unverified',
+                                report_date: index.offices[slug] && index.offices[slug].report_date
+                            })
+                        });
+                    });
+                    matches.sort(function(a, b) {
+                        if (a.score !== b.score) return a.score - b.score;
+                        return String(b.row.date || '').localeCompare(String(a.row.date || ''));
+                    });
+                    return {
+                        results: matches.slice(0, 100).map(function(item) { return item.row; }),
+                        total: matches.length,
+                        metas: index.offices || {},
+                        generated_at: index.generated_at || ''
+                    };
+                });
+            }
+
+            function lookupFallbackNoteHTML(fallback) {
+                if (!fallback) return '';
+                var generated = fallback.generated_at ? lookupFormatDate(fallback.generated_at) : '';
+                return '<div class="home-lookup-fallback" role="note"><strong>Live search is unavailable.</strong> ' +
+                    'Showing the tracker\u2019s local fallback index' +
+                    (generated ? ' generated ' + escapeHtml(generated) : '') +
+                    '. The decision cards below are still from the published office reports.</div>';
+            }
+
             function lookupFormatDate(value) {
                 var match = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(value || ''));
                 if (!match) return '';
@@ -2630,13 +2739,15 @@
                     '<a class="home-lookup-link" href="/status">See data status</a></div></div>';
             }
 
-            function paintHomeLookup(term, rows, total, metas) {
+            function paintHomeLookup(term, rows, total, metas, fallback) {
                 var box = document.getElementById('home-lookup-results');
                 var status = document.getElementById('home-lookup-status');
                 if (!box) return;
+                var fallbackNote = lookupFallbackNoteHTML(fallback);
                 if (!rows.length) {
-                    if (status) status.textContent = 'No published decision found for ' + (term || homeSearchTerm.trim()) + '.';
-                    box.innerHTML = homeLookupNoResultHTML(term, metas);
+                    if (status) status.textContent = 'No published decision found for ' + (term || homeSearchTerm.trim()) +
+                        (fallback ? ' in the fallback index.' : '.');
+                    box.innerHTML = fallbackNote + homeLookupNoResultHTML(term, metas);
                     var noResultWatch = box.querySelector('[data-home-noresult-watch]');
                     if (noResultWatch) noResultWatchButtonState(noResultWatch, noResultWatch.getAttribute('data-home-noresult-watch'));
                     return;
@@ -2644,8 +2755,8 @@
                 var scope = homeSearchOffice === 'all' ? 'all six offices' : officeName(homeSearchOffice);
                 var countText = total + ' published match' + (total === 1 ? '' : 'es') +
                     ' across ' + scope + (rows.length < total ? ' \u00b7 showing first ' + rows.length : '');
-                if (status) status.textContent = countText;
-                box.innerHTML = '<div class="home-lookup-result-list">' +
+                if (status) status.textContent = countText + (fallback ? ' \u00b7 fallback index' : '');
+                box.innerHTML = fallbackNote + '<div class="home-lookup-result-list">' +
                     rows.map(function(row) { return lookupResultCardHTML(row, metas); }).join('') + '</div>' +
                     '<p class="home-lookup-foot">Decision and report dates come from the office\'s published report. Always confirm details with the official source and your decision letter.</p>';
             }
@@ -2767,23 +2878,21 @@
                 box.innerHTML = '<div class="home-lookup-loading" role="status">' + searchIcon() +
                     '<span>Searching ' + escapeHtml(scope) + '\u2026</span></div>';
                 var filters = homeSearchOffice === 'all' ? {} : { embassy: homeSearchOffice };
-                Promise.all([
-                    fetch('/api/search', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            query: term,
-                            mode: 'fuzzy',
-                            filters: filters,
-                            limit: 100,
-                            sort: 'date_desc'
-                        })
-                    }).then(function(res) {
-                        if (!res.ok) throw new Error('Search HTTP ' + res.status);
-                        return res.json();
-                    }),
-                    loadOfficeLookupMeta()
-                ]).then(function(outcome) {
+                var apiLookup = fetch('/api/search', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        query: term,
+                        mode: 'fuzzy',
+                        filters: filters,
+                        limit: 100,
+                        sort: 'date_desc'
+                    })
+                }).then(function(res) {
+                    if (!res.ok) throw new Error('Search HTTP ' + res.status);
+                    return res.json();
+                });
+                Promise.all([apiLookup, loadOfficeLookupMeta()]).then(function(outcome) {
                     if (seq !== homeLookupSeq) return;
                     var payload = outcome[0] || {};
                     var manifest = outcome[1] || {};
@@ -2794,27 +2903,25 @@
                     Object.keys(manifest).forEach(function(office) {
                         metas[office] = Object.assign({}, manifest[office] || {});
                     });
-                    var matches = payload.results.map(function(row) {
-                        var office = row.embassy || 'new-delhi';
-                        var status = classify(row.decision);
-                        return Object.assign({}, row, {
-                            irl: row.number || row.irl || '',
-                            number: row.number || row.irl || '',
-                            embassy: office,
-                            _status: status,
-                            _pillClass: status === 'accepted' ? 'green' : status === 'rejected' ? 'red' : 'amber',
-                            _placeholder: false
-                        });
-                    });
+                    var matches = payload.results.map(prepareLookupRow);
                     var total = payload.pagination && Number(payload.pagination.total) >= 0
                         ? Number(payload.pagination.total)
                         : matches.length;
                     paintHomeLookup(term, matches.slice(0, 100), total, metas);
+                    warmOfflineSearchIndex();
                 }).catch(function(error) {
                     if (seq !== homeLookupSeq) return;
-                    console.warn('Office lookup failed:', error);
-                    if (status) status.textContent = 'Search failed. Please try again.';
-                    box.innerHTML = homeLookupErrorHTML();
+                    console.warn('Live office lookup failed, trying fallback:', error);
+                    if (status) status.textContent = 'Live search is unavailable. Checking the fallback index\u2026';
+                    offlineLookup(term, homeSearchOffice).then(function(fallback) {
+                        if (seq !== homeLookupSeq) return;
+                        paintHomeLookup(term, fallback.results, fallback.total, fallback.metas, fallback);
+                    }).catch(function(fallbackError) {
+                        if (seq !== homeLookupSeq) return;
+                        console.warn('Offline lookup failed:', fallbackError);
+                        if (status) status.textContent = 'Search failed. Please try again.';
+                        box.innerHTML = homeLookupErrorHTML();
+                    });
                 });
             }
 

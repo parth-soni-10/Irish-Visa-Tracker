@@ -553,6 +553,49 @@ test.describe('All-office search result cards', () => {
     await expect(page.locator('#alert-form select[name="embassy"]')).toHaveValue('beijing');
   });
 
+  test('falls back to the local index when the live search API fails', async ({ browser }) => {
+    // The production service worker is intentionally network-first for /data/.
+    // Block it here so Playwright can route the fallback index deterministically.
+    const context = await browser.newContext({ serviceWorkers: 'block' });
+    const page = await context.newPage();
+    try {
+      await page.route('**/api/search', (route) => route.fulfill({
+        status: 503,
+        contentType: 'application/json',
+        body: JSON.stringify({ error: 'Search is temporarily unavailable' }),
+      }));
+      await page.route('**/data/search_fallback.json', (route) => route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          generated_at: '2026-11-17T09:31:55.082Z',
+          offices: {
+            beijing: {
+              source_url: 'https://www.ireland.ie/en/china/beijing/services/visas/visa-decisions/',
+              source_file: 'https://www.ireland.ie/5288/20261101_BVO_visa_decisions.ods',
+              source_name: 'Embassy of Ireland, Beijing',
+              report_date: '2026-11-01',
+              status: 'official',
+            },
+          },
+          rows: [['beijing', '44078322', '2026-11-01', 'Refused']],
+        }),
+      }));
+
+      await page.goto(`${BASE_URL}/?tracker=visa&tab=search`, { waitUntil: 'domcontentloaded' });
+      await page.locator('#home-search').fill('44078322');
+      await page.locator('#home-search').press('Enter');
+      await expect(page.locator('.home-lookup-fallback')).toContainText('Live search is unavailable');
+      const card = page.locator('.lookup-result-card').first();
+      await expect(card).toBeVisible({ timeout: 15000 });
+      await expect(card).toHaveAttribute('data-office', 'beijing');
+      await expect(card).toContainText('Refused');
+      await expect(card).toContainText('Report containing this row');
+    } finally {
+      await context.close();
+    }
+  });
+
   test('turns a no-result search into a watch or alert', async ({ page }) => {
     await page.route('**/api/search', (route) => route.fulfill({
       status: 200,

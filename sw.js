@@ -1,4 +1,4 @@
-const CACHE_NAME = 'irish-visa-tracker-v7';
+const CACHE_NAME = 'irish-visa-tracker-v8';
 const STATIC_ASSETS = [
   '/manifest.json',
   '/icon-192.png',
@@ -35,8 +35,24 @@ self.addEventListener('fetch', event => {
   // always come from the network.
   if (url.origin !== self.location.origin) return;
   if (url.pathname.startsWith('/api/')) return;
-  // Decision data changes every scrape; never serve a cached copy.
-  if (url.pathname.startsWith('/data/')) return;
+
+  // Data files are network-first so a new scrape is visible immediately, but
+  // keep a copy for the degraded search path when the API or network is down.
+  if (url.pathname.startsWith('/data/')) {
+    event.respondWith(
+      fetch(event.request)
+        .then(response => {
+          if (response.ok) {
+            const copy = response.clone();
+            caches.open(CACHE_NAME).then(cache => cache.put(event.request, copy));
+          }
+          return response;
+        })
+        .catch(() => caches.match(event.request))
+        .then(cached => cached || new Response('Offline', { status: 503, statusText: 'Service Unavailable' }))
+    );
+    return;
+  }
 
   // Navigations are network-first so a deploy is visible immediately; the
   // cached shell is only the offline fallback.

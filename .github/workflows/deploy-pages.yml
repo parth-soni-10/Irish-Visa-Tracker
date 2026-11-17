@@ -40,7 +40,7 @@ jobs:
         run: npm run build
 
       - name: Verify build output
-        run: ls -la .pages-dist/ && test -d .pages-dist && test -f .pages-dist/index.html && test -f .pages-dist/404-internal.html && test -f .pages-dist/build-info.json
+        run: ls -la .pages-dist/ && test -d .pages-dist && test -f .pages-dist/index.html && test -f .pages-dist/404-internal.html && test -f .pages-dist/build-info.json && test -f .pages-dist/data/search_fallback.json
 
       - name: Upload built site
         uses: actions/upload-artifact@v4

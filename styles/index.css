@@ -2618,6 +2618,16 @@
     color: var(--ink-soft);
 }
 #visa-dash .home-lookup-loading svg { flex: 0 0 auto; opacity: .55; }
+#visa-dash .home-lookup-fallback {
+    margin: 10px 0 0;
+    padding: 10px 12px;
+    border: 1px solid var(--amber-border, #e6c47a);
+    border-radius: 9px;
+    background: var(--amber-soft, #fff8e5);
+    color: var(--ink);
+    font-size: 12px;
+    line-height: 1.5;
+}
 #visa-dash .home-lookup-foot {
     margin: 8px 0 0;
     font-size: 12px;
