@@ -149,7 +149,7 @@ async function runTelegramAlerts(env, report, dryRun) {
     const message = 'Visa ' + decision.decision + ' for ' + row.application_number +
       ' at ' + row.embassy + ' (published ' + decision.date + '). View: ' +
       String(env.APP_BASE_URL || DEFAULT_BASE).replace(/\/+$/, '') +
-      '/?tab=home&q=' + encodeURIComponent(row.application_number) +
+      '/?tab=search&q=' + encodeURIComponent(row.application_number) +
       '\n\nSend /stop to turn these alerts off.';
     const result = await sendTelegram(env, row.chat_id, message);
     if (!result.sent) {

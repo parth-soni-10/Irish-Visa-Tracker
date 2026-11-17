@@ -236,6 +236,17 @@
         #visa-dash .card .value.green { color: var(--green); }
         #visa-dash .card .value.red { color: var(--red); }
         #visa-dash .card .value.amber { color: var(--amber); }
+        #visa-dash .card .hint {
+            margin-top: 6px;
+            font-size: 11px;
+            line-height: 1.4;
+            color: var(--ink-muted);
+        }
+        #visa-dash .rate-sample-note {
+            margin: 8px 0 0;
+            font-size: 11px;
+            line-height: 1.5;
+        }
         #visa-dash .table-wrap {
             overflow-x: auto;
             border-radius: var(--r-container);
@@ -670,6 +681,11 @@
             line-height: 1.3;
             margin-top: 0;
         }
+        #visa-dash .stats-bar .stat-sample {
+            font-size: 10px;
+            line-height: 1.35;
+            color: var(--ink-muted);
+        }
         
         /* Embassy Status Grid */
         #visa-dash .embassy-status-grid {
@@ -806,87 +822,7 @@
             color: var(--ink);
         }
         
-        /* Estimator Section */
-        #visa-dash .estimator-section {
-            margin: 24px 0;
-            padding: 20px;
-            background: var(--surface-raised);
-            border: 1px solid var(--border);
-            border-radius: var(--r-container);
-        }
-        #visa-dash .estimator-section h3 {
-            margin: 0 0 12px;
-            font-size: 14px;
-            font-weight: 600;
-        }
-        #visa-dash .estimator-form {
-            display: flex;
-            gap: 12px;
-            flex-wrap: wrap;
-            margin-bottom: 16px;
-            align-items: end;
-        }
-        #visa-dash .estimator-form > div {
-            flex: 1;
-            min-width: 180px;
-        }
-        #visa-dash .estimator-form label {
-            display: block;
-            font-size: 12px;
-            font-weight: 600;
-            margin-bottom: 4px;
-            color: var(--ink-muted);
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
-        #visa-dash .estimator-form select,
-        #visa-dash .estimator-form input[type="date"] {
-            width: 100%;
-            padding: 10px 12px;
-            border: 1px solid var(--border);
-            border-radius: var(--r-container);
-            background: var(--surface);
-            font-size: 13px;
-            color: var(--ink);
-        }
-        #visa-dash .estimator-form select:focus,
-        #visa-dash .estimator-form input[type="date"]:focus {
-            outline: none;
-            border-color: var(--green);
-            box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.1);
-        }
-        #visa-dash .estimator-form button.btn {
-            height: 40px;
-            white-space: nowrap;
-        }
-        #visa-dash #estimator-result {
-            display: none;
-            padding: 16px;
-            background: var(--surface-raised);
-            border: 1px solid var(--border);
-            border-radius: var(--r-container);
-            margin-top: 16px;
-        }
-        #visa-dash #estimator-result h4 {
-            margin: 0 0 12px;
-            font-size: 14px;
-        }
-        #visa-dash #estimator-result .stat {
-            text-align: center;
-        }
-        #visa-dash #estimator-result .stat-value {
-            font-size: 24px;
-            font-weight: 700;
-            color: var(--ink);
-        }
-        #visa-dash #estimator-result .stat-label {
-            font-size: 11px;
-            color: var(--ink-muted);
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
-        
-        /* Recent Decisions Section */
+/* Recent Decisions Section */
         #visa-dash .recent-decisions-section {
             margin: 24px 0;
             padding: 20px;
@@ -941,35 +877,7 @@
             outline-offset: 2px;
         }
         
-        /* Estimator Result */
-        #visa-dash #estimator-result {
-            display: none;
-            padding: 16px;
-            background: var(--surface-raised);
-            border: 1px solid var(--border);
-            border-radius: var(--r-container);
-            margin-top: 16px;
-        }
-        #visa-dash #estimator-result h4 {
-            margin: 0 0 12px;
-            font-size: 14px;
-        }
-        #visa-dash #estimator-result .stat {
-            text-align: center;
-        }
-        #visa-dash #estimator-result .stat-value {
-            font-size: 24px;
-            font-weight: 700;
-            color: var(--ink);
-        }
-        #visa-dash #estimator-result .stat-label {
-            font-size: 11px;
-            color: var(--ink-muted);
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
-        
-        /* Recent Decisions Section */
+/* Recent Decisions Section */
         #visa-dash .recent-decisions-section {
             margin: 24px 0;
             padding: 20px;
@@ -1022,34 +930,6 @@
         #visa-dash .quick-action:focus-visible {
             outline: 2px solid var(--green);
             outline-offset: 2px;
-        }
-        
-        /* Estimator Result */
-        #visa-dash #estimator-result {
-            display: none;
-            padding: 16px;
-            background: var(--surface-raised);
-            border: 1px solid var(--border);
-            border-radius: var(--r-container);
-            margin-top: 16px;
-        }
-        #visa-dash #estimator-result h4 {
-            margin: 0 0 12px;
-            font-size: 14px;
-        }
-        #visa-dash #estimator-result .stat {
-            text-align: center;
-        }
-        #visa-dash #estimator-result .stat-value {
-            font-size: 24px;
-            font-weight: 700;
-            color: var(--ink);
-        }
-        #visa-dash #estimator-result .stat-label {
-            font-size: 11px;
-            color: var(--ink-muted);
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
         }
         
 /* Export CSV button + recent-search chips. */
@@ -1337,16 +1217,17 @@
         #visa-dash details.readme > summary::-webkit-details-marker { display: none; }
         #visa-dash details.readme > summary::before { content: '+ '; color: var(--green); font-weight: 700; }
         #visa-dash details.readme[open] > summary::before { content: '\2212  '; }
-        #visa-dash .suggest-grid {
+        #visa-dash .alerts-grid {
             display: flex;
             flex-wrap: wrap;
             gap: 24px;
             align-items: flex-start;
         }
-        #visa-dash .suggest-grid .form-col { flex: 1 1 280px; min-width: 0; }
-        /* Submission form: fields wrapped in <p><label>…</label></p>. */
-        #visa-dash #sugg-form p { margin: 0 0 12px; }
-        #visa-dash #sugg-form label {
+        #visa-dash .alerts-grid .alerts-card { flex: 1 1 360px; min-width: 0; }
+        /* Alert forms use the same compact field rhythm as the old feedback
+           card, but the Telegram form is now the first card in the tab. */
+        #visa-dash #alert-form p { margin: 0 0 12px; }
+        #visa-dash #alert-form label {
             display: flex;
             flex-direction: column;
             gap: 6px;
@@ -1356,8 +1237,37 @@
             letter-spacing: .06em;
             color: var(--ink-muted);
         }
-        #visa-dash #sugg-form input[type=text] { margin-bottom: 0; max-width: none; }
-        #visa-dash #sugg-form textarea { margin-bottom: 0; }
+        #visa-dash #alert-form input[type=text],
+        #visa-dash #alert-form select {
+            width: 100%;
+            max-width: none;
+            margin-bottom: 0;
+            padding: 9px 11px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--surface);
+            color: var(--ink);
+            font-size: 13px;
+            line-height: 1.35;
+            font-family: inherit;
+        }
+        #visa-dash .alerts-push-items { display: grid; gap: 8px; margin-top: 12px; }
+        #visa-dash .alerts-push-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 10px 12px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            background: var(--surface-raised);
+        }
+        #visa-dash .alerts-push-item strong { display: block; font-size: 13px; }
+        #visa-dash .alerts-push-item .note2 { margin: 1px 0 0; font-size: 12px; }
+        #visa-dash .alerts-push-item .export-btn { flex: 0 0 auto; }
+        #visa-dash .alerts-push-empty { margin: 12px 0 0; }
+        #visa-dash .alerts-help { margin: 18px 0 0; }
+        #visa-dash .alerts-help a { color: var(--green-text); font-weight: 600; }
         /* Post-submit success card: animated checkmark + confirmation. */
         #visa-dash .sugg-success {
             display: flex;
@@ -1936,7 +1846,7 @@
             #visa-dash .wf { padding-bottom: 0; }
             #visa-dash .wf-date { display: none; }
         }
-        /* Suggest - typewriter card */
+        /* Alerts - typewriter card */
         #visa-dash .paper {
             background: #fff; color: var(--ink);
             border-radius: 10px; padding: 12px 14px;
@@ -2007,7 +1917,8 @@
             #visa-dash input[type=text] { max-width: 100%; }
             #visa-dash .filter-row { flex-direction: column; align-items: stretch; gap: 8px; }
             #visa-dash .datefilter { width: 100%; }
-            #visa-dash .suggest-grid .form-col { flex: 1 1 100%; }
+            #visa-dash .alerts-grid .alerts-card { flex: 1 1 100%; }
+            #visa-dash .alerts-push-item { align-items: flex-start; }
         }        
     /* Language selector */
     .lang-selector { position: relative; }
@@ -2162,33 +2073,10 @@
     .badge.category { background: var(--green-soft); color: var(--green-text); }
     .api-response { font-size: 11px; background: var(--surface-raised); padding: 12px; border-radius: var(--r-control); overflow: auto; max-height: 300px; }
 
-    /* Activation funnel */
-    .activation {
-      display: grid;
-      grid-template-columns: minmax(0, 1.25fr) minmax(260px, .75fr);
-      gap: 20px;
-      align-items: stretch;
-      background: linear-gradient(135deg, #ecfdf5 0%, #f0fdfa 55%, #ffffff 100%);
-      border: 1px solid #a7f3d0;
-      border-radius: var(--r-container);
-      padding: 22px;
-      margin: 0 0 22px;
-    }
+    /* Landing alert CTA */
     .activation-kicker { margin: 0 0 6px; color: var(--green-deep); font-size: 11px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
-    .activation h2 { margin: 0 0 8px; font-size: 22px; line-height: 1.2; letter-spacing: -.02em; }
-    .activation-lede { margin: 0 0 14px; color: var(--ink-soft); font-size: 14px; line-height: 1.6; max-width: 60ch; }
-    .activation-actions { display: flex; gap: 10px; flex-wrap: wrap; }
     .activation-telegram { background: #229ED9; border-color: #229ED9; color: #fff; }
     .activation-telegram:hover { background: #168ac0; border-color: #168ac0; color: #fff; }
-    .activation-meta { margin: 10px 0 0; color: var(--ink-muted); font-size: 12px; }
-    .activation-checklist { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
-    .activation-checklist li { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; background: rgba(255,255,255,.72); border: 1px solid #d1fae5; border-radius: 10px; }
-    .activation-checklist li.done { border-color: #6ee7b7; background: #ecfdf5; }
-    .activation-checklist li.done .activation-num { background: var(--green); color: #fff; }
-    .activation-num { flex: none; width: 22px; height: 22px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; background: var(--surface); border: 1px solid #a7f3d0; color: var(--green-deep); font-size: 11px; font-weight: 700; }
-    .activation-checklist strong { display: block; font-size: 13px; }
-    .activation-checklist p { margin: 3px 0 0; color: var(--ink-muted); font-size: 11.5px; line-height: 1.45; }
-    .activation-link { background: none; border: 0; padding: 4px 0 0; color: var(--green-deep); font: inherit; font-size: 12px; font-weight: 600; cursor: pointer; text-decoration: underline; }
     .landing-alert-cta {
       display: flex;
       flex-wrap: wrap;
@@ -2204,7 +2092,6 @@
     .landing-alert-cta strong { display: block; font-size: 15px; color: var(--ink); }
     .landing-alert-cta span { display: block; margin-top: 3px; color: var(--ink-soft); font-size: 12.5px; }
     .landing-alert-actions { display: flex; flex-wrap: wrap; gap: 8px; }
-    @media (max-width: 760px) { .activation { grid-template-columns: 1fr; padding: 18px; } .activation h2 { font-size: 19px; } }
 
     /* Search tab */
     .search-layout { max-width: 900px; }
@@ -2261,15 +2148,20 @@
       }
       #visa-dash .lang-btn { min-height: 38px; padding: 6px 12px; }
 
-      /* Eight tracker tabs: a 4x2 grid is more discoverable than a clipped
-         horizontal strip where the active tab can be off-screen. */
+      /* Six tracker tabs: a 3x2 grid is more discoverable than a clipped
+         horizontal strip where the active tab can be off-screen. Keep it
+         sticky so switching views on a long history page is one tap away. */
       #visa-dash .navpills {
         display: grid;
-        grid-template-columns: repeat(4, minmax(0, 1fr));
+        grid-template-columns: repeat(3, minmax(0, 1fr));
         gap: 6px;
         overflow: visible;
-        padding: 0;
-        margin-bottom: 18px;
+        padding: 8px 0;
+        margin-bottom: 10px;
+        position: sticky;
+        top: 0;
+        z-index: 40;
+        background: var(--surface);
       }
       #visa-dash .navpills .gn-goo,
       #visa-dash .navpills .gn-svg { display: none !important; }
@@ -2339,7 +2231,6 @@
 
       #visa-dash .recent-decisions-section,
       #visa-dash .community-wait-section,
-      #visa-dash .estimator-section { padding: 14px; margin: 18px 0; }
 
       /* The latest-decisions feed reads better as compact cards than as a
          four-column table squeezed into 300px. */
@@ -2434,7 +2325,6 @@
 
       /* Wide analytics tables stay as tables, but scroll inside their card
          rather than widening the whole dashboard. */
-      #visa-dash .cohort-table,
       #visa-dash .visa-type-breakdown,
       #visa-dash .watchlist-table-wrap,
       #visa-dash .wait-times-table,
@@ -2443,15 +2333,11 @@
         overflow-x: auto;
         -webkit-overflow-scrolling: touch;
       }
-      #visa-dash .cohort-table .results-table { min-width: 0; }
-      #visa-dash .cohort-table th,
-      #visa-dash .cohort-table td,
       #visa-dash .visa-type-breakdown th,
       #visa-dash .visa-type-breakdown td {
         padding: 8px 5px;
         font-size: 10px;
       }
-      #visa-dash .cohort-table th,
       #visa-dash .visa-type-breakdown th {
         line-height: 1.2;
         letter-spacing: .02em;
@@ -2565,8 +2451,6 @@
       #visa-dash .navpill { font-size: 10px; }
       #visa-dash .quick-action { font-size: 11px; }
       #visa-dash .stats-bar .stat-value { font-size: 21px; }
-      #visa-dash .cohort-table th,
-      #visa-dash .cohort-table td,
       #visa-dash .visa-type-breakdown th,
       #visa-dash .visa-type-breakdown td {
         padding: 7px 4px;
@@ -2582,3 +2466,539 @@
       #visa-dash .landing-search .searchbar { min-width: 0; }
       #visa-dash .landing-search .searchbar input[type="text"] { min-width: 0; }
     }
+
+/* ===== All-office lookup =====
+   The Home lookup is intentionally a single panel so results and their
+   no-result guidance live at the top, above the New Delhi-only dashboard. */
+#visa-dash .landing-search {
+    max-width: 720px;
+    flex-wrap: wrap;
+}
+#visa-dash .landing-search .searchbar {
+    height: 42px;
+    min-width: 0;
+}
+#visa-dash .landing-search-number { flex: 1 1 240px; }
+#visa-dash .landing-office-select,
+#visa-dash .home-lookup-office select {
+    min-height: 42px;
+    padding: 8px 32px 8px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--r-control);
+    background-color: var(--surface);
+    color: var(--ink);
+    font: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+}
+#visa-dash .landing-office-select { flex: 0 1 190px; }
+#visa-dash .landing-search .btn { min-height: 42px; }
+#visa-dash .landing-search-hint {
+    max-width: 720px;
+    margin: -12px auto 20px;
+    font-size: 12px;
+    color: var(--ink-muted);
+    text-align: center;
+}
+#visa-dash .home-lookup {
+    margin: 0 0 22px;
+    padding: 22px;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    background: var(--surface);
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.04);
+}
+#visa-dash .home-lookup-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 14px;
+    flex-wrap: wrap;
+}
+#visa-dash .home-lookup-kicker {
+    margin: 0 0 2px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--green-text);
+}
+#visa-dash .home-lookup h2 {
+    margin: 0;
+    font-size: 21px;
+    line-height: 1.25;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+}
+#visa-dash .home-lookup-advanced {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--green-text);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    padding: 6px 0;
+}
+#visa-dash .home-lookup-copy {
+    max-width: 760px;
+    margin: 6px 0 16px;
+    font-size: 13px;
+    line-height: 1.55;
+    color: var(--ink-soft);
+}
+#visa-dash .home-lookup-form {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(165px, 210px) auto;
+    gap: 10px;
+    align-items: end;
+}
+#visa-dash .home-lookup-field { min-width: 0; }
+#visa-dash .home-lookup-field label {
+    display: block;
+    margin-bottom: 5px;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--ink-soft);
+}
+#visa-dash .home-lookup-number .searchbar {
+    max-width: none;
+    height: 44px;
+    margin-bottom: 0;
+}
+#visa-dash .home-lookup-number .searchbar input[type=text] { font-size: 14px; }
+#visa-dash .home-lookup-office select { width: 100%; height: 44px; font-size: 13px; }
+#visa-dash .home-lookup-submit { height: 44px; white-space: nowrap; }
+#visa-dash .home-lookup-tools {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 10px;
+}
+#visa-dash .home-lookup-status {
+    min-height: 20px;
+    margin: 12px 0 4px;
+}
+#visa-dash .home-lookup-loading {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 14px 0 4px;
+    font-size: 13px;
+    color: var(--ink-soft);
+}
+#visa-dash .home-lookup-loading svg { flex: 0 0 auto; opacity: .55; }
+#visa-dash .home-lookup-foot {
+    margin: 8px 0 0;
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--ink-muted);
+}
+#visa-dash .home-lookup-result-list {
+    display: grid;
+    gap: 12px;
+    margin-top: 10px;
+}
+#visa-dash .lookup-result-card {
+    min-width: 0;
+    padding: 18px;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    background: var(--surface);
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.035);
+}
+#visa-dash .lookup-result-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+}
+#visa-dash .lookup-result-head > div { min-width: 0; }
+#visa-dash .lookup-result-kicker {
+    margin: 0 0 3px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+}
+#visa-dash .lookup-result-title {
+    margin: 0;
+    font-size: 18px;
+    line-height: 1.35;
+    letter-spacing: -0.01em;
+    color: var(--ink);
+}
+#visa-dash .lookup-result-title .mono {
+    font-size: 18px;
+    letter-spacing: 0.01em;
+}
+#visa-dash .lookup-result-decision {
+    flex: 0 0 auto;
+    padding: 5px 10px;
+    font-size: 12px;
+}
+#visa-dash .lookup-result-facts {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px 18px;
+    margin: 14px 0;
+    padding: 13px 0;
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+}
+#visa-dash .lookup-result-fact { min-width: 0; }
+#visa-dash .lookup-result-fact dt {
+    margin: 0 0 2px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+}
+#visa-dash .lookup-result-fact dd {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.45;
+    color: var(--ink);
+    overflow-wrap: anywhere;
+}
+#visa-dash .lookup-result-source {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 4px 8px;
+    margin: 0;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--surface-raised);
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--ink-soft);
+    overflow-wrap: anywhere;
+}
+#visa-dash .lookup-result-source-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+}
+#visa-dash .lookup-result-source a {
+    font-weight: 600;
+    color: var(--green-text);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+#visa-dash .lookup-result-source-note {
+    color: var(--ink-muted);
+    font-size: 11px;
+}
+#visa-dash .lookup-result-source-missing { color: var(--ink-muted); }
+#visa-dash .lookup-result-actions {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 14px;
+}
+#visa-dash .lookup-result-btn {
+    min-height: 38px;
+    padding: 8px 12px;
+    font-size: 12px;
+}
+#visa-dash .lookup-result-watch.is-saved {
+    border-color: var(--green-soft);
+    background: var(--green-soft);
+    color: var(--green-text);
+}
+#visa-dash .lookup-result-alert {
+    border-color: #229ED9;
+    background: #229ED9;
+    color: #fff;
+}
+#visa-dash .lookup-result-alert:hover,
+#visa-dash .lookup-result-alert:focus-visible { background: #1b86b8; border-color: #1b86b8; }
+#visa-dash .lookup-result-status {
+    flex-basis: 100%;
+    min-height: 0;
+    margin: 0;
+    font-size: 12px;
+    line-height: 1.45;
+    color: var(--ink-soft);
+}
+#visa-dash .lookup-result-status.is-error { color: var(--red-text); }
+#visa-dash .lookup-result-next {
+    margin-top: 14px;
+    padding-top: 13px;
+    border-top: 1px solid var(--border);
+}
+#visa-dash .lookup-steps h4 {
+    margin: 0 0 6px;
+    font-size: 12px;
+    letter-spacing: 0.02em;
+    color: var(--ink);
+}
+#visa-dash .lookup-steps ol {
+    margin: 0;
+    padding-left: 18px;
+    font-size: 12.5px;
+    line-height: 1.55;
+    color: var(--ink-soft);
+}
+#visa-dash .lookup-steps li + li { margin-top: 5px; }
+#visa-dash .lookup-steps a {
+    color: var(--green-text);
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+#visa-dash .lookup-result-disclaimer {
+    margin: 9px 0 0;
+    font-size: 11px;
+    line-height: 1.5;
+    color: var(--ink-muted);
+}
+#visa-dash .home-lookup-report-dates {
+    margin-top: 10px;
+    font-size: 12px;
+    line-height: 1.55;
+    color: var(--ink-soft);
+}
+#visa-dash .home-lookup-report-dates summary {
+    width: fit-content;
+    cursor: pointer;
+    font-weight: 600;
+    color: var(--green-text);
+}
+#visa-dash .home-lookup-report-dates ul {
+    margin: 7px 0 0;
+    padding-left: 18px;
+}
+#visa-dash .home-lookup-report-dates li + li { margin-top: 3px; }
+#visa-dash .home-lookup-report-dates a {
+    color: var(--green-text);
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+#visa-dash .home-lookup-empty {
+    margin-top: 10px;
+    padding: 18px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--surface-raised);
+}
+#visa-dash .home-lookup-empty-small { padding: 12px 14px; }
+#visa-dash .home-lookup-empty h3 {
+    margin: 0 0 6px;
+    font-size: 16px;
+    color: var(--ink);
+}
+#visa-dash .home-lookup-empty p {
+    margin: 0 0 10px;
+    font-size: 13px;
+    line-height: 1.55;
+    color: var(--ink-soft);
+}
+#visa-dash .home-lookup-empty ul {
+    margin: 0;
+    padding-left: 18px;
+    font-size: 13px;
+    line-height: 1.55;
+    color: var(--ink-soft);
+}
+#visa-dash .home-lookup-empty li + li { margin-top: 4px; }
+#visa-dash .home-lookup-empty-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-top: 14px;
+}
+#visa-dash .home-lookup-empty-actions .btn { min-height: 40px; }
+#visa-dash .home-lookup-link {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--green-text);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+#visa-dash .home-lookup-empty-foot {
+    margin: 12px 0 0 !important;
+    font-size: 12px !important;
+}
+#visa-dash .home-latest { margin: 0 0 22px; }
+#visa-dash .home-latest-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 0;
+}
+#visa-dash .home-latest-head .note2 { margin: 2px 0 8px; max-width: 620px; }
+#visa-dash .home-latest-head .note2 a,
+#visa-dash #home-results-count a { color: var(--green-text); font-weight: 600; }
+
+@media (max-width: 760px) {
+    #visa-dash .landing-search-number { flex-basis: 100%; }
+    #visa-dash .landing-office-select { flex: 1 1 170px; }
+    #visa-dash .landing-search-hint { margin-top: -10px; text-align: left; }
+    #visa-dash .home-lookup { padding: 16px; border-radius: 14px; }
+    #visa-dash .home-lookup h2 { font-size: 19px; }
+    #visa-dash .home-lookup-form { grid-template-columns: minmax(0, 1fr); }
+    #visa-dash .home-lookup-submit { width: 100%; }
+    #visa-dash .home-lookup-advanced { padding-top: 0; }
+}
+@media (max-width: 700px) {
+    #visa-dash .lookup-result-card { padding: 15px; }
+    #visa-dash .lookup-result-head { display: block; }
+    #visa-dash .lookup-result-decision { display: inline-block; margin-top: 8px; }
+    #visa-dash .lookup-result-facts { grid-template-columns: minmax(0, 1fr); }
+    #visa-dash .home-latest-head { display: block; }
+}
+@media (max-width: 380px) {
+    #visa-dash .landing-office-select { flex-basis: 100%; }
+    #visa-dash .landing-search .btn { flex: 1 1 100%; }
+    #visa-dash .home-lookup-tools { align-items: flex-start; }
+    #visa-dash .lookup-result-actions .btn { width: 100%; }
+}
+
+/* ===== Compact search-first tabs ===== */
+#visa-dash .home-lookup-coverage {
+    margin: 0 0 12px;
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--ink-muted);
+}
+#visa-dash .home-lookup-help {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin: 2px 0 10px;
+    font-size: 12px;
+}
+#visa-dash .home-lookup-help details { flex: 1 1 320px; }
+#visa-dash .home-lookup-help summary { cursor: pointer; color: var(--ink-soft); }
+#visa-dash .home-lookup-help p { margin: 8px 0 0; color: var(--ink-muted); line-height: 1.55; }
+#visa-dash .home-lookup-help-link { white-space: nowrap; }
+#visa-dash .advanced-search {
+    margin: 18px 0;
+    border: 1px solid var(--border);
+    border-radius: var(--r-container);
+    background: var(--surface-raised);
+}
+#visa-dash .advanced-search > summary {
+    cursor: pointer;
+    padding: 12px 14px;
+    font-weight: 700;
+    font-size: 13px;
+}
+#visa-dash .advanced-search .search-layout { padding: 0 14px 16px; }
+#visa-dash .home-freshness {
+    margin: 18px 0;
+    padding: 16px;
+    border: 1px solid var(--border);
+    border-radius: var(--r-container);
+    background: var(--surface-raised);
+}
+#visa-dash .home-freshness-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+#visa-dash .home-freshness-head .landing-h3 { margin: 0 0 6px; }
+#visa-dash .home-freshness-head p { margin: 0; }
+#visa-dash .home-freshness-link { white-space: nowrap; font-size: 13px; }
+#visa-dash .home-freshness-details { margin-top: 12px; font-size: 12px; color: var(--ink-muted); }
+#visa-dash .home-freshness-details summary { cursor: pointer; color: var(--ink-soft); }
+#visa-dash .home-freshness-details p { margin: 8px 0 0; line-height: 1.55; }
+#visa-dash .download-menu { position: relative; }
+#visa-dash .download-menu summary {
+    list-style: none;
+    cursor: pointer;
+    padding: 7px 11px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface);
+    font-size: 12px;
+    font-weight: 600;
+}
+#visa-dash .download-menu summary::-webkit-details-marker { display: none; }
+#visa-dash .download-menu-panel {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 4px);
+    z-index: 20;
+    display: flex;
+    gap: 6px;
+    padding: 8px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--surface);
+    box-shadow: 0 8px 24px rgba(0,0,0,.12);
+}
+#visa-dash .table-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin: 10px 0;
+}
+#visa-dash .table-controls .note { margin: 0; flex: 1 1 220px; }
+#visa-dash .page-size-control { font-size: 12px; color: var(--ink-muted); white-space: nowrap; }
+#visa-dash .page-size-control select { margin-left: 4px; padding: 5px 7px; border: 1px solid var(--border); border-radius: 7px; background: var(--surface); color: var(--ink); }
+#visa-dash .show-more-wrap { margin: 14px 0 24px; text-align: center; }
+#visa-dash .view-switch {
+    display: flex;
+    gap: 6px;
+    margin: 0 0 16px;
+    padding: 4px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--surface-raised);
+    width: fit-content;
+    max-width: 100%;
+}
+#visa-dash .view-switch button {
+    border: 0;
+    background: transparent;
+    color: var(--ink-soft);
+    padding: 8px 12px;
+    border-radius: 7px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+}
+#visa-dash .view-switch button.active { background: var(--surface); color: var(--ink); box-shadow: 0 1px 4px rgba(0,0,0,.08); }
+#visa-dash .home-latest-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+#visa-dash .home-latest-foot { margin: 8px 0 0; font-size: 12px; }
+#visa-dash .community-share-prompt { margin: 18px 0; padding: 12px 14px; border: 1px solid var(--border); border-radius: var(--r-container); background: var(--surface-raised); color: var(--ink-muted); font-size: 12px; line-height: 1.55; }
+#visa-dash .home-lookup-empty-tip { margin: 8px 0 0; font-size: 12px; color: var(--ink-muted); }
+[hidden] { display: none !important; }
+#visa-dash .checklist-conditional[hidden] { display: none; }
+#visa-dash .checklist-item { display: flex; align-items: flex-start; gap: 8px; width: 100%; cursor: pointer; }
+#visa-dash .checklist-item input { margin: 3px 0 0; flex: 0 0 auto; }
+#visa-dash .checklist-item > span { flex: 1; }
+#visa-dash .checklist-result-actions { margin-top: 18px; }
+@media (max-width: 760px) {
+    #visa-dash .home-latest-head, #visa-dash .home-freshness-head { display: block; }
+    #visa-dash .download-menu { margin-top: 8px; }
+    #visa-dash .download-menu-panel { left: 0; right: auto; }
+    #visa-dash .view-switch { width: 100%; }
+    #visa-dash .view-switch button { flex: 1; }
+}
+@media print {
+    .sitebar, .sitebar-footer, #visa-dash .navpills, #visa-dash .hero, #visa-dash .view-switch,
+    #visa-dash .checklist-form, #visa-dash .checklist-sub, #visa-dash .checklist-title,
+    #visa-dash .scroll-top-btn, #visa-dash .checklist-result-actions, #visa-dash .tabs,
+    #visa-dash .stale-banner { display: none !important; }
+    #visa-dash { padding: 0 !important; }
+    #tab-body > * { display: none !important; }
+    #tab-body > .checklist-layout { display: block !important; }
+    #tab-body > .checklist-layout > * { display: none !important; }
+    #tab-body > .checklist-layout > .checklist-result { display: block !important; }
+    #visa-dash .checklist-result { border: 0; padding: 0; }
+    #visa-dash .checklist-result h3 { margin-top: 0; }
+    #visa-dash .checklist-items li { break-inside: avoid; }
+}

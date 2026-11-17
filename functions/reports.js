@@ -87,7 +87,7 @@ function buildDigestEmail(report, changes, unsubscribeUrl, base) {
     '<tr><td style="padding:10px;border-top:1px solid #e5ece8">Dated decisions</td><td style="text-align:right;padding:10px;border-top:1px solid #e5ece8">' + report.totals.total + '</td><td style="text-align:right;padding:10px;border-top:1px solid #e5ece8">' + report.previous_totals.total + '</td></tr>' +
     '<tr><td style="padding:10px;border-top:1px solid #e5ece8">Approved</td><td style="text-align:right;padding:10px;border-top:1px solid #e5ece8">' + report.totals.approved + '</td><td style="text-align:right;padding:10px;border-top:1px solid #e5ece8">' + report.previous_totals.approved + '</td></tr>' +
     '<tr><td style="padding:10px;border-top:1px solid #e5ece8">Refused</td><td style="text-align:right;padding:10px;border-top:1px solid #e5ece8">' + report.totals.refused + '</td><td style="text-align:right;padding:10px;border-top:1px solid #e5ece8">' + report.previous_totals.refused + '</td></tr>' +
-    '<tr><td style="padding:10px;border-top:1px solid #e5ece8">Approval rate</td><td style="text-align:right;padding:10px;border-top:1px solid #e5ece8">' + report.totals.approval_rate + '%</td><td style="text-align:right;padding:10px;border-top:1px solid #e5ece8">' + report.previous_totals.approval_rate + '%</td></tr>' +
+    '<tr><td style="padding:10px;border-top:1px solid #e5ece8">Approved share (of dated decisions)</td><td style="text-align:right;padding:10px;border-top:1px solid #e5ece8">' + report.totals.approval_rate + '% <span style="color:#6b7f75">(' + report.totals.approved + ' of ' + report.totals.total + ')</span></td><td style="text-align:right;padding:10px;border-top:1px solid #e5ece8">' + report.previous_totals.approval_rate + '%</td></tr>' +
     '</table>' +
     '<h2 style="font-size:18px;margin:28px 0 8px">What changed this week</h2>' +
     '<p style="margin:0 0 12px">' + escapeHtml(changes.headline) + ' (' + escapeHtml(changes.window.start) + ' to ' + escapeHtml(changes.window.end) + ').</p>' +
@@ -110,7 +110,7 @@ function buildDigestEmail(report, changes, unsubscribeUrl, base) {
     'Dated decisions: ' + report.totals.total + ' (previous month ' + report.previous_totals.total + ')',
     'Approved: ' + report.totals.approved,
     'Refused: ' + report.totals.refused,
-    'Approval rate: ' + report.totals.approval_rate + '%',
+    'Approved share: ' + report.totals.approval_rate + '% (' + report.totals.approved + ' of ' + report.totals.total + ' dated decisions)',
     '',
     'What changed this week: ' + changes.headline,
     'Window: ' + changes.window.start + ' to ' + changes.window.end,

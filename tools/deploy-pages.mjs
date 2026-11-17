@@ -34,6 +34,7 @@ const assetsToCopy = [
   'index.html',
   '404.html',
   'about.html',
+  'help.html',
   'comparison.html',
   'status.html',
   'contact.html',
@@ -41,7 +42,6 @@ const assetsToCopy = [
   'employment-permit-processing-dates.html',
   'privacy.html',
   'terms.html',
-  'refund.html',
   'admin.html',
   'monthly-report.html',
 

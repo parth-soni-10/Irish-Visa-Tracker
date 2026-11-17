@@ -29,7 +29,7 @@
     var sign = c.total > 0 ? '+' : '';
     cardsEl.innerHTML =
       '<div class="card"><div class="label">Dated decisions</div><div class="value">' + num(report.totals.total) + '</div><div class="hint">' + sign + num(c.total) + ' vs ' + esc(report.previous_month) + '</div></div>' +
-      '<div class="card"><div class="label">Approved</div><div class="value">' + num(report.totals.approved) + '</div><div class="hint">' + pct(report.totals.approval_rate) + ' approval rate</div></div>' +
+      '<div class="card"><div class="label">Approved</div><div class="value">' + num(report.totals.approved) + '</div><div class="hint">' + pct(report.totals.approval_rate) + ' approved share · ' + num(report.totals.total) + ' dated decisions</div></div>' +
       '<div class="card"><div class="label">Refused</div><div class="value">' + num(report.totals.refused) + '</div><div class="hint">' + sign + num(c.refused) + ' vs previous month</div></div>' +
       '<div class="card"><div class="label">Busiest day</div><div class="value" style="font-size:19px">' + (report.busiest_day ? esc(report.busiest_day.date) : 'No data') + '</div><div class="hint">' + (report.busiest_day ? num(report.busiest_day.total) + ' decisions' : '') + '</div></div>';
   }
@@ -46,7 +46,7 @@
         '<td class="num" data-label="Latest report">' + num(office.reported_total) + '</td><td class="num" data-label="Report date">' + esc(office.report_date || '—') + '</td></tr>';
     }).join('');
     var asOf = report.offices.filter(function (o) { return o.report_date; }).map(function (o) { return o.name + ' ' + o.report_date; }).join('; ');
-    officeNote.textContent = 'Dated counts use official report-period dates for Abu Dhabi, Abuja and Ankara. New Delhi tracker additions are observation-dated and excluded from dated monthly totals. New Delhi, Beijing and Dublin are shown under "Latest report" only; that column is the size of each file, not a month count.' + (asOf ? ' Latest reports: ' + asOf + '.' : '');
+    officeNote.textContent = 'Dated approval uses the Dated count in the same row. Dated counts use official report-period dates for Abu Dhabi, Abuja and Ankara. New Delhi tracker additions are observation-dated and excluded from dated monthly totals. New Delhi, Beijing and Dublin are shown under "Latest report" only; that column is the size of each file, not a month count.' + (asOf ? ' Latest reports: ' + asOf + '.' : '');
   }
 
   function renderDaily(report) {

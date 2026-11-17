@@ -208,6 +208,68 @@ a:focus-visible { outline: 2px solid var(--green); outline-offset: 3px; border-r
 }
 .page .contact-list a { font-weight: 650; }
 .page .contact-list span { display: block; font-size: 13px; color: var(--ink-muted); }
+.page .contact-form {
+  margin-top: 16px;
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-container);
+  background: var(--raised);
+}
+.page .contact-form-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.page .contact-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: var(--ink-soft);
+  font-size: 12px;
+  font-weight: 700;
+}
+.page .contact-field-wide { grid-column: 1 / -1; }
+.page .contact-field input,
+.page .contact-field textarea,
+.page .contact-field select {
+  width: 100%;
+  min-width: 0;
+  min-height: 42px;
+  padding: 9px 11px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-control);
+  background: var(--surface);
+  color: var(--ink);
+  font: 14px/1.4 var(--sans);
+}
+.page .contact-field textarea { min-height: 110px; resize: vertical; }
+.page .contact-field input:focus-visible,
+.page .contact-field textarea:focus-visible,
+.page .contact-field select:focus-visible {
+  outline: 2px solid var(--green);
+  outline-offset: 2px;
+  border-color: var(--green);
+}
+.page .contact-form .btn { margin-top: 14px; }
+.page .contact-form-status {
+  min-height: 1.4em;
+  margin: 10px 0 0 !important;
+  font-size: 13px;
+  color: var(--ink-muted);
+}
+.page .contact-form-status.is-success { color: var(--green-deep); font-weight: 650; }
+.page .contact-form-status.is-error { color: #b42318; font-weight: 650; }
+.page .contact-honeypot {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+@media (max-width: 560px) {
+  .page .contact-form-fields { grid-template-columns: 1fr; }
+  .page .contact-field-wide { grid-column: auto; }
+}
 
 /* Comparison page: the table is the one place a trust page needs horizontal
    scrolling on a phone, so keep the wrapper scrollable rather than shrinking

@@ -1,9 +1,9 @@
 # Irish Visa Decision Tracker
 
-> An independent, unofficial tracker for visa decisions published by the Embassy of Ireland in
-> New Delhi, plus Stamp 1G and employment-permit processing dates. It keeps a searchable history
-> of the embassy's daily decision spreadsheet, daily approved/refused summaries, and processing
-> queue observations from ISD and DETE.
+> An independent, unofficial tracker for visa decisions published by six Irish visa offices,
+> plus Stamp 1G and employment-permit processing dates. It keeps a searchable history of the
+> offices' published decision reports, approved/refused shares, and processing queue observations
+> from ISD and DETE.
 
 This is a personal project by Parth Soni, a data analyst in Dublin. It is not affiliated with
 the Embassy of Ireland, ISD, DETE or any Irish government body. It records published data; it
@@ -16,8 +16,8 @@ Use this site when the task is one of these:
 - **Check a published visa decision.** Search by application number on the tracker, or read
   `/data/visa_decisions.json` and match the application number. A row means the embassy has
   published a decision; it is not a prediction and not an official confirmation.
-- **See recent decision volume or trends.** The Daily Summary and Past Results views show
-  approved/refused counts by published date; the JSON file is the source for custom analysis.
+- **See recent decision volume or trends.** The History tab's Daily summary and All decisions
+  views show approved/refused shares by published date; the JSON file is the source for custom analysis.
 - **Check the Stamp 1G processing queue.** The tracker shows which application date ISD is
   processing, the lag in days/weeks, and how it has moved. The observations are in
   `/data/stamp_1g.json`.
@@ -74,7 +74,7 @@ All are public, read-only and same-origin:
 ### Watchlists and alerts
 
 There are no accounts, sign-in screens or private workspaces, and no public developer API. A
-watchlist is a `visa-watchlist` entry in the visitor's own browser, not a server-side account. Email,
+watchlist is a `visa-watchlist` entry in the visitor's own browser, not a server-side account.
 Telegram and browser-push alerts are anonymous, per-application subscriptions. The site never
 exposes private case data. To answer "what happened to application X", use the published decision
 files or the tracker search; a published row is a convenience layer over the official source, not
@@ -97,6 +97,8 @@ an official confirmation.
 - [Data status](https://irishvisaupdatetracker.pages.dev/status) - office coverage, report dates,
   freshness and known snapshot limits.
 - [About](https://irishvisaupdatetracker.pages.dev/about) - what is tracked, sources, limits.
+- [Help & FAQ](https://irishvisaupdatetracker.pages.dev/help) - number formats, statuses,
+  missing results, office coverage, alerts and checklists.
 - [Contact](https://irishvisaupdatetracker.pages.dev/contact) - corrections, bug reports, scope.
 - [Privacy](https://irishvisaupdatetracker.pages.dev/privacy) - browser storage and form data.
 - [Sitemap](https://irishvisaupdatetracker.pages.dev/sitemap.xml)
@@ -113,7 +115,8 @@ current. Community timelines and projections are estimates, not official process
 
 - Email: soni.soni.parth@gmail.com (data corrections, privacy, general questions)
 - GitHub issues: https://github.com/parth-soni-10/Irish-Visa-Tracker/issues
-- Suggestion form: https://irishvisaupdatetracker.pages.dev/?tab=suggest
+- Feedback form: https://irishvisaupdatetracker.pages.dev/contact#feedback
+- Timeline form: https://irishvisaupdatetracker.pages.dev/contact#share-timeline
 
 For an individual immigration case, contact the Embassy of Ireland in New Delhi, ISD or a
 qualified immigration adviser. This project cannot intervene in an application.

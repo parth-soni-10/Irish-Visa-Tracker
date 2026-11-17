@@ -31,14 +31,14 @@ test.describe('SPA shell', () => {
     await expect(page.locator('.tracker-card')).toHaveCount(3);
   });
 
-  test('switches to the visa tracker and shows the Home tab', async ({ page }) => {
+  test('switches to the visa tracker and shows the Search tab', async ({ page }) => {
     await openVisaTracker(page);
     await expect(page.locator('#home-search')).toBeVisible({ timeout: 10000 });
-    await expect(page.locator('.navpill[data-tab="watchlist"]')).toBeVisible();
+    await expect(page.locator('.navpill[data-tab="saved"]')).toBeVisible();
     await expect(page.locator('#account-btn')).toHaveCount(0);
   });
 
-  test('searches by application number on Home', async ({ page }) => {
+  test('searches by application number on Search', async ({ page }) => {
     await openVisaTracker(page);
     const search = page.locator('#home-search');
     await search.fill('IRL2023981083');
@@ -49,7 +49,7 @@ test.describe('SPA shell', () => {
 
   test('saves and removes a watchlist entry in this browser', async ({ page }) => {
     await openVisaTracker(page);
-    await page.locator('.navpill[data-tab="watchlist"]').click();
+    await page.locator('.navpill[data-tab="saved"]').click();
     await expect(page.locator('#watch-add-form')).toBeVisible();
 
     await page.fill('#watch-add-form input[name="application_number"]', 'IRL2023981083');
@@ -86,7 +86,7 @@ test.describe('SPA shell', () => {
     });
 
     await openVisaTracker(page);
-    await page.locator('.navpill[data-tab="watchlist"]').click();
+    await page.locator('.navpill[data-tab="saved"]').click();
     const delhi = page.locator('#watch-local-rows tr[data-office="new-delhi"][data-watch-number="48850812"]');
     const beijing = page.locator('#watch-local-rows tr[data-office="beijing"][data-watch-number="48850812"]');
     await expect(delhi).toHaveCount(1);
@@ -122,10 +122,10 @@ test.describe('SPA shell', () => {
     });
 
     await openVisaTracker(page);
-    await page.locator('.navpill[data-tab="watchlist"]').click();
+    await page.locator('.navpill[data-tab="saved"]').click();
     const beijing = page.locator('#watch-local-rows tr[data-office="beijing"][data-watch-number="44078322"]');
     await expect(beijing).toContainText('Refused');
-    await expect(beijing).toContainText('2026-01-03');
+    await expect(beijing).toContainText('3 Jan 2026');
   });
 
   test('shows when an office archive cannot be loaded', async ({ page }) => {
@@ -146,7 +146,7 @@ test.describe('SPA shell', () => {
     });
 
     await openVisaTracker(page);
-    await page.locator('.navpill[data-tab="watchlist"]').click();
+    await page.locator('.navpill[data-tab="saved"]').click();
     const beijing = page.locator('#watch-local-rows tr[data-office="beijing"]');
     await expect(beijing).toContainText('Office data unavailable');
   });
@@ -162,7 +162,7 @@ test.describe('SPA shell', () => {
     });
 
     await openVisaTracker(page);
-    await page.locator('.navpill[data-tab="watchlist"]').click();
+    await page.locator('.navpill[data-tab="saved"]').click();
     const delhi = page.locator('#watch-local-rows tr[data-office="new-delhi"][data-watch-number="48850812"]');
     await expect(delhi).toContainText('Approved');
     const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('visa-watchlist') || '[]'));
@@ -179,7 +179,7 @@ test.describe('SPA shell', () => {
     });
 
     await openVisaTracker(page);
-    await page.locator('.navpill[data-tab="watchlist"]').click();
+    await page.locator('.navpill[data-tab="saved"]').click();
     await page.fill('#watch-add-form input[name="application_number"]', '48850812');
     await page.selectOption('#watch-add-form select[name="embassy_slug"]', 'new-delhi');
     await page.click('#watch-add-btn');
@@ -191,7 +191,7 @@ test.describe('SPA shell', () => {
     const pageB = await context.newPage();
     await openVisaTracker(pageA);
     await openVisaTracker(pageB);
-    await pageB.locator('.navpill[data-tab="watchlist"]').click();
+    await pageB.locator('.navpill[data-tab="saved"]').click();
     await expect(pageB.locator('#watch-local-status')).toContainText('No saved applications');
 
     await pageA.evaluate(() => {
@@ -212,7 +212,7 @@ test.describe('SPA shell', () => {
       ]));
     });
     await openVisaTracker(page);
-    await page.locator('.navpill[data-tab="watchlist"]').click();
+    await page.locator('.navpill[data-tab="saved"]').click();
 
     const downloadPromise = page.waitForEvent('download');
     await page.click('#watch-export-btn');
@@ -250,15 +250,12 @@ test.describe('SPA shell', () => {
     });
 
     await openVisaTracker(page);
-    await expect(page.locator('#watch-area')).toContainText('Beijing');
-    await expect(page.locator('#watch-area .pub-live')).toHaveCount(0);
-
-    // The same number is still addable for New Delhi from Home.
-    await page.fill('#home-search', '48850812');
-    await expect(page.locator('#watch-area [data-watch-add]')).toHaveCount(1);
+    await page.locator('.navpill[data-tab="saved"]').click();
+    await expect(page.locator('#watch-local-rows')).toContainText('Beijing');
+    await expect(page.locator('#watch-local-rows .pub-live')).toHaveCount(0);
   });
 
-  test('explains the limit when adding from Home', async ({ page }) => {
+  test('explains the limit when adding from Saved', async ({ page }) => {
     await page.addInitScript(() => {
       const items = Array.from({ length: 10 }, (_, index) => ({
         number: String(10000000 + index),
@@ -267,10 +264,11 @@ test.describe('SPA shell', () => {
       localStorage.setItem('visa-watchlist', JSON.stringify(items));
     });
     await openVisaTracker(page);
-    await page.fill('#home-search', '99999999');
-    await page.waitForTimeout(500);
-    await page.locator('#watch-area [data-watch-add]').click();
-    await expect(page.locator('#watch-area')).toContainText('up to 10 applications');
+    await page.locator('.navpill[data-tab="saved"]').click();
+    await page.fill('#watch-add-form input[name="application_number"]', '99999999');
+    await page.selectOption('#watch-add-form select[name="embassy_slug"]', 'new-delhi');
+    await page.click('#watch-add-btn');
+    await expect(page.locator('#watch-add-status')).toContainText('up to 10 applications');
   });
 });
 
@@ -345,5 +343,154 @@ test.describe('Mobile responsiveness', () => {
     await gotoHome(page);
     await expect(page.locator('h1').first()).toContainText('Choose your tracker');
     await expect(page.locator('.tracker-card')).toHaveCount(3);
+  });
+});
+
+test.describe('Six-tab deep links', () => {
+  const tabs = [
+    { tab: 'search', ready: '#home-search' },
+    { tab: 'history', ready: '[data-history-view="daily"]' },
+    { tab: 'alerts', ready: '#alert-form' },
+    { tab: 'saved', ready: '#watch-add-form' },
+    { tab: 'tools', ready: '#checklist-form' },
+    { tab: 'analytics', ready: '#chart-monthly' },
+  ];
+
+  test('loads each tab from its own URL', async ({ page }) => {
+    for (const item of tabs) {
+      await page.goto(`${BASE_URL}/?tracker=visa&tab=${item.tab}`, { waitUntil: 'domcontentloaded' });
+      await expect(page.locator('.navpill')).toHaveCount(6);
+      await expect(page.locator(`.navpill[data-tab="${item.tab}"]`)).toHaveClass(/active/);
+      await expect(page.locator(item.ready)).toBeVisible({ timeout: 15000 });
+    }
+  });
+});
+
+test.describe('All-office search result cards', () => {
+  test('shows a Beijing match and its watch, share and alert actions', async ({ page }) => {
+    let searchRequest = null;
+    await page.addInitScript(() => {
+      window.__copiedResultUrl = '';
+      Object.defineProperty(navigator, 'clipboard', {
+        configurable: true,
+        value: {
+          writeText: function(text) {
+            window.__copiedResultUrl = String(text);
+            return Promise.resolve();
+          },
+        },
+      });
+    });
+    await page.route('**/api/search', async (route) => {
+      searchRequest = route.request().postDataJSON();
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          success: true,
+          results: [{
+            date: '2026-11-01',
+            number: '44078322',
+            decision: 'Refused',
+            embassy: 'beijing',
+            date_basis: 'report_period_end',
+            report_date: '2026-11-01',
+            source: 'official',
+          }],
+          pagination: { total: 1, limit: 100, offset: 0, has_more: false },
+          query: '44078322',
+          mode: 'fuzzy',
+          filters: {},
+          sort: 'date_desc',
+        }),
+      });
+    });
+
+    await page.goto(`${BASE_URL}/?tracker=visa&tab=search`, { waitUntil: 'domcontentloaded' });
+    await expect(page.locator('#home-search')).toBeVisible();
+    await expect(page.locator('#home-office')).toHaveValue('all');
+    await page.locator('#home-search').fill('44078322');
+    await page.locator('#home-search').press('Enter');
+
+    const card = page.locator('.lookup-result-card').first();
+    await expect(card).toBeVisible({ timeout: 15000 });
+    await expect(card).toHaveAttribute('data-office', 'beijing');
+    await expect(card).toContainText('Beijing');
+    await expect(card).toContainText('Latest published snapshot');
+    await expect(card).toContainText('Decision date');
+    await expect(card).toContainText('Report date');
+    await expect(card).toContainText('Last checked');
+    await expect(card).toContainText('Official source');
+    await expect(card.locator('.lookup-result-source a[href="https://www.ireland.ie/en/china/beijing/services/visas/visa-decisions/"]')).toBeVisible();
+    await expect(card).toContainText('What to do next');
+    await expect(card).toContainText('not legal advice');
+
+    expect(searchRequest).toBeTruthy();
+    expect(searchRequest.filters).toEqual({});
+    expect(searchRequest.query).toBe('44078322');
+
+    const watch = card.locator('[data-lookup-watch]');
+    await watch.click();
+    await expect(watch).toHaveAttribute('aria-pressed', 'true');
+    await expect(watch).toContainText('Watching');
+    const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('visa-watchlist') || '[]'));
+    expect(saved).toEqual(expect.arrayContaining([
+      expect.objectContaining({ number: '44078322', office: 'beijing' }),
+    ]));
+
+    await card.locator('[data-lookup-share]').click();
+    await expect(card.locator('[data-lookup-action-status]')).toContainText('Shareable link copied.');
+    const copied = await page.evaluate(() => window.__copiedResultUrl);
+    const copiedUrl = new URL(copied);
+    expect(copiedUrl.searchParams.get('q')).toBe('44078322');
+    expect(copiedUrl.searchParams.get('office')).toBe('beijing');
+    expect(copiedUrl.searchParams.get('tab')).toBe('search');
+
+    await card.locator('[data-lookup-alert]').click();
+    await expect(page.locator('.navpill[data-tab="alerts"]')).toHaveClass(/active/);
+    await expect(page.locator('#alert-form input[name="application_number"]')).toHaveValue('44078322');
+    await expect(page.locator('#alert-form select[name="embassy"]')).toHaveValue('beijing');
+  });
+});
+
+test.describe('History and Help routes', () => {
+  test('shows more daily rows without leaving History', async ({ page }) => {
+    await page.goto(`${BASE_URL}/?tracker=visa&tab=history`, { waitUntil: 'domcontentloaded' });
+    const rows = page.locator('.daily-table tbody tr:not(.dd-row)');
+    await expect(page.locator('.daily-table')).toBeVisible({ timeout: 15000 });
+    await expect(rows).toHaveCount(21);
+    const more = page.locator('[data-daily-show-more]');
+    await expect(more).toBeVisible();
+    await more.click();
+    await expect(rows).toHaveCount(42);
+    await expect(page.locator('.navpill[data-tab="history"]')).toHaveClass(/active/);
+  });
+
+  test('serves the Help and FAQ route', async ({ page }) => {
+    const response = await page.goto(`${BASE_URL}/help`, { waitUntil: 'domcontentloaded' });
+    expect(response.status()).toBe(200);
+    await expect(page).toHaveTitle(/Help & FAQ/);
+    await expect(page.locator('h1')).toContainText('Using the Irish Visa Decision Tracker');
+    await expect(page.locator('#find-number')).toBeVisible();
+    await expect(page.locator('#checklist')).toBeVisible();
+  });
+
+  test('shows work-only checklist fields only for a work visa', async ({ page }) => {
+    await page.goto(`${BASE_URL}/?tracker=visa&tab=tools`, { waitUntil: 'domcontentloaded' });
+    await expect(page.locator('#checklist-form')).toBeVisible({ timeout: 15000 });
+    const workFields = page.locator('[data-checklist-for="work"]');
+    await expect(workFields).toHaveCount(2);
+    await expect(workFields.nth(0)).toBeHidden();
+    await expect(workFields.nth(1)).toBeHidden();
+
+    await page.selectOption('#cl-visa-type', 'work');
+    await expect(workFields.nth(0)).toBeVisible();
+    await expect(workFields.nth(1)).toBeVisible();
+    await expect(page.locator('label[for="cl-permit-type"]')).toContainText('Work permit type');
+    await expect(page.locator('label[for="cl-regulated"]')).toContainText('Regulated profession?');
+
+    await page.selectOption('#cl-visa-type', 'study');
+    await expect(workFields.nth(0)).toBeHidden();
+    await expect(workFields.nth(1)).toBeHidden();
   });
 });

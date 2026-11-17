@@ -518,12 +518,11 @@ async function handleRequest(request, env) {
   const documents = [
     { path: "/", file: "index.html" },
     { path: "/about", file: "about.html" },
+    { path: "/help", file: "help.html" },
     { path: "/comparison", file: "comparison.html" },
     { path: "/contact", file: "contact.html" },
     { path: "/privacy", file: "privacy.html" },
     { path: "/terms", file: "terms.html" },
-    { path: "/refund", file: "refund.html" },
-    { path: "/refunds", file: "refund.html" },
     { path: "/admin", file: "admin.html" },
     { path: "/daily-summaries", file: "daily-summaries.html" },
     { path: "/stamp-1g-processing-dates", file: "stamp-1g-processing-dates.html" },

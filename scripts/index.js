@@ -16,6 +16,23 @@
             const WATCH_OFFICES = Object.keys(WATCH_OFFICE_NAMES);
             const WATCH_LIMIT = 10;
             const OFFICE_ARCHIVE_PREFIX = 'data/embassy-';
+            const DATA_MANIFEST_URL = 'data/data_manifest.json';
+            const OFFICE_SOURCE_URLS = {
+                'new-delhi': 'https://www.ireland.ie/en/india/newdelhi/services/visas/processing-times-and-decisions/',
+                beijing: 'https://www.ireland.ie/en/china/beijing/services/visas/visa-decisions/',
+                dublin: 'https://www.irishimmigration.ie/visa-decisions/',
+                'abu-dhabi': 'https://www.ireland.ie/en/uae/abudhabi/services/visas/weekly-decision-reports/',
+                abuja: 'https://www.ireland.ie/en/nigeria/abuja/services/visas/weekly-decision-reports/',
+                ankara: 'https://www.ireland.ie/en/turkiye/ankara/services/visas/weekly-decision-report/'
+            };
+            const OFFICE_COVERAGE = {
+                'new-delhi': 'Daily published decisions',
+                beijing: 'Latest published snapshot',
+                dublin: 'Latest published snapshot',
+                'abu-dhabi': 'Dated weekly reports',
+                abuja: 'Dated weekly reports',
+                ankara: 'Dated weekly reports'
+            };
 
             // Boot-time device-capability detector. Runs once at the top of
             // the IIFE (the page is already parsing this script which lives
@@ -133,33 +150,7 @@
             let dataPromise = null;
             let theme = localStorage.getItem('visa-theme') || 'light';
 
-            // ---- activation funnel ----
-            var ACTIVATION_KEY = 'visa-activation-v1';
-            function readActivation() {
-                try { return JSON.parse(localStorage.getItem(ACTIVATION_KEY) || '{}') || {}; } catch { return {}; }
-            }
-            function markActivation(step) {
-                var state = readActivation();
-                if (state[step]) return;
-                state[step] = true;
-                try { localStorage.setItem(ACTIVATION_KEY, JSON.stringify(state)); } catch {}
-                paintActivation();
-                trackConversion('activation_step_completed', 'checklist', { step: step });
-            }
-            function paintActivation() {
-                var state = readActivation();
-                document.querySelectorAll('[data-activation-step]').forEach(function(item) {
-                    item.classList.toggle('done', Boolean(state[item.getAttribute('data-activation-step')]));
-                });
-            }
-            function trackConversion(event, source, details) {
-                try {
-                    if (event === 'alert_cta_view') {
-                        var seen = 'visa-conversion-' + source;
-                        if (sessionStorage.getItem(seen)) return;
-                        sessionStorage.setItem(seen, '1');
-                    }
-                } catch { /* storage can be disabled */ }
+            function trackConversion(event, source) {
                 var payload = JSON.stringify({ event: event, source: source || 'web' });
                 if (navigator.sendBeacon) {
                     try {
@@ -173,15 +164,21 @@
                     keepalive: true
                 }).catch(function() {});
             }
-            function openAlertForm() {
-                trackConversion('alert_telegram_click', 'activation');
-                // `suggest` is the registered tab id in KNOWN_TABS; using
-                // "suggestions" here renders the form but writes a URL that
-                // reloads to the landing page.
-                switchTab('suggest');
+            function openAlertForResult(number, office) {
+                if (!number) return;
+                var safeOffice = WATCH_OFFICES.indexOf(office) !== -1 ? office : 'new-delhi';
+                trackConversion('alert_telegram_click', 'lookup_result');
+                switchTab('alerts');
                 setTimeout(function() {
                     var form = document.getElementById('alert-form');
                     if (!form) return;
+                    var app = form.querySelector('input[name="application_number"]');
+                    var embassy = form.querySelector('select[name="embassy"]');
+                    if (app) app.value = number;
+                    if (embassy) {
+                        embassy.value = safeOffice;
+                        embassy.dispatchEvent(new Event('change', { bubbles: true }));
+                    }
                     form.scrollIntoView({ behavior: 'smooth', block: 'center' });
                     var focus = form.querySelector('#telegram-alert-btn');
                     if (focus) focus.focus({ preventScroll: true });
@@ -193,7 +190,33 @@
             // query string, so every view can be bookmarked/shared and survives
             // reloads. Tab switches push history entries; search/date updates
             // replace the current one (no per-keystroke history spam).
-            const KNOWN_TABS = ['home', 'daily', 'past', 'suggest', 'watchlist', 'checklist', 'search'];
+            const TABS = [
+                { id: 'search', label: 'Search', icon: 'search' },
+                { id: 'history', label: 'History', icon: 'calendar-days' },
+                { id: 'alerts', label: 'Alerts', icon: 'bell' },
+                { id: 'saved', label: 'Saved', icon: 'bookmark' },
+                { id: 'tools', label: 'Tools', icon: 'wrench' },
+                { id: 'analytics', label: 'Analytics', icon: 'bar-chart-2' },
+            ];
+            const KNOWN_TABS = TABS.map(function(tab) { return tab.id; });
+            // Old bookmarks keep working after the eight-tab layout was
+            // collapsed into six applicant-facing tabs.
+            const LEGACY_TAB_ALIASES = {
+                home: 'search',
+                daily: 'history',
+                past: 'history',
+                suggest: 'alerts',
+                suggestions: 'alerts',
+                watchlist: 'saved',
+                checklist: 'tools'
+            };
+            const TAB_VIEWS = { history: ['daily', 'past'], tools: ['checklist', 'vfs'] };
+            function resolveTabView(tab, requested, legacyTab) {
+                if ((TAB_VIEWS[tab] || []).indexOf(requested) !== -1) return requested;
+                if (tab === 'history') return legacyTab === 'past' ? 'past' : 'daily';
+                if (tab === 'tools') return 'checklist';
+                return '';
+            }
             // Top-level tracker: 'home' is the landing screen with the two
             // tracker cards, 'visa' the embassy-decisions tracker, '1g' the
             // Stamp 1G processing-date tracker. Old shared links carry only
@@ -201,19 +224,23 @@
             const KNOWN_TRACKERS = ['home', 'visa', '1g', 'permits'];
             // Which decisions the Past table can be narrowed to. Declared before
             // readUrlState() runs, because the reader restores it from the URL.
-            const PAST_STATUSES = ['all', 'accepted', 'rejected', 'pending'];
+            const PAST_STATUSES = ['all', 'accepted', 'rejected'];
 
             function readUrlState() {
                 const p = new URLSearchParams(location.search);
-                const tab = p.get('tab');
+                const requestedTab = p.get('tab') || '';
+                const tab = LEGACY_TAB_ALIASES[requestedTab] || requestedTab;
                 const tracker = p.get('tracker');
                 let resolved = 'home';
                 if (tracker && KNOWN_TRACKERS.indexOf(tracker) !== -1) resolved = tracker;
                 else if (tab && KNOWN_TABS.indexOf(tab) !== -1) resolved = 'visa';
+                const requestedOffice = p.get('office');
                 return {
                     tracker: resolved,
-                    tab: KNOWN_TABS.indexOf(tab) !== -1 ? tab : 'home',
+                    tab: KNOWN_TABS.indexOf(tab) !== -1 ? tab : 'search',
+                    view: resolveTabView(tab, p.get('view'), requestedTab),
                     q: (p.get('q') || '').slice(0, 200),
+                    office: WATCH_OFFICES.indexOf(requestedOffice) !== -1 ? requestedOffice : 'all',
                     date: (p.get('date') || '').slice(0, 10),
                     status: PAST_STATUSES.indexOf(p.get('status')) !== -1 ? p.get('status') : 'all'
                 };
@@ -223,9 +250,11 @@
                 if (activeTracker === 'visa') {
                     p.set('tracker', 'visa');
                     p.set('tab', activeTab);
+                    if ((activeTab === 'history' || activeTab === 'tools') && activeView) p.set('view', activeView);
                     if (homeSearchTerm) p.set('q', homeSearchTerm);
-                    if (pastDateFilter) p.set('date', pastDateFilter);
-                    if (pastStatusFilter !== 'all') p.set('status', pastStatusFilter);
+                    if (homeSearchOffice !== 'all') p.set('office', homeSearchOffice);
+                    if (activeTab === 'history' && activeView === 'past' && pastDateFilter) p.set('date', pastDateFilter);
+                    if (activeTab === 'history' && activeView === 'past' && pastStatusFilter !== 'all') p.set('status', pastStatusFilter);
                 } else if (activeTracker === '1g') {
                     p.set('tracker', '1g');
                 } else if (activeTracker === 'permits') {
@@ -238,11 +267,18 @@
             const urlState = readUrlState();
             let activeTracker = urlState.tracker;
             let activeTab = urlState.tab;
+            let activeView = urlState.view;
             let homeSearchTerm = urlState.q;
+            let homeSearchOffice = urlState.office;
+            let homeLookupSeq = 0;
             let pastDateFilter = urlState.date;
             // Kept beside the date filter: the two narrow the same rows and share
             // the URL - ?tab=past&status=accepted&date=2026-10-01.
             let pastStatusFilter = urlState.status;
+            let pastPageSize = 100;
+            let pastVisibleLimit = 100;
+            let dailyVisibleLimit = 21;
+            const DAILY_PAGE_SIZE = 21;
 
             // ---- visit tracking + stale-data state ----
             let lastVisitAt = Number(localStorage.getItem('visa-last-visit') || '0') || 0;
@@ -251,6 +287,8 @@
             let dataLoadError = false;
             let officeWatchData = Object.create(null);
             let officeWatchPromises = Object.create(null);
+            let officeLookupMeta = null;
+            let officeLookupMetaPromise = null;
 
             function classify(decision) {
                 const s = (decision || '').toLowerCase();
@@ -338,12 +376,14 @@
                     r._visaConfidence = detection.confidence;
                 }
                 
+                var dateLabel = humanDate(r.date);
+                var dateCell = '<time datetime="' + escapeHtml(r.date) + '">' + escapeHtml(dateLabel) + '</time>';
                 if (r._placeholder) {
                     // Notice rows render their message, not an application number.
-                    r._html = '<tr class="ph-row"><td class="mono">' + r.date + '</td><td colspan="2">' +
+                    r._html = '<tr class="ph-row"><td class="mono">' + dateCell + '</td><td colspan="2">' +
                         placeholderNote(r.decision) + '</td></tr>';
                 } else {
-                    r._html = '<tr><td class="mono">' + r.date + '</td><td class="mono">' + r.irl +
+                    r._html = '<tr><td class="mono">' + dateCell + '</td><td class="mono">' + r.irl +
                         '</td><td><span class="pill ' + r._pillClass + '">' + (r.decision || '-') + '</span></td></tr>';
                 }
                 return r;
@@ -357,6 +397,13 @@
 
             const _pctFmt = new Intl.NumberFormat('en-GB', { style: 'percent', maximumFractionDigits: 1 });
             function fmtPct(n) { return isFinite(n) ? _pctFmt.format(n) : '-'; }
+            function humanDate(value) { return lookupFormatDate(value) || String(value || ''); }
+            function sampleSizeText(n, suffix) {
+                var count = Number(n || 0).toLocaleString();
+                var noun = n === 1 ? 'published decision' : 'published decisions';
+                return (n ? 'Based on ' + count + ' ' + noun : 'No published decisions') +
+                    (suffix ? ' ' + suffix : '');
+            }
             // Localised short month names for the hero date ranges (no hardcoded
             // month arrays - Intl.DateTimeFormat owns locale + format).
             const _monthFmt = new Intl.DateTimeFormat('en-GB', { month: 'short' });
@@ -536,20 +583,31 @@
                 let dot = 'ok', health;
                 if (m.ok === false) {
                     dot = 'bad';
-                    health = 'Last scrape <strong>failed</strong> (' + fmtISTStamp(m.lastRunAt) + ')';
+                    health = 'Last updated check <strong>failed</strong> (' + fmtISTStamp(m.lastRunAt) + ')';
                 } else if (isToday) {
-                    health = 'Last scrape: <strong>' + fmtISTStamp(m.lastRunAt) + '</strong>' +
+                    health = 'Last updated: <strong>' + fmtISTStamp(m.lastRunAt) + '</strong>' +
                         (m.newRows ? ' \u00b7 <strong>' + m.newRows + ' new</strong> rows' : ' \u00b7 no new rows');
                 } else {
                     dot = 'stale';
-                    health = 'Last scrape: <strong>' + fmtISTStamp(m.lastRunAt) + '</strong>. Nothing recorded today yet.';
+                    health = 'Last updated: <strong>' + fmtISTStamp(m.lastRunAt) + '</strong>. Nothing recorded today yet.';
                 }
+                health += ' \u00b7 Next expected New Delhi update: a weekday morning around 11:00 IST.';
                 html.push('<div class="meta-line"><span class="meta-dot ' + dot + '" aria-hidden="true"></span><span>' + health + '</span></div>');
-                if (m.fileRows && m.sheetRows) {
+                const latestDataDate = (cache || []).reduce(function(latest, row) {
+                    return row && !row._placeholder && row.date && row.date > latest ? row.date : latest;
+                }, '');
+                const dataRows = (cache || []).filter(function(row) { return row && !row._placeholder; }).length;
+                if (m.fileRows && m.sheetRows && (!latestDataDate || m.fileDate === latestDataDate)) {
                     const synced = m.sheetRows >= m.fileRows;
                     html.push('<div class="meta-line">Recorded <strong>' + m.sheetRows + '</strong> of <strong>' + m.fileRows +
-                        '</strong> decisions in the latest file' + (m.fileDate ? ' (dated ' + m.fileDate + ')' : '') +
+                        '</strong> decisions in the latest file' + (m.fileDate ? ' (dated ' + humanDate(m.fileDate) + ')' : '') +
                         (synced ? '. Fully synced.' : '. ' + (m.fileRows - m.sheetRows) + ' still missing.') + '</div>');
+                } else if (latestDataDate) {
+                    // The scraper meta can lag the decisions file by a run. Show
+                    // the actual newest row rather than pairing a stale file date
+                    // with a newer sheet count.
+                    html.push('<div class="meta-line">Tracker contains <strong>' + dataRows +
+                        '</strong> published decisions, latest dated <strong>' + humanDate(latestDataDate) + '</strong>.</div>');
                 }
                 if (m.closureDates && m.closureDates.length) {
                     const chips = fmtClosureDates(m.closureDates).split(', ').map(c =>
@@ -638,46 +696,23 @@
             }
 
 
-            function renderConfigWarning() {
-                // No configuration step exists anymore (static data files) -
-                // kept as a function so every layout call site is untouched.
-                return '';
-            }
-
             function searchIcon() {
                 return '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>';
             }
 
-            function readmeSection() {
-                return '<details class="readme"><summary class="readme-title">How this tracker works</summary>' +
-                    '<p>Every day, an automated job checks the Irish embassy\'s New Delhi visa decisions page for the latest published spreadsheet and pulls any application numbers that haven\'t been recorded yet.</p>' +
-                    '<ul>' +
-                    '<li><strong>Home</strong>: today\'s snapshot, headline stats, and every result from the most recent file.</li>' +
-                    '<li><strong>Daily summary</strong>: one row per day: volume, day-on-day change, acceptance and rejection rates.</li>' +
-                    '<li><strong>Past results</strong>: full history, searchable by application number.</li>' +
-                    '<li><strong>Suggestions</strong>: leave feedback. I check the suggestions and get back with a reply asap.</li>' +
-                    '</ul>' +
-                    '<p style="margin-top:12px;"><strong>After approval:</strong> Once your visa is approved, it is dispatched through <strong>BlueDart</strong> (in most cases) and follows standard courier delivery timelines from Delhi to your address.</p>' +
-                    '</details>';
+            function officeName(slug) {
+                return WATCH_OFFICE_NAMES[slug] || slug || '';
             }
 
-            function activationSection() {
-                return '<section class="activation" id="activation-card" aria-labelledby="activation-heading">' +
-                    '<div>' +
-                    '<p class="activation-kicker">Never miss a decision</p>' +
-                    '<h2 id="activation-heading">Get your decision by Telegram</h2>' +
-                    '<p class="activation-lede">Add your application once. The tracker checks the published files and only messages you when a decision appears. No refresh, no guessing.</p>' +
-                    '<div class="activation-actions">' +
-                    '<button type="button" class="btn activation-telegram" data-activation-action="telegram"><i data-lucide="send" aria-hidden="true"></i> Get Telegram alerts</button>' +
-                    '</div>' +
-                    '<p class="activation-meta">Free. No email address needed. One message per published decision.</p>' +
-                    '</div>' +
-                    '<ol class="activation-checklist" aria-label="First-run checklist">' +
-                    '<li data-activation-step="search"><span class="activation-num">1</span><div><strong>Find your application</strong><p>Search the latest published decision list.</p><button type="button" class="activation-link" data-activation-action="search">Search now</button></div></li>' +
-                    '<li data-activation-step="watch"><span class="activation-num">2</span><div><strong>Save it to your watchlist</strong><p>Saved in this browser and checked against the latest data.</p><button type="button" class="activation-link" data-activation-action="watch">Open watchlist</button></div></li>' +
-                    '<li data-activation-step="alerts"><span class="activation-num">3</span><div><strong>Link Telegram alerts</strong><p>One message per published decision. Your email address is never collected.</p></div></li>' +
-                    '</ol>' +
-                    '</section>';
+            function officeOptionsHTML(selected) {
+                selected = selected === 'all' || WATCH_OFFICES.indexOf(selected) !== -1 ? selected : 'all';
+                return '<option value="all"' + (selected === 'all' ? ' selected' : '') +
+                    '>All six offices</option>' +
+                    WATCH_OFFICES.map(function(office) {
+                        return '<option value="' + escapeHtml(office) + '"' +
+                            (selected === office ? ' selected' : '') + '>' +
+                            escapeHtml(officeName(office)) + '</option>';
+                    }).join('');
             }
 
             // ===== hero builder (Mockup C) - per-tab hero with real data =====
@@ -702,6 +737,36 @@
                 const dayDiff = prevRealDay ? latestCount - realRows(prevRealDay[1]).length : 0;
 
                 const states = {
+                    search: {
+                        title: 'One number. Six offices.',
+                        sub: 'Search the published reports, then check the decision date, report date and official source.',
+                        visual: '<div class="ring"></div><div class="ring"></div><div class="ring"></div><div class="ring-core"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></div>'
+                    },
+                    history: {
+                        title: 'Every published day, in one place.',
+                        sub: (function() {
+                            return byDate.length + ' days on record, ' + fmtPct(accPct) + ' accepted across ' + total.toLocaleString() + ' decisions.';
+                        })(),
+                        visual: '<div class="wave">' + byDate.slice(0, 7).reverse().map(function(d) {
+                            var n = realRows(d[1]).length;
+                            return '<div class="wave-bar" style="height:' + Math.max(8, Math.min(120, n)) + 'px"></div>';
+                        }).join('') + '</div>'
+                    },
+                    saved: {
+                        title: 'Your applications, on this device.',
+                        sub: 'Save a number, restore a backup, and choose which saved applications get browser push.',
+                        visual: '<div class="paper"><div class="paper-title">Saved</div><div class="paper-text">No account. No server-side watchlist.</div></div>'
+                    },
+                    tools: {
+                        title: 'Checklists and VFS, together.',
+                        sub: 'Build a document checklist, print it, or open the official VFS handoff.',
+                        visual: '<div class="paper"><div class="paper-title">Tools</div><div class="paper-text">Plan before you apply. This page cannot book a VFS slot.</div></div>'
+                    },
+                    analytics: {
+                        title: 'Patterns, not predictions.',
+                        sub: 'Weekly volumes, approval shares with sample sizes, and experimental unusual-pattern checks.',
+                        visual: '<div class="paper"><div class="paper-title">Analytics</div><div class="paper-text">Published decisions only. Approval share is not your personal chance.</div></div>'
+                    },
                     home: {
                         title: latestPlaceholder
                             ? 'No new outcomes yet.'
@@ -808,10 +873,10 @@
                             }).join('') + '</div>';
                         })()
                     },
-                    suggest: {
-                        title: 'Real notes, real replies.',
-                        sub: 'Leave a suggestion below. I read every one and reply asap.',
-                        visual: '<div class="paper"><div class="paper-title">Feedback</div><div class="paper-text">Every suggestion gets read and answered.</div></div>'
+                    alerts: {
+                        title: 'Decisions, delivered.',
+                        sub: 'Choose Telegram or browser push when a decision is published.',
+                        visual: '<div class="paper"><div class="paper-title">Alerts</div><div class="paper-text">One message per published decision.</div></div>'
                     }
                 };
                 return states[tabId] || states.home;
@@ -854,35 +919,54 @@
 
             function wireTabListeners() {
                 ensureScrollableFocusable();
-                var activation = document.getElementById('activation-card');
-                if (activation && activation.dataset.wired !== '1') {
-                    activation.dataset.wired = '1';
-                    activation.addEventListener('click', function(event) {
-                        var action = event.target.closest('[data-activation-action]');
-                        if (!action) return;
-                        var kind = action.getAttribute('data-activation-action');
-                        if (kind === 'telegram') { openAlertForm(); return; }
-                        if (kind === 'search') {
-                            var input = document.getElementById('home-search');
-                            if (input) { input.scrollIntoView({ behavior: 'smooth', block: 'center' }); input.focus({ preventScroll: true }); }
+                if (document.getElementById('search-form')) wireSearchForm();
+                var historySwitch = document.getElementById('tab-body');
+                if (historySwitch) {
+                    historySwitch.onclick = function(e) {
+                        var historyBtn = e.target.closest && e.target.closest('[data-history-view]');
+                        if (historyBtn) {
+                            activeView = historyBtn.getAttribute('data-history-view');
+                            switchTab('history');
                             return;
                         }
-                        if (kind === 'watch') switchTab('watchlist');
-                    });
+                        var toolsBtn = e.target.closest && e.target.closest('[data-tools-view]');
+                        if (toolsBtn) {
+                            activeView = toolsBtn.getAttribute('data-tools-view');
+                            switchTab('tools');
+                            return;
+                        }
+                        var advancedLink = e.target.closest && e.target.closest('[data-open-advanced]');
+                        if (advancedLink) {
+                            var advanced = document.getElementById('advanced-search');
+                            if (advanced) advanced.open = true;
+                            return;
+                        }
+                        var showMore = e.target.closest && e.target.closest('#past-show-more-btn');
+                        if (showMore) {
+                            pastVisibleLimit += pastPageSize;
+                            paintPastRows();
+                            return;
+                        }
+                        var dailyMore = e.target.closest && e.target.closest('[data-daily-show-more]');
+                        if (dailyMore) {
+                            dailyVisibleLimit += DAILY_PAGE_SIZE;
+                            var dailyView = document.getElementById('daily-view');
+                            if (dailyView && cache) dailyView.innerHTML = renderDailySummary(cache);
+                            return;
+                        }
+                    };
                 }
-                paintActivation();
                 var homeSearchEl = document.getElementById('home-search');
                 if (homeSearchEl) {
                     homeSearchEl.addEventListener('input', function(e) {
                         homeSearchTerm = e.target.value;
-                        if (homeSearchTerm.trim()) markActivation('search');
                         var clearBtn = document.getElementById('home-search-clear');
                         if (clearBtn && !clearBtn.getAttribute('data-tu-state')) clearBtn.hidden = !homeSearchTerm.trim();
                         // Debounce so rapid typing coalesces into a single repaint.
                         if (_searchDebounce) clearTimeout(_searchDebounce);
                         _searchDebounce = setTimeout(function() {
                             _searchDebounce = null;
-                            if (activeTab === 'home') paintHomeRows();
+                            if (activeTab === 'search') runHomeLookup();
                             syncUrl('replace');
                         }, 150);
                     });
@@ -901,21 +985,79 @@
                     });
                     // Don't pop the keyboard on touch devices (env detector sets
                     // body[data-env="touch"]); desktop keeps the search focused.
-                    if (activeTab === 'home' && document.body.dataset.env !== 'touch') {
+                    if (activeTab === 'search' && document.body.dataset.env !== 'touch') {
                         homeSearchEl.focus();
                         homeSearchEl.setSelectionRange(homeSearchEl.value.length, homeSearchEl.value.length);
                     }
+                    if (homeSearchTerm.trim()) runHomeLookup();
                 }
+                var homeLookupForm = document.getElementById('home-lookup-form');
+                if (homeLookupForm) homeLookupForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    if (!homeSearchTerm.trim()) {
+                        var emptyInput = document.getElementById('home-search');
+                        if (emptyInput) emptyInput.focus();
+                        return;
+                    }
+                    saveRecentSearch(homeSearchTerm);
+                    refreshRecentChips();
+                    if (homeSearchTerm.trim().length >= 6) trackConversion('application_search', 'home');
+                    runHomeLookup();
+                    syncUrl('replace');
+                });
+                var homeOfficeEl = document.getElementById('home-office');
+                if (homeOfficeEl) homeOfficeEl.addEventListener('change', function(e) {
+                    var nextOffice = e.target.value;
+                    homeSearchOffice = nextOffice === 'all' || WATCH_OFFICES.indexOf(nextOffice) !== -1
+                        ? nextOffice : 'all';
+                    if (homeSearchTerm.trim()) runHomeLookup();
+                    syncUrl('replace');
+                });
+                var lookupResults = document.getElementById('home-lookup-results');
+                if (lookupResults) lookupResults.onclick = function(e) {
+                    var target = e.target && e.target.closest ? e.target : null;
+                    var retry = target && target.closest('[data-home-retry]');
+                    if (retry) {
+                        runHomeLookup();
+                        return;
+                    }
+                    var shareBtn = target && target.closest('[data-lookup-share]');
+                    if (shareBtn) {
+                        shareLookupResult(shareBtn);
+                        return;
+                    }
+                    var watchBtn = target && target.closest('[data-lookup-watch]');
+                    if (watchBtn) {
+                        handleLookupWatch(watchBtn);
+                        return;
+                    }
+                    var alertBtn = target && target.closest('[data-lookup-alert]');
+                    if (alertBtn) {
+                        openAlertForResult(
+                            alertBtn.getAttribute('data-lookup-alert'),
+                            alertBtn.getAttribute('data-lookup-alert-office')
+                        );
+                        return;
+                    }
+                    var allOffices = target && target.closest('[data-home-office-all]');
+                    if (!allOffices) return;
+                    homeSearchOffice = 'all';
+                    var officeSelect = document.getElementById('home-office');
+                    if (officeSelect) officeSelect.value = 'all';
+                    runHomeLookup();
+                    syncUrl('replace');
+                };
                 var dateFilterEl = document.getElementById('past-date-filter');
                 if (dateFilterEl) dateFilterEl.addEventListener('change', function(e) {
                     pastDateFilter = e.target.value;
+                    pastVisibleLimit = pastPageSize;
                     // Toggle .has-filter on the datefilter wrapper so the X clear
                     // button appears/disappears WITHOUT re-rendering the whole
                     // past layout (the button is always in the DOM, just hidden).
                     if (dateFilterEl.parentElement) {
                         dateFilterEl.parentElement.classList.toggle('has-filter', !!pastDateFilter);
                     }
-                    if (activeTab === 'past') paintPastRows();
+                    if (activeTab === 'history' && activeView === 'past') paintPastRows();
                     syncUrl('replace');
                 });
                 // The decision filter: one funnel for the same single choice the
@@ -923,7 +1065,7 @@
                 var statusHost = document.getElementById('past-status-filter');
                 if (statusHost && window.FilterDisclosure) {
                     var real = realRows(cache || []);
-                    var sc = { all: real.length, accepted: 0, rejected: 0, pending: 0 };
+                    var sc = { all: real.length, accepted: 0, rejected: 0 };
                     real.forEach(function(r) {
                         var s = r._status || classify(r.decision);
                         if (sc[s] !== undefined) sc[s] += 1;
@@ -938,25 +1080,49 @@
                         choices: [
                             { id: 'all', label: 'All decisions', glyph: 'grid', hint: sc.all },
                             { id: 'accepted', label: 'Accepted', glyph: 'check', hint: sc.accepted },
-                            { id: 'rejected', label: 'Rejected', glyph: 'x', hint: sc.rejected },
-                            { id: 'pending', label: 'Pending', glyph: 'clock', hint: sc.pending }
+                            { id: 'rejected', label: 'Rejected', glyph: 'x', hint: sc.rejected }
                         ].filter(function(c) { return c.id === 'all' || c.hint > 0 || c.id === pastStatusFilter; }),
                         onChange: function(id) {
                             pastStatusFilter = id;
+                            pastVisibleLimit = pastPageSize;
                             paintPastRows();
                             syncUrl('replace');
                         }
                     });
                 }
+                var pageSizeEl = document.getElementById('past-page-size');
+                if (pageSizeEl) pageSizeEl.addEventListener('change', function(e) {
+                    var next = Number(e.target.value);
+                    pastPageSize = [50, 100, 250, 500].indexOf(next) !== -1 ? next : 100;
+                    pastVisibleLimit = pastPageSize;
+                    if (activeTab === 'history' && activeView === 'past') paintPastRows();
+                });
+                var pastReset = document.getElementById('past-reset');
+                if (pastReset) pastReset.addEventListener('click', function() {
+                    pastDateFilter = '';
+                    pastStatusFilter = 'all';
+                    pastVisibleLimit = pastPageSize;
+                    var dateInput = document.getElementById('past-date-filter');
+                    if (dateInput) dateInput.value = '';
+                    var dateWrap = dateInput && dateInput.parentElement;
+                    if (dateWrap) dateWrap.classList.remove('has-filter');
+                    var statusHost = document.getElementById('past-status-filter');
+                    if (statusHost) statusHost.innerHTML = '';
+                    if (activeTab === 'history' && activeView === 'past') {
+                        switchTab('history', { noUrl: true });
+                    }
+                    syncUrl('replace');
+                });
                 var dateClearEl = document.getElementById('past-date-clear');
                 if (dateClearEl) dateClearEl.addEventListener('click', function() {
                     pastDateFilter = '';
+                    pastVisibleLimit = pastPageSize;
                     var dateInput = document.getElementById('past-date-filter');
                     if (dateInput) dateInput.value = '';
                     if (dateClearEl.parentElement) {
                         dateClearEl.parentElement.classList.remove('has-filter');
                     }
-                    if (activeTab === 'past') paintPastRows();
+                    if (activeTab === 'history' && activeView === 'past') paintPastRows();
                     syncUrl('replace');
                 });
                 // Daily Summary drill-down: delegated handler survives re-renders;
@@ -979,24 +1145,61 @@
                         if (detail && detail.classList.contains('dd-row')) toggleDayDetail(t, detail);
                     };
                 }
-                // Real <form> - intercept the submit event (covers the button
-                // AND Enter-key submission) and POST via fetch, so the page
-                // shows its own success card instead of navigating away.
-                var suggForm = document.getElementById('sugg-form');
-                if (suggForm) suggForm.addEventListener('submit', function(e) {
-                    e.preventDefault();
-                    submitSuggestion();
-                });
-                var timeForm = document.getElementById('time-form');
-                if (timeForm) timeForm.addEventListener('submit', function(e) {
-                    e.preventDefault();
-                    submitTimeline(false);
-                });
+                // Telegram is the primary alert channel. Browser push is
+                // enabled per saved application in the second Alerts card.
                 var alertForm = document.getElementById('alert-form');
                 if (alertForm) alertForm.addEventListener('submit', function(e) {
                     e.preventDefault();
                     startTelegramAlerts();
                 });
+                var alertsPushList = document.getElementById('alerts-push-list');
+                if (alertsPushList) alertsPushList.onclick = function(e) {
+                    var pushBtn = e.target && e.target.closest ? e.target.closest('[data-alerts-push]') : null;
+                    if (!pushBtn) return;
+                    var app = pushBtn.getAttribute('data-alerts-push');
+                    var office = pushBtn.getAttribute('data-alerts-push-office');
+                    var status = document.getElementById('alerts-push-status');
+                    var enabled = pushBtn.getAttribute('aria-pressed') === 'true';
+                    if (!app || !office) return;
+                    if (typeof window.enablePushNotifications !== 'function') {
+                        if (status) status.textContent = 'Browser notifications are not available.';
+                        return;
+                    }
+                    if (enabled && typeof window.disablePushNotifications !== 'function') {
+                        if (status) status.textContent = 'Browser notifications cannot be turned off here.';
+                        return;
+                    }
+                    pushBtn.disabled = true;
+                    if (status) {
+                        status.textContent = enabled ? 'Updating browser notifications\u2026' : 'Requesting notification permission\u2026';
+                        status.style.color = 'var(--ink)';
+                    }
+                    var action = enabled
+                        ? window.disablePushNotifications(app, office)
+                        : window.enablePushNotifications(app, office);
+                    Promise.resolve(action).then(function(result) {
+                        var saved = !!(result && result.ok) && updateWatchItemPush(app, office, !enabled);
+                        paintAlertsPush();
+                        if (!status) return;
+                        if (result && result.ok) {
+                            status.textContent = enabled
+                                ? 'Browser notifications turned off for ' + app + '.'
+                                : (saved ? 'Browser notifications enabled for ' + app + '.'
+                                    : 'Browser notifications enabled, but the setting could not be saved in this browser.');
+                            status.style.color = 'var(--green)';
+                        } else {
+                            status.textContent = (result && result.error) || 'Could not update browser notifications.';
+                            status.style.color = 'var(--red)';
+                        }
+                    }).catch(function() {
+                        if (status) {
+                            status.textContent = 'Could not update browser notifications.';
+                            status.style.color = 'var(--red)';
+                        }
+                    }).finally(function() {
+                        pushBtn.disabled = false;
+                    });
+                };
                 // Recent-search chips re-run the search they were saved from.
                 var recentRow = document.getElementById('recent-searches');
                 if (recentRow) recentRow.onclick = function(e) {
@@ -1005,83 +1208,29 @@
                     homeSearchTerm = chip.getAttribute('data-q') || '';
                     var input = document.getElementById('home-search');
                     if (input) input.value = homeSearchTerm;
-                    paintHomeRows();
+                    runHomeLookup();
                     syncUrl('replace');
                 };
-                // Watchlist add/remove (delegated - #watch-area is repainted
-                // by paintWatch on every keystroke).
-                var watchArea = document.getElementById('watch-area');
-                if (watchArea) watchArea.onclick = function(e) {
-                    var add = e.target && e.target.closest ? e.target.closest('[data-watch-add]') : null;
-                    var del = e.target && e.target.closest ? e.target.closest('[data-watch-del]') : null;
-                    if (add) {
-                        var addResult = addWatchItem(add.getAttribute('data-watch-add'));
-                        if (addResult === 'added') {
-                            watchNotice = '';
-                            markActivation('watch');
-                            trackConversion('watchlist_added', 'home-watch');
-                        } else if (addResult === 'duplicate') {
-                            watchNotice = 'That application is already saved in this browser.';
-                        } else if (addResult === 'limit') {
-                            watchNotice = 'You can save up to ' + WATCH_LIMIT + ' applications in this browser.';
-                        } else if (addResult === 'save-failed') {
-                            watchNotice = 'Could not save this watchlist in this browser.';
-                        } else {
-                            watchNotice = 'Enter a valid application number.';
-                        }
-                        paintWatch();
-                    } else if (del) {
-                        var removal = removeWatchItem(
-                            del.getAttribute('data-watch-del'),
-                            del.getAttribute('data-watch-office')
-                        );
-                        if (!removal.saved) {
-                            watchNotice = 'Could not update this browser\'s watchlist.';
-                        } else if (removal.item) {
-                            watchNotice = '';
-                            disableWatchPush(removal.item);
-                        }
-                        paintWatch();
-                    }
-                };
-                // CSV export: Home exports the current search (or everything),
-                // Past exports the filtered day (or everything).
+                // The lower export controls belong to the Latest New Delhi
+                // section; the all-office lookup above has its own results.
                 var homeExport = document.getElementById('home-export');
                 if (homeExport) homeExport.addEventListener('click', function() {
                     var rows = (cache || []).filter(function(r) { return !r._placeholder; });
-                    var file = 'visa-decisions-all.csv';
-                    if (homeSearchTerm.trim()) {
-                        var term = normalizeIRL(homeSearchTerm);
-                        rows = rows.filter(function(r) { return normalizeIRL(r.irl).indexOf(term) !== -1; });
-                        file = 'visa-search.csv';
-                    }
-                    exportCSV(rows, file);
+                    exportCSV(rows, 'visa-decisions-all.csv');
                 });
                 
                 // Excel export for Home tab
                 var homeExportExcel = document.getElementById('home-export-excel');
                 if (homeExportExcel) homeExportExcel.addEventListener('click', async function() {
                     var rows = (cache || []).filter(function(r) { return !r._placeholder; });
-                    var file = 'visa-decisions-all.xlsx';
-                    if (homeSearchTerm.trim()) {
-                        var term = normalizeIRL(homeSearchTerm);
-                        rows = rows.filter(function(r) { return normalizeIRL(r.irl).indexOf(term) !== -1; });
-                        file = 'visa-search.xlsx';
-                    }
-                    await exportExcel(rows, file);
+                    await exportExcel(rows, 'visa-decisions-all.xlsx');
                 });
                 
                 // PDF export for Home tab
                 var homeExportPDF = document.getElementById('home-export-pdf');
                 if (homeExportPDF) homeExportPDF.addEventListener('click', async function() {
                     var rows = (cache || []).filter(function(r) { return !r._placeholder; });
-                    var file = 'visa-decisions-all.pdf';
-                    if (homeSearchTerm.trim()) {
-                        var term = normalizeIRL(homeSearchTerm);
-                        rows = rows.filter(function(r) { return normalizeIRL(r.irl).indexOf(term) !== -1; });
-                        file = 'visa-search.pdf';
-                    }
-                    await exportPDF(rows, file);
+                    await exportPDF(rows, 'visa-decisions-all.pdf');
                 });
                 
                 // Clear search is the home view's destructive control: the query
@@ -1100,7 +1249,7 @@
                             homeClear.hidden = false;
                             homeSearchTerm = '';
                             if (input) input.value = '';
-                            paintHomeRows();
+                            runHomeLookup();
                             syncUrl('replace');
                             return true;
                         },
@@ -1110,7 +1259,7 @@
                             var input = document.getElementById('home-search');
                             if (input) input.value = clearedSearch.field;
                             clearedSearch = null;
-                            paintHomeRows();
+                            runHomeLookup();
                             syncUrl('replace');
                         },
                         onCommit: function() {
@@ -1168,15 +1317,8 @@
                     if (window.DynamicButton) window.DynamicButton.say(staleRetry, 'Retrying\u2026');
                     else staleRetry.textContent = 'Retrying\u2026';
                     loadData({ force: true }).then(function() {
-                        var body = document.getElementById('tab-body');
-                        if (!body) return location.reload();
-                        if (activeTab === 'home') body.innerHTML = renderHomeLayout(cache || []);
-                        else if (activeTab === 'daily') body.innerHTML = renderDailySummary(cache || []);
-                        else if (activeTab === 'past') body.innerHTML = renderPastLayout(cache || []);
-                        else body.innerHTML = renderSuggestLayout();
-                        wireTabListeners();
-                        if (activeTab === 'home') paintHomeRows();
-                        else if (activeTab === 'past') paintPastRows();
+                        if (!document.getElementById('tab-body')) return location.reload();
+                        paintTabBody(activeTab, cache || []);
                         if (staleAt) {
                             staleRetry.disabled = false;
                             if (window.DynamicButton) window.DynamicButton.restore(staleRetry);
@@ -1198,34 +1340,42 @@
                 }
             }
 
+            // Paint one tab and its deferred content. This is the single path
+            // used by initial mount, tab changes and stale-data retries.
+            function paintTabBody(tabId, rows) {
+                var tabBody = document.getElementById('tab-body');
+                if (!tabBody) return;
+                if (tabId === 'search') tabBody.innerHTML = renderHomeLayout(rows);
+                else if (tabId === 'history') tabBody.innerHTML = renderHistoryLayout(rows);
+                else if (tabId === 'analytics') tabBody.innerHTML = renderAnalyticsLayout(rows);
+                else if (tabId === 'saved') {
+                    tabBody.innerHTML = renderWatchlistLayout(rows);
+                    wireWatchAdd();
+                    wireWatchBackup();
+                } else if (tabId === 'tools') tabBody.innerHTML = renderToolsLayout();
+                else if (tabId === 'alerts') tabBody.innerHTML = renderAlertsLayout();
+                wireTabListeners();
+                if (tabId === 'search') paintHomeRows();
+                else if (tabId === 'history' && activeView === 'past') paintPastRows();
+                else if (tabId === 'analytics') paintAnalyticsCharts();
+                else if (tabId === 'saved') paintWatchlist();
+                else if (tabId === 'alerts') paintAlertsPush();
+                else if (tabId === 'tools' && activeView === 'checklist') wireChecklistForm();
+                else if (tabId === 'tools' && activeView === 'vfs') wireVFSTracking();
+            }
+
             async function switchTab(tabId, opts) {
                 if (!document.getElementById('hero')) return;
                 activeTab = tabId;
+                if (tabId === 'history' || tabId === 'tools') activeView = resolveTabView(tabId, activeView);
                 if (!(opts && opts.noUrl)) syncUrl('push');
                 var pills = document.querySelectorAll('#visa-dash .navpill');
                 for (var i = 0; i < pills.length; i++) {
                     pills[i].classList.toggle('active', pills[i].getAttribute('data-tab') === tabId);
                 }
-                // Use cached data to avoid stutter
                 var rows = cache && cache.length ? cache : await loadData();
                 animateHeroSwitch(tabId, rows);
-                var tabBody = document.getElementById('tab-body');
-                if (!tabBody) return;
-                if (tabId === 'home') tabBody.innerHTML = renderHomeLayout(rows);
-                else if (tabId === 'daily') tabBody.innerHTML = renderDailySummary(rows);
-                else if (tabId === 'past') tabBody.innerHTML = renderPastLayout(rows);
-                else if (tabId === 'analytics') tabBody.innerHTML = renderAnalyticsLayout(rows);
-                else if (tabId === 'watchlist') { tabBody.innerHTML = renderWatchlistLayout(rows); wireWatchAdd(); wireWatchBackup(); }
-                else if (tabId === 'checklist') { tabBody.innerHTML = renderChecklistLayout(); wireChecklistForm(); }
-                else if (tabId === 'search') { tabBody.innerHTML = renderSearchLayout(); wireSearchForm(); wireVFSTracking(); }
-                else { tabBody.innerHTML = renderSuggestLayout(); }
-                wireTabListeners();
-                // Paint deferred row content after the layout is in the DOM.
-                if (tabId === 'home') paintHomeRows();
-                else if (tabId === 'past') paintPastRows();
-                else if (tabId === 'analytics') paintAnalyticsCharts();
-                else if (tabId === 'watchlist') paintWatchlist();
-                // Stamp "last visited" once per page load (guarded inside).
+                paintTabBody(tabId, rows);
                 markVisited();
             }
 
@@ -1261,7 +1411,7 @@
                     '<input type="text" id="cl-nationality" name="nationality" placeholder="e.g. India"></div>' +
                     '<div class="checklist-field"><label for="cl-duration">Intended stay (months)</label>' +
                     '<input type="number" id="cl-duration" name="duration_months" min="1" max="120" placeholder="e.g. 24"></div>' +
-                    '<div class="checklist-field"><label for="cl-permit-type">Work permit type (if work visa)</label>' +
+                    '<div class="checklist-field checklist-conditional" data-checklist-for="work" hidden><label for="cl-permit-type">Work permit type</label>' +
                     '<select id="cl-permit-type" name="permit_type">' +
                     '<option value="">Not applicable</option>' +
                     '<option value="critical_skills">Critical Skills</option>' +
@@ -1270,7 +1420,7 @@
                     '<option value="contractor">Contractor</option>' +
                     '<option value="sport_cultural">Sport/Cultural</option>' +
                     '</select></div>' +
-                    '<div class="checklist-field"><label for="cl-regulated">Regulated profession?</label>' +
+                    '<div class="checklist-field checklist-conditional" data-checklist-for="work" hidden><label for="cl-regulated">Regulated profession?</label>' +
                     '<select id="cl-regulated" name="regulated_profession">' +
                     '<option value="">No</option>' +
                     '<option value="true">Yes</option>' +
@@ -1282,9 +1432,20 @@
                     '</div>';
             }
 
+            function updateChecklistConditionalFields() {
+                var visa = document.getElementById('cl-visa-type');
+                var isWork = visa && visa.value === 'work';
+                document.querySelectorAll('[data-checklist-for="work"]').forEach(function(field) {
+                    field.hidden = !isWork;
+                });
+            }
+
             function wireChecklistForm() {
                 var form = document.getElementById('checklist-form');
                 if (!form) return;
+                var visaSelect = document.getElementById('cl-visa-type');
+                if (visaSelect) visaSelect.addEventListener('change', updateChecklistConditionalFields);
+                updateChecklistConditionalFields();
                 form.addEventListener('submit', async function(e) {
                     e.preventDefault();
                     var btn = document.getElementById('checklist-submit');
@@ -1363,30 +1524,58 @@
                             ? ' <span class="badge category">' + escapeHtml(item.category) + '</span>' : '';
                         var description = item.description
                             ? '<div class="note2" style="margin:4px 0 0;">' + escapeHtml(item.description) + '</div>' : '';
-                        html += '<li><strong>' + escapeHtml(name) + '</strong>' + required + category + description + '</li>';
+                        html += '<li><label class="checklist-item"><input type="checkbox" class="checklist-check">' +
+                            '<span><strong>' + escapeHtml(name) + '</strong>' + required + category + description + '</span></label></li>';
                     });
                     html += '</ul>';
                 });
+                html += '<div class="checklist-result-actions"><button type="button" class="btn" id="checklist-print">Print / save as PDF</button></div>';
                 container.innerHTML = html;
+                var printBtn = document.getElementById('checklist-print');
+                if (printBtn) printBtn.addEventListener('click', function() { window.print(); });
             }
 
 
-            // ====== SEARCH TAB ======
-            function renderSearchLayout() {
-                return '<div class="search-layout">' +
-                    '<h2 class="search-title">Advanced Search</h2>' +
-                    '<p class="search-sub">Search visa decisions with fuzzy matching and filters.</p>' +
+            // ====== HISTORY / TOOLS SUB-VIEWS ======
+            function subviewSwitchHTML(name, value, choices) {
+                return '<div class="view-switch" role="tablist" aria-label="' + escapeHtml(name) + '">' +
+                    choices.map(function(choice) {
+                        return '<button type="button" role="tab" aria-selected="' + (value === choice.id) +
+                            '" class="' + (value === choice.id ? 'active' : '') + '" data-' + name + '-view="' +
+                            choice.id + '">' + escapeHtml(choice.label) + '</button>';
+                    }).join('') + '</div>';
+            }
+
+            function renderHistoryLayout(rows) {
+                var view = activeView === 'past' ? 'past' : 'daily';
+                return subviewSwitchHTML('history', view, [
+                    { id: 'daily', label: 'Daily summary' },
+                    { id: 'past', label: 'All decisions' }
+                ]) +
+                    (view === 'past' ? renderPastLayout(rows) : '<div id="daily-view">' + renderDailySummary(rows) + '</div>') +
+                    '<p class="community-share-prompt">Have a timeline from your own application? <a href="/contact#share-timeline">Share it with the community</a>. It is an anecdote, not a statistical sample.</p>';
+            }
+
+            function renderToolsLayout() {
+                var view = activeView === 'vfs' ? 'vfs' : 'checklist';
+                return subviewSwitchHTML('tools', view, [
+                    { id: 'checklist', label: 'Document checklist' },
+                    { id: 'vfs', label: 'VFS tracking' }
+                ]) +
+                    (view === 'vfs' ? renderVFSTracking() : renderChecklistLayout());
+            }
+
+            // Advanced filters are deliberately tucked away under Search. The
+            // primary lookup above is the front door; this is for power users.
+            function renderAdvancedSearchPanel() {
+                return '<details class="advanced-search" id="advanced-search">' +
+                    '<summary>Advanced filters</summary>' +
+                    '<div class="search-layout">' +
+                    '<p class="search-sub">Filter the same six-office dataset by office, decision, date or application number.</p>' +
                     '<form id="search-form" class="search-form" novalidate>' +
                     '<div class="search-field"><label for="search-query">Search query</label>' +
-                    '<input type="text" id="search-query" name="query" placeholder="e.g. study visa, IRL2026123456, etc."></div>' +
+                    '<input type="text" id="search-query" name="query" placeholder="e.g. study visa, 48850812"></div>' +
                     '<div class="search-row">' +
-                    '<div class="search-field"><label for="search-mode">Mode</label>' +
-                    '<select id="search-mode" name="mode">' +
-                    '<option value="hybrid">Hybrid (fuzzy + nearest)</option>' +
-                    '<option value="fuzzy">Fuzzy match</option>' +
-                    '<option value="nearest">Nearest neighbor</option>' +
-                    '<option value="filter">Filter only</option>' +
-                    '</select></div>' +
                     '<div class="search-field"><label for="search-embassy">Visa office</label>' +
                     '<select id="search-embassy" name="embassy">' +
                     '<option value="">All offices</option>' +
@@ -1402,7 +1591,6 @@
                     '<option value="">Any</option>' +
                     '<option value="Approved">Approved</option>' +
                     '<option value="Refused">Refused</option>' +
-                    '<option value="Pending">Pending</option>' +
                     '</select></div>' +
                     '<div class="search-field"><label for="search-limit">Results per page</label>' +
                     '<select id="search-limit" name="limit">' +
@@ -1410,8 +1598,6 @@
                     '<option value="50">50</option>' +
                     '<option value="100">100</option>' +
                     '</select></div>' +
-                    '</div>' +
-                    '<div class="search-row">' +
                     '<div class="search-field"><label for="search-sort">Sort by</label>' +
                     '<select id="search-sort" name="sort">' +
                     '<option value="date_desc">Date (newest first)</option>' +
@@ -1419,6 +1605,8 @@
                     '<option value="number_desc">Application number (desc)</option>' +
                     '<option value="number_asc">Application number (asc)</option>' +
                     '</select></div>' +
+                    '</div>' +
+                    '<div class="search-row">' +
                     '<div class="search-field"><label for="search-date-from">Decisions from</label>' +
                     '<input type="date" id="search-date-from" name="date_from"></div>' +
                     '<div class="search-field"><label for="search-date-to">Decisions to</label>' +
@@ -1426,18 +1614,25 @@
                     '</div>' +
                     '<div class="search-actions">' +
                     '<button class="btn" type="submit" id="search-submit">Search</button>' +
+                    '<button class="btn secondary" type="reset" id="search-reset">Reset filters</button>' +
                     '</div>' +
                     '<div class="note" id="search-status" aria-live="polite"></div>' +
-                    '</div>' +
                     '</form>' +
-                    renderVFSTracking() +
                     '<div id="search-results" class="search-results"></div>' +
-                    '</div>';
+                    '</div></details>';
             }
 
             function wireSearchForm() {
                 var form = document.getElementById('search-form');
                 if (!form) return;
+                form.addEventListener('reset', function() {
+                    setTimeout(function() {
+                        var results = document.getElementById('search-results');
+                        var status = document.getElementById('search-status');
+                        if (results) results.innerHTML = '';
+                        if (status) status.textContent = '';
+                    }, 0);
+                });
                 form.addEventListener('submit', async function(e) {
                     e.preventDefault();
                     var btn = document.getElementById('search-submit');
@@ -1483,7 +1678,7 @@
                     '<strong>' + data.results.length + '</strong> of <strong>' + data.pagination.total + '</strong> results' +
                     '</div>';
                 html += '<div class="search-results-table"><table class="results-table"><thead>' +
-                    '<tr><th>Decision date</th><th>Application No.</th><th>Decision</th><th>Office</th><th>Office report</th></tr></thead><tbody>';
+                    '<tr><th>Decision date</th><th>Application No.</th><th>Decision</th><th>Office</th><th>Report date</th><th>Official source</th></tr></thead><tbody>';
                 var officeNames = {
                     'new-delhi': 'New Delhi',
                     'beijing': 'Beijing',
@@ -1496,15 +1691,18 @@
                     var pillClass = r.decision === 'Approved' ? 'green' : r.decision === 'Refused' ? 'red' : 'amber';
                     var office = officeNames[r.embassy] || r.embassy || '';
                     html += '<tr>' +
-                        '<td class="mono">' + escapeHtml(r.date || '') + '</td>' +
+                        '<td class="mono"><time datetime="' + escapeHtml(r.date || '') + '">' + escapeHtml(humanDate(r.date)) + '</time></td>' +
                         '<td class="mono">' + escapeHtml(r.number || r.irl || '') + '</td>' +
                         '<td><span class="pill ' + pillClass + '">' + escapeHtml(r.decision || '') + '</span></td>' +
                         '<td>' + escapeHtml(office) + '</td>' +
-                        '<td class="mono">' + escapeHtml(r.report_date || '—') + '</td>' +
+                        '<td class="mono">' + escapeHtml(r.report_date ? humanDate(r.report_date) : '—') + '</td>' +
+                        '<td>' + (OFFICE_SOURCE_URLS[r.embassy]
+                            ? '<a href="' + escapeHtml(OFFICE_SOURCE_URLS[r.embassy]) + '" target="_blank" rel="noopener noreferrer">Open report</a>'
+                            : '—') + '</td>' +
                         '</tr>';
                 });
                 html += '</tbody></table></div>' +
-                    '<p class="note2 search-report-note">Office report is the latest published report date from that office; decision date is the date of the individual decision.</p>';
+                    '<p class="note2 search-report-note">Report date is the date of the office file that published the row; decision date is the date of the individual decision. The official source link opens the office report page.</p>';
                 if (data.pagination.has_more) {
                     html += '<div class="search-pagination"><button type="button" class="btn" id="search-load-more">Load more</button></div>';
                 }
@@ -1628,7 +1826,7 @@
                     '<div class="note2" id="watch-local-status">Checking saved applications\u2026</div>' +
                     '<div class="note2" id="watch-data-note"></div>' +
                     '<div id="watch-local-rows"></div>' +
-                    '<p class="note2" style="margin-bottom:0;">For Telegram alerts, use the Suggestions tab. Browser notifications can be enabled per application below.</p>' +
+                    '<p class="note2" style="margin-bottom:0;">For Telegram alerts, use the Alerts tab. Browser notifications can also be enabled per application below.</p>' +
                     '</div>' +
                     '<div class="watch-card">' +
                     '<h3 class="watch-h3">Back up this list</h3>' +
@@ -1677,17 +1875,23 @@
                         }).sort(function(a, b) {
                             return String(b.date).localeCompare(String(a.date));
                         });
-                        officeWatchData[office] = { status: 'ready', rows: rows };
+                        var meta = !Array.isArray(payload) && payload ? {
+                            source_url: payload.source_url,
+                            source_name: payload.source_name,
+                            report_date: payload.report_date,
+                            as_of: payload.as_of,
+                            fetched_at: payload.fetched_at
+                        } : null;
+                        officeWatchData[office] = { status: 'ready', rows: rows, meta: meta };
                     })
                     .catch(function(error) {
                         console.warn('Office watchlist data failed for ' + office + ':', error);
-                        officeWatchData[office] = { status: 'error', rows: [] };
+                        officeWatchData[office] = { status: 'error', rows: [], meta: null };
                     })
                     .finally(function() {
                         officeWatchPromises[office] = null;
                         if (document.getElementById('watch-local-rows')) {
                             paintWatchlist();
-                            paintWatch();
                         }
                     });
                 return officeWatchPromises[office];
@@ -1740,7 +1944,7 @@
                     var pill;
                     if (row) {
                         decision = escapeHtml(row.decision || '-');
-                        date = escapeHtml(row.date);
+                        date = '<time datetime="' + escapeHtml(row.date) + '">' + escapeHtml(humanDate(row.date)) + '</time>';
                         pill = '<span class="pill ' + (row._pillClass || 'amber') + '">' + decision + '</span>';
                     } else {
                         decision = state.status === 'loading' ? 'Checking office data\u2026' :
@@ -1798,7 +2002,6 @@
                         return;
                     }
                     paintWatchlist();
-                    paintWatch();
                     if (removal.item) {
                         disableWatchPush(removal.item);
                         if (status) status.textContent = 'Removed from this browser.';
@@ -1836,10 +2039,8 @@
                     }
                     if (status) { status.textContent = 'Saved in this browser.'; status.style.color = 'var(--green)'; }
                     form.reset();
-                    markActivation('watch');
                     trackConversion('watchlist_added', 'watchlist');
                     paintWatchlist();
-                    paintWatch();
                 });
             }
 
@@ -1910,7 +2111,6 @@
                     if (!kept[item.office + '|' + item.number]) disableWatchPush(item);
                 });
                 paintWatchlist();
-                paintWatch();
                 watchBackupStatus('Imported ' + clean.length + ' application' +
                     (clean.length === 1 ? '' : 's') +
                     (raw.length > clean.length ? '. Only valid entries within the ' + WATCH_LIMIT + '-item limit were kept.' : '.'), false);
@@ -1944,82 +2144,505 @@
             }
 
             // ====== HOME TAB ======
-            // Two-phase render: layout (cards + searchbar + empty table shell)
-            // paints ONCE per tab switch. paintHomeRows() then only updates the
-            // tbody innerHTML and the results-count node on every search keystroke
-            // or filter change - the input element stays alive so no cursor
-            // restoration is needed.
+            // The lookup at the top is deliberately separate from the New Delhi
+            // analytics below it. It can query every office archive without
+            // changing `cache`, which the rest of the dashboard still treats as
+            // the New Delhi history.
+            function homeLookupHTML() {
+                var status = homeSearchTerm.trim()
+                    ? 'Searching published decisions\u2026'
+                    : 'Choose a number and office. All six offices are searched by default.';
+                return '<section class="home-lookup" aria-labelledby="home-lookup-title">' +
+                    '<div class="home-lookup-head">' +
+                    '<div><p class="home-lookup-kicker">Published decisions</p>' +
+                    '<h2 id="home-lookup-title">Find your application</h2></div>' +
+                    '<a class="home-lookup-advanced" href="#advanced-search" data-open-advanced>Advanced filters</a>' +
+                    '</div>' +
+                    '<p class="home-lookup-copy" id="home-lookup-copy">Search all six offices at once, or choose the office that handled your application. One search, one result card, and a link to the official report.</p>' +
+                    '<form class="home-lookup-form" id="home-lookup-form" role="search" novalidate>' +
+                    '<div class="home-lookup-field home-lookup-number">' +
+                    '<label for="home-search">Application number</label>' +
+                    '<div class="searchbar">' + searchIcon() +
+                    '<input type="text" id="home-search" name="q" inputmode="numeric" autocomplete="off" maxlength="200" aria-describedby="home-lookup-copy home-number-help" aria-label="Search by application number" placeholder="e.g. 48850812" value="' +
+                    escapeHtml(homeSearchTerm) + '"></div></div>' +
+                    '<div class="home-lookup-field home-lookup-office">' +
+                    '<label for="home-office">Visa office</label>' +
+                    '<select id="home-office" name="office" aria-label="Visa office to search">' + officeOptionsHTML(homeSearchOffice) + '</select></div>' +
+                    '<button class="btn home-lookup-submit" type="submit" id="home-lookup-submit">Search</button>' +
+                    '</form>' +
+                    '<p class="home-lookup-coverage"><strong>Coverage:</strong> New Delhi: daily decisions &middot; Beijing and Dublin: latest snapshot &middot; Abu Dhabi, Abuja and Ankara: dated reports.</p>' +
+                    '<div class="home-lookup-tools">' +
+                    '<div id="recent-searches">' + recentSearchesHTML() + '</div>' +
+                    '<button type="button" class="export-btn tu-btn" id="home-search-clear" title="Clear the search and show every result" hidden>Clear search</button>' +
+                    '</div>' +
+                    '<div class="home-lookup-help">' +
+                    '<details id="home-number-help"><summary>Where do I find my application number?</summary>' +
+                    '<p>Use the application number on your receipt, acknowledgement or decision email. It is usually <strong>8 digits</strong> (6&ndash;12 digits is accepted), and an <strong>IRL</strong> prefix, spaces or dashes are optional. Do not use a VFS reference number or your passport number.</p>' +
+                    '<p><a href="/help#find-number">More help with numbers and missing results</a></p>' +
+                    '</details>' +
+                    '<a class="home-lookup-help-link" href="/help">Help &amp; FAQ</a>' +
+                    '</div>' +
+                    '<div class="home-lookup-status note2" id="home-lookup-status" role="status" aria-live="polite">' + status + '</div>' +
+                    '<div id="home-lookup-results"></div>' +
+                    '</section>';
+            }
+
+            function loadOfficeLookupMeta() {
+                if (officeLookupMeta) return Promise.resolve(officeLookupMeta);
+                if (officeLookupMetaPromise) return officeLookupMetaPromise;
+                officeLookupMetaPromise = fetch(DATA_MANIFEST_URL, { cache: 'no-store' })
+                    .then(function(res) {
+                        if (!res.ok) throw new Error('HTTP ' + res.status);
+                        return res.json();
+                    })
+                    .then(function(payload) {
+                        var map = Object.create(null);
+                        ((payload && payload.offices) || []).forEach(function(office) {
+                            if (office && office.slug) map[office.slug] = office;
+                        });
+                        if (!Object.keys(map).length) throw new Error('no offices in manifest');
+                        officeLookupMeta = map;
+                        return map;
+                    })
+                    .catch(function(error) {
+                        console.warn('Office lookup metadata failed:', error);
+                        return Object.create(null);
+                    })
+                    .finally(function() {
+                        officeLookupMetaPromise = null;
+                    });
+                return officeLookupMetaPromise;
+            }
+
+            function lookupFormatDate(value) {
+                var match = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(value || ''));
+                if (!match) return '';
+                var date = new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3])));
+                if (isNaN(date.getTime())) return '';
+                return date.toLocaleDateString('en-GB', {
+                    day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC'
+                });
+            }
+
+            function lookupFormatChecked(value) {
+                if (!value) return 'Not recorded';
+                if (/^\d{4}-\d{2}-\d{2}$/.test(String(value))) {
+                    var day = lookupFormatDate(value);
+                    return day ? day + ' (date only)' : 'Not recorded';
+                }
+                var date = new Date(value);
+                if (isNaN(date.getTime())) return 'Not recorded';
+                return date.toLocaleString('en-GB', {
+                    day: 'numeric', month: 'short', year: 'numeric',
+                    hour: '2-digit', minute: '2-digit', timeZone: 'UTC'
+                }) + ' UTC';
+            }
+
+            function lookupOfficeMeta(office, metas) {
+                var item = (metas && metas[office]) || {};
+                var sourceUrl = item.source_url;
+                if (!/^https?:\/\//i.test(String(sourceUrl || ''))) {
+                    sourceUrl = OFFICE_SOURCE_URLS[office] || '';
+                }
+                if (!/^https?:\/\//i.test(String(sourceUrl || ''))) sourceUrl = '';
+                return {
+                    source_url: sourceUrl,
+                    source_name: item.source_name || '',
+                    report_date: item.report_date || '',
+                    fetched_at: item.fetched_at || '',
+                    as_of: item.as_of || ''
+                };
+            }
+
+            function lookupWatchSaved(number, office) {
+                return getWatchlist().some(function(item) {
+                    return item.number === number && item.office === office;
+                });
+            }
+
+            function lookupWatchButtonHTML(number, office) {
+                var saved = lookupWatchSaved(number, office);
+                return '<button type="button" class="btn lookup-result-btn lookup-result-watch' +
+                    (saved ? ' is-saved' : '') + '" data-lookup-watch data-lookup-number="' +
+                    escapeHtml(number) + '" data-lookup-office="' + escapeHtml(office) +
+                    '" aria-pressed="' + (saved ? 'true' : 'false') + '" aria-label="' +
+                    (saved ? 'Remove application ' + escapeHtml(number) + ' from your watchlist'
+                        : 'Watch application ' + escapeHtml(number)) + '" title="' +
+                    (saved ? 'Remove from your watchlist' : 'Save to your watchlist') + '">' +
+                    (saved ? 'Watching' : 'Watch this application') + '</button>';
+            }
+
+            function lookupNextStepsHTML(row) {
+                var status = row._status || classify(row.decision);
+                var steps;
+                if (status === 'accepted') {
+                    steps = [
+                        '<strong>This application was approved in the published report.</strong> Wait for the visa office or VFS to tell you how to submit or collect your passport. Do not book travel until your passport is back with the visa.',
+                        'When the visa arrives, check your name, passport number, visa dates and conditions. If anything is wrong, contact the visa office or VFS centre that handled your application.',
+                        'Keep this report with your decision letter. This page is a copy of the published report, not your official decision letter.'
+                    ];
+                } else if (status === 'rejected') {
+                    steps = [
+                        '<strong>This application was refused in the published report.</strong> The report usually does not give the reason.',
+                        'Read your refusal letter or decision email for the reason and any appeal or review deadline. If it has not arrived, contact the visa office or VFS centre that handled your application.',
+                        'If you reapply, you will usually need a new application and fee. A new application is separate from this one.'
+                    ];
+                } else {
+                    steps = [
+                        '<strong>The published report records this decision as "' + escapeHtml(row.decision || 'not recognised') + '".</strong> Check your decision letter and the official report to confirm what it means for your application.',
+                        'If the wording does not match your letter, contact the visa office or VFS centre that handled your application.',
+                        'Save this application or set an alert if you want to check the report again.'
+                    ];
+                }
+                var sourceUrl = OFFICE_SOURCE_URLS[row.embassy || 'new-delhi'];
+                var links = '<p class="lookup-result-links">' +
+                    (sourceUrl ? '<a href="' + escapeHtml(sourceUrl) + '" target="_blank" rel="noopener noreferrer">Official office report</a>' : '') +
+                    (sourceUrl ? ' \u00b7 ' : '') +
+                    '<a href="https://www.irishimmigration.ie/" target="_blank" rel="noopener noreferrer">Immigration Service Delivery</a>' +
+                    ' \u00b7 <a href="https://visa.vfsglobal.com/ind/en/irl" target="_blank" rel="noopener noreferrer">VFS Global</a></p>';
+                return '<div class="lookup-result-next lookup-steps">' +
+                    '<h4>What to do next</h4><ol>' +
+                    steps.map(function(step) { return '<li>' + step + '</li>'; }).join('') +
+                    '</ol>' + links +
+                    '<p class="lookup-result-disclaimer">General information, not legal advice. Check your decision letter and the official source.</p></div>';
+            }
+
+            function lookupResultCardHTML(row, metas) {
+                var office = row.embassy || 'new-delhi';
+                var number = normalizeIRL(row.irl || row.number) || String(row.irl || row.number || '');
+                var meta = lookupOfficeMeta(office, metas);
+                var decision = row.decision || 'Decision not listed';
+                var reportDate = lookupFormatDate(meta.report_date);
+                var decisionDate = lookupFormatDate(row.date);
+                var checked = meta.fetched_at ? lookupFormatChecked(meta.fetched_at) :
+                    (meta.as_of ? lookupFormatChecked(meta.as_of) : 'Not recorded');
+                var checkedTime = meta.fetched_at || meta.as_of || '';
+                var sourceName = meta.source_name || ('Published report for ' + officeName(office));
+                var source = meta.source_url
+                    ? '<a href="' + escapeHtml(meta.source_url) + '" target="_blank" rel="noopener noreferrer">' +
+                        escapeHtml(sourceName) + ' <span aria-hidden="true">\u2197</span></a>' +
+                        '<span class="lookup-result-source-note">opens in a new tab</span>'
+                    : '<span class="lookup-result-source-missing">Official source link is unavailable right now.</span>';
+                return '<article class="lookup-result-card" data-lookup-result data-office="' +
+                    escapeHtml(office) + '" data-lookup-number="' + escapeHtml(number) + '">' +
+                    '<div class="lookup-result-head"><div>' +
+                    '<p class="lookup-result-kicker">Published decision</p>' +
+                    '<h3 class="lookup-result-title">Application <span class="mono">' + escapeHtml(number) + '</span></h3>' +
+                    '</div><span class="pill ' + (row._pillClass || 'amber') + ' lookup-result-decision">' +
+                    escapeHtml(decision) + '</span></div>' +
+                    '<dl class="lookup-result-facts">' +
+                    '<div class="lookup-result-fact"><dt>Office</dt><dd>' + escapeHtml(officeName(office)) + '</dd></div>' +
+                    '<div class="lookup-result-fact"><dt>Coverage</dt><dd>' + escapeHtml(OFFICE_COVERAGE[office] || 'Published report') + '</dd></div>' +
+                    '<div class="lookup-result-fact"><dt>Decision date</dt><dd>' +
+                    (decisionDate ? '<time datetime="' + escapeHtml(row.date) + '">' + decisionDate + '</time>' : 'Not listed') + '</dd></div>' +
+                    '<div class="lookup-result-fact"><dt>Report date</dt><dd>' +
+                    (reportDate ? '<time datetime="' + escapeHtml(meta.report_date) + '">' + reportDate + '</time>' : 'Not listed') + '</dd></div>' +
+                    '<div class="lookup-result-fact"><dt>Last checked</dt><dd>' +
+                    (checked === 'Not recorded' ? checked : '<time datetime="' + escapeHtml(checkedTime) + '">' + escapeHtml(checked) + '</time>') + '</dd></div>' +
+                    '</dl>' +
+                    '<p class="lookup-result-source"><span class="lookup-result-source-label">Official source</span>' + source + '</p>' +
+                    '<div class="lookup-result-actions">' +
+                    lookupWatchButtonHTML(number, office) +
+                    '<button type="button" class="btn lookup-result-btn lookup-result-alert" data-lookup-alert="' +
+                    escapeHtml(number) + '" data-lookup-alert-office="' + escapeHtml(office) +
+                    '" aria-label="Set up decision alerts for application ' + escapeHtml(number) + '">Get decision alerts</button>' +
+                    '<button type="button" class="btn secondary lookup-result-btn lookup-result-share" data-lookup-share="' +
+                    escapeHtml(number) + '" data-lookup-share-office="' + escapeHtml(office) +
+                    '" aria-label="Copy a shareable link to this result">Copy result link</button>' +
+                    '<div class="lookup-result-status" data-lookup-action-status role="status" aria-live="polite"></div>' +
+                    '</div>' + lookupNextStepsHTML(row) + '</article>';
+            }
+
+            function homeLookupReportDatesHTML(metas) {
+                var rows = WATCH_OFFICES.map(function(office) {
+                    var meta = lookupOfficeMeta(office, metas);
+                    var date = lookupFormatDate(meta.report_date);
+                    if (!date) return '';
+                    var label = escapeHtml(officeName(office));
+                    if (meta.source_url) {
+                        label = '<a href="' + escapeHtml(meta.source_url) + '" target="_blank" rel="noopener noreferrer">' + label + '</a>';
+                    }
+                    return '<li>' + label + ': ' + date + '</li>';
+                }).filter(Boolean);
+                if (!rows.length) return '';
+                return '<details class="home-lookup-report-dates"><summary>Latest report dates by office</summary>' +
+                    '<ul>' + rows.join('') + '</ul></details>';
+            }
+
+            function homeLookupNoResultHTML(term, metas) {
+                var scope = homeSearchOffice === 'all'
+                    ? 'all six offices'
+                    : officeName(homeSearchOffice);
+                return '<div class="home-lookup-empty">' +
+                    '<h3>No published decision found</h3>' +
+                    '<p>We searched ' + escapeHtml(scope) + ' for <strong>' +
+                        escapeHtml(term || homeSearchTerm.trim()) + '</strong>. This is not a refusal: the number is not in the reports we could check.</p>' +
+                    '<p class="home-lookup-empty-tip">' + (homeSearchOffice === 'all'
+                        ? 'Try another number format, or check that the application is under the office on your receipt. We already searched all six offices.'
+                        : 'Try another office in the selector above, or choose <strong>All six offices</strong>.') + '</p>' +
+                    '<div class="lookup-steps home-lookup-check-next"><h4>What to check next</h4><ol>' +
+                    '<li>Use the application number on your receipt or decision email. Do not use a VFS reference or passport number; an <strong>IRL</strong> prefix, spaces and dashes are optional.</li>' +
+                    '<li>' + (homeSearchOffice === 'all'
+                        ? 'Check the visa office on your receipt. We already searched all six offices; a decision appears under the office that processed the application.'
+                        : 'Check the visa office. Search <strong>all six offices</strong>; a decision appears under the office that processed the application.') + '</li>' +
+                    '<li>Allow time for publication. Offices publish on different schedules, so a recent decision may not appear yet. The latest report dates are listed below.</li>' +
+                    '<li>If the official report lists this number but this page does not, <a href="/contact#feedback">send a correction</a> with the number, office and report date.</li>' +
+                    '</ol>' + homeLookupReportDatesHTML(metas) + '</div>' +
+                    '<div class="home-lookup-empty-actions">' +
+                    (homeSearchOffice !== 'all' ? '<button type="button" class="btn" data-home-office-all>Search all six offices</button>' : '') +
+                    '<button type="button" class="btn" data-home-retry>Try this search again</button>' +
+                    '<a class="home-lookup-link" href="/status">See data status</a>' +
+                    '</div>' +
+                    '<p class="home-lookup-empty-foot">Still stuck? <a href="/contact#feedback">Send a correction or ask a question</a>.</p>' +
+                    '</div>';
+            }
+
+            function homeLookupErrorHTML() {
+                return '<div class="home-lookup-empty">' +
+                    '<h3>Search could not be completed</h3>' +
+                    '<p>One or more office files could not be loaded. Check your connection and try again.</p>' +
+                    '<div class="lookup-steps"><h4>What to check next</h4><ol>' +
+                    '<li>Check your internet connection and try the search again.</li>' +
+                    '<li>If it still fails, open <a href="/status">Data status</a> to see whether the office reports are available.</li>' +
+                    '<li>If the official report lists your number, <a href="/contact#feedback">send a correction</a> with the number, office and report date.</li>' +
+                    '</ol></div>' +
+                    '<div class="home-lookup-empty-actions"><button type="button" class="btn" data-home-retry>Try again</button>' +
+                    '<a class="home-lookup-link" href="/status">See data status</a></div></div>';
+            }
+
+            function paintHomeLookup(term, rows, total, metas) {
+                var box = document.getElementById('home-lookup-results');
+                var status = document.getElementById('home-lookup-status');
+                if (!box) return;
+                if (!rows.length) {
+                    if (status) status.textContent = 'No published decision found for ' + (term || homeSearchTerm.trim()) + '.';
+                    box.innerHTML = homeLookupNoResultHTML(term, metas);
+                    return;
+                }
+                var scope = homeSearchOffice === 'all' ? 'all six offices' : officeName(homeSearchOffice);
+                var countText = total + ' published match' + (total === 1 ? '' : 'es') +
+                    ' across ' + scope + (rows.length < total ? ' \u00b7 showing first ' + rows.length : '');
+                if (status) status.textContent = countText;
+                box.innerHTML = '<div class="home-lookup-result-list">' +
+                    rows.map(function(row) { return lookupResultCardHTML(row, metas); }).join('') + '</div>' +
+                    '<p class="home-lookup-foot">Decision and report dates come from the office\'s published report. Always confirm details with the official source and your decision letter.</p>';
+            }
+
+            function lookupSetWatchButton(btn, saved) {
+                if (!btn) return;
+                var number = btn.getAttribute('data-lookup-number') || '';
+                btn.setAttribute('aria-pressed', saved ? 'true' : 'false');
+                btn.setAttribute('aria-label', saved
+                    ? 'Remove application ' + number + ' from your watchlist'
+                    : 'Watch application ' + number);
+                btn.title = saved ? 'Remove from your watchlist' : 'Save to your watchlist';
+                btn.classList.toggle('is-saved', saved);
+                btn.textContent = saved ? 'Watching' : 'Watch this application';
+            }
+
+            function shareLookupResult(btn) {
+                var number = btn.getAttribute('data-lookup-share') || '';
+                var office = btn.getAttribute('data-lookup-share-office') || '';
+                var card = btn.closest('.lookup-result-card');
+                var status = card && card.querySelector('[data-lookup-action-status]');
+                var url = new URL(location.href);
+                url.search = '';
+                var params = new URLSearchParams();
+                params.set('tracker', 'visa');
+                params.set('tab', 'search');
+                params.set('q', number);
+                if (office) params.set('office', office);
+                url.hash = '';
+                url.search = params.toString();
+                var showCopied = function() {
+                    if (status) {
+                        status.textContent = 'Shareable link copied.';
+                        status.classList.remove('is-error');
+                    }
+                };
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(url.href).then(showCopied).catch(function() {
+                        window.prompt('Copy this shareable link:', url.href);
+                    });
+                } else {
+                    window.prompt('Copy this shareable link:', url.href);
+                }
+            }
+
+            function handleLookupWatch(btn) {
+                var number = btn.getAttribute('data-lookup-number') || '';
+                var office = btn.getAttribute('data-lookup-office') || '';
+                var card = btn.closest('.lookup-result-card');
+                var status = card && card.querySelector('[data-lookup-action-status]');
+                var saved = btn.getAttribute('aria-pressed') === 'true';
+                if (!number || WATCH_OFFICES.indexOf(office) === -1) return;
+
+                if (!saved) {
+                    var added = addWatchItem({ number: number, office: office });
+                    if (added === 'added' || added === 'duplicate') {
+                        lookupSetWatchButton(btn, true);
+                        if (status) {
+                            status.textContent = added === 'duplicate'
+                                ? 'Already saved in this browser.'
+                                : 'Saved to your watchlist in this browser.';
+                            status.classList.remove('is-error');
+                        }
+                    } else if (status) {
+                        status.textContent = added === 'limit'
+                            ? 'Your watchlist is full (10 applications). Remove one before adding another.'
+                            : 'Could not save to this browser. Check that storage is allowed and try again.';
+                        status.classList.add('is-error');
+                    }
+                    return;
+                }
+
+                var removed = removeWatchItem(number, office);
+                if (!removed.saved) {
+                    if (status) {
+                        status.textContent = 'Could not remove this application from this browser. Check that storage is allowed and try again.';
+                        status.classList.add('is-error');
+                    }
+                    return;
+                }
+                if (removed.item && removed.item.push) disableWatchPush(removed.item);
+                lookupSetWatchButton(btn, false);
+                if (status) {
+                    status.textContent = 'Removed from your watchlist.';
+                    status.classList.remove('is-error');
+                }
+            }
+
+            function runHomeLookup() {
+                var box = document.getElementById('home-lookup-results');
+                var status = document.getElementById('home-lookup-status');
+                if (!box) return;
+                var raw = homeSearchTerm.trim();
+                var term = normalizeIRL(raw);
+                if (!raw) {
+                    homeLookupSeq += 1;
+                    if (status) status.textContent = 'Choose a number and office. All six offices are searched by default.';
+                    box.innerHTML = '';
+                    return;
+                }
+                if (!term) {
+                    homeLookupSeq += 1;
+                    if (status) status.textContent = 'Enter the digits from the application number.';
+                    box.innerHTML = '<div class="home-lookup-empty home-lookup-empty-small"><h3>Start with your application number</h3>' +
+                        '<p>Enter the number on your receipt or decision email. Do not use a VFS reference or passport number. An <strong>IRL</strong> prefix, spaces and dashes are optional.</p></div>';
+                    return;
+                }
+                if (term.length < 4) {
+                    homeLookupSeq += 1;
+                    if (status) status.textContent = 'Keep typing \u2014 enter at least 4 digits to search.';
+                    box.innerHTML = '<div class="home-lookup-empty home-lookup-empty-small"><h3>Add a few more digits</h3>' +
+                        '<p>Search needs at least 4 digits. Check the application number on your receipt or decision email; an <strong>IRL</strong> prefix, spaces and dashes are optional.</p></div>';
+                    return;
+                }
+                var seq = ++homeLookupSeq;
+                var scope = homeSearchOffice === 'all' ? 'all six offices' : officeName(homeSearchOffice);
+                if (status) status.textContent = 'Searching ' + scope + '\u2026';
+                box.innerHTML = '<div class="home-lookup-loading" role="status">' + searchIcon() +
+                    '<span>Searching ' + escapeHtml(scope) + '\u2026</span></div>';
+                var filters = homeSearchOffice === 'all' ? {} : { embassy: homeSearchOffice };
+                Promise.all([
+                    fetch('/api/search', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            query: term,
+                            mode: 'fuzzy',
+                            filters: filters,
+                            limit: 100,
+                            sort: 'date_desc'
+                        })
+                    }).then(function(res) {
+                        if (!res.ok) throw new Error('Search HTTP ' + res.status);
+                        return res.json();
+                    }),
+                    loadOfficeLookupMeta()
+                ]).then(function(outcome) {
+                    if (seq !== homeLookupSeq) return;
+                    var payload = outcome[0] || {};
+                    var manifest = outcome[1] || {};
+                    if (!payload.success || !Array.isArray(payload.results)) {
+                        throw new Error(payload.error || 'Search failed');
+                    }
+                    var metas = Object.create(null);
+                    Object.keys(manifest).forEach(function(office) {
+                        metas[office] = Object.assign({}, manifest[office] || {});
+                    });
+                    var matches = payload.results.map(function(row) {
+                        var office = row.embassy || 'new-delhi';
+                        var status = classify(row.decision);
+                        return Object.assign({}, row, {
+                            irl: row.number || row.irl || '',
+                            number: row.number || row.irl || '',
+                            embassy: office,
+                            _status: status,
+                            _pillClass: status === 'accepted' ? 'green' : status === 'rejected' ? 'red' : 'amber',
+                            _placeholder: false
+                        });
+                    });
+                    var total = payload.pagination && Number(payload.pagination.total) >= 0
+                        ? Number(payload.pagination.total)
+                        : matches.length;
+                    paintHomeLookup(term, matches.slice(0, 100), total, metas);
+                }).catch(function(error) {
+                    if (seq !== homeLookupSeq) return;
+                    console.warn('Office lookup failed:', error);
+                    if (status) status.textContent = 'Search failed. Please try again.';
+                    box.innerHTML = homeLookupErrorHTML();
+                });
+            }
+
+            // Two-phase render: layout (cards + latest table shell) paints ONCE
+            // per tab switch. paintHomeRows() then updates the lower New Delhi
+            // table; the all-office lookup repaints independently in the panel
+            // above it.
             function renderHomeLayout(rows) {
-                trackConversion('alert_cta_view', 'home');
-                if (!rows.length) return renderConfigWarning() +
-                    '<div class="empty">No decisions recorded yet.</div>';
+                const empty = '<div class="empty">No New Delhi decisions recorded yet. The all-office search above still checks the other offices.</div>';
+                if (!rows.length) return staleBannerHTML() + homeLookupHTML() + empty;
                 const byDate = groupByDate(rows);
                 const latest = byDate[0];
-                if (!latest) return renderConfigWarning() +
-                    '<div class="empty">No decisions recorded yet.</div>';
-                const real = realRows(rows);
+                if (!latest) return staleBannerHTML() + homeLookupHTML() + empty;
                 // Newest day with real data (the latest Excel file's date); the
                 // top day may instead be a placeholder notice like "no file yet".
                 const latestRealDay = byDate.find(d => realRows(d[1]).length);
                 const latestPlaceholder = !realRows(latest[1]).length ? latest[1][0] : null;
                 const latestDate = latestRealDay ? latestRealDay[0] : latest[0];
-                const prevRealDay = latestRealDay
-                    ? byDate.slice(byDate.indexOf(latestRealDay) + 1).find(d => realRows(d[1]).length)
-                    : null;
                 const latestCount = latestRealDay ? realRows(latestRealDay[1]).length : 0;
-                const dayDiff = prevRealDay ? latestCount - realRows(prevRealDay[1]).length : 0;
-                const avg = avgDailyApps(byDate);
-                const total = real.length;
-                const accepted = real.filter(r => r._status === 'accepted').length;
-                const rejected = real.filter(r => r._status === 'rejected').length;
 
-                return renderConfigWarning() +
-                    staleBannerHTML() +
+                return staleBannerHTML() +
+                    homeLookupHTML() +
+                    renderAdvancedSearchPanel() +
+                    '<section class="home-freshness" aria-labelledby="home-freshness-title">' +
+                    '<div class="home-freshness-head"><div>' +
+                    '<h2 class="landing-h3" id="home-freshness-title">Data freshness</h2>' +
+                    '<p class="note2">Latest New Delhi file: <strong>' + escapeHtml(humanDate(latestDate)) +
+                    '</strong> (' + latestCount.toLocaleString() + ' decisions). Other offices publish on their own schedules.</p>' +
+                    '</div><a class="home-freshness-link" href="/status">Data status</a></div>' +
+                    '<div id="meta-box" aria-live="polite"></div>' +
+                    '<details class="home-freshness-details"><summary>How to read these dates</summary>' +
+                    '<p>Decision date is the date attached to an individual row. Report date is the date of the office file that published it. They can differ, especially for weekly reports.</p>' +
+                    '<p>Next expected New Delhi update: weekday mornings around <strong>11:00 IST</strong>. The embassy does not publish on weekends or public holidays.</p>' +
+                    '</details></section>' +
+                    '<section class="home-latest" aria-labelledby="home-latest-title">' +
+                    '<div class="home-latest-head"><div>' +
+                    '<h2 class="landing-h3" id="home-latest-title">Latest New Delhi decisions</h2>' +
+                    '<p class="note2">Ten most recent rows from the latest file. Search above covers all six offices; full history is under <a href="?tracker=visa&amp;tab=history&amp;view=past">History</a>.</p>' +
+                    '</div><details class="download-menu"><summary>Download</summary><div class="download-menu-panel">' +
+                    '<button type="button" class="export-btn" id="home-export" title="Download the latest New Delhi decisions as CSV">CSV</button>' +
+                    '<button type="button" class="export-btn" id="home-export-excel" title="Download the latest New Delhi decisions as Excel">Excel</button>' +
+                    '<button type="button" class="export-btn" id="home-export-pdf" title="Download the latest New Delhi decisions as PDF">PDF</button>' +
+                    '</div></details></div>' +
                     publishStatusHTML(rows) +
                     sinceBannerHTML(rows) +
-                    '<div id="meta-box" aria-live="polite"></div>' +
-                    activationSection() +
-                    readmeSection() +
-                    '<div class="latest-date">Latest available data: <strong>' + weekdayLong(latestDate) +
-                    '</strong></div>' +
-                    '<div class="tracking-since">Tracking started ' + weekdayLong(TRACKING_STARTED) + '</div>' +
                     (latestPlaceholder ? '<div class="ph-banner">' + placeholderNote(latestPlaceholder.decision) + '</div>' : '') +
-                    '<div class="note" style="margin-bottom:16px;">' +
-                    '<ul style="margin:0; padding-left:18px; list-style-type: disc;">' +
-                    '<li>The latest Excel file from the embassy contains decisions up to <strong>' + weekdayLong(latestDate) + '</strong>. This website includes all decisions recorded up to that date.</li>' +
-                    '<li>The Irish Embassy Delhi typically uploads the Excel file at <strong>11:00 AM IST</strong> each day. For the freshest updates, check this page around <strong>11:15 AM IST</strong>.</li>' +
-                    '<li>The embassy\'s Excel file is sorted by <strong>application number</strong>, not decision date \u2014 so a day\'s count can\'t be verified by counting rows from the end of the file.</li>' +
-                    '</ul>' +
-                    '</div>' +
-                    renderVisaTypeBreakdown(rows) +
-                    renderDecisionTrendsChart(rows) +
-                    renderCohortAnalysis(rows) +
-                    renderAnomalyAlerts(rows) +
-                    '<div class="searchbar">' + searchIcon() +
-                    '<input type="text" id="home-search" name="q" list="home-suggestions" autocomplete="off" maxlength="200" aria-label="Search by application number" placeholder="Application number" value="' +
-                    escapeHtml(homeSearchTerm) + '"></div>' +
-                    '<datalist id="home-suggestions"></datalist>' +
-                    '<div class="toolbar-row">' +
-                    '<div id="recent-searches">' + recentSearchesHTML() + '</div>' +
-                    '<div style="display:flex;align-items:center;gap:8px;margin-left:auto;">' +
-                    '<button type="button" class="export-btn tu-btn" id="home-search-clear" title="Clear the search and show every result" hidden>Clear search</button>' +
-                    '<button type="button" class="export-btn" id="home-export" title="Download the current results as CSV">Export CSV</button>' +
-                    '<button type="button" class="export-btn" id="home-export-excel" title="Download the current results as Excel">Export Excel</button>' +
-                    '<button type="button" class="export-btn" id="home-export-pdf" title="Download the current results as PDF">Export PDF</button>' +
-                    '</div>' +
-                    '</div>' +
-                    '<div id="watch-area"></div>' +
-                    '<div class="cards">' +
-                    '<div class="card"><div class="label"><i data-lucide="trending-up"></i>Day-on-day change</div><div class="value ' + (latestPlaceholder ? '' : (dayDiff >= 0 ? 'green' : 'red')) + '">' +
-                    (latestPlaceholder ? '-' : ((dayDiff >= 0 ? '+' : '') + dayDiff)) + '</div></div>' +
-                    '<div class="card"><div class="label"><i data-lucide="calendar-check"></i>Avg applications/day</div><div class="value">' + avg.toFixed(1) + '</div></div>' +
-                    '<div class="card"><div class="label"><i data-lucide="check-circle"></i>Acceptance rate</div><div class="value green">' + fmtPct(accepted / total) + '</div></div>' +
-                    '<div class="card"><div class="label"><i data-lucide="x-circle"></i>Rejection rate</div><div class="value red">' + fmtPct(rejected / total) + '</div></div>' +
-                    '</div>' +
-                    '<div id="community-box"></div>' +
                     '<div class="note" id="home-results-count" aria-live="polite" style="margin-bottom:8px;margin-top:0;"></div>' +
                     '<div class="table-wrap"><table class="results-table home-results-table"><thead><tr><th>Date</th><th>Application No.</th><th>Decision</th></tr></thead>' +
-                    '<tbody id="home-rows"></tbody></table></div>';
+                    '<tbody id="home-rows"></tbody></table></div>' +
+                    '<p class="home-latest-foot"><a href="?tracker=visa&amp;tab=history&amp;view=past">View all published decisions</a> &middot; <a href="/help#missing">Why a result may be missing</a></p>' +
+                    '</section>';
             }
 
             function paintHomeRows() {
@@ -2029,121 +2652,42 @@
                 if (tbody._sentinelObs) { tbody._sentinelObs.disconnect(); tbody._sentinelObs = null; }
                 while (tbody.firstChild) tbody.removeChild(tbody.firstChild);
                 var rows = cache || [];
-                var isSearching = homeSearchTerm.trim().length > 0;
-                var visible;
+                var byDate = groupByDate(rows);
+                var latest = byDate.length ? byDate[0] : null;
                 var latestPlaceholder = null;
-                if (isSearching) {
-                    // Normalized matching: dashes, spaces and leading zeros in
-                    // the query (or the stored number) don't block a match. A
-                    // query that normalizes to nothing (punctuation-only)
-                    // matches nothing, not everything.
-                    var term = normalizeIRL(homeSearchTerm);
-                    visible = term ? rows.filter(function(r) { return !r._placeholder && normalizeIRL(r.irl).indexOf(term) !== -1; }) : [];
-                } else {
-                    var byDate = groupByDate(rows);
-                    var latest = byDate.length ? byDate[0] : null;
-                    if (latest) {
-                        var latestReal = realRows(latest[1]);
-                        if (!latestReal.length) latestPlaceholder = latest[1][0];
-                        visible = latestReal;
-                    } else {
-                        visible = [];
-                    }
+                var visible = [];
+                if (latest) {
+                    var latestReal = realRows(latest[1]);
+                    if (!latestReal.length) latestPlaceholder = latest[1][0];
+                    visible = latestReal;
                 }
+                // Keep the newest file as a compact preview on Search. The full
+                // day stays one click away in History, which keeps Search and
+                // Saved applications close together on a phone.
+                var preview = visible.slice(0, 10);
                 var countNote = document.getElementById('home-results-count');
                 if (countNote) {
-                    if (isSearching) {
-                        countNote.textContent = visible.length + ' match(es) for "' + homeSearchTerm + '"';
-                    } else if (latestPlaceholder) {
-                        countNote.textContent = 'No decisions file published for ' + latestPlaceholder.date + ' yet.';
+                    if (latestPlaceholder) {
+                        countNote.textContent = 'No decisions file published for ' + humanDate(latestPlaceholder.date) + ' yet.';
+                    } else if (latest) {
+                        var countHtml = 'Latest New Delhi file: ' + escapeHtml(humanDate(latest[0])) + ' (' + visible.length + ' rows)';
+                        if (visible.length > preview.length) {
+                            countHtml += ' \u00b7 showing ' + preview.length +
+                                ' \u00b7 <a href="?tracker=visa&amp;tab=history&amp;view=past&date=' +
+                                encodeURIComponent(latest[0]) + '">View all</a>';
+                        }
+                        countNote.innerHTML = countHtml;
                     } else {
-                        var byDate2 = groupByDate(rows);
-                        var lat = byDate2.length ? byDate2[0] : null;
-                        countNote.textContent = lat
-                            ? ('All results for ' + lat[0] + ' (' + realRows(lat[1]).length + ' rows)')
-                            : '';
+                        countNote.textContent = '';
                     }
                 }
                 if (latestPlaceholder) {
-                    tbody.innerHTML = '<tr class="ph-row"><td class="mono">' + latestPlaceholder.date +
-                        '</td><td colspan="2">' + placeholderNote(latestPlaceholder.decision) + '</td></tr>';
+                    tbody.innerHTML = '<tr class="ph-row"><td class="mono"><time datetime="' + escapeHtml(latestPlaceholder.date) + '">' +
+                        escapeHtml(humanDate(latestPlaceholder.date)) + '</time></td><td colspan="2">' + placeholderNote(latestPlaceholder.decision) + '</td></tr>';
                     return;
                 }
-                renderRowsProgressive(tbody, visible);
-                // Type-ahead: refresh the datalist from the current match set (or
-                // the newest rows when idle) so suggestions narrow as you type.
-                const suggEl = document.getElementById('home-suggestions');
-                if (suggEl) {
-                    const suggRows = isSearching ? visible : (cache || []).slice(0, 300);
-                    const seen = {};
-                    const opts = [];
-                    for (let i = 0; i < suggRows.length && opts.length < 50; i++) {
-                        const s = suggRows[i];
-                        if (s._placeholder || seen[s.irl]) continue;
-                        seen[s.irl] = 1;
-                        opts.push('<option value="' + escapeHtml(s.irl) + '"></option>');
-                    }
-                    suggEl.innerHTML = opts.join('');
-                }
-                paintWatch();
-                paintCommunityBox();
+                renderRowsProgressive(tbody, preview);
             }
-
-            // Watched numbers (item 5): "Watch" button for the current search,
-            // removable chips for saved ones, and a heads-up banner the moment
-            // a watched number appears in the data.
-            var _watchMemo = { rows: null, list: '', hits: [] };
-            var watchNotice = '';
-            function paintWatch() {
-                var box = document.getElementById('watch-area');
-                if (!box) return;
-                var list = getWatchlist();
-                // Memoize: same data + same list = same hits. Without this,
-                // every debounced keystroke would re-scan 33k rows per term.
-                var rows = cache || [];
-                var key = list.map(function(item) { return item.office + ':' + item.number; }).join(',');
-                var hits;
-                if (_watchMemo.rows === rows && _watchMemo.list === key) {
-                    hits = _watchMemo.hits;
-                } else {
-                    hits = list.length ? checkWatchlist(rows, list) : [];
-                    _watchMemo = { rows: rows, list: key, hits: hits };
-                }
-                var html = '';
-                if (watchNotice) {
-                    html += '<div class="note2" role="status" style="margin:6px 0;">' +
-                        escapeHtml(watchNotice) + '</div>';
-                }
-                hits.forEach(function(h) {
-                    html += '<div class="status-line pub-live" role="status">Heads up: <strong>' +
-                        escapeHtml(h.term) + '</strong> was ' + escapeHtml(h.row.decision || '-') +
-                        ' on ' + escapeHtml(h.row.date) + '.</div>';
-                });
-                var term = normalizeIRL(homeSearchTerm);
-                if (term && !list.some(function(item) {
-                    return item.number === term && item.office === 'new-delhi';
-                })) {
-                    html += '<div style="margin:8px 0;"><button type="button" class="export-btn" data-watch-add="' +
-                        escapeHtml(term) + '" title="Get notified here when this number appears">Watch ' +
-                        escapeHtml(homeSearchTerm.trim()) + '</button></div>';
-                }
-                if (list.length) {
-                    html += '<div class="recent-row"><span class="recent-label">Watched:</span>' +
-                        list.map(function(item) {
-                            var hit = hits.some(function(h) {
-                                return h.item.number === item.number && h.item.office === item.office;
-                            });
-                            var label = item.number + (item.office === 'new-delhi' ? '' :
-                                ' \u00b7 ' + (WATCH_OFFICE_NAMES[item.office] || item.office));
-                            return '<button type="button" class="recent-chip" data-watch-del="' + escapeHtml(item.number) +
-                                '" data-watch-office="' + escapeHtml(item.office) +
-                                '" title="Stop watching ' + escapeHtml(label) + '">' + escapeHtml(label) +
-                                (hit ? ' \u25cf' : '') + ' \u00d7</button>';
-                        }).join('') + '</div>';
-                }
-                box.innerHTML = html;
-            }
-
 
             // Community-reported waits panel (item 6). Filled once per layout
             // render (guarded by dataset.done); the JSON is cached after first
@@ -2152,7 +2696,7 @@
                 var where = tracker === '1g' ? 'Stamp 1G renewals' : 'embassy visas';
                 var link = tracker === '1g'
                     ? '<a href="?tracker=1g">Share your timeline</a>'
-                    : '<a href="?tracker=visa&tab=suggest">Share your timeline</a>';
+                    : '<a href="/contact#share-timeline">Share your timeline</a>';
                 var head = '<div class="g1-chart"><h3><i data-lucide="users" style="width:15px;height:15px;vertical-align:-2px;"></i> Community waits</h3>';
                 if (!stats) {
                     return head + '<div class="note2">No community timelines for ' + where +
@@ -2433,16 +2977,17 @@
             }
 
             function renderDailySummary(rows) {
-                if (!rows.length) return renderConfigWarning() +
-                    '<div class="empty">No decisions recorded yet.</div>';
+                if (!rows.length) return '<div class="empty">No decisions recorded yet.</div>';
                 const byDate = groupByDate(rows);
-                const trs = byDate.map(([date, dayRows], idx) => {
+                const days = byDate.slice(0, dailyVisibleLimit);
+                const trs = days.map(([date, dayRows], idx) => {
                     const real = dayRows.filter(r => !r._placeholder);
-                    const placeholder = dayRows.find(r => r._placeholder);
                     if (!real.length) {
                         // Notice day (no file / office closed): show the real
                         // message instead of counting the notice as 1 application.
-                        return '<tr class="ph-row"><td class="mono">' + date + '</td><td colspan="4">' +
+                        const placeholder = dayRows.find(r => r._placeholder);
+                        return '<tr class="ph-row"><td class="mono"><time datetime="' + escapeHtml(date) + '">' +
+                            escapeHtml(humanDate(date)) + '</time></td><td colspan="4">' +
                             placeholderNote(placeholder ? placeholder.decision : '') + '</td></tr>';
                     }
                     // Day-on-day compares against the previous day that has REAL
@@ -2453,21 +2998,26 @@
                     const acc = real.filter(r => classify(r.decision) === 'accepted').length / real.length;
                     const rej = real.filter(r => classify(r.decision) === 'rejected').length / real.length;
                     return '<tr><td class="mono dd-toggle" role="button" tabindex="0" aria-expanded="false" title="Show the applications behind this day\u2019s numbers">' +
-                        '<span class="dd-caret" aria-hidden="true">\u25b8</span>' + date + '</td><td>' + real.length + '</td><td>' +
+                        '<span class="dd-caret" aria-hidden="true">\u25b8</span><time datetime="' + escapeHtml(date) + '">' +
+                        escapeHtml(humanDate(date)) + '</time></td><td>' + real.length + '</td><td>' +
                         (diff === null ? '-' : ('<span class="pill ' + (diff >= 0 ? 'green' : 'red') + '">' + (
                             diff >= 0 ? '+' : '') + diff + '</span>')) +
-                        '</td><td>' + fmtPct(acc) + '</td><td>' + fmtPct(rej) + '</td></tr>' +
+                        '</td><td title="Based on ' + real.length + ' published decisions">' + fmtPct(acc) + '</td><td title="Based on ' + real.length + ' published decisions">' + fmtPct(rej) + '</td></tr>' +
                         '<tr class="dd-row"><td colspan="5"><div class="dd-note">These ' + real.length +
-                        ' rows were first recorded on this day. The embassy file is sorted by application number, so this is the day the tracker first saw them, not their decision date.</div>' +
+                        ' rows were first recorded on ' + escapeHtml(humanDate(date)) + '. The embassy file is sorted by application number, so this is the day the tracker first saw them, not their decision date.</div>' +
                         '<div class="dd-list">' + real.map(function(r) {
                             return '<div class="dd-list-item"><span class="mono">' + escapeHtml(r.irl) +
                                 '</span><span class="pill ' + r._pillClass + '">' + escapeHtml(r.decision || '-') + '</span></div>';
                         }).join('') + '</div></td></tr>';
                 }).join('');
-                return renderConfigWarning() +
-                    heatmapHTML(byDate) +
-                    '<div class="table-wrap"><table class="daily-table"><thead><tr><th>Date</th><th>Applications Processed</th><th>Day-on-Day</th><th>Acceptance Rate</th><th>Rejection Rate</th></tr></thead>' +
-                    '<tbody>' + trs + '</tbody></table></div>';
+                return heatmapHTML(byDate) +
+                    '<div class="table-wrap"><table class="daily-table"><thead><tr><th>Date</th><th>Applications Processed</th><th>Day-on-Day</th><th>Accepted Share</th><th>Refused Share</th></tr></thead>' +
+                    '<tbody>' + trs + '</tbody></table></div>' +
+                    '<p class="note2 rate-sample-note">Accepted and refused shares are calculated from <strong>Applications Processed</strong> in the same row. That count is the sample size; days with few decisions can swing widely.</p>' +
+                    (byDate.length > dailyVisibleLimit
+                        ? '<div class="show-more-wrap"><button type="button" class="btn secondary" data-daily-show-more>Show older days (' +
+                            Math.min(DAILY_PAGE_SIZE, byDate.length - dailyVisibleLimit) + ' of ' + (byDate.length - dailyVisibleLimit) + ')</button></div>'
+                        : '');
             }
 
             // ====== PAST TAB ======
@@ -2477,8 +3027,7 @@
             // when the date filter changes - the datepicker stays alive so no
             // cursor restoration is needed.
             function renderPastLayout(rows) {
-                if (!rows.length) return renderConfigWarning() +
-                    '<div class="empty">No decisions recorded yet.</div>';
+                if (!rows.length) return '<div class="empty">No decisions recorded yet.</div>';
                 const real = realRows(rows);
                 const total = real.length;
                 const accepted = real.filter(r => r._status === 'accepted').length;
@@ -2494,31 +3043,38 @@
                 const acc7 = last7.length ? last7.filter(r => r._status === 'accepted').length / last7.length : null;
                 const acc30 = last30.length ? last30.filter(r => r._status === 'accepted').length / last30.length : null;
 
-                return renderConfigWarning() +
-                    '<div class="cards">' +
-                    '<div class="card"><div class="label"><i data-lucide="check-circle"></i>Acceptance rate</div><div class="value green">' + fmtPct(accepted / total) + '</div></div>' +
-                    '<div class="card"><div class="label"><i data-lucide="calendar-check"></i>7-day acceptance</div><div class="value ' + (acc7 === null ? '' : 'green') + '">' + (acc7 === null ? '-' : fmtPct(acc7)) + '</div></div>' +
-                    '<div class="card"><div class="label"><i data-lucide="calendar-days"></i>30-day acceptance</div><div class="value ' + (acc30 === null ? '' : 'green') + '">' + (acc30 === null ? '-' : fmtPct(acc30)) + '</div></div>' +
-                    '<div class="card"><div class="label"><i data-lucide="x-circle"></i>Rejection rate</div><div class="value red">' + fmtPct(rejected / total) + '</div></div>' +
+                return '<div class="cards">' +
+                    '<div class="card"><div class="label"><i data-lucide="check-circle"></i>Accepted share</div><div class="value green">' + fmtPct(accepted / total) + '</div><div class="hint">' + sampleSizeText(total) + '</div></div>' +
+                    '<div class="card"><div class="label"><i data-lucide="calendar-check"></i>7-day accepted share</div><div class="value ' + (acc7 === null ? '' : 'green') + '">' + (acc7 === null ? '-' : fmtPct(acc7)) + '</div><div class="hint">' + sampleSizeText(last7.length, 'in the last 7 days') + '</div></div>' +
+                    '<div class="card"><div class="label"><i data-lucide="calendar-days"></i>30-day accepted share</div><div class="value ' + (acc30 === null ? '' : 'green') + '">' + (acc30 === null ? '-' : fmtPct(acc30)) + '</div><div class="hint">' + sampleSizeText(last30.length, 'in the last 30 days') + '</div></div>' +
+                    '<div class="card"><div class="label"><i data-lucide="x-circle"></i>Refused share</div><div class="value red">' + fmtPct(rejected / total) + '</div><div class="hint">' + sampleSizeText(total) + '</div></div>' +
                     '<div class="card"><div class="label"><i data-lucide="calendar-check"></i>Avg applications/day</div><div class="value">' + avg.toFixed(1) + '</div></div>' +
                     '<div class="card"><div class="label"><i data-lucide="percent"></i>Week-on-week</div><div class="value ' + (wow === null ? '' : (wow >= 0 ? 'green' : 'red')) + '">' + (wow === null ? '-' : ((wow >= 0 ? '+' : '') + fmtPct(wow))) + '</div></div>' +
                     '</div>' +
                     '<div class="filter-row">' +
-                    '<div class="note" style="margin-top:0;">Use the search bar on the Home tab to look up a specific application number.</div>' +
+                    '<div class="note" style="margin-top:0;">Use <a href="?tracker=visa&amp;tab=search">Search</a> for one application number. This view is the full published history.</div>' +
                     '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">' +
                     '<span id="past-status-filter"></span>' +
-                    '<button type="button" class="export-btn" id="past-export" title="Download the visible rows as CSV">Export CSV</button>' +
-                    '<button type="button" class="export-btn" id="past-export-excel" title="Download the visible rows as Excel">Export Excel</button>' +
-                    '<button type="button" class="export-btn" id="past-export-pdf" title="Download the visible rows as PDF">Export PDF</button>' +
                     '<div class="datefilter' + (pastDateFilter ? ' has-filter' : '') + '"><label class="visually-hidden" for="past-date-filter">Filter by date</label><input type="date" id="past-date-filter" name="date" autocomplete="off" aria-label="Filter by date" value="' + escapeHtml(pastDateFilter) + '" data-calendar>' +
                     '<button type="button" class="clear-btn" id="past-date-clear" aria-label="Clear date filter" title="Clear date filter">\u00d7</button>' +
                     '</div>' +
                     '</div>' +
                     '</div>' +
-                    '<div class="note" id="past-results-count" aria-live="polite" style="margin-bottom:8px;margin-top:0;"></div>' +
+                    '<div class="table-controls">' +
+                    '<div class="note" id="past-results-count" aria-live="polite"></div>' +
+                    '<label class="page-size-control">Rows per page <select id="past-page-size">' +
+                    [50, 100, 250, 500].map(function(n) { return '<option value="' + n + '"' + (pastPageSize === n ? ' selected' : '') + '>' + n + '</option>'; }).join('') +
+                    '</select></label>' +
+                    '<button type="button" class="export-btn" id="past-reset">Reset filters</button>' +
+                    '<details class="download-menu"><summary>Download</summary><div class="download-menu-panel">' +
+                    '<button type="button" class="export-btn" id="past-export" title="Download the visible rows as CSV">CSV</button>' +
+                    '<button type="button" class="export-btn" id="past-export-excel" title="Download the visible rows as Excel">Excel</button>' +
+                    '<button type="button" class="export-btn" id="past-export-pdf" title="Download the visible rows as PDF">PDF</button>' +
+                    '</div></details>' +
+                    '</div>' +
                     '<div class="table-wrap"><table class="results-table past-results-table"><thead><tr><th>Date</th><th>Application No.</th><th>Decision</th></tr></thead>' +
                     '<tbody id="past-rows"></tbody></table></div>' +
-                    '<button class="scroll-top-btn" id="scroll-top-btn" title="Scroll to top" aria-label="Scroll to top">\u2191</button>';
+                    '<div id="past-show-more" class="show-more-wrap"></div>';
             }
 
             function paintPastRows() {
@@ -2539,111 +3095,76 @@
                     if (ph) phNote = ph;
                 }
                 var countNote = document.getElementById('past-results-count');
+                var shown = visible.slice(0, pastVisibleLimit);
                 if (countNote) {
                     countNote.textContent = phNote
-                        ? 'No decisions file for ' + pastDateFilter
+                        ? 'No decisions file for ' + humanDate(pastDateFilter)
                         : (visible.length + ' ' + (pastStatusFilter === 'all' ? 'rows' : pastStatusFilter + ' rows') +
-                            (pastDateFilter ? ' for ' + pastDateFilter : ' total'));
+                            (pastDateFilter ? ' for ' + humanDate(pastDateFilter) : ' total') +
+                            (visible.length > shown.length ? ' \u00b7 showing ' + shown.length : ''));
+                }
+                var more = document.getElementById('past-show-more');
+                if (more) {
+                    more.innerHTML = visible.length > shown.length
+                        ? '<button type="button" class="btn secondary" id="past-show-more-btn">Show more (' +
+                            Math.min(pastPageSize, visible.length - shown.length) + ')</button>'
+                        : '';
                 }
                 if (phNote) {
-                    tbody.innerHTML = '<tr class="ph-row"><td class="mono">' + phNote.date +
-                        '</td><td colspan="2">' + placeholderNote(phNote.decision) + '</td></tr>';
+                    tbody.innerHTML = '<tr class="ph-row"><td class="mono"><time datetime="' + escapeHtml(phNote.date) + '">' +
+                        escapeHtml(humanDate(phNote.date)) + '</time></td><td colspan="2">' + placeholderNote(phNote.decision) + '</td></tr>';
                     return;
                 }
-                renderRowsProgressive(tbody, visible);
+                renderRowsProgressive(tbody, shown);
             }
 
-            // ====== SUGGEST TAB ======
-            // Single-purpose layout: the submission form. A post carrying
-            // form-name=suggestions is stored by the Worker in D1; the Worker
-            // serves the three timeline forms back (never this one, which
-            // carries a name and free text), so a suggestion is read from the
-            // store rather than from this page.
-            // The form body lives in SUGG_FORM_HTML so it can be restored after
-            // the post-submit success card is shown.
-            // Minimum time the "Submitting…" state stays visible - on a fast
-            // connection the fetch can resolve in a few ms, which would flash
-            // the success card before the label was ever readable.
+            // ====== ALERTS TAB ======
+            // Alerts are the first thing in the tab: Telegram opens the bot
+            // handoff, browser push uses an application already in the local
+            // watchlist. Feedback and timeline sharing live on /contact now.
+            // Minimum time the 1G timeline "Submitting…" state stays visible -
+            // on a fast connection the fetch can resolve in a few ms, which
+            // would flash the success card before the label was ever readable.
             const MIN_SUBMIT_MS = 800;
 
-            // Markup mirrors the contact-form shape the site has always used:
-            // fields wrapped in <p><label>…</label></p>, a hidden `form-name`
-            // field naming the form the Worker routes on, and an empty
-            // `bot-field` the Worker reads as the honeypot. Nothing registers
-            // these forms anywhere - the Worker reads the POST itself.
-            const SUGG_FORM_HTML =
-                '<input type="hidden" name="form-name" value="suggestions" />' +
-                '<p><label>Name <input type="text" id="sugg-name" name="name" placeholder="Your name\u2026" autocomplete="name" /></label></p>' +
-                '<p><label>Suggestion <textarea id="sugg-text" name="suggestion" placeholder="Your suggestion\u2026"></textarea></label></p>' +
-                '<button class="btn" type="submit" id="sugg-submit">Send Suggestion</button>' +
-                '<div class="note" id="sugg-status" aria-live="polite"></div>';
-
-            function renderSuggestLayout() {
-                return renderConfigWarning() +
-                    '<div class="suggest-grid">' +
-                        '<div class="form-col" style="max-width:560px;">' +
-                            '<form class="card" id="sugg-form" name="suggestions" novalidate style="max-width:100%;">' +
-                                SUGG_FORM_HTML +
-                            '</form>' +
-                        '</div>' +
-                        '<div class="form-col" style="max-width:560px;">' +
-                            '<form class="card" id="time-form" name="timelines-visa" novalidate style="max-width:100%;">' +
-                                TIMELINES_FORM_HTML +
-                            '</form>' +
-                        '</div>' +
-                        '<div class="form-col" style="max-width:560px;">' +
-                            '<form class="card" id="alert-form" name="telegram-alerts" novalidate style="max-width:100%;">' +
-                                ALERT_FORM_HTML +
-                            '</form>' +
-                        '</div>' +
-                    '</div>';
+            function alertsPushListHTML(list) {
+                if (!list.length) {
+                    return '<p class="note2 alerts-push-empty">No applications saved in this browser yet. ' +
+                        '<a href="?tracker=visa&amp;tab=search">Find and save one</a> to enable push.</p>';
+                }
+                return '<div class="alerts-push-items">' + list.map(function(item) {
+                    var office = WATCH_OFFICE_NAMES[item.office] || item.office;
+                    var label = item.push ? 'Push on' : 'Enable push';
+                    return '<div class="alerts-push-item">' +
+                        '<div><strong class="mono">' + escapeHtml(item.number) + '</strong>' +
+                        '<span class="note2">' + escapeHtml(office) + '</span></div>' +
+                        '<button type="button" class="export-btn tu-btn" data-alerts-push="' +
+                        escapeHtml(item.number) + '" data-alerts-push-office="' + escapeHtml(item.office) +
+                        '" aria-pressed="' + (item.push ? 'true' : 'false') + '">' + label + '</button>' +
+                        '</div>';
+                }).join('') + '</div>';
             }
 
+            function paintAlertsPush() {
+                var box = document.getElementById('alerts-push-list');
+                if (!box) return;
+                box.innerHTML = alertsPushListHTML(getWatchlist());
+            }
 
-            // ====== COHORT ANALYSIS ======
-            function renderCohortAnalysis(rows) {
-                const real = realRows(rows);
-                if (!real.length) return '<p class="note2">No data for cohort analysis</p>';
-                
-                // Group by application week and track decisions over following weeks
-                const cohorts = {};
-                real.forEach(r => {
-                    if (!r.date || !r.irl) return;
-                    // Approximate application week from decision date (rough estimate)
-                    const dt = new Date(r.date + 'T00:00:00');
-                    const weekStart = new Date(dt);
-                    weekStart.setDate(dt.getDate() - dt.getDay());
-                    const key = weekStart.toISOString().slice(0, 10);
-                    if (!cohorts[key]) cohorts[key] = { total: 0, decided: 0, accepted: 0, rejected: 0 };
-                    cohorts[key].total++;
-                    cohorts[key].decided++;
-                    if (r._status === 'accepted') cohorts[key].accepted++;
-                    else if (r._status === 'rejected') cohorts[key].rejected++;
-                });
-                
-                const weeks = Object.keys(cohorts).sort().slice(-8); // Last 8 cohorts
-                if (!weeks.length) return '<p class="note2">Insufficient data for cohorts</p>';
-                
-                let html = '<h3>Weekly Cohort Analysis</h3>';
-                html += '<p class="note2">Each row = applications received that week. Columns = % decided within N weeks.</p>';
-                html += '<div class="table-wrap cohort-table"><table class="results-table"><thead>' +
-                    '<tr><th>Application Week</th><th>Total Apps</th><th>Decided</th><th>Approval Rate</th></tr></thead><tbody>';
-                
-                weeks.forEach(w => {
-                    const c = cohorts[w];
-                    const rate = c.decided ? ((c.accepted / c.decided) * 100).toFixed(1) : 0;
-                    const d = new Date(w + 'T00:00:00');
-                    const label = d.toLocaleDateString('en-GB', { month: 'short', day: 'numeric' });
-                    html += '<tr>' +
-                        '<td><strong>' + label + '</strong></td>' +
-                        '<td>' + c.total.toLocaleString() + '</td>' +
-                        '<td>' + c.decided.toLocaleString() + '</td>' +
-                        '<td><strong>' + rate + '%</strong></td>' +
-                        '</tr>';
-                });
-                
-                html += '</tbody></table></div>';
-                return html;
+            function renderAlertsLayout() {
+                return '<div class="alerts-grid">' +
+                        '<form class="card alerts-card" id="alert-form" name="telegram-alerts" novalidate style="max-width:100%;">' +
+                            ALERT_FORM_HTML +
+                        '</form>' +
+                        '<section class="card alerts-card alerts-push-card" id="alerts-push-card" aria-labelledby="alerts-push-title">' +
+                            '<h3 class="readme-title" id="alerts-push-title" style="margin-top:0;">Your alert subscriptions</h3>' +
+                            '<p class="note2">Saved applications appear here. Browser push is per application and arrives through this browser. Telegram subscriptions are managed inside the Telegram bot.</p>' +
+                            '<div id="alerts-push-list"></div>' +
+                            '<div class="note" id="alerts-push-status" role="status" aria-live="polite"></div>' +
+                            '<p class="note2" style="margin-bottom:0;"><a href="?tracker=visa&amp;tab=saved">Manage saved applications and backups</a></p>' +
+                        '</section>' +
+                    '</div>' +
+                    '<p class="note2 alerts-help">Need to report a correction, send feedback or share your timeline? Those forms now live on <a href="/contact#feedback">Contact &amp; feedback</a>.</p>';
             }
 
 
@@ -2698,9 +3219,16 @@
                 return anomalies;
             }
 
+            function renderAnomalyEmptyHTML() {
+                return '<div class="anomaly-alerts" role="status">' +
+                    '<h3><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 9v4M12 17h.01"/></svg> Unusual patterns (experimental)</h3>' +
+                    '<p class="note2">Analyst-style checks on volume and approved share. This is not an official warning and does not describe your application.</p>' +
+                    '<p class="note2">No unusual patterns were detected in the last 14 days.</p></div>';
+            }
+
             function renderAnomalyAlerts(rows) {
                 const anomalies = detectAnomalies(rows);
-                if (!anomalies.length) return '';
+                if (!anomalies.length) return renderAnomalyEmptyHTML();
                 
                 const recent = anomalies.filter(a => {
                     const d = new Date(a.date + 'T00:00:00');
@@ -2708,19 +3236,20 @@
                     return diff <= 14; // Last 2 weeks
                 });
                 
-                if (!recent.length) return '';
+                if (!recent.length) return renderAnomalyEmptyHTML();
                 
-                let html = '<div class="anomaly-alerts" role="alert">';
-                html += '<h3><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 9v4M12 17h.01"/></svg> Data Anomalies Detected</h3>';
+                let html = '<div class="anomaly-alerts" role="status">';
+                html += '<h3><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 9v4M12 17h.01"/></svg> Unusual patterns (experimental)</h3>' +
+                    '<p class="note2">Analyst-style checks on volume and approval share. This is not an official warning and does not describe your application.</p>';
                 html += '<ul>';
                 recent.forEach(a => {
                     const icon = a.type === 'volume_spike' ? 'trending-up' : 'alert-triangle';
                     const color = a.severity === 'high' ? 'var(--red)' : 'var(--amber)';
                     html += '<li style="border-left: 3px solid ' + color + '; padding: 8px 12px; margin: 8px 0; background: var(--surface-raised);">' +
-                        '<strong>' + a.date + '</strong>: ' +
+                        '<strong>' + escapeHtml(humanDate(a.date)) + '</strong>: ' +
                         (a.type === 'volume_spike' ? 
                             'Unusual volume spike: ' + a.value + ' decisions (expected ~' + a.expected + ')' :
-                            'Approval rate shift: ' + a.value + ' (expected ~' + a.expected + ')') +
+                            'Approved share shift: ' + a.value + ' (expected ~' + a.expected + ')') +
                         '<span class="badge" style="background:' + color + '; margin-left:8px;">' + a.severity + '</span>' +
                         '</li>';
                 });
@@ -2749,7 +3278,7 @@
                 
                 let html = '<h3>Decisions by Visa Type</h3>';
                 html += '<div class="table-wrap visa-type-breakdown"><table class="results-table"><thead>' +
-                    '<tr><th>Visa Type</th><th>Total</th><th>Approved</th><th>Refused</th><th>Other</th><th>Approval Rate</th></tr></thead><tbody>';
+                    '<tr><th>Visa Type</th><th>Total</th><th>Approved</th><th>Refused</th><th>Other</th><th>Approved Share</th></tr></thead><tbody>';
                 
                 Object.keys(byType).sort().forEach(type => {
                     const d = byType[type];
@@ -2760,11 +3289,12 @@
                         '<td class="green">' + d.accepted.toLocaleString() + '</td>' +
                         '<td class="red">' + d.rejected.toLocaleString() + '</td>' +
                         '<td>' + d.other.toLocaleString() + '</td>' +
-                        '<td><strong>' + rate + '%</strong></td>' +
+                        '<td title="Based on ' + d.total.toLocaleString() + ' published decisions"><strong>' + rate + '%</strong></td>' +
                         '</tr>';
                 });
                 
-                html += '</tbody></table></div>';
+                html += '</tbody></table></div>' +
+                    '<p class="note2 rate-sample-note">Approved share uses the <strong>Total</strong> column for each visa type; that total is the sample size. Small groups can swing widely.</p>';
                 return html;
             }
 
@@ -2841,7 +3371,7 @@
                             data: {
                                 labels: labels,
                                 datasets: [{
-                                    label: 'Approval rate',
+                                    label: 'Approved share',
                                     data: rate,
                                     borderColor: '#2563eb',
                                     backgroundColor: 'rgba(37,99,235,0.08)',
@@ -2860,12 +3390,16 @@
                                 maintainAspectRatio: false,
                                 interaction: { mode: 'index', intersect: false },
                                 scales: {
-                                    y: { min: 0, max: 100, ticks: { stepSize: 25, callback: function(v) { return v + '%'; } }, title: { display: true, text: 'Approval rate' }, grid: { color: 'rgba(148,163,184,0.18)' } },
+                                    y: { min: 0, max: 100, ticks: { stepSize: 25, callback: function(v) { return v + '%'; } }, title: { display: true, text: 'Approved share' }, grid: { color: 'rgba(148,163,184,0.18)' } },
                                     x: { grid: { display: false }, ticks: { maxTicksLimit: 8, maxRotation: 0, autoSkip: true } }
                                 },
                                 plugins: {
                                     legend: { display: false },
-                                    tooltip: { callbacks: { label: function(ctx) { return 'Approval rate: ' + ctx.parsed.y + '%'; } } }
+                                    tooltip: { callbacks: { label: function(ctx) {
+                                        var week = weeks[ctx.dataIndex];
+                                        var total = week && byWeek[week] ? byWeek[week].total : 0;
+                                        return 'Approved share: ' + ctx.parsed.y + '% of ' + total.toLocaleString() + ' published decisions';
+                                    } } }
                                 }
                             }
                         });
@@ -2885,38 +3419,37 @@
 
                 return '<div class="chart-container decision-trends-chart">' +
                     '<div class="decision-trends-head">' +
-                    '<h3>Weekly decisions and approval rate</h3>' +
-                    '<p class="decision-trends-note">Counts and rate have separate scales. Rate is approved decisions divided by all decisions in the week.</p>' +
+                    '<h3>Weekly decisions and approved share</h3>' +
+                    '<p class="decision-trends-note">Counts and approved share have separate scales. Approved share is approved decisions divided by all published decisions in the week; each point uses that week\'s sample, so small weeks can swing widely.</p>' +
                     '</div>' +
                     '<div class="decision-trends-panel">' +
                     '<div class="decision-trends-panel-title"><span>Decisions per week</span><span>applications</span></div>' +
                     '<canvas id="' + countId + '" class="decision-trends-count-canvas" role="img" aria-label="Weekly approved and refused decisions"></canvas>' +
                     '</div>' +
                     '<div class="decision-trends-panel">' +
-                    '<div class="decision-trends-panel-title"><span>Approval rate</span><span>percent</span></div>' +
-                    '<canvas id="' + rateId + '" class="decision-trends-rate-canvas" role="img" aria-label="Weekly approval rate"></canvas>' +
+                    '<div class="decision-trends-panel-title"><span>Approved share</span><span>percent</span></div>' +
+                    '<canvas id="' + rateId + '" class="decision-trends-rate-canvas" role="img" aria-label="Weekly approved share of published decisions"></canvas>' +
                     '</div>' +
                     '</div>';
             }
 
             // ====== ANALYTICS TAB ======
             function renderAnalyticsLayout(rows) {
-                if (!rows.length) return renderConfigWarning() +
-                    '<div class="empty">No decisions recorded yet.</div>';
+                if (!rows.length) return '<div class="empty">No decisions recorded yet.</div>';
                 
-                return renderConfigWarning() +
-                    renderVisaTypeBreakdown(rows) +
+                return renderVisaTypeBreakdown(rows) +
                     renderDecisionTrendsChart(rows) +
-                    renderCohortAnalysis(rows) +
                     renderAnomalyAlerts(rows) +
                     '<div class="analytics-grid">' +
                         '<div class="chart-container">' +
-                            '<h3>Month-by-Month Approval Rate</h3>' +
-                            '<canvas id="chart-monthly" aria-label="Monthly approval rate chart"></canvas>' +
+                            '<h3>Month-by-Month Approved Share</h3>' +
+                            '<canvas id="chart-monthly" aria-label="Monthly approved share of published decisions chart"></canvas>' +
+                            '<p class="note2 rate-sample-note">Monthly approved shares use that month\'s approved and total published decision counts. Hover a month for the sample size.</p>' +
                         '</div>' +
                         '<div class="chart-container">' +
-                            '<h3>30-Day Rolling Approval Rate</h3>' +
-                            '<canvas id="chart-rolling30" aria-label="30-day rolling approval rate chart"></canvas>' +
+                            '<h3>30-Day Rolling Approved Share</h3>' +
+                            '<canvas id="chart-rolling30" aria-label="30-day rolling approved share of published decisions chart"></canvas>' +
+                            '<p class="note2 rate-sample-note">Each point uses decisions from the trailing 30 days; hover for the sample size.</p>' +
                         '</div>' +
                         '<div class="chart-container">' +
                             '<h3>Daily Volume Delta</h3>' +
@@ -2972,7 +3505,7 @@
                                 borderWidth: 1,
                                 yAxisID: 'y'
                             }, {
-                                label: 'Approval Rate (%)',
+                                label: 'Approved Share (%)',
                                 data: monthly.map(m => m.rate),
                                 type: 'line',
                                 borderColor: '#dc2626',
@@ -2993,7 +3526,13 @@
                                 y: { type: 'linear', display: true, position: 'left', title: { display: true, text: 'Applications' } },
                                 y1: { type: 'linear', display: true, position: 'right', title: { display: true, text: 'Rate (%)' }, min: 0, max: 100, grid: { drawOnChartArea: false } }
                             },
-                            plugins: { legend: { display: true, position: 'top' } }
+                            plugins: {
+                                legend: { display: true, position: 'top' },
+                                tooltip: { callbacks: { afterBody: function(items) {
+                                    var point = items && items.length ? monthly[items[0].dataIndex] : null;
+                                    return point ? 'Approved share: ' + point.rate + '% of ' + point.total.toLocaleString() + ' published decisions' : '';
+                                } } }
+                            }
                         }
                     });
                 }
@@ -3006,7 +3545,7 @@
                         data: {
                             labels: rolling30.map(r => r.date),
                             datasets: [{
-                                label: '30-Day Rolling Approval Rate (%)',
+                                label: '30-Day Rolling Approved Share (%)',
                                 data: rolling30.map(r => r.rate),
                                 borderColor: '#059669',
                                 backgroundColor: 'rgba(5, 150, 105, 0.1)',
@@ -3021,10 +3560,16 @@
                             responsive: true,
                             maintainAspectRatio: false,
                             scales: {
-                                y: { min: 0, max: 100, title: { display: true, text: 'Approval Rate (%)' } },
+                                y: { min: 0, max: 100, title: { display: true, text: 'Approved Share (%)' } },
                                 x: { ticks: { maxTicksLimit: 10 } }
                             },
-                            plugins: { legend: { display: false } }
+                            plugins: {
+                                legend: { display: false },
+                                tooltip: { callbacks: { label: function(ctx) {
+                                    var point = rolling30[ctx.dataIndex];
+                                    return ['Approved share: ' + ctx.parsed.y + '%', 'Sample: ' + (point ? point.total.toLocaleString() : '0') + ' published decisions in 30 days'];
+                                } } }
+                            }
                         }
                     });
                 }
@@ -3181,20 +3726,9 @@
                 '</form>';
             }
 
-            // Community timeline submissions (item 6): applied -> decided
-            // dates per tracker, synced nightly into data/community_timelines.json.
-            const TIMELINES_FORM_HTML =
-            '<input type="hidden" name="form-name" value="timelines-visa" />' +
-            '<h3 class="readme-title" style="margin-top:0;">Share your timeline</h3>' +
-            '<p class="note2">Embassy visa only - applied and decided dates from the New Delhi list. Published anonymously in aggregate.</p>' +
-            '<input type="hidden" name="tracker" value="visa" />' +
-            '<p><label>Applied on <input type="date" id="time-applied" name="applied" data-calendar /></label></p>' +
-            '<p><label>Decided on <input type="date" id="time-decided" name="decided" data-calendar /></label></p>' +
-            '<p><label>Outcome <select id="time-outcome" name="outcome" aria-label="Outcome" data-glide data-glide-size="sm" data-glide-menu-width="150"><option value="granted">Granted</option><option value="refused">Refused</option></select></label></p>' +
-            '<button class="btn" type="submit" id="time-submit">Share Timeline</button>' +
-            '<div class="note" id="time-status" aria-live="polite"></div>';
-
-            // 1G-specific timeline form (for the 1G page).
+            // 1G timeline submissions (item 6): applied -> decided dates,
+            // synced nightly into data/community_timelines.json. The embassy
+            // visa form now lives on /contact#share-timeline.
             const TIMELINES_1G_FORM_HTML =
                 '<input type="hidden" name="form-name" value="timelines-1g" />' +
                 '<h3 class="readme-title" style="margin-top:0;">Share your 1G timeline</h3>' +
@@ -3222,21 +3756,15 @@
                 '<p class="note2" style="margin-top:6px;">Free and no email needed. Opens the Telegram bot with your application ready to link.</p>' +
                 '<div class="note" id="alert-status" aria-live="polite"></div>';
 
-            async function submitTimeline(is1G) {
-                // Explicit flag from the submit listener: true for the 1G
-                // page form, false for the embassy-visa form on Suggestions.
-                // Falls back to DOM detection so older in-flight handlers
-                // still resolve to the visa form.
-                if (typeof is1G === 'undefined' || is1G === null) {
-                    is1G = document.getElementById('time-applied-1g') !== null;
-                }
-                is1G = !!is1G;
-                const appliedEl = document.getElementById(is1G ? 'time-applied-1g' : 'time-applied');
-                const decidedEl = document.getElementById(is1G ? 'time-decided-1g' : 'time-decided');
-                const outcomeEl = document.getElementById(is1G ? 'time-outcome-1g' : 'time-outcome');
-                const status = document.getElementById(is1G ? 'time-status-1g' : 'time-status');
-                const btn = document.getElementById(is1G ? 'time-submit-1g' : 'time-submit');
-                const formId = is1G ? 'time-form-1g' : 'time-form';
+            async function submitTimeline() {
+                // The embassy-visa timeline form now lives on /contact. This
+                // function remains for the separate Stamp 1G form.
+                const appliedEl = document.getElementById('time-applied-1g');
+                const decidedEl = document.getElementById('time-decided-1g');
+                const outcomeEl = document.getElementById('time-outcome-1g');
+                const status = document.getElementById('time-status-1g');
+                const btn = document.getElementById('time-submit-1g');
+                const formId = 'time-form-1g';
                 if (!appliedEl || !decidedEl || !outcomeEl || !status || !btn) return;
 
                 const applied = appliedEl.value, decided = decidedEl.value;
@@ -3255,9 +3783,9 @@
                 const startedAt = Date.now();
                 try {
                     const body = new URLSearchParams({
-                        'form-name': is1G ? 'timelines-1g' : 'timelines-visa',
+                        'form-name': 'timelines-1g',
                         'bot-field': '',
-                        tracker: is1G ? '1g' : 'visa',
+                        tracker: '1g',
                         applied: applied,
                         decided: decided,
                         outcome: outcomeEl.value
@@ -3275,13 +3803,13 @@
                         '<div class="sugg-success" role="status">' +
                         '<div class="sugg-success-title">Thanks - timeline shared!</div>' +
                         '<div class="sugg-success-text">It appears in the community stats after the nightly sync.</div>' +
-                        '<button class="btn" type="button" id="' + (is1G ? 'time-again-1g' : 'time-again') + '">Share another</button></div>';
-                    const again = document.getElementById(is1G ? 'time-again-1g' : 'time-again');
+                        '<button class="btn" type="button" id="time-again-1g">Share another</button></div>';
+                    const again = document.getElementById('time-again-1g');
                     if (again) again.addEventListener('click', function() {
                         const f = document.getElementById(formId);
                         if (!f) return;
-                        f.innerHTML = is1G ? TIMELINES_1G_FORM_HTML : TIMELINES_FORM_HTML;
-                        f.addEventListener('submit', function(e) { e.preventDefault(); submitTimeline(is1G); });
+                        f.innerHTML = TIMELINES_1G_FORM_HTML;
+                        f.addEventListener('submit', function(e) { e.preventDefault(); submitTimeline(); });
                     });
                 } catch (err) {
                     status.textContent = 'Could not submit. Try again.';
@@ -3320,8 +3848,7 @@
                     const data = await res.json().catch(function() { return {}; });
                     if (res.ok && data.url) {
                         window.open(data.url, '_blank', 'noopener');
-                        markActivation('alerts');
-                        trackConversion('alert_telegram_opened', 'suggestions');
+                        trackConversion('alert_telegram_opened', 'alerts');
                         statusEl.textContent = 'Press Start in Telegram to finish linking ' + applicationNumber + '.';
                         statusEl.style.color = 'var(--green)';
                     } else {
@@ -3336,86 +3863,7 @@
                 }
             }
 
-            function showSuggestionSuccess(name) {
-                const form = document.getElementById('sugg-form');
-                if (!form) return;
-                // Sparkle burst: dots + diamonds radiating from the checkmark.
-                // Each spark gets a direction vector, size, and stagger delay.
-                let sparks = '';
-                const SPARK_COUNT = 16;
-                for (let i = 0; i < SPARK_COUNT; i++) {
-                    const ang = (i / SPARK_COUNT) * Math.PI * 2;
-                    const dist = 34 + (i % 3) * 9;                    // varied reach
-                    const tx = Math.round(Math.cos(ang) * dist);
-                    const ty = Math.round(Math.sin(ang) * dist);
-                    const size = 5 + (i % 3) * 2;                      // varied size
-                    const delay = 0.5 + (i % 5) * 0.045;               // after check draws
-                    const cls = i % 3 === 2 ? 'diamond' : 'dot';
-                    sparks += '<span class="' + cls + '" style="width:' + size + 'px;height:' + size + 'px;--tx:' + tx + 'px;--ty:' + ty + 'px;--d:' + delay.toFixed(3) + 's;"></span>';
-                }
-                form.innerHTML =
-                    '<div class="sugg-success" role="status">' +
-                        '<div class="check-wrap">' +
-                            '<div class="burst" aria-hidden="true">' + sparks + '</div>' +
-                            '<svg class="check" viewBox="0 0 52 52" aria-hidden="true"><circle cx="26" cy="26" r="24"/><path d="M14 27l8 8 16-16"/></svg>' +
-                        '</div>' +
-                        '<div class="sugg-success-title">Thanks, ' + escapeHtml(name) + '!</div>' +
-                        '<div class="sugg-success-text">Your suggestion is in. I\'ll read it and get back to you asap.</div>' +
-                        '<button class="btn" type="button" id="sugg-again">Send another</button>' +
-                    '</div>';
-                const again = document.getElementById('sugg-again');
-                if (again) again.addEventListener('click', function() {
-                    // Restore the form body and re-bind the submit handler
-                    // (wireTabListeners won't run again until the next tab switch).
-                    form.innerHTML = SUGG_FORM_HTML;
-                    form.addEventListener('submit', function(e) { e.preventDefault(); submitSuggestion(); });
-                });
-            }
 
-            async function submitSuggestion() {
-                const nameEl = document.getElementById('sugg-name');
-                const suggEl = document.getElementById('sugg-text');
-                const name = nameEl.value.trim();
-                const suggestion = suggEl.value.trim();
-                const status = document.getElementById('sugg-status');
-                const btn = document.getElementById('sugg-submit');
-                if (!name || !suggestion) {
-                    status.textContent = 'Please fill in both fields.';
-                    (name ? suggEl : nameEl).focus();
-                    return;
-                }
-                btn.disabled = true;
-                status.textContent = 'Submitting…';
-                const startedAt = Date.now();
-                try {
-                    // POST straight to the site itself - the Worker stores any
-                    // form post carrying form-name=suggestions in D1.
-                    const body = new URLSearchParams({
-                        'form-name': 'suggestions',
-                        'bot-field': '',          // honeypot must stay empty
-                        name: name,
-                        suggestion: suggestion
-                    });
-                    const res = await fetch(window.location.pathname, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                        body: body.toString()
-                    });
-                    if (!res.ok) throw new Error('HTTP ' + res.status);
-                    // Hold the "Submitting…" state until at least MIN_SUBMIT_MS
-                    // has elapsed since it appeared, so a fast response still
-                    // reads as a real submission. Slow requests aren't delayed.
-                    const remaining = MIN_SUBMIT_MS - (Date.now() - startedAt);
-                    if (remaining > 0) await new Promise(r => setTimeout(r, remaining));
-                    showSuggestionSuccess(name);
-                } catch (err) {
-                    status.textContent = 'Could not submit. Try again.';
-                } finally {
-                    btn.disabled = false;
-                }
-            }
-
-            
             // Keep the browser chrome in sync with the theme: native controls
             // (date picker, inputs, scrollbars) and the browser UI color.
             function applyChrome() {
@@ -3730,17 +4178,6 @@
                     normalizeIRL(row.irl) === item.number &&
                     (row.embassy || 'new-delhi') === item.office;
             }
-            function checkWatchlist(rows, list) {
-                var hits = [];
-                (list || []).map(normalizeWatchItem).filter(Boolean).forEach(function(item) {
-                    var match = (rows || []).find(function(row) {
-                        return watchRowMatches(row, item);
-                    });
-                    if (match) hits.push({ term: item.number, item: item, row: match });
-                });
-                return hits;
-            }
-
             // ---- IRP expiry countdown (item 2) ----
             // Renewal window opens 12 weeks (84 days) before expiry.
             function irpWindowHTML(expiryISO, todayISO) {
@@ -4224,7 +4661,7 @@
                     var timeForm1g = document.getElementById('time-form-1g');
                     if (timeForm1g) timeForm1g.addEventListener('submit', function(e) {
                         e.preventDefault();
-                        submitTimeline(true);
+                        submitTimeline();
                     });
                 }
                 showHero();
@@ -4384,12 +4821,11 @@
                 try { updateLandingStats(); } catch (e) { console.warn('stats:', e); }
                 try { renderEmbassyStatusGrid(); } catch (e) { console.warn('embassies:', e); }
                 try { renderCommunityWaitTimes(); } catch (e) { console.warn('community:', e); }
-                try { renderProcessingEstimator(); } catch (e) { console.warn('estimator:', e); }
                 try { renderRecentDecisionsFeed(); } catch (e) { console.warn('recent:', e); }
                 try { setupPWAInstallButton(); } catch (e) { console.warn('pwa:', e); }
                 try { initCalendarComponents(); } catch (e) { console.warn('calendar:', e); }
 
-                // The stats/estimator/recent sections need the visa history.
+                // The stats/recent sections need the visa history.
                 // Fetch it in the background after first paint so the landing
                 // page stays instant, then repaint just those sections.
                 if (!_landingDataRequested && (!cache || !cache.length)) {
@@ -4397,7 +4833,6 @@
                     loadData().then(function() {
                         if (activeTracker !== 'home') return;
                         try { updateLandingStats(); } catch (e) { /* noop */ }
-                        try { renderProcessingEstimator(); } catch (e) { /* noop */ }
                         try { renderRecentDecisionsFeed(); } catch (e) { /* noop */ }
                         try { renderEmbassyCoverageTable(); } catch (e) { /* noop */ }
                     }).catch(function() { /* offline: empty states are fine */ });
@@ -4428,12 +4863,18 @@
 
                 var decisionsEl = document.getElementById('stat-decisions');
                 var approvalEl = document.getElementById('stat-approval');
+                var approvalSampleEl = document.getElementById('stat-approval-sample');
                 var updatedEl = document.getElementById('stat-updated');
 
                 if (decisionsEl) {
                     decisionsEl.textContent = real.length ? real.length.toLocaleString() : '\u2014';
                 }
                 if (approvalEl) approvalEl.textContent = rate;
+                if (approvalSampleEl) {
+                    approvalSampleEl.textContent = real.length
+                        ? 'of ' + real.length.toLocaleString() + ' decisions'
+                        : 'No decisions yet';
+                }
                 if (updatedEl) updatedEl.textContent = '\u2014';
 
                 // Count + freshness come from the tiny meta file, so this fills
@@ -4447,7 +4888,8 @@
                     var n = res[0], meta = res[1];
                     if (decisionsEl && n) decisionsEl.textContent = n.toLocaleString();
                     if (updatedEl && meta && meta.lastRunAt) {
-                        updatedEl.textContent = String(meta.lastRunAt).slice(0, 10);
+                        updatedEl.textContent = humanDate(String(meta.lastRunAt).slice(0, 10)) +
+                            ', ' + String(meta.lastRunAt).slice(11, 16) + ' IST';
                     }
                 });
 
@@ -4609,7 +5051,7 @@
                         if (!rows.length) {
                             container.innerHTML = '<h3 class="landing-h3">Community wait times</h3>' +
                                 '<p class="note2">No community timelines shared yet. ' +
-                                '<a href="/?tracker=visa&tab=suggest">Share yours</a> to help others plan.</p>';
+                                '<a href="/contact#share-timeline">Share yours</a> to help others plan.</p>';
                             return;
                         }
 
@@ -4652,102 +5094,6 @@
                     });
             }
 
-            // Processing-time estimator, backed by /api/predict (the trained
-            // XGBoost tree ensemble shipped in functions/api/model-trees.js).
-            function renderProcessingEstimator() {
-                var container = document.getElementById('estimator-section');
-                if (!container) return;
-                // Don't rebuild the form while the user has it open with values.
-                if (container.dataset.ready === '1') return;
-                container.dataset.ready = '1';
-
-                container.innerHTML =
-                    '<h3 class="landing-h3">Processing time estimator</h3>' +
-                    '<form class="estimator-form" id="estimator-form" novalidate>' +
-                    '<div class="est-field"><label for="estimator-visa-type">Visa type</label>' +
-                    '<select id="estimator-visa-type" name="visa_type">' +
-                    '<option value="">Select\u2026</option>' +
-                    '<option value="study">Study</option><option value="work">Work</option>' +
-                    '<option value="visit">Visit</option><option value="family">Family</option>' +
-                    '<option value="transit">Transit</option><option value="research">Research</option>' +
-                    '</select></div>' +
-                    '<div class="est-field"><label for="estimator-app-date">Application date</label>' +
-                    '<input type="date" id="estimator-app-date" name="application_date" data-calendar></div>' +
-                    '<div class="est-field"><label for="estimator-embassy">Visa office</label>' +
-                    '<select id="estimator-embassy" name="embassy">' +
-                    '<option value="new-delhi">New Delhi</option><option value="beijing">Beijing</option>' +
-                    '<option value="dublin">Dublin</option><option value="abu-dhabi">Abu Dhabi</option>' +
-                    '<option value="abuja">Abuja</option><option value="ankara">Ankara</option>' +
-                    '</select></div>' +
-                    '<div class="est-field"><label for="estimator-app-num">Application number <span class="note2">(optional)</span></label>' +
-                    '<input type="text" id="estimator-app-num" name="application_number" inputmode="numeric" ' +
-                    'autocomplete="off" maxlength="20" placeholder="e.g. IRL2026123456"></div>' +
-                    '<div class="est-submit"><button class="btn" type="submit" id="estimator-calc-btn">Calculate</button></div>' +
-                    '</form>' +
-                    '<div id="estimator-result" class="estimator-result" hidden></div>' +
-                    '<p class="note2 est-note">Illustrative estimate from a model trained on synthetic historical data. Not a prediction of your case and not an official processing time.</p>';
-
-                var form = document.getElementById('estimator-form');
-                if (form) form.addEventListener('submit', function(e) {
-                    e.preventDefault();
-                    calculateEstimate();
-                });
-            }
-
-            function estimatorError(resultDiv, message) {
-                resultDiv.hidden = false;
-                resultDiv.innerHTML = '<p class="note2">' + escapeHtml(message) + '</p>';
-            }
-
-            async function calculateEstimate() {
-                var visaTypeEl = document.getElementById('estimator-visa-type');
-                var appDateEl = document.getElementById('estimator-app-date');
-                var embassyEl = document.getElementById('estimator-embassy');
-                var appNumEl = document.getElementById('estimator-app-num');
-                var resultDiv = document.getElementById('estimator-result');
-                if (!visaTypeEl || !appDateEl || !embassyEl || !resultDiv) return;
-
-                var visaType = visaTypeEl.value;
-                var appDate = appDateEl.value;
-                if (!visaType || !appDate) {
-                    estimatorError(resultDiv, 'Choose a visa type and application date first.');
-                    return;
-                }
-
-                resultDiv.hidden = false;
-                resultDiv.innerHTML = '<p class="note2">Calculating\u2026</p>';
-
-                var payload = {
-                    application_number: (appNumEl && appNumEl.value.trim()) || 'IRL00000000',
-                    application_date: appDate,
-                    visa_type: visaType,
-                    embassy: embassyEl.value || 'new-delhi'
-                };
-
-                try {
-                    var res = await fetch('/api/predict', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
-                    });
-                    var data = await res.json();
-                    if (!res.ok) throw new Error(data && data.error ? data.error : 'Prediction failed');
-                    var p = data.prediction;
-                    resultDiv.innerHTML =
-                        '<h4 class="est-result-title">Estimated decision: <strong>' +
-                        escapeHtml(p.estimated_decision_date) + '</strong></h4>' +
-                        '<div class="est-result-grid">' +
-                        '<div class="stat"><span class="stat-value">' + p.predicted_days + '</span>' +
-                        '<span class="stat-label">Days from application</span></div>' +
-                        '<div class="stat"><span class="stat-value">' + p.confidence_interval.lower +
-                        '\u2013' + p.confidence_interval.upper + '</span>' +
-                        '<span class="stat-label">95% range (days)</span></div>' +
-                        '</div>';
-                } catch (e) {
-                    estimatorError(resultDiv, 'Estimate unavailable right now: ' + e.message);
-                }
-            }
-
             function renderRecentDecisionsFeed() {
                 var container = document.getElementById('recent-decisions-section');
                 if (!container) return;
@@ -4769,7 +5115,7 @@
                     '</tr></thead><tbody>';
                 recent.forEach(function(r) {
                     html += '<tr>' +
-                        '<td class="mono">' + escapeHtml(r.date) + '</td>' +
+                        '<td class="mono"><time datetime="' + escapeHtml(r.date) + '">' + escapeHtml(humanDate(r.date)) + '</time></td>' +
                         '<td class="mono">' + escapeHtml(r.irl) + '</td>' +
                         '<td><span class="pill ' + (r._pillClass || 'amber') + '">' +
                         escapeHtml(r.decision || '-') + '</span></td>' +
@@ -4784,6 +5130,8 @@
                 var btn = document.getElementById('pwa-install-btn');
                 if (!btn) return;
                 var deferredPrompt = null;
+                btn.hidden = true;
+                if (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) return;
 
                 if (!_pwaPromptBound) {
                     _pwaPromptBound = true;
@@ -4807,13 +5155,15 @@
                             btn.hidden = true;
                         });
                     } else {
-                        alert('This app is already installed, or your browser does not support installation.');
+                        // Browsers without an install prompt simply do not show
+                        // the control; an alert would be an implementation detail.
+                        btn.hidden = true;
                     }
                 });
             }
 
 async function renderLandingPage() {
-                document.title = 'Irish Visa Decision Tracker - New Delhi Visa Decisions & Stamp 1G';
+                document.title = 'Irish Visa Decision Tracker - Six Offices, Stamp 1G & Employment Permits';
                 // Paint the cards IMMEDIATELY with placeholder stats - never
                 // block on the network. Each card's meta line fills in as its
                 // own fetch resolves (both are small static files, so this is
@@ -4826,17 +5176,20 @@ async function renderLandingPage() {
                     '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">' + THEME_BTN_HTML + '</div></div>' +
                     '<div class="sub">Three daily trackers, one dashboard.</div>' +
                     '<div class="landing-status" id="landing-status" aria-live="polite"><span class="note2">Checking today\u2019s updates\u2026</span></div>' +
-                    '<form class="landing-search" id="landing-search" role="search">' +
-                    '<div class="searchbar">' + searchIcon() +
-                    '<input type="text" id="landing-q" name="q" autocomplete="off" maxlength="200" aria-label="Search by application number" placeholder="Application number"></div>' +
-                    '<button class="btn" type="submit">Track</button></form>' +
+                    '<form class="landing-search" id="landing-search" role="search" novalidate>' +
+                    '<div class="searchbar landing-search-number">' + searchIcon() +
+                    '<input type="text" id="landing-q" name="q" autocomplete="off" maxlength="200" aria-label="Search by application number" placeholder="Application number" required></div>' +
+                    '<select class="landing-office-select" id="landing-office" name="office" aria-label="Visa office to search">' +
+                    officeOptionsHTML(homeSearchOffice) + '</select>' +
+                    '<button class="btn" type="submit">Search</button></form>' +
+                    '<p class="landing-search-hint">All six Irish visa offices are searched by default. Use the 8-digit number on your receipt (IRL prefix optional). <a href="/help#find-number">Where do I find it?</a></p>' +
                     '<div class="tracker-grid">' +
-                    trackerCardHTML('visa', 'plane', 'Embassy Visa Decisions',
-                        'Official decisions from six Irish visa offices - searchable by application number, with report dates, trends and summaries.', 'Loading\u2026', 'visa-meta', '') +
-                    trackerCardHTML('1g', 'stamp', 'Stamp 1G Processing',
-                        'ISD renewal queue: which application date is being processed now, how far behind it is, and when it may catch up.', 'Loading\u2026', 'g1-meta', 'g1') +
-                    trackerCardHTML('permits', 'briefcase', 'Employment Permits',
-                        'DETE queue: which application dates each permit type has reached, with lags and trends.', 'Loading\u2026', 'permits-meta', 'permits') +
+                    trackerCardHTML('visa', 'plane', 'I applied for a visa',
+                        'Search published decisions from six Irish visa offices by application number, with report dates, trends and summaries.', 'Loading\u2026', 'visa-meta', '') +
+                    trackerCardHTML('1g', 'stamp', 'I am renewing Stamp 1G',
+                        'See which application date ISD is processing now, how far behind it is, and when it may catch up.', 'Loading\u2026', 'g1-meta', 'g1') +
+                    trackerCardHTML('permits', 'briefcase', 'My employer applied for a permit',
+                        'Check the DETE queue for each employment-permit type, including the current lag and trend.', 'Loading\u2026', 'permits-meta', 'permits') +
                     '</div>' +
                     // Activation CTA visible before the visitor opens a tracker.
                     '<div class="landing-alert-cta" role="region" aria-label="Decision alerts">' +
@@ -4844,30 +5197,28 @@ async function renderLandingPage() {
                     '<strong>Get decision alerts on Telegram</strong>' +
                     '<span>Free, one message when your application appears. No email address needed.</span></div>' +
                     '<div class="landing-alert-actions">' +
-                    '<a class="btn activation-telegram" href="/?tracker=visa&amp;tab=suggest">Telegram alerts</a>' +
+                    '<a class="btn activation-telegram" href="/?tracker=visa&amp;tab=alerts">Telegram alerts</a>' +
                     '</div></div>' +
                     // New: Stats Bar
                     '<div class="stats-bar" role="region" id="landing-stats-bar" aria-label="Live statistics">' +
                     '<div class="stat"><span class="stat-value" id="stat-decisions">--</span><span class="stat-label">Decisions Tracked</span></div>' +
-                    '<div class="stat"><span class="stat-value" id="stat-approval">--</span><span class="stat-label">Approval share</span></div>' +
+                    '<div class="stat"><span class="stat-value" id="stat-approval">--</span><span class="stat-label">Approval share</span><span class="stat-sample" id="stat-approval-sample">Waiting for data</span></div>' +
                     '<div class="stat"><span class="stat-value" id="stat-embassies">6</span><span class="stat-label">Visa offices</span></div>' +
-                    '<div class="stat"><span class="stat-value" id="stat-updated">--</span><span class="stat-label">Last Updated</span></div>' +
+                    '<div class="stat"><span class="stat-value" id="stat-updated">--</span><span class="stat-label">Last updated</span></div>' +
                     '</div>' +
                     // New: Embassy Status Cards
                     '<div class="embassy-status-grid" role="region" id="embassy-status-grid" aria-label="Embassy Status"></div>' +
                     '<p class="note2" id="embassy-coverage-note">Latest report dates vary by office. New Delhi, Abu Dhabi, Abuja and Ankara include dated decision history; Beijing and Dublin show their latest published snapshot. <a href="/visa-processing-times">See Dublin queue dates by category and the submit-by planner</a>.</p>' +
                     // New: Community Wait Times
                     '<div class="community-wait-section" role="region" id="community-wait-section" aria-label="Community Wait Times"></div>' +
-                    // New: Processing Estimator
-                    '<div class="estimator-section" role="region" id="estimator-section" aria-label="Processing Time Estimator"></div>' +
                     // New: Recent Decisions Feed
                     '<div class="recent-decisions-section" role="region" id="recent-decisions-section" aria-label="Latest Decisions"></div>' +
                     // New: Quick Actions
                     '<div class="quick-actions" role="region" aria-label="Quick Actions">' +
-                    '<a class="quick-action" href="/?tab=suggest" data-tracker="suggest"><i data-lucide="bell"></i><span>Get Alerts</span></a>' +
+                    '<a class="quick-action" href="/help"><i data-lucide="help-circle"></i><span>Help &amp; FAQ</span></a>' +
                     '<a class="quick-action" href="/?tab=analytics" data-tracker="analytics"><i data-lucide="bar-chart-2"></i><span>View Analytics</span></a>' +
                     '<a class="quick-action" href="/?tracker=1g" data-tracker="1g"><i data-lucide="calendar"></i><span>Check IRP Expiry</span></a>' +
-                    '<a class="quick-action" href="#" id="pwa-install-btn"><i data-lucide="download"></i><span>Install as App</span></a>' +
+                    '<a class="quick-action" href="#" id="pwa-install-btn" hidden><i data-lucide="download"></i><span>Install as App</span></a>' +
                     '</div>' +
                     '<div class="landing-foot">Source: official Irish visa office reports. Updated when sources publish.</div></div>';
                 wireChrome();
@@ -4882,6 +5233,16 @@ async function renderLandingPage() {
                     e.preventDefault();
                     var q = document.getElementById('landing-q');
                     homeSearchTerm = q ? q.value.trim() : '';
+                    if (!homeSearchTerm) {
+                        if (q) q.focus();
+                        return;
+                    }
+                    var selectedOffice = document.getElementById('landing-office');
+                    homeSearchOffice = selectedOffice &&
+                        (selectedOffice.value === 'all' || WATCH_OFFICES.indexOf(selectedOffice.value) !== -1)
+                        ? selectedOffice.value : 'all';
+                    activeTab = 'search';
+                    saveRecentSearch(homeSearchTerm);
                     setTracker('visa');
                 });
                 // Count only - the full visa fetch happens on tracker entry
@@ -4940,17 +5301,17 @@ async function renderLandingPage() {
                 if (activeTracker === 'home') { await renderLandingPage(); return; }
                 if (activeTracker === '1g') { await renderG1Page(); return; }
                 if (activeTracker === 'permits') { await renderPermitsPage(); return; }
-                document.title = 'Embassy Visa Decisions | Irish Visa Decision Tracker';
+                document.title = 'Visa Decision Search - Six Offices | Irish Visa Decision Tracker';
                 if (!cache) {
-                    root.innerHTML = '<div class="eyebrow">Ireland \u00b7 New Delhi Visa Section</div>' +
+                    root.innerHTML = '<div class="eyebrow">Ireland \u00b7 Visa decisions</div>' +
                         '<div class="titlerow"><h1>Irish Visa Decision Tracker</h1>' +
                         '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">' +
                         THEME_BTN_HTML +
-                        (typeof createLanguageSelector === 'function' ? createLanguageSelector() : '') +
-                        '<div class="stutter-badge"><i>\u24D8</i> Switching tabs may briefly stutter while data loads.</div></div></div>' +
+                        (typeof createLanguageSelector === 'function' ? createLanguageSelector() : '') + '</div></div>' +
                         '<div class="topbar"><div class="topbar-fill"></div></div>' +
                         '<div class="navpills">' +
-                        '<div class="skel skel-pill"></div><div class="skel skel-pill"></div><div class="skel skel-pill"></div><div class="skel skel-pill"></div>' +
+                        '<div class="skel skel-pill"></div><div class="skel skel-pill"></div><div class="skel skel-pill"></div>' +
+                        '<div class="skel skel-pill"></div><div class="skel skel-pill"></div><div class="skel skel-pill"></div>' +
                         '</div>' +
                         '<div class="cards">' +
                         '<div class="skel skel-card" style="grid-column:span 2;animation-delay:0.02s"></div>' +
@@ -4969,32 +5330,22 @@ async function renderLandingPage() {
                 await loadData();
                 loadMeta(); // health card / reconciliation / closures (non-blocking)
 
-                const tabs = [
-                    ['home', 'Home'],
-                    ['daily', 'Daily Summary'],
-                    ['past', 'Past Results'],
-                    ['suggest', 'Suggestions'],
-                    ['watchlist', 'Watchlist'],
-                    ['checklist', 'Checklist'],
-                    ['search', 'Search'],
-                    ['analytics', 'Analytics'],
-                ];
-
                 const heroState = buildHeroHTML(activeTab, cache || []);
 
                 root.innerHTML =
                     BACK_BTN_HTML +
-                    '<div class="eyebrow">Ireland \u00b7 New Delhi Visa Section</div>' +
+                    '<div class="eyebrow">Ireland \u00b7 Visa decisions</div>' +
                     '<div class="titlerow"><h1>Irish Visa Decision Tracker</h1>' +
                     '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">' +
                     THEME_BTN_HTML +
-                    (typeof createLanguageSelector === 'function' ? createLanguageSelector() : '') +
-                    '<div class="stutter-badge"><i>\u24D8</i> Switching tabs may briefly stutter while data loads.</div></div>' +
+                    (typeof createLanguageSelector === 'function' ? createLanguageSelector() : '') + '</div>' +
                     '</div>' +
                     '<div class="sub">' + (cache && cache.length ? cache.length + ' decisions on record' :
                         'Awaiting data') + '</div>' +
-                    '<div class="navpills" data-gooey-nav>' + tabs.map(([k, label]) => '<button type="button" class="navpill ' + (activeTab === k ?
-                        'active' : '') + '" data-tab="' + k + '"><i data-lucide="' + ({home:'house',daily:'calendar-days',past:'archive',suggest:'message-circle',watchlist:'watch',checklist:'clipboard-check',search:'search',analytics:'bar-chart-2'}[k] || 'circle') + '"></i> ' + label + '</button>').join('') + '</div>' +
+                    '<div class="navpills" data-gooey-nav>' + TABS.map(function(tab) {
+                        return '<button type="button" class="navpill ' + (activeTab === tab.id ? 'active' : '') +
+                            '" data-tab="' + tab.id + '"><i data-lucide="' + tab.icon + '"></i> ' + tab.label + '</button>';
+                    }).join('') + '</div>' +
                     '<div class="hero" id="hero" data-id="' + activeTab + '" style="opacity:0">' +
                         '<div class="hero-body">' +
                             '<div>' +
@@ -5004,15 +5355,15 @@ async function renderLandingPage() {
                             '<div class="visual">' + heroState.visual + '</div>' +
                         '</div>' +
                     '</div>' +
-                    '<div id="tab-body"></div>';
+                    '<div id="tab-body"></div>' +
+                    '<button class="scroll-top-btn" id="scroll-top-btn" title="Back to top" aria-label="Back to top">\u2191</button>';
 
-                tabs.forEach(([k]) => {
-                    var pill = root.querySelector('.navpill[data-tab="' + k + '"]');
+                TABS.forEach(function(tab) {
+                    var pill = root.querySelector('.navpill[data-tab="' + tab.id + '"]');
                     pill.addEventListener('click', function() {
-                        // Trigger ripple animation
                         pill.classList.add('rippling');
                         setTimeout(function() { pill.classList.remove('rippling'); }, 520);
-                        switchTab(k);
+                        switchTab(tab.id);
                     });
                 });
                 const themeToggle = document.getElementById('theme-toggle');
@@ -5020,36 +5371,9 @@ async function renderLandingPage() {
                 const backBtn = document.getElementById('back-btn');
                 if (backBtn) backBtn.addEventListener('click', function() { setTracker('home'); });
                 morphHero();
-                // Initial body paint: populate the active tab's content DIRECTLY
-                // without the hero cross-fade dip. morphHero already faded the
-                // hero in (opacity 0 → 1), so calling animateHeroSwitch here
-                // would briefly dim it back to 0.4 before settling on 1 - a
-                // visible flash on first page load. Subsequent tab clicks go
-                // through switchTab() which uses the cross-fade as expected.
-                var rows = cache || [];
-                var tabBody = document.getElementById('tab-body');
-                if (tabBody) {
-                    if (activeTab === 'home') {
-                        tabBody.innerHTML = renderHomeLayout(rows);
-                        paintHomeRows();
-                    } else if (activeTab === 'daily') {
-                        tabBody.innerHTML = renderDailySummary(rows);
-                    } else if (activeTab === 'past') {
-                        tabBody.innerHTML = renderPastLayout(rows);
-                        paintPastRows();
-                    } else if (activeTab === 'watchlist') {
-                        tabBody.innerHTML = renderWatchlistLayout(rows);
-                        wireWatchAdd();
-                        wireWatchBackup();
-                        paintWatchlist();
-                    } else {
-                        tabBody.innerHTML = renderSuggestLayout();
-                    }
-                }
-                wireTabListeners();
                 // Initial paint bypasses switchTab (no hero cross-fade dip), so
-                // mark the visit here too - otherwise the "since you last
-                // checked" banner would re-show on every load until a tab click.
+                // it uses the same body painter without the animation.
+                paintTabBody(activeTab, cache || []);
                 markVisited();
             }
 
@@ -5064,14 +5388,19 @@ async function renderLandingPage() {
                 if (s.tracker !== activeTracker) {
                     activeTracker = s.tracker;
                     activeTab = s.tab;
+                    activeView = s.view;
                     homeSearchTerm = s.q;
+                    homeSearchOffice = s.office;
                     pastDateFilter = s.date;
                     render();
                     return;
                 }
-                if (s.tab === activeTab && s.q === homeSearchTerm && s.date === pastDateFilter) return;
+                if (s.tab === activeTab && s.view === activeView && s.q === homeSearchTerm &&
+                    s.office === homeSearchOffice && s.date === pastDateFilter) return;
                 activeTab = s.tab;
+                activeView = s.view;
                 homeSearchTerm = s.q;
+                homeSearchOffice = s.office;
                 pastDateFilter = s.date;
                 switchTab(activeTab, { noUrl: true });
             });
@@ -5080,7 +5409,6 @@ async function renderLandingPage() {
             window.addEventListener('storage', function(e) {
                 if (e.key !== 'visa-watchlist') return;
                 paintWatchlist();
-                paintWatch();
             });
             render();
         })();

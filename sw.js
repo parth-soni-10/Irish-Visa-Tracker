@@ -1,4 +1,4 @@
-const CACHE_NAME = 'irish-visa-tracker-v4';
+const CACHE_NAME = 'irish-visa-tracker-v7';
 const STATIC_ASSETS = [
   '/manifest.json',
   '/icon-192.png',

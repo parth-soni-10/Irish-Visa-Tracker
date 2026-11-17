@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Contact | Irish Visa Decision Tracker</title>
-  <meta name="description" content="Contact the Irish Visa Decision Tracker about a data correction, a missing decision or a bug. Email, GitHub issues and the in-page suggestion form.">
+  <meta name="description" content="Contact the Irish Visa Decision Tracker about a data correction, a missing decision or a bug. Email, GitHub issues, feedback and timeline forms.">
   <link rel="canonical" href="https://irishvisaupdatetracker.pages.dev/contact">
   <link rel="alternate" type="text/markdown" href="/contact.md" title="Markdown version">
   <link rel="describedby" href="/llms.txt" type="text/plain">
@@ -58,7 +58,6 @@
           <a href="/contact" aria-current="page">Contact</a>
           <a href="/privacy">Privacy</a>
           <a href="/terms">Terms</a>
-          <a href="/refund">Refunds</a>
         </div>
       </details>
     </nav>
@@ -89,10 +88,55 @@
           <span>Best for a reproducible bug in the dashboard or the scrapers. The code and data are public.</span>
         </li>
         <li>
-          <a href="/?tab=suggest">Use the suggestion form</a>
+          <a href="#feedback">Use the feedback form</a>
           <span>Best for a feature request or a general note. It is stored in the site's D1 database.</span>
         </li>
       </ul>
+    </section>
+
+    <section id="feedback">
+      <h2>Send feedback</h2>
+      <p>Use this for a feature request, a general note or a correction that does not fit GitHub. Your name and message are stored in the site's D1 database and are not published.</p>
+      <form class="contact-form" id="feedback-form" name="suggestions" action="/contact" method="post" data-async-form>
+        <input type="hidden" name="form-name" value="suggestions">
+        <input class="contact-honeypot" type="text" name="bot-field" tabindex="-1" autocomplete="off" aria-hidden="true">
+        <div class="contact-form-fields">
+          <label class="contact-field contact-field-wide" for="feedback-name">Name
+            <input id="feedback-name" name="name" type="text" maxlength="200" autocomplete="name" required placeholder="Your name">
+          </label>
+          <label class="contact-field contact-field-wide" for="feedback-message">Feedback
+            <textarea id="feedback-message" name="suggestion" maxlength="5000" required placeholder="What would you like to share?"></textarea>
+          </label>
+        </div>
+        <button class="btn primary" type="submit">Send feedback</button>
+        <p class="contact-form-status" id="feedback-status" role="status" aria-live="polite"></p>
+      </form>
+    </section>
+
+    <section id="share-timeline">
+      <h2>Share your visa timeline</h2>
+      <p>Embassy visa applications only: add the applied and decided dates from the New Delhi list. Submissions are published anonymously in aggregate after the nightly sync. Do not include personal details.</p>
+      <form class="contact-form" id="timeline-form" name="timelines-visa" action="/contact" method="post" data-async-form>
+        <input type="hidden" name="form-name" value="timelines-visa">
+        <input type="hidden" name="tracker" value="visa">
+        <input class="contact-honeypot" type="text" name="bot-field" tabindex="-1" autocomplete="off" aria-hidden="true">
+        <div class="contact-form-fields">
+          <label class="contact-field" for="timeline-applied">Applied on
+            <input id="timeline-applied" name="applied" type="date" min="2020-01-01" required>
+          </label>
+          <label class="contact-field" for="timeline-decided">Decided on
+            <input id="timeline-decided" name="decided" type="date" min="2020-01-01" required>
+          </label>
+          <label class="contact-field" for="timeline-outcome">Outcome
+            <select id="timeline-outcome" name="outcome" required>
+              <option value="granted">Granted</option>
+              <option value="refused">Refused</option>
+            </select>
+          </label>
+        </div>
+        <button class="btn primary" type="submit">Share timeline</button>
+        <p class="contact-form-status" id="timeline-status" role="status" aria-live="polite"></p>
+      </form>
     </section>
 
     <section>
@@ -127,7 +171,7 @@
     <section>
       <h2>Privacy</h2>
       <p>
-        Email is processed by Gmail so it can be read and answered. The suggestion form stores
+        Email is processed by Gmail so it can be read and answered. The feedback form stores
         what you type in the site's database; timeline submissions are published in the public
         community data after the nightly sync. See <a href="/privacy">Privacy</a> for the full
         picture, including how to ask for a message or submission to be removed.
@@ -171,10 +215,10 @@
       <h2 class="sitebar-footer-title">About &amp; legal</h2>
       <ul>
         <li><a href="/about">About the project</a></li>
+        <li><a href="/help">Help &amp; FAQ</a></li>
         <li><a href="/contact">Contact &amp; corrections</a></li>
         <li><a href="/privacy">Privacy</a></li>
         <li><a href="/terms">Terms</a></li>
-        <li><a href="/refund">Refund policy</a></li>
         <li><a href="https://github.com/parth-soni-10/Irish-Visa-Tracker" rel="noopener">GitHub</a></li>
       </ul>
     </nav>
@@ -186,5 +230,6 @@
 </footer>
 
   <script src="/site-chrome.js" defer></script>
+  <script src="/scripts/contact-forms.js" defer></script>
 </body>
 </html>
