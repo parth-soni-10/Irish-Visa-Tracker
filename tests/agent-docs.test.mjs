@@ -215,7 +215,7 @@ test("router: the HTML 404 uses the internal page when /404.html redirects", asy
   );
   assert.equal(response.status, 404);
   assert.equal(response.headers.get("Location"), null);
-  assert.equal(response.headers.get("Cache-Control"), "no-store");
+  assert.match(response.headers.get("Cache-Control"), /no-store/);
   assert.equal(response.headers.get("X-Robots-Tag"), "noindex");
   const body = await response.text();
   assert.match(body, /Page not found/);

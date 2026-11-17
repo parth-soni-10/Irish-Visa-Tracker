@@ -403,6 +403,44 @@ test.describe('Mobile responsiveness', () => {
     await expect(page.locator('h1').first()).toContainText('Choose your tracker');
     await expect(page.locator('.tracker-card')).toHaveCount(3);
   });
+
+  test('keeps a changed saved row readable instead of collapsing the metadata column', async ({ page }) => {
+    await page.route('**/data/visa_decisions.json', (route) => route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify([['2026-01-03', '48850812', 'Approved']]),
+    }));
+    await page.addInitScript(() => {
+      localStorage.setItem('visa-watchlist', JSON.stringify([
+        { number: '48850812', office: 'new-delhi' },
+      ]));
+      localStorage.setItem('visa-watchlist-seen', JSON.stringify({
+        'new-delhi|48850812': {
+          signature: 'new-delhi|Refused|2026-01-02',
+          decision: 'Refused',
+          date: '2026-01-02',
+          seen_at: '2026-01-02T10:00:00.000Z',
+        },
+      }));
+    });
+
+    await openVisaTracker(page);
+    await page.locator('.navpill[data-tab="saved"]').click();
+    const row = page.locator('#watch-local-rows tr[data-office="new-delhi"][data-watch-number="48850812"]');
+    await expect(row.locator('.watch-change-badge')).toHaveText('New since your last visit');
+
+    const layout = await row.evaluate((element) => {
+      const cells = [...element.children].map((cell) => cell.getBoundingClientRect());
+      return {
+        widths: cells.map((cell) => cell.width),
+        overflow: document.documentElement.scrollWidth - window.innerWidth,
+      };
+    });
+    // Every metadata column must remain wide enough for a date or a nickname;
+    // the change badge must not squeeze the first column to one glyph per line.
+    expect(Math.min(...layout.widths.slice(0, 5))).toBeGreaterThan(70);
+    expect(layout.overflow).toBeLessThanOrEqual(2);
+  });
 });
 
 test.describe('Six-tab deep links', () => {

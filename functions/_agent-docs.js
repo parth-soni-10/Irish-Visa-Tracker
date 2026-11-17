@@ -609,7 +609,7 @@ export function markdownResponse(body, status = 200, method = "GET") {
   const headers = new Headers({
     "Content-Type": "text/markdown; charset=utf-8",
     Vary: "Accept",
-    "Cache-Control": "public, max-age=0, must-revalidate",
+    "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
     "X-Content-Type-Options": "nosniff",
     "Referrer-Policy": "strict-origin-when-cross-origin",
   });

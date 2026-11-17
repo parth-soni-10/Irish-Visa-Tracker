@@ -141,7 +141,7 @@ async function monthlyResponse(request, env) {
   const requested = url.searchParams.get('month') || (data.latestDate ? data.latestDate.slice(0, 7) : '');
   if (!MONTH_RE.test(requested)) return json({ error: 'month must be YYYY-MM' }, 400);
   const report = buildMonthlyReport(data.rows, requested, data.officeList);
-  return json({ success: true, report }, 200, 'public, max-age=300, stale-while-revalidate=3600');
+  return json({ success: true, report });
 }
 
 async function changesResponse(request, env) {
@@ -149,7 +149,7 @@ async function changesResponse(request, env) {
   const data = await loadReportData(env, request);
   const days = Number(url.searchParams.get('days') || 7);
   const changes = buildWeeklyChanges(data.rows, data.latestDate, data.officeList, data.reports, days);
-  return json({ success: true, changes }, 200, 'public, max-age=300, stale-while-revalidate=3600');
+  return json({ success: true, changes });
 }
 
 async function subscribeResponse(request, env) {
@@ -233,7 +233,7 @@ async function previewResponse(request, env) {
   const changes = buildWeeklyChanges(data.rows, data.latestDate, data.officeList, data.reports, 7);
   const email = buildDigestEmail(report, changes, baseUrl(env) + '/api/digest/unsubscribe?token=preview', baseUrl(env));
   if (url.searchParams.get('format') === 'html') return html(email.html);
-  return json({ success: true, subject: email.subject, html: email.html, text: email.text, report, changes }, 200, 'public, max-age=300');
+  return json({ success: true, subject: email.subject, html: email.html, text: email.text, report, changes });
 }
 
 async function sendResponse(request, env) {

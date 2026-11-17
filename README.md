@@ -18,7 +18,7 @@ The Abuja **31 August–6 September 2026** report, long listed as missing, was r
 
 - Application lookup, daily summaries, monthly reports and historical trends.
 - VFS Global appointment handoff for the India/Ireland VACs. VFS shows the booking calendar only after sign-in; the tracker links to the official portal and never claims availability.
-- PWA install, service worker and offline shell.
+- PWA install and push notifications; the service worker keeps no fetch cache, so a fresh deploy is shown on the next load.
 - A browser-local watchlist (no account) plus anonymous Telegram and browser-push alerts.
 - A first-run activation path on the New Delhi dashboard: a prominent Telegram
   call to action, a persisted three-step checklist, and privacy-light

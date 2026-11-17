@@ -242,14 +242,16 @@ export async function onRequestPost(context) {
     }), { 
       headers: { 
         'Content-Type': 'application/json',
-        'Cache-Control': 'public, max-age=60, stale-while-revalidate=300'
+        'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+        'Pragma': 'no-cache',
+        'Expires': '0'
       } 
     });
     
   } catch (error) {
     console.error('Search error:', error);
     return new Response(JSON.stringify({ error: 'Search failed' }), {
-      status: 500, headers: { 'Content-Type': 'application/json' }
+      status: 500, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }
     });
   }
 }
@@ -399,10 +401,10 @@ export async function onRequestGet(context) {
       endpoints: {
         search: 'POST /api/search'
       }
-    }), { headers: { 'Content-Type': 'application/json' } });
+    }), { headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
   } catch (error) {
     return new Response(JSON.stringify({ error: 'Failed to get search info' }), {
-      status: 500, headers: { 'Content-Type': 'application/json' }
+      status: 500, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }
     });
   }
 }

@@ -66,6 +66,18 @@ const NOT_FOUND_PATHS = new Set(["/404", "/404/", "/404.html"]);
 // (which is the repo root at build time) so they're at known paths.
 const REPO_RAW = "https://raw.githubusercontent.com/parth-soni/irish-visa-tracker/main";
 
+// A deployment must be visible on the next request. Never let a browser, a
+// CDN, or a stale service worker reuse a response from an earlier build.
+const NO_STORE = "no-store, no-cache, must-revalidate, max-age=0";
+
+function setNoStore(headers) {
+  headers.set("Cache-Control", NO_STORE);
+  headers.set("Pragma", "no-cache");
+  headers.set("Expires", "0");
+  headers.set("CDN-Cache-Control", "no-store");
+  return headers;
+}
+
 // Security headers
 function addSecurityHeaders(response) {
   const headers = new Headers(response.headers);
@@ -150,11 +162,11 @@ function isISODate(value) {
   return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === raw;
 }
 
-const json = (body, status = 200) =>
-  addSecurityHeaders(new Response(JSON.stringify(body), {
-    status,
-    headers: { "Content-Type": "application/json", "Cache-Control": "no-store" },
-  }));
+const json = (body, status = 200) => {
+  const headers = new Headers({ "Content-Type": "application/json" });
+  setNoStore(headers);
+  return addSecurityHeaders(new Response(JSON.stringify(body), { status, headers }));
+};
 
 /** Serve the timeline rows the sync job reads. No credential: the same rows are
  *  committed to a public data file, so this exposes nothing the pipeline does
@@ -188,14 +200,8 @@ async function fetchDocument(env, request, document) {
   if (document.alternate) {
     headers.set("Link", `<${document.alternate}>; rel="alternate"; type="text/markdown"`);
   }
-  // Cache HTML for 5 minutes, stale-while-revalidate 1 hour
-  if (headers.get("Content-Type")?.includes("text/html")) {
-    headers.set("Cache-Control", "public, max-age=300, stale-while-revalidate=3600");
-  }
-  // JS/CSS assets get longer cache
-  if (headers.get("Content-Type")?.includes("javascript") || headers.get("Content-Type")?.includes("css")) {
-    headers.set("Cache-Control", "public, max-age=31536000, immutable");
-  }
+  // HTML and the unversioned JS/CSS it references must never outlive a deploy.
+  setNoStore(headers);
   mergeVary(headers);
   return addSecurityHeaders(new Response(request.method === "HEAD" ? null : response.body, {
     status: response.status,
@@ -227,7 +233,7 @@ async function notFoundPage(env, request) {
   const headers = new Headers(response.headers);
   headers.delete("Location");
   headers.set("Content-Type", "text/html; charset=utf-8");
-  headers.set("Cache-Control", "no-store");
+  setNoStore(headers);
   headers.set("X-Robots-Tag", "noindex");
   mergeVary(headers);
   return addSecurityHeaders(new Response(request.method === "HEAD" ? null : response.body, {
@@ -549,8 +555,8 @@ async function handleRequest(request, env) {
     if (response.ok) {
       const headers = new Headers(response.headers);
       headers.set("Content-Type", "application/json; charset=utf-8");
-      // Cache JSON data for 5 minutes, allow stale-while-revalidate for 1 hour
-      headers.set("Cache-Control", "public, max-age=300, stale-while-revalidate=3600");
+      // Data changes with a deploy or scrape; always read the current files.
+      setNoStore(headers);
       mergeVary(headers);
       return addSecurityHeaders(new Response(response.body, {
         status: response.status,
@@ -571,6 +577,7 @@ async function handleRequest(request, env) {
   const assetResponse = await env.ASSETS.fetch(request);
   if (assetResponse.status !== 404) {
     const headers = new Headers(assetResponse.headers);
+    setNoStore(headers);
     mergeVary(headers);
     return addSecurityHeaders(new Response(request.method === "HEAD" ? null : assetResponse.body, {
       status: assetResponse.status,

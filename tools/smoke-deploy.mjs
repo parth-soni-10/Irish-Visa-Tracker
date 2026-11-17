@@ -27,6 +27,7 @@ async function get(path, options = {}) {
   return {
     status: response.status,
     type: response.headers.get('content-type') || '',
+    cacheControl: response.headers.get('cache-control') || '',
     location: response.headers.get('location'),
     text,
     json
@@ -43,6 +44,7 @@ console.log('Smoke-testing ' + BASE + '\n');
 const home = await get('/');
 check('homepage serves', home.status === 200 && /Irish Visa/i.test(home.text), 'HTTP ' + home.status);
 check('homepage is HTML', home.type.includes('text/html'), home.type);
+check('homepage is never cached', /no-store/i.test(home.cacheControl), home.cacheControl);
 
 const comparisonRoute = await get('/comparison');
 check('comparison route serves', comparisonRoute.status === 200 && /comparison/i.test(comparisonRoute.text), 'HTTP ' + comparisonRoute.status);
@@ -76,14 +78,20 @@ const manifest = await get('/manifest.json');
 check('manifest serves', manifest.status === 200 && manifest.json && Array.isArray(manifest.json.icons) && manifest.json.icons.length > 0, 'HTTP ' + manifest.status);
 
 const sw = await get('/sw.js');
-check('service worker serves', sw.status === 200 && /CACHE_NAME/.test(sw.text), 'HTTP ' + sw.status);
+check('service worker serves', sw.status === 200 && /addEventListener/.test(sw.text), 'HTTP ' + sw.status);
 check('service worker is JavaScript', sw.type.includes('javascript'), sw.type);
+check('service worker has no fetch cache', !/caches\.open|respondWith/.test(sw.text), 'no Cache Storage use');
+check('service worker is never cached', /no-store/i.test(sw.cacheControl), sw.cacheControl);
+
+const appScript = await get('/scripts/index-sw.js');
+check('app script is never cached', appScript.status === 200 && /no-store/i.test(appScript.cacheControl), appScript.cacheControl);
 
 const icon = await get('/icon-192.png');
 check('manifest icon serves', icon.status === 200 && icon.type.includes('image/png'), 'HTTP ' + icon.status + ' ' + icon.type);
 
 const search = await get('/api/search');
 check('search API serves', search.status === 200 && search.json && Array.isArray(search.json.modes), 'HTTP ' + search.status);
+check('search API is never cached', /no-store/i.test(search.cacheControl), search.cacheControl);
 
 const report = await get('/api/reports/monthly?month=' + encodeURIComponent(MONTH));
 check('monthly report API serves', report.status === 200 && report.json && report.json.success === true, 'HTTP ' + report.status);
@@ -93,6 +101,7 @@ check('digest preview API serves', preview.status === 200 && preview.json && pre
 
 const data = await get('/data/data_manifest.json');
 check('data manifest serves', data.status === 200 && data.json && Array.isArray(data.json.offices), 'HTTP ' + data.status);
+check('data manifest is never cached', /no-store/i.test(data.cacheControl), data.cacheControl);
 
 console.log('\n' + (failures === 0 ? 'Post-deploy smoke check passed.' : failures + ' post-deploy check(s) failed.'));
 process.exitCode = failures === 0 ? 0 : 1;

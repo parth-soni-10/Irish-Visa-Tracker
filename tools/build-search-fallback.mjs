@@ -3,7 +3,7 @@
  *
  * The live search API reads the full office archives on the server. That is
  * the right source when it is available, but it leaves the primary task dead
- * during an API outage or offline. This file keeps only the fields needed for
+ * during an API outage. This file keeps only the fields needed for
  * an application-number lookup and is small enough to cache in one request.
  */
 

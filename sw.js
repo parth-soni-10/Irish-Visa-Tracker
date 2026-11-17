@@ -1,101 +1,20 @@
-const CACHE_NAME = 'irish-visa-tracker-v8';
-const STATIC_ASSETS = [
-  '/manifest.json',
-  '/icon-192.png',
-  '/icon-512.png'
-];
-
+/*
+ * Push notifications only.
+ *
+ * This worker deliberately has no fetch handler and no Cache Storage: pages,
+ * scripts, styles and data always go to the network, so the next deployment is
+ * visible on the next load. Older versions cached the shell and assets; those
+ * caches are deleted when this version activates.
+ */
 self.addEventListener('install', event => {
-  event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(cache => cache.addAll(STATIC_ASSETS))
-      .catch(error => console.warn('[SW] Static cache skipped:', error && error.message))
-      .then(() => self.skipWaiting())
-  );
+  event.waitUntil(self.skipWaiting());
 });
 
 self.addEventListener('activate', event => {
   event.waitUntil(
-    caches.keys().then(cacheNames => {
-      return Promise.all(
-        cacheNames
-          .filter(name => name !== CACHE_NAME)
-          .map(name => caches.delete(name))
-      );
-    }).then(() => self.clients.claim())
-  );
-});
-
-self.addEventListener('fetch', event => {
-  if (event.request.method !== 'GET') return;
-
-  const url = new URL(event.request.url);
-
-  // Never cache API responses: alert subscriptions and decision data must
-  // always come from the network.
-  if (url.origin !== self.location.origin) return;
-  if (url.pathname.startsWith('/api/')) return;
-
-  // Data files are network-first so a new scrape is visible immediately, but
-  // keep a copy for the degraded search path when the API or network is down.
-  if (url.pathname.startsWith('/data/')) {
-    event.respondWith(
-      fetch(event.request)
-        .then(response => {
-          if (response.ok) {
-            const copy = response.clone();
-            caches.open(CACHE_NAME).then(cache => cache.put(event.request, copy));
-          }
-          return response;
-        })
-        .catch(() => caches.match(event.request))
-        .then(cached => cached || new Response('Offline', { status: 503, statusText: 'Service Unavailable' }))
-    );
-    return;
-  }
-
-  // Navigations are network-first so a deploy is visible immediately; the
-  // cached shell is only the offline fallback.
-  if (event.request.mode === 'navigate') {
-    event.respondWith(
-      fetch(event.request)
-        .then(response => {
-          if (response.ok) {
-            const copy = response.clone();
-            caches.open(CACHE_NAME).then(cache => cache.put('/', copy));
-          }
-          return response;
-        })
-        .catch(() => caches.match('/'))
-    );
-    return;
-  }
-
-  event.respondWith(
-    caches.match(event.request).then(cached => {
-      if (cached) {
-        event.waitUntil(
-          fetch(event.request)
-            .then(response => {
-              if (response.ok) {
-                caches.open(CACHE_NAME).then(cache => cache.put(event.request, response.clone()));
-              }
-            })
-            .catch(() => {})
-        );
-        return cached;
-      }
-
-      return fetch(event.request)
-        .then(response => {
-          if (response.ok) {
-            const copy = response.clone();
-            caches.open(CACHE_NAME).then(cache => cache.put(event.request, copy));
-          }
-          return response;
-        })
-        .catch(() => new Response('Offline', { status: 503, statusText: 'Service Unavailable' }));
-    })
+    caches.keys()
+      .then(cacheNames => Promise.all(cacheNames.map(name => caches.delete(name))))
+      .then(() => self.clients.claim())
   );
 });
 

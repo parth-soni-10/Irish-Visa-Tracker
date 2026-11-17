@@ -308,7 +308,6 @@
             let officeLookupMetaPromise = null;
             let offlineSearchIndex = null;
             let offlineSearchIndexPromise = null;
-            let offlineWarmStarted = false;
 
             function classify(decision) {
                 const s = (decision || '').toLowerCase();
@@ -2293,7 +2292,7 @@
             function loadOfflineSearchIndex() {
                 if (offlineSearchIndex) return Promise.resolve(offlineSearchIndex);
                 if (offlineSearchIndexPromise) return offlineSearchIndexPromise;
-                offlineSearchIndexPromise = fetch(OFFLINE_INDEX_URL, { cache: 'no-cache' })
+                offlineSearchIndexPromise = fetch(OFFLINE_INDEX_URL, { cache: 'no-store' })
                     .then(function(res) {
                         if (!res.ok) throw new Error('HTTP ' + res.status);
                         return res.json();
@@ -2306,24 +2305,11 @@
                         return payload;
                     })
                     .catch(function(error) {
-                        console.warn('Offline search index failed:', error);
+                        console.warn('Fallback search index failed:', error);
                         offlineSearchIndexPromise = null;
                         throw error;
                     });
                 return offlineSearchIndexPromise;
-            }
-
-            function warmOfflineSearchIndex() {
-                if (offlineWarmStarted || navigator.onLine === false) return;
-                offlineWarmStarted = true;
-                var warm = function() {
-                    loadOfflineSearchIndex().catch(function() { /* fallback remains unavailable */ });
-                };
-                if (typeof window.requestIdleCallback === 'function') {
-                    window.requestIdleCallback(warm, { timeout: 4000 });
-                } else {
-                    setTimeout(warm, 1500);
-                }
             }
 
             function prepareLookupRow(row) {
@@ -2623,13 +2609,14 @@
                     : officeName(homeSearchOffice);
                 var number = normalizeIRL(term || homeSearchTerm);
                 var selectedOffice = homeSearchOffice === 'all' ? '' : homeSearchOffice;
-                var officePicker = '<label class="home-noresult-label" for="home-noresult-office">Office on your receipt</label>' +
+                var officePicker = '<div class="home-noresult-picker">' +
+                    '<label class="home-noresult-label" for="home-noresult-office">Office on your receipt</label>' +
                     '<select id="home-noresult-office" class="home-noresult-select" data-home-noresult-office>' +
                     '<option value=""' + (selectedOffice ? '' : ' selected') + '>Choose an office</option>' +
                     WATCH_OFFICES.map(function(office) {
                         return '<option value="' + office + '"' + (office === selectedOffice ? ' selected' : '') + '>' +
                             escapeHtml(WATCH_OFFICE_NAMES[office]) + '</option>';
-                    }).join('') + '</select>';
+                    }).join('') + '</select></div>';
                 var notify = number.length >= 4 ?
                     '<div class="home-noresult-notify">' +
                     '<h4>Get notified if this number appears</h4>' +
@@ -2908,7 +2895,6 @@
                         ? Number(payload.pagination.total)
                         : matches.length;
                     paintHomeLookup(term, matches.slice(0, 100), total, metas);
-                    warmOfflineSearchIndex();
                 }).catch(function(error) {
                     if (seq !== homeLookupSeq) return;
                     console.warn('Live office lookup failed, trying fallback:', error);
@@ -2918,7 +2904,7 @@
                         paintHomeLookup(term, fallback.results, fallback.total, fallback.metas, fallback);
                     }).catch(function(fallbackError) {
                         if (seq !== homeLookupSeq) return;
-                        console.warn('Offline lookup failed:', fallbackError);
+                        console.warn('Fallback lookup failed:', fallbackError);
                         if (status) status.textContent = 'Search failed. Please try again.';
                         box.innerHTML = homeLookupErrorHTML();
                     });

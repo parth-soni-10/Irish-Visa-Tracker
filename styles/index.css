@@ -2043,9 +2043,10 @@
         /* Watchlist tab. */
     .watch-card { background: var(--surface-raised); border: 1px solid var(--border); border-radius: var(--r-container); padding: 16px; margin: 12px 0; }
     .watch-h3 { margin: 0 0 12px; font-size: 15px; color: var(--ink); }
+    #visa-dash #watch-add-form { max-width: 440px; }
     .watch-field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
     .watch-field label { font-size: 12px; font-weight: 600; color: var(--ink-soft); }
-    .watch-field input, .watch-field select, .watch-field textarea { width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: var(--r-control); background: var(--surface); color: var(--ink); font-size: 13px; box-sizing: border-box; }
+    #visa-dash .watch-field input, #visa-dash .watch-field select, #visa-dash .watch-field textarea { width: 100%; max-width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: var(--r-control); background: var(--surface); color: var(--ink); font-size: 13px; box-sizing: border-box; }
     .watch-field input:focus, .watch-field select:focus, .watch-field textarea:focus { outline: 2px solid var(--green); outline-offset: 1px; border-color: var(--green); }
     .watch-card table { width: 100%; border-collapse: collapse; font-size: 13px; }
     .watch-card th { text-align: left; color: var(--ink-soft); font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; padding: 8px; border-bottom: 1px solid var(--border); }
@@ -2399,7 +2400,7 @@
       }
       #visa-dash .watchlist-table-wrap .results-table tr {
         display: grid;
-        grid-template-columns: minmax(0, 1fr) auto;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
         gap: 3px 10px;
         padding: 10px 12px;
         border: 1px solid var(--border);
@@ -2408,8 +2409,15 @@
       }
       #visa-dash .watchlist-table-wrap .results-table td {
         display: block;
+        min-width: 0;
         padding: 0;
         border: 0;
+      }
+      #visa-dash .watchlist-table-wrap .watch-change-badge {
+        display: block;
+        width: fit-content;
+        max-width: 100%;
+        line-height: 1.35;
       }
       #visa-dash .watchlist-table-wrap .results-table td:nth-child(1) {
         grid-column: 1;
@@ -2906,10 +2914,13 @@
     gap: 8px;
     flex-wrap: wrap;
 }
+#visa-dash .home-noresult-picker {
+    flex: 1 1 220px;
+    max-width: 320px;
+    min-width: 0;
+}
 #visa-dash .home-noresult-label {
     display: block;
-    flex: 1 1 180px;
-    min-width: 0;
     font-size: 11px;
     font-weight: 700;
     letter-spacing: 0.03em;
