@@ -40,6 +40,10 @@ async function seriousA11yViolations(page, selector) {
 
 test.describe.configure({ retries: 1 });
 
+// Service-worker fetches bypass page.route(). The suite tests the application
+// paths rather than the SW cache itself, so block it to keep data mocks exact.
+test.use({ serviceWorkers: 'block' });
+
 test.describe('SPA shell', () => {
   test('loads the landing page', async ({ page }) => {
     await gotoHome(page);
