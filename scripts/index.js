@@ -1413,7 +1413,10 @@
                 if (!(opts && opts.noUrl)) syncUrl('push');
                 var pills = document.querySelectorAll('#visa-dash .navpill');
                 for (var i = 0; i < pills.length; i++) {
-                    pills[i].classList.toggle('active', pills[i].getAttribute('data-tab') === tabId);
+                    var isActive = pills[i].getAttribute('data-tab') === tabId;
+                    pills[i].classList.toggle('active', isActive);
+                    if (isActive) pills[i].setAttribute('aria-current', 'page');
+                    else pills[i].removeAttribute('aria-current');
                 }
                 var rows = cache && cache.length ? cache : await loadData();
                 animateHeroSwitch(tabId, rows);
@@ -2389,8 +2392,8 @@
                     (saved ? ' is-saved' : '') + '" data-lookup-watch data-lookup-number="' +
                     escapeHtml(number) + '" data-lookup-office="' + escapeHtml(office) +
                     '" aria-pressed="' + (saved ? 'true' : 'false') + '" aria-label="' +
-                    (saved ? 'Remove application ' + escapeHtml(number) + ' from your watchlist'
-                        : 'Watch application ' + escapeHtml(number)) + '" title="' +
+                    (saved ? 'Watching application ' + escapeHtml(number) + '. Remove from your watchlist'
+                        : 'Watch this application: ' + escapeHtml(number)) + '" title="' +
                     (saved ? 'Remove from your watchlist' : 'Save to your watchlist') + '">' +
                     (saved ? 'Watching' : 'Watch this application') + '</button>';
             }
@@ -2478,10 +2481,10 @@
                     lookupWatchButtonHTML(number, office) +
                     '<button type="button" class="btn lookup-result-btn lookup-result-alert" data-lookup-alert="' +
                     escapeHtml(number) + '" data-lookup-alert-office="' + escapeHtml(office) +
-                    '" aria-label="Set up decision alerts for application ' + escapeHtml(number) + '">Get decision alerts</button>' +
+                    '" aria-label="Get decision alerts for application ' + escapeHtml(number) + '">Get decision alerts</button>' +
                     '<button type="button" class="btn secondary lookup-result-btn lookup-result-share" data-lookup-share="' +
                     escapeHtml(number) + '" data-lookup-share-office="' + escapeHtml(office) +
-                    '" aria-label="Copy a shareable link to this result" aria-describedby="' + privacyId +
+                    '" aria-label="Copy result link for application ' + escapeHtml(number) + '" aria-describedby="' + privacyId +
                     '">Copy result link</button>' +
                     '<div class="lookup-result-status" data-lookup-action-status role="status" aria-live="polite"></div>' +
                     '<p class="lookup-result-privacy" id="' + privacyId + '">A copied link contains application number ' +
@@ -2652,8 +2655,8 @@
                 var number = btn.getAttribute('data-lookup-number') || '';
                 btn.setAttribute('aria-pressed', saved ? 'true' : 'false');
                 btn.setAttribute('aria-label', saved
-                    ? 'Remove application ' + number + ' from your watchlist'
-                    : 'Watch application ' + number);
+                    ? 'Watching application ' + number + '. Remove from your watchlist'
+                    : 'Watch this application: ' + number);
                 btn.title = saved ? 'Remove from your watchlist' : 'Save to your watchlist';
                 btn.classList.toggle('is-saved', saved);
                 btn.textContent = saved ? 'Watching' : 'Watch this application';
@@ -5621,7 +5624,8 @@ async function renderLandingPage() {
                         'Awaiting data') + '</div>' +
                     '<div class="navpills" data-gooey-nav>' + TABS.map(function(tab) {
                         return '<button type="button" class="navpill ' + (activeTab === tab.id ? 'active' : '') +
-                            '" data-tab="' + tab.id + '"><i data-lucide="' + tab.icon + '"></i> ' + tab.label + '</button>';
+                            '" data-tab="' + tab.id + '"' + (activeTab === tab.id ? ' aria-current="page"' : '') +
+                            '><i data-lucide="' + tab.icon + '"></i> ' + tab.label + '</button>';
                     }).join('') + '</div>' +
                     '<div class="hero" id="hero" data-id="' + activeTab + '" style="opacity:0">' +
                         '<div class="hero-body">' +

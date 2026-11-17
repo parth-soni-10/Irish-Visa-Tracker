@@ -2104,7 +2104,7 @@
 
     /* Landing alert CTA */
     .activation-kicker { margin: 0 0 6px; color: var(--green-deep); font-size: 11px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
-    .activation-telegram { background: #229ED9; border-color: #229ED9; color: #fff; }
+    .activation-telegram { background: #0e7490; border-color: #0e7490; color: #fff; }
     .activation-telegram:hover { background: #168ac0; border-color: #168ac0; color: #fff; }
     .landing-alert-cta {
       display: flex;
@@ -2764,12 +2764,12 @@
     color: var(--green-text);
 }
 #visa-dash .lookup-result-alert {
-    border-color: #229ED9;
-    background: #229ED9;
+    border-color: #0e7490;
+    background: #0e7490;
     color: #fff;
 }
 #visa-dash .lookup-result-alert:hover,
-#visa-dash .lookup-result-alert:focus-visible { background: #1b86b8; border-color: #1b86b8; }
+#visa-dash .lookup-result-alert:focus-visible { background: #0a5d75; border-color: #0a5d75; }
 #visa-dash .lookup-result-status {
     flex-basis: 100%;
     min-height: 0;

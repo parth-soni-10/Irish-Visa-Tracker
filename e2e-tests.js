@@ -8,6 +8,7 @@
 
 import fs from 'node:fs/promises';
 import { test, expect } from '@playwright/test';
+import AxeBuilder from '@axe-core/playwright';
 
 const BASE_URL = process.env.E2E_BASE_URL || 'http://127.0.0.1:8788';
 
@@ -20,6 +21,21 @@ async function openVisaTracker(page) {
   await gotoHome(page);
   await page.locator('.tracker-card').first().click();
   await page.waitForTimeout(1000);
+}
+
+async function seriousA11yViolations(page, selector) {
+  const results = await new AxeBuilder({ page })
+    .include(selector)
+    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+    .analyze();
+  return results.violations
+    .filter((violation) => violation.impact === 'serious' || violation.impact === 'critical')
+    .map((violation) => ({
+      id: violation.id,
+      impact: violation.impact,
+      help: violation.help,
+      targets: violation.nodes.map((node) => node.target),
+    }));
 }
 
 test.describe.configure({ retries: 1 });
@@ -399,8 +415,26 @@ test.describe('Six-tab deep links', () => {
     for (const item of tabs) {
       await page.goto(`${BASE_URL}/?tracker=visa&tab=${item.tab}`, { waitUntil: 'domcontentloaded' });
       await expect(page.locator('.navpill')).toHaveCount(6);
-      await expect(page.locator(`.navpill[data-tab="${item.tab}"]`)).toHaveClass(/active/);
+      const active = page.locator(`.navpill[data-tab="${item.tab}"]`);
+      await expect(active).toHaveClass(/active/);
+      await expect(active).toHaveAttribute('aria-current', 'page');
       await expect(page.locator(item.ready)).toBeVisible({ timeout: 15000 });
+    }
+  });
+
+  test('keeps keyboard tab switches current and all six tabs inside the mobile viewport', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 667 });
+    await page.goto(`${BASE_URL}/?tracker=visa&tab=search`, { waitUntil: 'domcontentloaded' });
+    const tabs = ['search', 'history', 'alerts', 'saved', 'tools', 'analytics'];
+    for (const tab of tabs) {
+      const button = page.locator(`.navpill[data-tab="${tab}"]`);
+      await button.scrollIntoViewIfNeeded();
+      await button.focus();
+      await page.keyboard.press('Enter');
+      await expect(button).toHaveClass(/active/);
+      await expect(button).toHaveAttribute('aria-current', 'page');
+      const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+      expect(overflow, `horizontal overflow on ${tab}`).toBeLessThanOrEqual(2);
     }
   });
 });
@@ -488,6 +522,7 @@ test.describe('All-office search result cards', () => {
     await expect(card).toContainText('Test manifest note');
     await expect(card).toContainText('What to do next');
     await expect(card).toContainText('not legal advice');
+    expect(await seriousA11yViolations(page, '.lookup-result-card')).toEqual([]);
 
     expect(searchRequest).toBeTruthy();
     expect(searchRequest.filters).toEqual({});
@@ -537,6 +572,7 @@ test.describe('All-office search result cards', () => {
     await page.locator('#home-search').fill('99999999');
     await page.locator('#home-search').press('Enter');
     await expect(page.locator('.home-lookup-empty h3')).toContainText('No published decision found');
+    expect(await seriousA11yViolations(page, '.home-lookup-empty')).toEqual([]);
 
     const watch = page.locator('[data-home-noresult-watch]');
     await expect(watch).toHaveAttribute('aria-pressed', 'false');
