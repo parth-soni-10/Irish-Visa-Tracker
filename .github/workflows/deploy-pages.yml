@@ -73,38 +73,18 @@ jobs:
           name: pages-dist
           path: .pages-dist
 
-      # A newer scraper or code push can replace production while this older
-      # run is still waiting. Do not make an obsolete build chase a moving
-      # target; the workflow for the newer commit owns verification.
-      - name: Check this is still the main commit
-        id: tip
-        shell: bash
-        run: |
-          set -euo pipefail
-          current="$(git ls-remote --exit-code origin refs/heads/main | cut -f1)"
-          if [ -z "$current" ]; then
-            echo "::error::Could not read origin/main from the remote."
-            exit 1
-          fi
-          if [ "$current" = "$GITHUB_SHA" ]; then
-            echo "current=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "current=false" >> "$GITHUB_OUTPUT"
-            echo "origin/main moved to $current; skipping production verification for this superseded commit."
-          fi
-
       - name: Wait for production and compare artifacts
-        if: steps.tip.outputs.current == 'true'
+        id: verify
         env:
           VERIFY_BASE_URL: ${{ vars.APP_BASE_URL || 'https://irishvisaupdatetracker.pages.dev' }}
           VERIFY_COMMIT: ${{ github.sha }}
-          VERIFY_TIMEOUT_MS: '300000'
-          VERIFY_SETTLE_MS: '120000'
-          VERIFY_INTERVAL_MS: '10000'
         run: node tools/verify-deploy.mjs
 
+      # A newer push can take over after verification starts. The verifier
+      # reports that race through this step output; do not smoke-test a build
+      # another run now owns.
       - name: Smoke-test production
-        if: steps.tip.outputs.current == 'true'
+        if: steps.verify.outputs.superseded != 'true'
         env:
           SMOKE_BASE_URL: ${{ vars.APP_BASE_URL || 'https://irishvisaupdatetracker.pages.dev' }}
           SMOKE_EXPECT_COMMIT: ${{ github.sha }}

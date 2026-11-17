@@ -24,7 +24,7 @@ const DIST = path.resolve(process.env.VERIFY_DIST_DIR || '.pages-dist');
 const COMMIT = String(process.env.VERIFY_COMMIT || process.env.GITHUB_SHA || '').trim();
 const TIMEOUT_MS = Number(process.env.VERIFY_TIMEOUT_MS || 300000);
 const INTERVAL_MS = Number(process.env.VERIFY_INTERVAL_MS || 10000);
-const SETTLE_MS = Number(process.env.VERIFY_SETTLE_MS || 120000);
+const ATTEMPTS = Math.max(1, Number(process.env.VERIFY_ATTEMPTS || 3) || 3);
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -130,17 +130,14 @@ async function compareAll(files) {
 async function main() {
   if (!fs.existsSync(DIST)) throw new Error('build directory does not exist: ' + DIST);
   const files = walk(DIST);
-  let info = await waitForCommit(COMMIT);
-  if (COMMIT && info.commit !== COMMIT) throw new Error('build-info commit does not match');
+  const info = await waitForCommit(COMMIT);
 
-  // Pages can expose build-info.json a moment before every edge has the new
-  // assets, and a newer scraper/code push can replace this deployment while it
-  // is being checked. Retry mismatches for a bounded window; if production has
-  // moved to another commit, this build has been superseded and failing the old
-  // workflow would be misleading.
-  const settleDeadline = Date.now() + SETTLE_MS;
+  // build-info can appear before a new asset reaches every edge, and a newer
+  // commit can take over while this run is checking. Retry a bounded number
+  // of times; if production moves to another commit, this build is superseded
+  // and failing the old workflow would be misleading.
   let attempts = 0;
-  while (true) {
+  while (attempts < ATTEMPTS) {
     attempts += 1;
     const result = await compareAll(files);
     if (!result.failures.length) {
@@ -152,7 +149,7 @@ async function main() {
     }
 
     const detail = result.failures.slice(0, 12).join('\n- ');
-    if (Date.now() >= settleDeadline) {
+    if (attempts >= ATTEMPTS) {
       throw new Error(
         `serving ${String(info.commit).slice(0, 12)} but ${result.failures.length}/${result.checked} artifacts still differ after ` +
         `${attempts} attempts:\n- ${detail}`
@@ -172,9 +169,11 @@ async function main() {
           `Deployment superseded: production moved from ${String(info.commit).slice(0, 12)} to ` +
           `${String(latest.commit || 'unknown').slice(0, 12)} while verifying. Another push now owns production.`
         );
+        if (process.env.GITHUB_OUTPUT) {
+          try { fs.appendFileSync(process.env.GITHUB_OUTPUT, 'superseded=true\n'); } catch (error) { /* output is optional */ }
+        }
         return;
       }
-      info = latest;
     } catch (error) {
       console.warn('Could not re-read build-info while retrying: ' + error.message);
     }
@@ -185,6 +184,8 @@ const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPat
 if (isMain) {
   main().catch((error) => {
     console.error('Deployment verification failed: ' + error.message);
-    process.exit(1);
+    // Let stdout/stderr drain before the process exits. process.exit() here
+    // can trip a libuv assertion on Windows when the output pipe is still open.
+    process.exitCode = 1;
   });
 }

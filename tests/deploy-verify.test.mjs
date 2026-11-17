@@ -26,7 +26,6 @@ async function startServer(handler) {
     server.listen(0, '127.0.0.1', resolve);
   });
   return {
-    server,
     base: `http://127.0.0.1:${server.address().port}`,
     close() {
       if (server.closeAllConnections) server.closeAllConnections();
@@ -44,7 +43,6 @@ function runVerifier(base, dist, commit, extraEnv = {}) {
         VERIFY_DIST_DIR: dist,
         VERIFY_COMMIT: commit,
         VERIFY_TIMEOUT_MS: '4000',
-        VERIFY_SETTLE_MS: '2000',
         VERIFY_INTERVAL_MS: '25',
         ...extraEnv
       },
@@ -102,7 +100,7 @@ test('deploy verifier retries a transient edge mismatch', async (t) => {
   const commit = 'a'.repeat(40);
   const dist = makeDist(commit);
   let assetRequests = 0;
-  const { server, base, close } = await startServer((req, res) => {
+  const { base, close } = await startServer((req, res) => {
     const pathname = new URL(req.url, 'http://localhost').pathname;
     if (pathname === '/build-info.json') return send(res, 200, 'application/json', JSON.stringify({ commit }));
     if (pathname === '/asset.txt') {
@@ -122,7 +120,35 @@ test('deploy verifier retries a transient edge mismatch', async (t) => {
   assert.match(result.stdout, /Deployment verified/);
   assert.match(result.stdout, /after 2 attempts/);
   assert.ok(assetRequests >= 2, `expected a retry, saw ${assetRequests} asset request(s)`);
-  assert.equal(server.listening, true);
+});
+
+test('deploy verifier accepts a newer deployment taking over', async (t) => {
+  const commit = 'b'.repeat(40);
+  const newer = 'c'.repeat(40);
+  const dist = makeDist(commit);
+  const outputPath = path.join(os.tmpdir(), `deploy-verify-${process.pid}-${Date.now()}`);
+  let infoRequests = 0;
+  const { base, close } = await startServer((req, res) => {
+    const pathname = new URL(req.url, 'http://localhost').pathname;
+    if (pathname === '/build-info.json') {
+      infoRequests += 1;
+      return send(res, 200, 'application/json', JSON.stringify({ commit: infoRequests === 1 ? commit : newer }));
+    }
+    if (pathname === '/asset.txt') return send(res, 200, 'text/plain', 'stale\n');
+    if (pathname === '/index.html') return send(res, 200, 'text/html', '<h1>same</h1>\n');
+    return send(res, 404, 'text/plain', '');
+  });
+  t.after(() => {
+    close();
+    fs.rmSync(dist, { recursive: true, force: true });
+    fs.rmSync(outputPath, { force: true });
+  });
+
+  const result = await runVerifier(base, dist, commit, { GITHUB_OUTPUT: outputPath });
+  assert.equal(result.code, 0, result.stderr + result.stdout);
+  assert.match(result.stdout, /Deployment superseded/);
+  assert.match(result.stdout, new RegExp(newer.slice(0, 12)));
+  assert.match(fs.readFileSync(outputPath, 'utf8'), /superseded=true/);
 });
 
 test('deploy verifier still fails on persistent content differences', async (t) => {
@@ -140,34 +166,8 @@ test('deploy verifier still fails on persistent content differences', async (t) 
     fs.rmSync(dist, { recursive: true, force: true });
   });
 
-  const result = await runVerifier(base, dist, commit, { VERIFY_SETTLE_MS: '150' });
+  const result = await runVerifier(base, dist, commit);
   assert.equal(result.code, 1, result.stderr + result.stdout);
   assert.match(result.stderr, /artifacts still differ/);
   assert.match(result.stderr, /asset\.txt: content differs/);
-});
-
-test('deploy verifier accepts a newer deployment taking over', async (t) => {
-  const commit = 'b'.repeat(40);
-  const newer = 'c'.repeat(40);
-  const dist = makeDist(commit);
-  let infoRequests = 0;
-  const { base, close } = await startServer((req, res) => {
-    const pathname = new URL(req.url, 'http://localhost').pathname;
-    if (pathname === '/build-info.json') {
-      infoRequests += 1;
-      return send(res, 200, 'application/json', JSON.stringify({ commit: infoRequests === 1 ? commit : newer }));
-    }
-    if (pathname === '/asset.txt') return send(res, 200, 'text/plain', 'stale\n');
-    if (pathname === '/index.html') return send(res, 200, 'text/html', '<h1>same</h1>\n');
-    return send(res, 404, 'text/plain', '');
-  });
-  t.after(() => {
-    close();
-    fs.rmSync(dist, { recursive: true, force: true });
-  });
-
-  const result = await runVerifier(base, dist, commit);
-  assert.equal(result.code, 0, result.stderr + result.stdout);
-  assert.match(result.stdout, /Deployment superseded/);
-  assert.match(result.stdout, new RegExp(newer.slice(0, 12)));
 });
