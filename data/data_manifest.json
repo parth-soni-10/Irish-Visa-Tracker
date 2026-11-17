@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-17T05:01:55.068Z",
+  "generated_at": "2026-11-17T05:31:48.181Z",
   "offices": [
     {
       "slug": "new-delhi",
@@ -9,7 +9,7 @@
       "source_name": "Embassy of Ireland, New Delhi",
       "report_date": "2026-11-16",
       "as_of": "2026-11-17",
-      "fetched_at": "2026-11-17T05:01:42.246Z",
+      "fetched_at": "2026-11-17T05:31:23.647Z",
       "status": "official",
       "note": null,
       "decisions": 43152,
@@ -24,7 +24,7 @@
       "approved": 36393,
       "refused": 6759,
       "corrections": 0,
-      "added": 164
+      "added": 0
     },
     {
       "slug": "beijing",
@@ -34,7 +34,7 @@
       "source_name": "Embassy of Ireland, Beijing",
       "report_date": "2026-11-01",
       "as_of": "2026-11-17",
-      "fetched_at": "2026-11-17T05:01:43.917Z",
+      "fetched_at": "2026-11-17T05:31:25.080Z",
       "status": "official",
       "note": null,
       "decisions": 13724,
@@ -59,7 +59,7 @@
       "source_name": "Embassy of Ireland, Abu Dhabi",
       "report_date": "2026-11-13",
       "as_of": "2026-11-17",
-      "fetched_at": "2026-11-17T05:01:44.817Z",
+      "fetched_at": "2026-11-17T05:31:25.900Z",
       "status": "official",
       "note": null,
       "decisions": 283,
@@ -120,7 +120,7 @@
       "source_name": "Embassy of Ireland, Abuja",
       "report_date": "2026-10-18",
       "as_of": "2026-11-17",
-      "fetched_at": "2026-11-17T05:01:45.382Z",
+      "fetched_at": "2026-11-17T05:31:26.344Z",
       "status": "official",
       "note": null,
       "decisions": 52,
@@ -249,7 +249,7 @@
       "source_name": "Embassy of Ireland, Ankara",
       "report_date": "2026-11-15",
       "as_of": "2026-11-17",
-      "fetched_at": "2026-11-17T05:01:46.223Z",
+      "fetched_at": "2026-11-17T05:31:26.688Z",
       "status": "official",
       "note": "Scanned PDF extracted with poppler+tesseract at 300 DPI (5 pages).",
       "decisions": 165,
@@ -290,7 +290,7 @@
       "source_name": "Immigration Service Delivery, Dublin Visa Office",
       "report_date": "2026-11-17",
       "as_of": "2026-11-17",
-      "fetched_at": "2026-11-17T05:01:52.075Z",
+      "fetched_at": "2026-11-17T05:31:32.210Z",
       "status": "official",
       "note": null,
       "decisions": 4335,
