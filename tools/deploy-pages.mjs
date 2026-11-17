@@ -178,6 +178,13 @@ async function main() {
     }
   }
   
+  // Cloudflare reserves /404.html and redirects it to /404. Keep that file
+  // for Pages' own fallback, and publish an internal copy the Worker can
+  // fetch without triggering the reserved-path redirect.
+  if (await copyFile(path.resolve(assetsRootDir, '404.html'), path.resolve(distDir, '404-internal.html'))) {
+    copied++;
+  }
+
   // Copy directories
   for (const dir of dirsToCopy) {
     const src = path.resolve(assetsRootDir, dir);

@@ -206,22 +206,28 @@ async function fetchDocument(env, request, document) {
 
 async function notFoundPage(env, request) {
   let response = null;
+  // Cloudflare Pages reserves /404.html and /404: requesting either one makes
+  // the assets layer redirect to /404 with an empty body. The build writes the
+  // same page to an internal name that is served normally, so fetch that first
+  // and keep the inline page as a last-resort fallback.
   try {
-    response = await env.ASSETS.fetch(new Request(new URL("/404.html", request.url), request));
+    response = await env.ASSETS.fetch(new Request(new URL("/404-internal.html", request.url), request));
   } catch {
     // Fall through to the inline page below if the assets binding is unavailable.
   }
 
-  if (!response || response.status === 404) {
+  if (!response || !response.ok || response.headers.has("Location")) {
     response = new Response(
-      "<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\"><title>Page not found</title></head><body><h1>Page not found</h1></body></html>",
+      "<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"><meta name=\"robots\" content=\"noindex\"><title>Page not found | Irish Visa Decision Tracker</title><link rel=\"stylesheet\" href=\"/pages.css\"></head><body><main class=\"notfound\" id=\"main-content\"><p class=\"notfound-code\">404 &bull; Nothing at this address</p><h1>Page not found</h1><p>This page has moved, or the link was mistyped. The tracker itself is still at the home page, and the published pages are listed in the sitemap.</p><div class=\"notfound-links\"><a href=\"/\">Back to the tracker</a><a href=\"/sitemap.xml\">Sitemap</a><a href=\"/llms.txt\">Agent guide</a><a href=\"/about\">About</a></div></main></body></html>",
       { headers: { "Content-Type": "text/html; charset=utf-8" } }
     );
   }
 
   const headers = new Headers(response.headers);
+  headers.delete("Location");
   headers.set("Content-Type", "text/html; charset=utf-8");
   headers.set("Cache-Control", "no-store");
+  headers.set("X-Robots-Tag", "noindex");
   mergeVary(headers);
   return addSecurityHeaders(new Response(request.method === "HEAD" ? null : response.body, {
     status: 404,

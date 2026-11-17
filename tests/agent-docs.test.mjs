@@ -185,6 +185,55 @@ test("router: /404 and /404.html answer the page with a real 404 status", async 
   }
 });
 
+test("router: the HTML 404 uses the internal page when /404.html redirects", async () => {
+  const redirectingAssets = {
+    async fetch(request) {
+      const path = new URL(request.url).pathname;
+      if (path === "/404-internal.html") {
+        return new Response("<!doctype html><h1>Page not found</h1><a href=\"/sitemap.xml\">Sitemap</a>", {
+          headers: { "Content-Type": "text/html; charset=utf-8" },
+        });
+      }
+      if (path === "/404.html" || path === "/404") {
+        return new Response(null, {
+          status: 404,
+          headers: { "Content-Type": "text/html; charset=utf-8", Location: "/404" },
+        });
+      }
+      return new Response("missing", { status: 404 });
+    },
+  };
+  const response = await router.fetch(
+    new Request("https://irishvisaupdatetracker.pages.dev/__missing__", { headers: { Accept: "text/html" } }),
+    { ASSETS: redirectingAssets }
+  );
+  assert.equal(response.status, 404);
+  assert.equal(response.headers.get("Location"), null);
+  assert.equal(response.headers.get("Cache-Control"), "no-store");
+  assert.equal(response.headers.get("X-Robots-Tag"), "noindex");
+  const body = await response.text();
+  assert.match(body, /Page not found/);
+  assert.match(body, /sitemap\.xml/);
+});
+
+test("router: the HTML 404 falls back to a usable inline page", async () => {
+  const missingAssets = {
+    async fetch() {
+      return new Response(null, { status: 404, headers: { Location: "/404" } });
+    },
+  };
+  const response = await router.fetch(
+    new Request("https://irishvisaupdatetracker.pages.dev/__missing__", { headers: { Accept: "text/html" } }),
+    { ASSETS: missingAssets }
+  );
+  assert.equal(response.status, 404);
+  assert.equal(response.headers.get("Location"), null);
+  assert.equal(response.headers.get("X-Robots-Tag"), "noindex");
+  const body = await response.text();
+  assert.match(body, /Page not found/);
+  assert.match(body, /Back to the tracker/);
+});
+
 test("router: /404 keeps Markdown negotiation and the HEAD contract", async () => {
   const markdown = await call("/404", "text/markdown");
   assert.equal(markdown.status, 404);
