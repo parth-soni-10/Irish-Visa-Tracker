@@ -42,6 +42,17 @@ export function stripCloudflareAnalytics(html) {
 }
 
 export function normaliseAsset(name, bytes) {
+  if (name === 'data/search_fallback.json') {
+    // The generator stamps each build. The rows and office metadata are the
+    // parts that must match the deployed data.
+    try {
+      const payload = JSON.parse(bytes.toString('utf8'));
+      delete payload.generated_at;
+      return Buffer.from(JSON.stringify(payload));
+    } catch {
+      return bytes;
+    }
+  }
   if (/\.(?:html?|css|js|json|xml|txt|md|svg)$/i.test(name)) {
     const text = stripCloudflareAnalytics(bytes.toString('utf8'));
     return Buffer.from(text.replace(/\r\n?/g, '\n'));
@@ -57,7 +68,9 @@ function isIgnored(name) {
 async function fetchAsset(name) {
   const url = new URL(BASE + '/' + name.split('/').map(encodeURIComponent).join('/'));
   url.searchParams.set('__deploy_check', Date.now().toString(36));
-  const response = await fetch(url, { cache: 'no-store', redirect: 'manual' });
+  // Cloudflare Pages redirects /page.html to the clean /page URL. Follow it
+  // so the comparison sees the document the browser actually receives.
+  const response = await fetch(url, { cache: 'no-store', redirect: 'follow' });
   return { response, bytes: Buffer.from(await response.arrayBuffer()) };
 }
 
@@ -89,10 +102,11 @@ async function compareAll(files, info) {
   const checked = [];
   for (const name of files) {
     if (isIgnored(name)) continue;
+    // The marker is checked separately; its built_at timestamp is regenerated
+    // by Cloudflare's build and is not part of the deployed application.
+    if (name === 'build-info.json') continue;
     const local = fs.readFileSync(path.join(DIST, name));
     checked.push(name);
-    // Kept for a useful failure message if a request itself throws.
-    // eslint-disable-next-line no-await-in-loop
     const remote = await fetchAsset(name);
     if (remote.response.status !== 200) {
       failures.push(name + ': HTTP ' + remote.response.status);

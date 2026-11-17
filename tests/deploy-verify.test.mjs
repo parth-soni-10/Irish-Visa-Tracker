@@ -20,3 +20,12 @@ test('deploy verifier normalises CRLF for text but not binary files', () => {
   const binary = Buffer.from([0, 1, 2, 13, 10, 255]);
   assert.deepEqual(normaliseAsset('icon.png', binary), binary);
 });
+
+test('deploy verifier ignores the generated timestamp in the fallback index', () => {
+  const first = Buffer.from(JSON.stringify({ generated_at: '2026-11-17T10:00:00Z', rows: [['x']] }));
+  const second = Buffer.from(JSON.stringify({ generated_at: '2026-11-17T11:00:00Z', rows: [['x']] }));
+  assert.deepEqual(
+    normaliseAsset('data/search_fallback.json', first),
+    normaliseAsset('data/search_fallback.json', second)
+  );
+});

@@ -208,10 +208,11 @@ async function notFoundPage(env, request) {
   let response = null;
   // Cloudflare Pages reserves /404.html and /404: requesting either one makes
   // the assets layer redirect to /404 with an empty body. The build writes the
-  // same page to an internal name that is served normally, so fetch that first
-  // and keep the inline page as a last-resort fallback.
+  // same page to an internal clean URL that is served normally, so fetch that
+  // first and keep the inline page as a last-resort fallback. Using the clean
+  // URL avoids Pages' .html -> extensionless redirect as well.
   try {
-    response = await env.ASSETS.fetch(new Request(new URL("/404-internal.html", request.url), request));
+    response = await env.ASSETS.fetch(new Request(new URL("/404-internal", request.url), request));
   } catch {
     // Fall through to the inline page below if the assets binding is unavailable.
   }

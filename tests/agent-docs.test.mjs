@@ -189,9 +189,15 @@ test("router: the HTML 404 uses the internal page when /404.html redirects", asy
   const redirectingAssets = {
     async fetch(request) {
       const path = new URL(request.url).pathname;
-      if (path === "/404-internal.html") {
+      if (path === "/404-internal") {
         return new Response("<!doctype html><h1>Page not found</h1><a href=\"/sitemap.xml\">Sitemap</a>", {
           headers: { "Content-Type": "text/html; charset=utf-8" },
+        });
+      }
+      if (path === "/404-internal.html") {
+        return new Response(null, {
+          status: 308,
+          headers: { "Content-Type": "text/html; charset=utf-8", Location: "/404-internal" },
         });
       }
       if (path === "/404.html" || path === "/404") {
