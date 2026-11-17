@@ -974,6 +974,10 @@
                     // the "Recent:" chips below the search bar.
                     homeSearchEl.addEventListener('keydown', function(e) {
                         if (e.key === 'Enter') {
+                            if (_searchDebounce) {
+                                clearTimeout(_searchDebounce);
+                                _searchDebounce = null;
+                            }
                             saveRecentSearch(homeSearchTerm);
                             refreshRecentChips();
                             if (homeSearchTerm.trim().length >= 6) trackConversion('application_search', 'home');
@@ -994,6 +998,12 @@
                 var homeLookupForm = document.getElementById('home-lookup-form');
                 if (homeLookupForm) homeLookupForm.addEventListener('submit', function(e) {
                     e.preventDefault();
+                    // Enter submits the form; cancel the input debounce so it
+                    // cannot issue a second lookup and repaint over the result.
+                    if (_searchDebounce) {
+                        clearTimeout(_searchDebounce);
+                        _searchDebounce = null;
+                    }
                     if (!homeSearchTerm.trim()) {
                         var emptyInput = document.getElementById('home-search');
                         if (emptyInput) emptyInput.focus();
@@ -1039,6 +1049,16 @@
                         );
                         return;
                     }
+                    var noResultWatch = target && target.closest('[data-home-noresult-watch]');
+                    if (noResultWatch) {
+                        handleNoResultWatch(noResultWatch);
+                        return;
+                    }
+                    var noResultAlert = target && target.closest('[data-home-noresult-alert]');
+                    if (noResultAlert) {
+                        handleNoResultAlert(noResultAlert);
+                        return;
+                    }
                     var allOffices = target && target.closest('[data-home-office-all]');
                     if (!allOffices) return;
                     homeSearchOffice = 'all';
@@ -1046,6 +1066,12 @@
                     if (officeSelect) officeSelect.value = 'all';
                     runHomeLookup();
                     syncUrl('replace');
+                };
+                if (lookupResults) lookupResults.onchange = function(e) {
+                    var select = e.target && e.target.closest ? e.target.closest('[data-home-noresult-office]') : null;
+                    if (!select) return;
+                    var watchBtn = lookupResults.querySelector('[data-home-noresult-watch]');
+                    if (watchBtn) noResultWatchButtonState(watchBtn, watchBtn.getAttribute('data-home-noresult-watch'));
                 };
                 var dateFilterEl = document.getElementById('past-date-filter');
                 if (dateFilterEl) dateFilterEl.addEventListener('change', function(e) {
@@ -2260,6 +2286,16 @@
                 });
             }
 
+            function noResultWatchButtonState(btn, number) {
+                if (!btn) return;
+                var office = noResultOffice();
+                if (!office) return;
+                var saved = lookupWatchSaved(number, office);
+                btn.setAttribute('aria-pressed', saved ? 'true' : 'false');
+                btn.textContent = saved ? 'Watching' : 'Watch this number';
+                btn.classList.toggle('is-saved', saved);
+            }
+
             function lookupWatchButtonHTML(number, office) {
                 var saved = lookupWatchSaved(number, office);
                 return '<button type="button" class="btn lookup-result-btn lookup-result-watch' +
@@ -2373,6 +2409,26 @@
                 var scope = homeSearchOffice === 'all'
                     ? 'all six offices'
                     : officeName(homeSearchOffice);
+                var number = normalizeIRL(term || homeSearchTerm);
+                var selectedOffice = homeSearchOffice === 'all' ? '' : homeSearchOffice;
+                var officePicker = '<label class="home-noresult-label" for="home-noresult-office">Office on your receipt</label>' +
+                    '<select id="home-noresult-office" class="home-noresult-select" data-home-noresult-office>' +
+                    '<option value=""' + (selectedOffice ? '' : ' selected') + '>Choose an office</option>' +
+                    WATCH_OFFICES.map(function(office) {
+                        return '<option value="' + office + '"' + (office === selectedOffice ? ' selected' : '') + '>' +
+                            escapeHtml(WATCH_OFFICE_NAMES[office]) + '</option>';
+                    }).join('') + '</select>';
+                var notify = number.length >= 4 ?
+                    '<div class="home-noresult-notify">' +
+                    '<h4>Get notified if this number appears</h4>' +
+                    '<p>Choose the office that processed the application. You can save it in this browser or set a Telegram alert.</p>' +
+                    '<div class="home-noresult-controls">' + officePicker +
+                    '<button type="button" class="btn lookup-result-btn" data-home-noresult-watch="' + escapeHtml(number) +
+                    '" aria-pressed="false">Watch this number</button>' +
+                    '<button type="button" class="btn lookup-result-btn lookup-result-alert" data-home-noresult-alert="' +
+                    escapeHtml(number) + '">Get decision alerts</button>' +
+                    '</div><div class="home-noresult-status" data-home-noresult-status role="status" aria-live="polite"></div>' +
+                    '</div>' : '';
                 return '<div class="home-lookup-empty">' +
                     '<h3>No published decision found</h3>' +
                     '<p>We searched ' + escapeHtml(scope) + ' for <strong>' +
@@ -2380,6 +2436,7 @@
                     '<p class="home-lookup-empty-tip">' + (homeSearchOffice === 'all'
                         ? 'Try another number format, or check that the application is under the office on your receipt. We already searched all six offices.'
                         : 'Try another office in the selector above, or choose <strong>All six offices</strong>.') + '</p>' +
+                    notify +
                     '<div class="lookup-steps home-lookup-check-next"><h4>What to check next</h4><ol>' +
                     '<li>Use the application number on your receipt or decision email. Do not use a VFS reference or passport number; an <strong>IRL</strong> prefix, spaces and dashes are optional.</li>' +
                     '<li>' + (homeSearchOffice === 'all'
@@ -2395,6 +2452,66 @@
                     '</div>' +
                     '<p class="home-lookup-empty-foot">Still stuck? <a href="/contact#feedback">Send a correction or ask a question</a>.</p>' +
                     '</div>';
+            }
+
+            function noResultOffice() {
+                var select = document.getElementById('home-noresult-office');
+                return select && WATCH_OFFICES.indexOf(select.value) !== -1 ? select.value : '';
+            }
+
+            function handleNoResultWatch(btn) {
+                var number = normalizeIRL(btn.getAttribute('data-home-noresult-watch') || '');
+                var status = document.querySelector('[data-home-noresult-status]');
+                var office = noResultOffice();
+                if (!number) return;
+                if (!office) {
+                    if (status) { status.textContent = 'Choose the office on your receipt first.'; status.classList.add('is-error'); }
+                    return;
+                }
+                var saved = lookupWatchSaved(number, office);
+                if (saved) {
+                    var removal = removeWatchItem(number, office);
+                    if (!removal.saved) {
+                        if (status) { status.textContent = 'Could not remove this application from this browser.'; status.classList.add('is-error'); }
+                        return;
+                    }
+                    if (removal.item) disableWatchPush(removal.item);
+                    btn.setAttribute('aria-pressed', 'false');
+                    btn.textContent = 'Watch this number';
+                    btn.classList.remove('is-saved');
+                    if (status) { status.textContent = 'Removed from your watchlist.'; status.classList.remove('is-error'); }
+                    return;
+                }
+                var added = addWatchItem({ number: number, office: office });
+                if (added === 'added' || added === 'duplicate') {
+                    btn.setAttribute('aria-pressed', 'true');
+                    btn.textContent = 'Watching';
+                    btn.classList.add('is-saved');
+                    if (status) {
+                        status.textContent = added === 'duplicate'
+                            ? 'Already saved in this browser.'
+                            : 'Saved. Open Saved to check it whenever you visit.';
+                        status.classList.remove('is-error');
+                    }
+                    if (added === 'added') trackConversion('watchlist_added', 'lookup_empty');
+                } else if (status) {
+                    status.textContent = added === 'limit'
+                        ? 'Your watchlist is full (10 applications). Remove one before adding another.'
+                        : 'Could not save to this browser. Check that storage is allowed and try again.';
+                    status.classList.add('is-error');
+                }
+            }
+
+            function handleNoResultAlert(btn) {
+                var number = normalizeIRL(btn.getAttribute('data-home-noresult-alert') || '');
+                var status = document.querySelector('[data-home-noresult-status]');
+                var office = noResultOffice();
+                if (!number) return;
+                if (!office) {
+                    if (status) { status.textContent = 'Choose the office on your receipt first.'; status.classList.add('is-error'); }
+                    return;
+                }
+                openAlertForResult(number, office);
             }
 
             function homeLookupErrorHTML() {
@@ -2417,6 +2534,8 @@
                 if (!rows.length) {
                     if (status) status.textContent = 'No published decision found for ' + (term || homeSearchTerm.trim()) + '.';
                     box.innerHTML = homeLookupNoResultHTML(term, metas);
+                    var noResultWatch = box.querySelector('[data-home-noresult-watch]');
+                    if (noResultWatch) noResultWatchButtonState(noResultWatch, noResultWatch.getAttribute('data-home-noresult-watch'));
                     return;
                 }
                 var scope = homeSearchOffice === 'all' ? 'all six offices' : officeName(homeSearchOffice);

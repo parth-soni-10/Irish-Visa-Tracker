@@ -451,6 +451,44 @@ test.describe('All-office search result cards', () => {
     await expect(page.locator('#alert-form input[name="application_number"]')).toHaveValue('44078322');
     await expect(page.locator('#alert-form select[name="embassy"]')).toHaveValue('beijing');
   });
+
+  test('turns a no-result search into a watch or alert', async ({ page }) => {
+    await page.route('**/api/search', (route) => route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        success: true,
+        results: [],
+        pagination: { total: 0, limit: 100, offset: 0, has_more: false },
+        query: '99999999',
+        mode: 'fuzzy',
+        filters: {},
+        sort: 'date_desc',
+      }),
+    }));
+
+    await page.goto(`${BASE_URL}/?tracker=visa&tab=search`, { waitUntil: 'domcontentloaded' });
+    await page.locator('#home-search').fill('99999999');
+    await page.locator('#home-search').press('Enter');
+    await expect(page.locator('.home-lookup-empty h3')).toContainText('No published decision found');
+
+    const watch = page.locator('[data-home-noresult-watch]');
+    await expect(watch).toHaveAttribute('aria-pressed', 'false');
+    await page.selectOption('[data-home-noresult-office]', 'beijing');
+    await watch.click();
+    await expect(watch).toHaveAttribute('aria-pressed', 'true');
+    await expect(watch).toContainText('Watching');
+    await expect(page.locator('[data-home-noresult-status]')).toContainText('Saved');
+    const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('visa-watchlist') || '[]'));
+    expect(saved).toEqual(expect.arrayContaining([
+      expect.objectContaining({ number: '99999999', office: 'beijing' }),
+    ]));
+
+    await page.locator('[data-home-noresult-alert]').click();
+    await expect(page.locator('.navpill[data-tab="alerts"]')).toHaveClass(/active/);
+    await expect(page.locator('#alert-form input[name="application_number"]')).toHaveValue('99999999');
+    await expect(page.locator('#alert-form select[name="embassy"]')).toHaveValue('beijing');
+  });
 });
 
 test.describe('History and Help routes', () => {
