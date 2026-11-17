@@ -5464,7 +5464,7 @@
                 if (!container) return;
 
                 container.innerHTML =
-                    '<div class="table-wrap coverage-table-wrap" role="region" aria-label="Latest official publications" tabindex="0">' +
+                    '<div class="table-wrap coverage-table-wrap" role="region" aria-label="Office coverage table" tabindex="0">' +
                     '<table class="coverage-table">' +
                     '<caption>Latest official publication from each office, with a link to the source.</caption>' +
                     '<thead><tr><th scope="col">Office</th><th scope="col">Latest report</th><th scope="col" class="num">Decisions</th><th scope="col">Source</th><th scope="col">Fetched</th></tr></thead>' +
@@ -5689,7 +5689,7 @@ async function renderLandingPage() {
                     '<h2 id="landing-publications-title">Latest official publications</h2>' +
                     '<p class="note2">Last checked <span id="stat-updated">—</span></p>' +
                     '</div><a href="/status">Data status</a></div>' +
-                    '<div class="embassy-status-grid" id="embassy-status-grid" role="region" aria-label="Latest official publications"></div>' +
+                    '<div class="embassy-status-grid" id="embassy-status-grid" role="group" aria-label="Office coverage table"></div>' +
                     '<p class="note2">Report dates vary by office. New Delhi, Abu Dhabi, Abuja and Ankara keep dated history; Beijing and Dublin publish a latest snapshot. <a href="/visa-processing-times">Dublin queue dates</a>.</p>' +
                     '</section>' +
                     '<div class="landing-foot">Source: official Irish visa office reports. Updated when the offices publish.</div></div>';
