@@ -2726,6 +2726,26 @@
     font-size: 11px;
 }
 #visa-dash .lookup-result-source-missing { color: var(--ink-muted); }
+#visa-dash .lookup-result-source-file {
+    margin-top: 8px;
+    background: var(--surface);
+}
+#visa-dash .lookup-result-freshness {
+    margin: 10px 0 0;
+    padding: 9px 11px;
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    background: var(--surface-raised);
+    color: var(--ink-soft);
+    font-size: 12px;
+    line-height: 1.5;
+}
+#visa-dash .lookup-result-freshness strong { color: var(--ink); }
+#visa-dash .lookup-result-freshness.is-warning {
+    border-color: var(--amber-border, #e6c47a);
+    background: var(--amber-soft, #fff8e5);
+    color: var(--ink);
+}
 #visa-dash .lookup-result-actions {
     display: flex;
     align-items: center;

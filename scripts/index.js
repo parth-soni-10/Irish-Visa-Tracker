@@ -33,6 +33,17 @@
                 abuja: 'Dated weekly reports',
                 ankara: 'Dated weekly reports'
             };
+            // How old a report can be before a result needs an explicit warning.
+            // Snapshot offices publish less often; weekly offices should not be
+            // more than a fortnight behind before we qualify a result.
+            const OFFICE_STALE_DAYS = {
+                'new-delhi': 3,
+                beijing: 35,
+                dublin: 7,
+                'abu-dhabi': 14,
+                abuja: 14,
+                ankara: 14
+            };
 
             // Boot-time device-capability detector. Runs once at the top of
             // the IIFE (the page is already parsing this script which lives
@@ -2303,13 +2314,57 @@
                     sourceUrl = OFFICE_SOURCE_URLS[office] || '';
                 }
                 if (!/^https?:\/\//i.test(String(sourceUrl || ''))) sourceUrl = '';
+                var sourceFile = item.source_file;
+                if (!/^https?:\/\//i.test(String(sourceFile || ''))) sourceFile = '';
                 return {
                     source_url: sourceUrl,
+                    source_file: sourceFile,
                     source_name: item.source_name || '',
                     report_date: item.report_date || '',
                     fetched_at: item.fetched_at || '',
-                    as_of: item.as_of || ''
+                    as_of: item.as_of || '',
+                    status: item.status || '',
+                    note: item.note || ''
                 };
+            }
+
+            function lookupReportAgeDays(value) {
+                var match = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(value || ''));
+                if (!match) return null;
+                var report = Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+                var now = new Date();
+                var today = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+                if (!isFinite(report)) return null;
+                return Math.max(0, Math.floor((today - report) / 86400000));
+            }
+
+            function lookupFreshness(office, meta) {
+                var age = lookupReportAgeDays(meta.report_date);
+                var status = String(meta.status || '').toLowerCase();
+                var date = lookupFormatDate(meta.report_date);
+                var label = age === null
+                    ? 'Report date not recorded'
+                    : (age === 0 ? 'Updated today' : age === 1 ? 'Updated yesterday'
+                        : (date || 'Report dated') + ' (' + age + ' days ago)');
+                var warning = '';
+                if (status && status !== 'official') {
+                    warning = 'This office marks its latest data as "' + meta.status + '". Results may be incomplete; check the official report.';
+                } else if (age === null) {
+                    warning = 'The report date is unavailable. Check this row against the official report before relying on it.';
+                } else if (age > (OFFICE_STALE_DAYS[office] || 14)) {
+                    warning = 'This office report is ' + age + ' days old. A newer decision may not appear here yet.';
+                }
+                return { age: age, label: label, warning: warning, note: meta.note || '', status: status };
+            }
+
+            function lookupFreshnessHTML(office, meta) {
+                var freshness = lookupFreshness(office, meta);
+                var out = '<div class="lookup-result-freshness' + (freshness.warning ? ' is-warning' : '') + '"' +
+                    (freshness.warning ? ' role="note"' : '') + '>' +
+                    '<strong>Report freshness:</strong> ' + escapeHtml(freshness.label) + '. ';
+                if (freshness.warning) out += escapeHtml(freshness.warning) + ' ';
+                if (freshness.note) out += '<span class="lookup-result-source-note">' + escapeHtml(freshness.note) + '</span>';
+                return out + '</div>';
             }
 
             function lookupWatchSaved(number, office) {
@@ -2391,6 +2446,13 @@
                         escapeHtml(sourceName) + ' <span aria-hidden="true">\u2197</span></a>' +
                         '<span class="lookup-result-source-note">opens in a new tab</span>'
                     : '<span class="lookup-result-source-missing">Official source link is unavailable right now.</span>';
+                var exactSource = meta.source_file && meta.source_file !== meta.source_url
+                    ? '<p class="lookup-result-source lookup-result-source-file">' +
+                        '<span class="lookup-result-source-label">Report containing this row</span>' +
+                        '<a href="' + escapeHtml(meta.source_file) + '" target="_blank" rel="noopener noreferrer" data-lookup-source-file>' +
+                        'Open the official report file <span aria-hidden="true">\u2197</span></a>' +
+                        '<span class="lookup-result-source-note">PDF or ODS from the office</span></p>'
+                    : '';
                 return '<article class="lookup-result-card" data-lookup-result data-office="' +
                     escapeHtml(office) + '" data-lookup-number="' + escapeHtml(number) + '">' +
                     '<div class="lookup-result-head"><div>' +
@@ -2409,6 +2471,8 @@
                     (checked === 'Not recorded' ? checked : '<time datetime="' + escapeHtml(checkedTime) + '">' + escapeHtml(checked) + '</time>') + '</dd></div>' +
                     '</dl>' +
                     '<p class="lookup-result-source"><span class="lookup-result-source-label">Official source</span>' + source + '</p>' +
+                    exactSource +
+                    lookupFreshnessHTML(office, meta) +
                     '<div class="lookup-result-actions">' +
                     lookupWatchButtonHTML(number, office) +
                     '<button type="button" class="btn lookup-result-btn lookup-result-alert" data-lookup-alert="' +

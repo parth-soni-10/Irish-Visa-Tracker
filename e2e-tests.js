@@ -420,6 +420,24 @@ test.describe('All-office search result cards', () => {
         },
       });
     });
+    await page.route('**/data/data_manifest.json', (route) => route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        offices: [{
+          slug: 'beijing',
+          name: 'Beijing',
+          source_url: 'https://www.ireland.ie/en/china/beijing/services/visas/visa-decisions/',
+          source_file: 'https://www.ireland.ie/5288/20261101_BVO_visa_decisions.ods',
+          source_name: 'Embassy of Ireland, Beijing',
+          report_date: '2026-11-01',
+          as_of: '2026-11-17',
+          fetched_at: '2026-11-17T09:31:40.841Z',
+          status: 'partial',
+          note: 'Test manifest note',
+        }],
+      }),
+    }));
     await page.route('**/api/search', async (route) => {
       searchRequest = route.request().postDataJSON();
       await route.fulfill({
@@ -461,6 +479,13 @@ test.describe('All-office search result cards', () => {
     await expect(card).toContainText('Last checked');
     await expect(card).toContainText('Official source');
     await expect(card.locator('.lookup-result-source a[href="https://www.ireland.ie/en/china/beijing/services/visas/visa-decisions/"]')).toBeVisible();
+    await expect(card.locator('[data-lookup-source-file]')).toHaveAttribute(
+      'href',
+      'https://www.ireland.ie/5288/20261101_BVO_visa_decisions.ods'
+    );
+    await expect(card).toContainText('Report freshness');
+    await expect(card).toContainText('marks its latest data as "partial"');
+    await expect(card).toContainText('Test manifest note');
     await expect(card).toContainText('What to do next');
     await expect(card).toContainText('not legal advice');
 
