@@ -2779,6 +2779,13 @@
     color: var(--ink-soft);
 }
 #visa-dash .lookup-result-status.is-error { color: var(--red-text); }
+#visa-dash .lookup-result-privacy {
+    flex-basis: 100%;
+    margin: 0;
+    color: var(--ink-muted);
+    font-size: 11px;
+    line-height: 1.45;
+}
 #visa-dash .lookup-result-next {
     margin-top: 14px;
     padding-top: 13px;

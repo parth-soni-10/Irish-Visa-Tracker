@@ -2446,6 +2446,7 @@
                         escapeHtml(sourceName) + ' <span aria-hidden="true">\u2197</span></a>' +
                         '<span class="lookup-result-source-note">opens in a new tab</span>'
                     : '<span class="lookup-result-source-missing">Official source link is unavailable right now.</span>';
+                var privacyId = 'lookup-share-privacy-' + String(number).replace(/[^A-Za-z0-9_-]/g, '') + '-' + office;
                 var exactSource = meta.source_file && meta.source_file !== meta.source_url
                     ? '<p class="lookup-result-source lookup-result-source-file">' +
                         '<span class="lookup-result-source-label">Report containing this row</span>' +
@@ -2480,8 +2481,11 @@
                     '" aria-label="Set up decision alerts for application ' + escapeHtml(number) + '">Get decision alerts</button>' +
                     '<button type="button" class="btn secondary lookup-result-btn lookup-result-share" data-lookup-share="' +
                     escapeHtml(number) + '" data-lookup-share-office="' + escapeHtml(office) +
-                    '" aria-label="Copy a shareable link to this result">Copy result link</button>' +
+                    '" aria-label="Copy a shareable link to this result" aria-describedby="' + privacyId +
+                    '">Copy result link</button>' +
                     '<div class="lookup-result-status" data-lookup-action-status role="status" aria-live="polite"></div>' +
+                    '<p class="lookup-result-privacy" id="' + privacyId + '">A copied link contains application number ' +
+                    escapeHtml(number) + '. Share it only with people you trust.</p>' +
                     '</div>' + lookupNextStepsHTML(row) + '</article>';
             }
 
@@ -2671,16 +2675,17 @@
                 url.search = params.toString();
                 var showCopied = function() {
                     if (status) {
-                        status.textContent = 'Shareable link copied.';
+                        status.textContent = 'Link copied. It contains the application number, so share it only with people you trust.';
                         status.classList.remove('is-error');
                     }
                 };
+                var copyPrompt = 'This link contains the application number. Share it only with people you trust. Copy it here:';
                 if (navigator.clipboard && navigator.clipboard.writeText) {
                     navigator.clipboard.writeText(url.href).then(showCopied).catch(function() {
-                        window.prompt('Copy this shareable link:', url.href);
+                        window.prompt(copyPrompt, url.href);
                     });
                 } else {
-                    window.prompt('Copy this shareable link:', url.href);
+                    window.prompt(copyPrompt, url.href);
                 }
             }
 

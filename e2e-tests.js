@@ -502,8 +502,10 @@ test.describe('All-office search result cards', () => {
       expect.objectContaining({ number: '44078322', office: 'beijing' }),
     ]));
 
+    await expect(card.locator('.lookup-result-privacy')).toContainText('contains application number 44078322');
+    await expect(card.locator('[data-lookup-share]')).toHaveAttribute('aria-describedby', /lookup-share-privacy-44078322-beijing/);
     await card.locator('[data-lookup-share]').click();
-    await expect(card.locator('[data-lookup-action-status]')).toContainText('Shareable link copied.');
+    await expect(card.locator('[data-lookup-action-status]')).toContainText('Link copied. It contains the application number');
     const copied = await page.evaluate(() => window.__copiedResultUrl);
     const copiedUrl = new URL(copied);
     expect(copiedUrl.searchParams.get('q')).toBe('44078322');
