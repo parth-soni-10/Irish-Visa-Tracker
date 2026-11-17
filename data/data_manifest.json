@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-17T11:21:31.087Z",
+  "generated_at": "2026-11-17T12:18:09.580Z",
   "offices": [
     {
       "slug": "new-delhi",
@@ -9,7 +9,7 @@
       "source_name": "Embassy of Ireland, New Delhi",
       "report_date": "2026-11-16",
       "as_of": "2026-11-17",
-      "fetched_at": "2026-11-17T11:21:16.789Z",
+      "fetched_at": "2026-11-17T12:17:53.093Z",
       "status": "official",
       "note": null,
       "decisions": 43152,
@@ -34,7 +34,7 @@
       "source_name": "Embassy of Ireland, Beijing",
       "report_date": "2026-11-01",
       "as_of": "2026-11-17",
-      "fetched_at": "2026-11-17T11:21:18.887Z",
+      "fetched_at": "2026-11-17T12:17:55.768Z",
       "status": "official",
       "note": null,
       "decisions": 13724,
@@ -59,7 +59,7 @@
       "source_name": "Embassy of Ireland, Abu Dhabi",
       "report_date": "2026-11-13",
       "as_of": "2026-11-17",
-      "fetched_at": "2026-11-17T11:21:19.799Z",
+      "fetched_at": "2026-11-17T12:17:56.918Z",
       "status": "official",
       "note": null,
       "decisions": 283,
@@ -120,7 +120,7 @@
       "source_name": "Embassy of Ireland, Abuja",
       "report_date": "2026-10-18",
       "as_of": "2026-11-17",
-      "fetched_at": "2026-11-17T11:21:20.334Z",
+      "fetched_at": "2026-11-17T12:17:57.172Z",
       "status": "official",
       "note": null,
       "decisions": 52,
@@ -249,7 +249,7 @@
       "source_name": "Embassy of Ireland, Ankara",
       "report_date": "2026-11-15",
       "as_of": "2026-11-17",
-      "fetched_at": "2026-11-17T11:21:20.742Z",
+      "fetched_at": "2026-11-17T12:17:57.274Z",
       "status": "official",
       "note": "Scanned PDF extracted with poppler+tesseract at 300 DPI (5 pages).",
       "decisions": 165,
@@ -290,22 +290,22 @@
       "source_name": "Immigration Service Delivery, Dublin Visa Office",
       "report_date": "2026-11-17",
       "as_of": "2026-11-17",
-      "fetched_at": "2026-11-17T11:21:28.496Z",
+      "fetched_at": "2026-11-17T12:18:06.605Z",
       "status": "official",
       "note": null,
-      "decisions": 4335,
-      "archive_decisions": 4335,
+      "decisions": 4475,
+      "archive_decisions": 4475,
       "historical_decisions": 0,
       "archive_reports": [
         {
           "report_date": "2026-11-17",
-          "decisions": 4335
+          "decisions": 4475
         }
       ],
-      "approved": 2475,
-      "refused": 1860,
+      "approved": 2624,
+      "refused": 1851,
       "corrections": 0,
-      "added": 0
+      "added": 713
     }
   ],
   "dublin_queue": {
