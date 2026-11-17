@@ -366,6 +366,10 @@ test.describe('Time zone toggle', () => {
     await expect(toggle).toHaveAttribute('data-mode', 'utc');
     await expect(toggle).toHaveAttribute('aria-pressed', 'false');
     await expect(page.locator('#stat-updated')).toContainText('17 Nov 2026, 11:20 UTC');
+    const zonedTimestamp = await page.evaluate(() =>
+      window.IVTimeMode.newDelhiNode('2026-11-17T12:17:53.093Z', 'short')
+    );
+    expect(zonedTimestamp).toContain('12:17 UTC');
 
     await toggle.click();
     await expect(toggle).toHaveAttribute('data-mode', 'local');

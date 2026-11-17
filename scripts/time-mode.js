@@ -20,7 +20,6 @@
   var mode = readMode();
   var zoneFormatter = null;
   var zoneFormatters = {};
-  var listeners = [];
 
   function readMode() {
     try {
@@ -109,8 +108,12 @@
   }
 
   function newDelhiToDate(value) {
-    var match = /^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})(?::(\d{2}))?/.exec(String(value || ''));
-    if (!match) return toDate(value);
+    var source = String(value || '').trim();
+    // lastRunAt is usually an unzoned New Delhi wall clock, but an explicit
+    // Z/offset is already an instant and must not be shifted a second time.
+    if (/(?:Z|[+-]\d{2}:?\d{2})$/i.test(source)) return toDate(source);
+    var match = /^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})(?::(\d{2}))?/.exec(source);
+    if (!match) return toDate(source);
     return wallClockToDate(+match[1], +match[2], +match[3],
       +match[4], +match[5], +(match[6] || 0), NEW_DELHI_TIME_ZONE);
   }
@@ -147,11 +150,6 @@
     format.hourCycle = 'h23';
     if (mode === 'utc') format.timeZone = 'UTC';
     return date.toLocaleString('en-GB', format) + ' ' + localZoneLabel(date);
-  }
-
-  function text(value, preset) {
-    var date = toDate(value);
-    return date ? formatDate(date, preset) : 'Not recorded';
   }
 
   function node(value, preset) {
@@ -212,9 +210,6 @@
     document.documentElement.setAttribute('data-time-mode', mode);
     refreshTimes();
     updateButtons();
-    listeners.forEach(function (listener) {
-      try { listener(mode); } catch (error) { /* a page listener must not break the toggle */ }
-    });
   }
 
   function setMode(next, persist) {
@@ -223,11 +218,6 @@
     mode = resolved;
     if (persist) storeMode(mode);
     applyMode();
-    try {
-      document.dispatchEvent(new CustomEvent('iv-time-mode-change', {
-        detail: { mode: mode }
-      }));
-    } catch (error) { /* older browser */ }
   }
 
   function toggleMode() {
@@ -251,12 +241,7 @@
     node: node,
     newDelhiNode: newDelhiNode,
     newDelhiParts: newDelhiParts,
-    scheduleNode: scheduleNode,
-    format: text,
-    getMode: function () { return mode; },
-    onChange: function (listener) {
-      if (typeof listener === 'function') listeners.push(listener);
-    }
+    scheduleNode: scheduleNode
   };
 
   window.addEventListener('storage', function (event) {

@@ -428,7 +428,12 @@
             const _monthFmt = new Intl.DateTimeFormat('en-GB', { month: 'short' });
             function shortMonth(d) { return _monthFmt.format(d); }
 
-            function daysAgo(dateStr) { return Math.floor((Date.now() - new Date(dateStr + 'T00:00:00')) / 86400000); }
+            // Decision dates are New Delhi calendar days; compare against the
+            // same wall clock so visitors west of India do not lose a day.
+            function daysAgo(dateStr) {
+                const today = newDelhiDateStr(Date.now());
+                return Math.floor((new Date(today + 'T00:00:00Z') - new Date(dateStr + 'T00:00:00Z')) / 86400000);
+            }
 
             function weekdayLong(dateStr) {
                 const d = new Date(dateStr + 'T00:00:00');
@@ -504,7 +509,12 @@
                     'It usually appears by ' + scheduleTimeNode(NEW_DELHI_UPDATE_HOUR, NEW_DELHI_UPDATE_MINUTE) +
                     '; check back after ' + scheduleTimeNode(NEW_DELHI_UPDATE_HOUR, NEW_DELHI_FOLLOW_UP_MINUTE) + '.</div>';
             }
-            function localDateStr(ts) {
+            function newDelhiDateStr(ts) {
+                const parts = window.IVTimeMode && window.IVTimeMode.newDelhiParts
+                    ? window.IVTimeMode.newDelhiParts(new Date(ts))
+                    : null;
+                if (parts) return parts.date;
+                // Fallback for a page that loaded before the shared module.
                 const d = new Date(ts);
                 const m = String(d.getMonth() + 1).padStart(2, '0');
                 const day = String(d.getDate()).padStart(2, '0');
@@ -512,7 +522,7 @@
             }
             function sinceBannerHTML(rows) {
                 if (!lastVisitAt) return '';
-                const fresh = rows.filter(r => !r._placeholder && r.date > localDateStr(lastVisitAt));
+                const fresh = rows.filter(r => !r._placeholder && r.date > newDelhiDateStr(lastVisitAt));
                 if (!fresh.length) return '';
                 const refused = fresh.filter(r => classify(r.decision) === 'rejected').length;
                 const when = timeNode(lastVisitAt, 'weekday');
