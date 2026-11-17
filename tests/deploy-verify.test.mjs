@@ -1,7 +1,75 @@
 import assert from 'node:assert/strict';
+import { spawn } from 'node:child_process';
+import fs from 'node:fs';
+import http from 'node:http';
+import os from 'node:os';
+import path from 'node:path';
 import { test } from 'node:test';
+import { fileURLToPath } from 'node:url';
 
 import { normaliseAsset, stripCloudflareAnalytics } from '../tools/verify-deploy.mjs';
+
+const VERIFY_SCRIPT = fileURLToPath(new URL('../tools/verify-deploy.mjs', import.meta.url));
+
+function makeDist(commit) {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'deploy-verify-'));
+  fs.writeFileSync(path.join(dir, 'build-info.json'), JSON.stringify({ commit, built_at: '2026-11-17T11:00:00Z' }));
+  fs.writeFileSync(path.join(dir, 'index.html'), '<h1>same</h1>\n');
+  fs.writeFileSync(path.join(dir, 'asset.txt'), 'same\n');
+  return dir;
+}
+
+async function startServer(handler) {
+  const server = http.createServer(handler);
+  await new Promise((resolve, reject) => {
+    server.once('error', reject);
+    server.listen(0, '127.0.0.1', resolve);
+  });
+  return {
+    server,
+    base: `http://127.0.0.1:${server.address().port}`,
+    close() {
+      if (server.closeAllConnections) server.closeAllConnections();
+      server.close();
+    }
+  };
+}
+
+function runVerifier(base, dist, commit, extraEnv = {}) {
+  return new Promise((resolve, reject) => {
+    const child = spawn(process.execPath, [VERIFY_SCRIPT], {
+      env: {
+        ...process.env,
+        VERIFY_BASE_URL: base,
+        VERIFY_DIST_DIR: dist,
+        VERIFY_COMMIT: commit,
+        VERIFY_TIMEOUT_MS: '4000',
+        VERIFY_SETTLE_MS: '2000',
+        VERIFY_INTERVAL_MS: '25',
+        ...extraEnv
+      },
+      stdio: ['ignore', 'pipe', 'pipe']
+    });
+    let stdout = '';
+    let stderr = '';
+    const timer = setTimeout(() => {
+      child.kill();
+      reject(new Error('verifier timed out in test'));
+    }, 10000);
+    child.stdout.on('data', (data) => { stdout += data; });
+    child.stderr.on('data', (data) => { stderr += data; });
+    child.on('error', (error) => { clearTimeout(timer); reject(error); });
+    child.on('close', (code) => {
+      clearTimeout(timer);
+      resolve({ code, stdout, stderr });
+    });
+  });
+}
+
+function send(res, status, type, body) {
+  res.writeHead(status, { 'Content-Type': type });
+  res.end(body);
+}
 
 test('deploy verifier removes only the Pages analytics injection', () => {
   const local = '<!doctype html><html><body><h1>Tracker</h1>\n</body></html>\n';
@@ -28,4 +96,78 @@ test('deploy verifier ignores the generated timestamp in the fallback index', ()
     normaliseAsset('data/search_fallback.json', first),
     normaliseAsset('data/search_fallback.json', second)
   );
+});
+
+test('deploy verifier retries a transient edge mismatch', async (t) => {
+  const commit = 'a'.repeat(40);
+  const dist = makeDist(commit);
+  let assetRequests = 0;
+  const { server, base, close } = await startServer((req, res) => {
+    const pathname = new URL(req.url, 'http://localhost').pathname;
+    if (pathname === '/build-info.json') return send(res, 200, 'application/json', JSON.stringify({ commit }));
+    if (pathname === '/asset.txt') {
+      assetRequests += 1;
+      return send(res, 200, 'text/plain', assetRequests === 1 ? 'stale\n' : 'same\n');
+    }
+    if (pathname === '/index.html') return send(res, 200, 'text/html', '<h1>same</h1>\n');
+    return send(res, 404, 'text/plain', '');
+  });
+  t.after(() => {
+    close();
+    fs.rmSync(dist, { recursive: true, force: true });
+  });
+
+  const result = await runVerifier(base, dist, commit);
+  assert.equal(result.code, 0, result.stderr + result.stdout);
+  assert.match(result.stdout, /Deployment verified/);
+  assert.match(result.stdout, /after 2 attempts/);
+  assert.ok(assetRequests >= 2, `expected a retry, saw ${assetRequests} asset request(s)`);
+  assert.equal(server.listening, true);
+});
+
+test('deploy verifier still fails on persistent content differences', async (t) => {
+  const commit = 'd'.repeat(40);
+  const dist = makeDist(commit);
+  const { base, close } = await startServer((req, res) => {
+    const pathname = new URL(req.url, 'http://localhost').pathname;
+    if (pathname === '/build-info.json') return send(res, 200, 'application/json', JSON.stringify({ commit }));
+    if (pathname === '/asset.txt') return send(res, 200, 'text/plain', 'different\n');
+    if (pathname === '/index.html') return send(res, 200, 'text/html', '<h1>same</h1>\n');
+    return send(res, 404, 'text/plain', '');
+  });
+  t.after(() => {
+    close();
+    fs.rmSync(dist, { recursive: true, force: true });
+  });
+
+  const result = await runVerifier(base, dist, commit, { VERIFY_SETTLE_MS: '150' });
+  assert.equal(result.code, 1, result.stderr + result.stdout);
+  assert.match(result.stderr, /artifacts still differ/);
+  assert.match(result.stderr, /asset\.txt: content differs/);
+});
+
+test('deploy verifier accepts a newer deployment taking over', async (t) => {
+  const commit = 'b'.repeat(40);
+  const newer = 'c'.repeat(40);
+  const dist = makeDist(commit);
+  let infoRequests = 0;
+  const { base, close } = await startServer((req, res) => {
+    const pathname = new URL(req.url, 'http://localhost').pathname;
+    if (pathname === '/build-info.json') {
+      infoRequests += 1;
+      return send(res, 200, 'application/json', JSON.stringify({ commit: infoRequests === 1 ? commit : newer }));
+    }
+    if (pathname === '/asset.txt') return send(res, 200, 'text/plain', 'stale\n');
+    if (pathname === '/index.html') return send(res, 200, 'text/html', '<h1>same</h1>\n');
+    return send(res, 404, 'text/plain', '');
+  });
+  t.after(() => {
+    close();
+    fs.rmSync(dist, { recursive: true, force: true });
+  });
+
+  const result = await runVerifier(base, dist, commit);
+  assert.equal(result.code, 0, result.stderr + result.stdout);
+  assert.match(result.stdout, /Deployment superseded/);
+  assert.match(result.stdout, new RegExp(newer.slice(0, 12)));
 });

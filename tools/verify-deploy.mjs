@@ -24,6 +24,11 @@ const DIST = path.resolve(process.env.VERIFY_DIST_DIR || '.pages-dist');
 const COMMIT = String(process.env.VERIFY_COMMIT || process.env.GITHUB_SHA || '').trim();
 const TIMEOUT_MS = Number(process.env.VERIFY_TIMEOUT_MS || 300000);
 const INTERVAL_MS = Number(process.env.VERIFY_INTERVAL_MS || 10000);
+const SETTLE_MS = Number(process.env.VERIFY_SETTLE_MS || 120000);
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
 function walk(dir, prefix = '') {
   const out = [];
@@ -74,30 +79,31 @@ async function fetchAsset(name) {
   return { response, bytes: Buffer.from(await response.arrayBuffer()) };
 }
 
+async function fetchBuildInfo() {
+  const url = new URL(BASE + '/build-info.json');
+  url.searchParams.set('__deploy_check', Date.now().toString(36));
+  const response = await fetch(url, { cache: 'no-store' });
+  if (!response.ok) throw new Error(`build-info.json returned HTTP ${response.status}`);
+  return response.json();
+}
+
 async function waitForCommit(commit) {
   const deadline = Date.now() + TIMEOUT_MS;
   let last = '';
   while (Date.now() < deadline) {
     try {
-      const url = new URL(BASE + '/build-info.json');
-      url.searchParams.set('__deploy_check', Date.now().toString(36));
-      const response = await fetch(url, { cache: 'no-store' });
-      if (response.ok) {
-        const info = await response.json();
-        if (!commit || info.commit === commit) return info;
-        last = `live build is ${String(info.commit || 'unknown').slice(0, 12)}, waiting for ${commit.slice(0, 12)}`;
-      } else {
-        last = `build-info.json returned HTTP ${response.status}`;
-      }
+      const info = await fetchBuildInfo();
+      if (!commit || info.commit === commit) return info;
+      last = `live build is ${String(info.commit || 'unknown').slice(0, 12)}, waiting for ${commit.slice(0, 12)}`;
     } catch (error) {
       last = error.message;
     }
-    await new Promise((resolve) => setTimeout(resolve, INTERVAL_MS));
+    await sleep(INTERVAL_MS);
   }
   throw new Error('deployment did not become current: ' + last);
 }
 
-async function compareAll(files, info) {
+async function compareAll(files) {
   const failures = [];
   const checked = [];
   for (const name of files) {
@@ -118,22 +124,61 @@ async function compareAll(files, info) {
       failures.push(name + ': content differs (' + expected.length + ' local vs ' + actual.length + ' live bytes)');
     }
   }
-  if (failures.length) {
-    throw new Error(
-      `serving ${info.commit.slice(0, 12)} but ${failures.length}/${checked.length} artifacts differ:\n- ` +
-        failures.slice(0, 30).join('\n- ')
-    );
-  }
-  return checked.length;
+  return { checked: checked.length, failures };
 }
 
 async function main() {
   if (!fs.existsSync(DIST)) throw new Error('build directory does not exist: ' + DIST);
   const files = walk(DIST);
-  const info = await waitForCommit(COMMIT);
+  let info = await waitForCommit(COMMIT);
   if (COMMIT && info.commit !== COMMIT) throw new Error('build-info commit does not match');
-  const count = await compareAll(files, info);
-  console.log(`Deployment verified: ${count} artifacts match build ${String(info.commit).slice(0, 12)} at ${BASE}`);
+
+  // Pages can expose build-info.json a moment before every edge has the new
+  // assets, and a newer scraper/code push can replace this deployment while it
+  // is being checked. Retry mismatches for a bounded window; if production has
+  // moved to another commit, this build has been superseded and failing the old
+  // workflow would be misleading.
+  const settleDeadline = Date.now() + SETTLE_MS;
+  let attempts = 0;
+  while (true) {
+    attempts += 1;
+    const result = await compareAll(files);
+    if (!result.failures.length) {
+      console.log(
+        `Deployment verified: ${result.checked} artifacts match build ${String(info.commit).slice(0, 12)} at ${BASE}` +
+        (attempts > 1 ? ` after ${attempts} attempts` : '')
+      );
+      return;
+    }
+
+    const detail = result.failures.slice(0, 12).join('\n- ');
+    if (Date.now() >= settleDeadline) {
+      throw new Error(
+        `serving ${String(info.commit).slice(0, 12)} but ${result.failures.length}/${result.checked} artifacts still differ after ` +
+        `${attempts} attempts:\n- ${detail}`
+      );
+    }
+
+    console.warn(
+      `Deployment not settled (attempt ${attempts}): ${result.failures.length}/${result.checked} artifacts differ; ` +
+      `retrying in ${INTERVAL_MS}ms.\n- ${detail}`
+    );
+    await sleep(INTERVAL_MS);
+
+    try {
+      const latest = await fetchBuildInfo();
+      if (latest.commit && latest.commit !== info.commit) {
+        console.log(
+          `Deployment superseded: production moved from ${String(info.commit).slice(0, 12)} to ` +
+          `${String(latest.commit || 'unknown').slice(0, 12)} while verifying. Another push now owns production.`
+        );
+        return;
+      }
+      info = latest;
+    } catch (error) {
+      console.warn('Could not re-read build-info while retrying: ' + error.message);
+    }
+  }
 }
 
 const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
