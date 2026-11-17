@@ -3,7 +3,7 @@
     "new-delhi": [
       {
         "report_date": "2026-11-15",
-        "fetched_at": "2026-11-16T13:54:06.597Z",
+        "fetched_at": "2026-11-17T02:01:49.206Z",
         "decisions": 42988,
         "approved": 36252,
         "refused": 6736,
@@ -71,7 +71,7 @@
     "beijing": [
       {
         "report_date": "2026-11-01",
-        "fetched_at": "2026-11-16T13:54:08.983Z",
+        "fetched_at": "2026-11-17T02:01:51.272Z",
         "decisions": 13724,
         "approved": 11373,
         "refused": 2351,
@@ -85,7 +85,7 @@
     "abu-dhabi": [
       {
         "report_date": "2026-11-13",
-        "fetched_at": "2026-11-16T13:54:09.735Z",
+        "fetched_at": "2026-11-17T02:01:52.298Z",
         "decisions": 283,
         "approved": 219,
         "refused": 64,
@@ -215,7 +215,7 @@
     "abuja": [
       {
         "report_date": "2026-10-18",
-        "fetched_at": "2026-11-16T13:54:10.006Z",
+        "fetched_at": "2026-11-17T02:01:52.811Z",
         "decisions": 52,
         "approved": 19,
         "refused": 33,
@@ -566,7 +566,7 @@
     "ankara": [
       {
         "report_date": "2026-11-15",
-        "fetched_at": "2026-11-16T13:54:10.120Z",
+        "fetched_at": "2026-11-17T02:01:53.178Z",
         "decisions": 165,
         "approved": 128,
         "refused": 37,
@@ -590,6 +590,18 @@
       }
     ],
     "dublin": [
+      {
+        "report_date": "2026-11-17",
+        "fetched_at": "2026-11-17T02:02:02.140Z",
+        "decisions": 4335,
+        "approved": 2475,
+        "refused": 1860,
+        "source_file": "https://www.irishimmigration.ie/visa-decisions/",
+        "checksum": "5e00c2e0957adabb",
+        "added": 0,
+        "removed": 0,
+        "changed": []
+      },
       {
         "report_date": "2026-11-16",
         "fetched_at": "2026-11-16T13:54:18.686Z",
