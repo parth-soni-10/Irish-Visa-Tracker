@@ -198,8 +198,8 @@
       button.setAttribute('data-mode', mode);
       button.setAttribute('aria-pressed', mode === 'local' ? 'true' : 'false');
       button.setAttribute('aria-label', mode === 'utc'
-        ? 'Time zone: UTC. Switch all clock times to local time.'
-        : 'Time zone: local time. Switch all clock times to UTC.');
+        ? 'Time UTC. Switch all clock times to local time.'
+        : 'Time Local. Switch all clock times to UTC.');
       button.setAttribute('title', mode === 'utc'
         ? 'Switch all clock times to local time'
         : 'Switch all clock times to UTC');
@@ -241,7 +241,7 @@
     button.type = 'button';
     button.className = 'time-mode-toggle';
     button.setAttribute('data-time-mode-toggle', '');
-    button.innerHTML = '<span class="time-mode-toggle-kicker">Time</span>' +
+    button.innerHTML = '<span class="time-mode-toggle-kicker">Time</span> ' +
       '<span data-time-mode-label>UTC</span>';
     button.addEventListener('click', toggleMode);
     nav.appendChild(button);
