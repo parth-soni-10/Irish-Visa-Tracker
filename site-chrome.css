@@ -61,12 +61,18 @@ html[data-theme="dark"] body { background: #0b1220; }
   color: var(--sc-ink);
   font-family: var(--sc-sans);
 }
+/* The dashboard scopes its reset to #visa-dash, so the shared chrome sets
+   its own box model instead of inheriting the page's. */
+.sitebar,
+.sitebar *,
+.sitebar-footer,
+.sitebar-footer * { box-sizing: border-box; }
 .sitebar-inner {
   display: flex;
   align-items: center;
   flex-wrap: nowrap;
-  padding: 10px 24px;
-  gap: 16px;
+  padding: 12px 24px;
+  gap: 12px 16px;
 }
 .sitebar .brand,
 .sitebar-footer .brand {
@@ -115,29 +121,27 @@ html[data-theme="dark"] .sitebar-footer .brand img {
   outline-offset: 2px;
 }
 
-/* ---- Shared chrome cleanup, 2026-11 -------------------------------------
-   Brand + primary navigation + More + Preferences. Current pages are marked
-   with an underline, not a filled pill. The footer is one compact row. */
+/* ---- Brand, primary navigation, More and Preferences -------------------- */
 
-.sitebar-inner {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  padding: 12px 24px;
-  gap: 12px 16px;
-}
+.sitebar .brand { flex: 0 0 auto; }
 .sitebar-nav {
   display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
+  flex-wrap: nowrap;
+  gap: 2px;
   min-width: 0;
   align-items: center;
+  justify-content: flex-end;
+  margin-left: auto;
 }
 .sitebar-nav > a,
 .sitebar-more > summary,
 .sitebar-prefs > summary {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   min-height: 40px;
-  padding: 8px 14px;
+  padding: 8px 12px;
   border-radius: 8px;
   background: transparent;
   color: var(--sc-ink-soft);
@@ -172,9 +176,12 @@ html[data-theme="dark"] .sitebar-footer .brand img {
   background: var(--sc-raised);
   color: var(--sc-ink);
 }
-.sitebar-more { position: relative; }
-.sitebar-more > summary::-webkit-details-marker { display: none; }
-.sitebar-more > summary::after {
+.sitebar-more,
+.sitebar-prefs { position: relative; }
+.sitebar-more > summary::-webkit-details-marker,
+.sitebar-prefs > summary::-webkit-details-marker { display: none; }
+.sitebar-more > summary::after,
+.sitebar-prefs > summary::after {
   content: '';
   width: 6px;
   height: 6px;
@@ -185,7 +192,8 @@ html[data-theme="dark"] .sitebar-footer .brand img {
   transition: transform .16s ease;
   flex-shrink: 0;
 }
-.sitebar-more[open] > summary::after { transform: rotate(-135deg) translateY(-1px); }
+.sitebar-more[open] > summary::after,
+.sitebar-prefs[open] > summary::after { transform: rotate(-135deg) translateY(-1px); }
 .sitebar-more-panel {
   position: absolute;
   top: calc(100% + 8px);
@@ -219,33 +227,11 @@ html[data-theme="dark"] .sitebar-footer .brand img {
 }
 .sitebar-more-panel a:hover { color: var(--sc-ink); background: var(--sc-raised); }
 .sitebar-more-panel a[aria-current="page"] { color: var(--sc-green-deep); background: var(--sc-green-soft); font-weight: 700; }
-.sitebar-prefs { position: relative; }
-.sitebar-prefs > summary { list-style: none; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
-.sitebar-prefs > summary::-webkit-details-marker { display: none; }
-.sitebar-prefs > summary::after {
-  content: '';
-  width: 6px;
-  height: 6px;
-  margin-left: 4px;
-  border-right: 1.5px solid currentColor;
-  border-bottom: 1.5px solid currentColor;
-  transform: rotate(45deg) translateY(-1px);
-}
-.sitebar-prefs[open] > summary::after { transform: rotate(-135deg) translateY(-1px); }
+/* The panel shares .sitebar-more-panel in the markup; only its size differs. */
 .sitebar-prefs-panel {
-  position: absolute;
-  top: calc(100% + 8px);
-  right: 0;
-  z-index: 60;
   min-width: 260px;
   padding: 12px;
-  border: 1px solid var(--sc-border);
-  border-radius: 12px;
-  background: var(--sc-surface);
-  box-shadow: 0 20px 50px rgba(15, 23, 42, .18), 0 0 0 1px rgba(15, 23, 42, .05);
-  display: grid;
   gap: 8px;
-  animation: sitebar-panel-in .12s ease-out;
 }
 .sitebar-prefs:not([open]) > .sitebar-prefs-panel { display: none; }
 .sitebar-pref-row {
@@ -280,24 +266,30 @@ html[data-theme="dark"] .sitebar-footer .brand img {
 .sitebar-pref-select { max-width: 160px; }
 .sitebar-pref-row[hidden] { display: none; }
 
-@media (max-width: 760px) {
-  .sitebar-inner { flex-wrap: wrap; padding: 10px 16px; gap: 8px 12px; }
+/* Below the desktop width the brand and the links no longer fit on one line:
+   the navigation becomes its own scrollable row. */
+@media (max-width: 960px) {
+  .sitebar-inner { flex-wrap: wrap; }
   .sitebar-nav {
-    order: 3;
     width: 100%;
     overflow-x: auto;
     padding-bottom: 4px;
     scrollbar-width: thin;
     scrollbar-color: var(--sc-border) transparent;
     gap: 4px;
+    justify-content: flex-start;
   }
   .sitebar-nav::-webkit-scrollbar { height: 6px; }
   .sitebar-nav::-webkit-scrollbar-track { background: transparent; }
   .sitebar-nav::-webkit-scrollbar-thumb { background: var(--sc-border); border-radius: 3px; }
-  .sitebar-nav > a, .sitebar-more > summary, .sitebar-prefs > summary { white-space: nowrap; padding: 8px 12px; }
+  .sitebar-nav > a, .sitebar-more > summary, .sitebar-prefs > summary { white-space: nowrap; }
+}
+
+@media (max-width: 760px) {
+  .sitebar-inner { padding: 10px 16px; gap: 8px 12px; }
   .sitebar-more { position: static; }
   .sitebar-more-panel { position: fixed; top: auto; bottom: 0; left: 0; right: 0; min-width: auto; max-width: none; border-radius: 16px 16px 0 0; border-bottom: none; box-shadow: 0 -10px 40px rgba(15, 23, 42, .2); padding: 12px 16px 24px; }
-  .sitebar-prefs-panel { position: fixed; top: auto; bottom: 0; left: 0; right: 0; min-width: auto; max-width: none; border-radius: 16px 16px 0 0; border-bottom: none; box-shadow: 0 -10px 40px rgba(15, 23, 42, .2); padding: 16px; }
+  .sitebar-prefs-panel { padding: 16px; }
   .sitebar-footer-inner { grid-template-columns: 1fr; gap: 24px; padding: 24px 16px 16px; }
   .sitebar-footer-brand p { max-width: 100%; }
   .sitebar-footer-col:last-child { display: none; }
@@ -375,23 +367,4 @@ html[data-theme="dark"] .sitebar-footer .brand img {
 
 @media (max-width: 960px) {
   .sitebar-footer-inner { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px 24px; }
-}
-@media (max-width: 760px) {
-  .sitebar-inner { flex-wrap: wrap; padding: 10px 16px; }
-  .sitebar-nav {
-    order: 3;
-    width: 100%;
-    overflow-x: auto;
-    padding-bottom: 2px;
-    scrollbar-width: none;
-  }
-  .sitebar-nav::-webkit-scrollbar { display: none; }
-  .sitebar-nav > a, .sitebar-more > summary, .sitebar-prefs > summary { white-space: nowrap; }
-  .sitebar-more { position: static; }
-  .sitebar-more-panel { left: 16px; right: auto; width: auto; min-width: 0; }
-  .sitebar-footer-inner { grid-template-columns: 1fr; gap: 24px; padding: 24px 16px 16px; }
-  .sitebar-footer-brand p { max-width: 100%; }
-  .sitebar-footer-col:last-child { display: none; }
-  .sitebar-footer-bottom { padding: 16px 16px 12px; }
-  .sitebar-footer-copy { width: 100%; }
 }
