@@ -127,8 +127,49 @@ async function compareAll(files) {
   return { checked: checked.length, failures };
 }
 
+function readDistCommit() {
+  const marker = path.join(DIST, 'build-info.json');
+  if (!fs.existsSync(marker)) return null;
+  try {
+    return String(JSON.parse(fs.readFileSync(marker, 'utf8')).commit || '').trim() || null;
+  } catch (error) {
+    return null;
+  }
+}
+
+/**
+ * Comparing production against a stale .pages-dist reports phantom mismatches
+ * for a deployment that is actually fine. Fail early, with the reason, before
+ * downloading 85 artifacts.
+ */
+async function assertDistIsCurrent() {
+  const distCommit = readDistCommit();
+  if (!distCommit) return;
+  if (COMMIT && distCommit !== COMMIT) {
+    throw new Error(
+      `.pages-dist was built from ${distCommit.slice(0, 12)} but this run verifies ${COMMIT.slice(0, 12)}; ` +
+      'run npm run build first.'
+    );
+  }
+  if (!COMMIT) {
+    try {
+      const live = await fetchBuildInfo();
+      if (live.commit && live.commit !== distCommit) {
+        throw new Error(
+          `.pages-dist is stale: built from ${distCommit.slice(0, 12)} while production serves ` +
+          `${String(live.commit).slice(0, 12)}. Run npm run build before verifying.`
+        );
+      }
+    } catch (error) {
+      if (error.message.startsWith('.pages-dist is stale')) throw error;
+      console.warn('Could not compare .pages-dist with production yet: ' + error.message);
+    }
+  }
+}
+
 async function main() {
   if (!fs.existsSync(DIST)) throw new Error('build directory does not exist: ' + DIST);
+  await assertDistIsCurrent();
   const files = walk(DIST);
   const info = await waitForCommit(COMMIT);
 
