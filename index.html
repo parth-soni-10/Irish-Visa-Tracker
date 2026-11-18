@@ -139,57 +139,59 @@
 
 </head>
 <body>
+  <!-- site-chrome:start -->
   <a class="skip-link" href="#visa-dash">Skip to tracker</a>
-<header class="sitebar">
-  <div class="sitebar-inner">
-    <a class="brand" href="/" aria-label="Irish Visa Decision Tracker home">
-      <img src="/icon.svg" alt="" width="24" height="24">
-      <span>Irish Visa Decision Tracker</span>
-    </a>
-    <nav class="sitebar-nav" aria-label="Site">
-      <a href="/" aria-current="page">Tracker</a>
-      <a href="/daily-summaries">Daily summaries</a>
-      <a href="/visa-processing-times">Processing times</a>
-      <a href="/about">About</a>
-      <details class="sitebar-more">
-        <summary>More</summary>
-        <div class="sitebar-more-panel">
-          <a href="/status">Data status</a>
-          <a href="/comparison">Method &amp; sources</a>
-          <a href="/monthly-report">Monthly report</a>
-          <a href="/stamp-1g-processing-dates">Stamp 1G</a>
-          <a href="/employment-permit-processing-dates">Employment permits</a>
-          <a href="/vac-transit">VAC &amp; transit</a>
-          <a href="/help">Help</a>
-          <a href="/contact">Contact</a>
-          <a href="/privacy">Privacy</a>
-          <a href="/terms">Terms</a>
-        </div>
-      </details>
-      <details class="sitebar-prefs">
-        <summary>Preferences</summary>
-        <div class="sitebar-more-panel sitebar-prefs-panel">
-          <div class="sitebar-pref-row">
-            <span class="sitebar-pref-label">Time zone</span>
-            <button class="sitebar-pref-button" type="button" data-time-mode-toggle data-mode="utc" aria-pressed="false">
-              <span data-time-mode-label>UTC</span>
-            </button>
+  <header class="sitebar">
+    <div class="sitebar-inner">
+      <a class="brand" href="/" aria-label="Irish Visa Decision Tracker home">
+        <img src="/icon.svg" alt="" width="24" height="24">
+        <span>Irish Visa Decision Tracker</span>
+      </a>
+      <nav class="sitebar-nav" aria-label="Site">
+        <a href="/" aria-current="page">Tracker</a>
+        <a href="/daily-summaries">Daily summaries</a>
+        <a href="/visa-processing-times">Processing times</a>
+        <a href="/about">About</a>
+        <details class="sitebar-more">
+          <summary>More</summary>
+          <div class="sitebar-more-panel">
+            <a href="/status">Data status</a>
+            <a href="/comparison">Method &amp; sources</a>
+            <a href="/monthly-report">Monthly report</a>
+            <a href="/stamp-1g-processing-dates">Stamp 1G</a>
+            <a href="/employment-permit-processing-dates">Employment permits</a>
+            <a href="/vac-transit">VAC &amp; transit</a>
+            <a href="/help">Help</a>
+            <a href="/contact">Contact</a>
+            <a href="/privacy">Privacy</a>
+            <a href="/terms">Terms</a>
           </div>
-          <div class="sitebar-pref-row">
-            <span class="sitebar-pref-label">Theme</span>
-            <button class="sitebar-pref-button" type="button" data-theme-toggle aria-pressed="false">
-              <span data-theme-label>Light</span>
-            </button>
+        </details>
+        <details class="sitebar-prefs">
+          <summary>Preferences</summary>
+          <div class="sitebar-more-panel sitebar-prefs-panel">
+            <div class="sitebar-pref-row">
+              <span class="sitebar-pref-label">Time zone</span>
+              <button class="sitebar-pref-button" type="button" data-time-mode-toggle data-mode="utc" aria-pressed="false">
+                <span data-time-mode-label>UTC</span>
+              </button>
+            </div>
+            <div class="sitebar-pref-row">
+              <span class="sitebar-pref-label">Theme</span>
+              <button class="sitebar-pref-button" type="button" data-theme-toggle aria-pressed="false">
+                <span data-theme-label>Light</span>
+              </button>
+            </div>
+            <label class="sitebar-pref-row" data-language-row hidden>
+              <span class="sitebar-pref-label">Language</span>
+              <select class="sitebar-pref-select" data-language-select aria-label="Language"></select>
+            </label>
           </div>
-          <label class="sitebar-pref-row" data-language-row hidden>
-            <span class="sitebar-pref-label">Language</span>
-            <select class="sitebar-pref-select" data-language-select aria-label="Language"></select>
-          </label>
-        </div>
-      </details>
-    </nav>
-  </div>
-</header>
+        </details>
+      </nav>
+    </div>
+  </header>
+  <!-- site-chrome:end -->
     <main id="visa-dash" tabindex="-1">
       <!-- Static summary: what an agent or a no-JavaScript reader gets before the
            dashboard hydrates. render() replaces this node's contents with the app,
@@ -236,46 +238,48 @@
       </article>
     </main>
 
-<footer class="sitebar-footer">
-  <div class="sitebar-footer-inner">
-    <div class="sitebar-footer-brand">
-      <a class="brand" href="/" aria-label="Irish Visa Decision Tracker home">
-        <img src="/icon.svg" alt="" width="24" height="24">
-        <span>Irish Visa Decision Tracker</span>
-      </a>
-      <p>Independent and unofficial. Not immigration advice.</p>
+  <!-- site-footer:start -->
+  <footer class="sitebar-footer">
+    <div class="sitebar-footer-inner">
+      <div class="sitebar-footer-brand">
+        <a class="brand" href="/" aria-label="Irish Visa Decision Tracker home">
+          <img src="/icon.svg" alt="" width="24" height="24">
+          <span>Irish Visa Decision Tracker</span>
+        </a>
+        <p>Independent and unofficial. Not immigration advice.</p>
+      </div>
+      <div class="sitebar-footer-col">
+        <p class="sitebar-footer-title">Data</p>
+        <ul>
+          <li><a href="/status">Data status</a></li>
+          <li><a href="/comparison">Method &amp; sources</a></li>
+          <li><a href="/monthly-report">Monthly report</a></li>
+        </ul>
+      </div>
+      <div class="sitebar-footer-col">
+        <p class="sitebar-footer-title">Trackers</p>
+        <ul>
+          <li><a href="/stamp-1g-processing-dates">Stamp 1G</a></li>
+          <li><a href="/employment-permit-processing-dates">Employment permits</a></li>
+          <li><a href="/vac-transit">VAC &amp; transit</a></li>
+        </ul>
+      </div>
+      <div class="sitebar-footer-col">
+        <p class="sitebar-footer-title">Legal</p>
+        <ul>
+          <li><a href="/help">Help</a></li>
+          <li><a href="/contact">Contact</a></li>
+          <li><a href="/privacy">Privacy</a></li>
+          <li><a href="/terms">Terms</a></li>
+          <li><a href="https://github.com/parth-soni-10/Irish-Visa-Tracker" rel="noopener">GitHub</a></li>
+        </ul>
+      </div>
     </div>
-    <div class="sitebar-footer-col">
-      <p class="sitebar-footer-title">Data</p>
-      <ul>
-        <li><a href="/status">Data status</a></li>
-        <li><a href="/comparison">Method & sources</a></li>
-        <li><a href="/monthly-report">Monthly report</a></li>
-      </ul>
+    <div class="sitebar-footer-bottom">
+      <p>&copy; 2026 Parth Soni &middot; Dublin, Ireland</p>
     </div>
-    <div class="sitebar-footer-col">
-      <p class="sitebar-footer-title">Trackers</p>
-      <ul>
-        <li><a href="/stamp-1g-processing-dates">Stamp 1G</a></li>
-        <li><a href="/employment-permit-processing-dates">Employment permits</a></li>
-        <li><a href="/vac-transit">VAC & transit</a></li>
-      </ul>
-    </div>
-    <div class="sitebar-footer-col">
-      <p class="sitebar-footer-title">Legal</p>
-      <ul>
-        <li><a href="/help">Help</a></li>
-        <li><a href="/contact">Contact</a></li>
-        <li><a href="/privacy">Privacy</a></li>
-        <li><a href="/terms">Terms</a></li>
-        <li><a href="https://github.com/parth-soni-10/Irish-Visa-Tracker" rel="noopener">GitHub</a></li>
-      </ul>
-    </div>
-  </div>
-  <div class="sitebar-footer-bottom">
-    <p>&copy; 2026 Parth Soni &middot; Dublin, Ireland</p>
-  </div>
-</footer>
+  </footer>
+  <!-- site-footer:end -->
     <script src="lucide.min.js" defer></script>
     <script src="analytics-chart.js" defer></script>
     <!-- i18n translations are served as a static asset so the CSP can stay strict. -->
