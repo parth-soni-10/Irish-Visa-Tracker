@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-17T14:46:15.331Z",
+  "generated_at": "2026-11-18T02:03:57.514Z",
   "offices": [
     {
       "slug": "new-delhi",
@@ -8,8 +8,8 @@
       "source_file": "https://www.ireland.ie/5324/20261116_NDVO_Visa_Decisions.ods",
       "source_name": "Embassy of Ireland, New Delhi",
       "report_date": "2026-11-16",
-      "as_of": "2026-11-17",
-      "fetched_at": "2026-11-17T14:45:57.603Z",
+      "as_of": "2026-11-18",
+      "fetched_at": "2026-11-18T02:03:45.033Z",
       "status": "official",
       "note": null,
       "decisions": 43152,
@@ -33,8 +33,8 @@
       "source_file": "https://www.ireland.ie/5288/20261101_BVO_visa_decisions.ods",
       "source_name": "Embassy of Ireland, Beijing",
       "report_date": "2026-11-01",
-      "as_of": "2026-11-17",
-      "fetched_at": "2026-11-17T14:45:59.825Z",
+      "as_of": "2026-11-18",
+      "fetched_at": "2026-11-18T02:03:46.587Z",
       "status": "official",
       "note": null,
       "decisions": 13724,
@@ -58,8 +58,8 @@
       "source_file": "https://www.ireland.ie/5316/Decisions_for_period_from_08-11-2026_to_13-11-2026.pdf",
       "source_name": "Embassy of Ireland, Abu Dhabi",
       "report_date": "2026-11-13",
-      "as_of": "2026-11-17",
-      "fetched_at": "2026-11-17T14:46:00.556Z",
+      "as_of": "2026-11-18",
+      "fetched_at": "2026-11-18T02:03:47.343Z",
       "status": "official",
       "note": null,
       "decisions": 283,
@@ -119,8 +119,8 @@
       "source_file": "https://www.ireland.ie/5271/12.10_to_18.10.pdf",
       "source_name": "Embassy of Ireland, Abuja",
       "report_date": "2026-10-18",
-      "as_of": "2026-11-17",
-      "fetched_at": "2026-11-17T14:46:02.548Z",
+      "as_of": "2026-11-18",
+      "fetched_at": "2026-11-18T02:03:47.753Z",
       "status": "official",
       "note": null,
       "decisions": 52,
@@ -248,8 +248,8 @@
       "source_file": "https://www.ireland.ie/5319/Ankara_Visa_Decisions_07_November_2026_to_15_November_2026.pdf",
       "source_name": "Embassy of Ireland, Ankara",
       "report_date": "2026-11-15",
-      "as_of": "2026-11-17",
-      "fetched_at": "2026-11-17T14:46:03.078Z",
+      "as_of": "2026-11-18",
+      "fetched_at": "2026-11-18T02:03:47.829Z",
       "status": "official",
       "note": "Scanned PDF extracted with poppler+tesseract at 300 DPI (5 pages).",
       "decisions": 165,
@@ -288,9 +288,9 @@
       "source_url": "https://www.irishimmigration.ie/visa-decisions/",
       "source_file": "https://www.irishimmigration.ie/visa-decisions/",
       "source_name": "Immigration Service Delivery, Dublin Visa Office",
-      "report_date": "2026-11-17",
-      "as_of": "2026-11-17",
-      "fetched_at": "2026-11-17T14:46:12.780Z",
+      "report_date": "2026-11-18",
+      "as_of": "2026-11-18",
+      "fetched_at": "2026-11-18T02:03:54.620Z",
       "status": "official",
       "note": null,
       "decisions": 4475,
@@ -298,7 +298,7 @@
       "historical_decisions": 0,
       "archive_reports": [
         {
-          "report_date": "2026-11-17",
+          "report_date": "2026-11-18",
           "decisions": 4475
         }
       ],
@@ -309,12 +309,12 @@
     }
   ],
   "dublin_queue": {
-    "as_of": "2026-11-17",
+    "as_of": "2026-11-18",
     "source_url": "https://www.irishimmigration.ie/visa-decisions/",
     "categories": 13
   },
   "irp_queue": {
-    "as_of": "2026-11-17",
+    "as_of": "2026-11-18",
     "source_url": "https://www.irishimmigration.ie/registering-your-immigration-permission/how-to-renew-your-current-permission/renewing-your-registration-permission-if-you-live-in-the-republic-of-ireland/",
     "categories": 5
   }
