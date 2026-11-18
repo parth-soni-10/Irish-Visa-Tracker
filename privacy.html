@@ -100,15 +100,15 @@
     <section>
       <h2>What is stored in your browser</h2>
       <p>
-        The dashboard uses <code>localStorage</code> ‚Äî not cookies ‚Äî to remember things on your
+        The dashboard uses <code>localStorage</code> ó not cookies ó to remember things on your
         own device. None of it is sent to the server unless you submit a form. The keys are:
       </p>
       <ul>
-        <li><code>visa-theme</code> ‚Äî light or dark preference.</li>
-        <li><code>visa-last-visit</code> ‚Äî when you last opened the tracker, used for the ‚Äúsince you last checked‚Äù line.</li>
-        <li><code>visa-snapshot-gz</code> / <code>visa-snapshot-plain</code> ‚Äî a compressed copy of the last successful decision download, so the page can still show something when offline.</li>
-        <li><code>visa-recent-searches</code>, <code>visa-watchlist</code> ‚Äî the application numbers you looked up or chose to watch.</li>
-        <li><code>stamp1g-category</code>, <code>stamp1g-apply-date</code>, <code>stamp1g-apply-mode</code>, <code>stamp1g-expiry</code>, <code>permits-category</code> ‚Äî the filters and dates you last used in the Stamp 1G and permit estimators.</li>
+        <li><code>visa-theme</code> ó light or dark preference.</li>
+        <li><code>visa-last-visit</code> ó when you last opened the tracker, used for the ìsince you last checkedî line.</li>
+        <li><code>visa-snapshot-gz</code> / <code>visa-snapshot-plain</code> ó a compressed copy of the last successful decision download, so the page can still show something when offline.</li>
+        <li><code>visa-recent-searches</code>, <code>visa-watchlist</code> ó the application numbers you looked up or chose to watch.</li>
+        <li><code>stamp1g-category</code>, <code>stamp1g-apply-date</code>, <code>stamp1g-apply-mode</code>, <code>stamp1g-expiry</code>, <code>permits-category</code> ó the filters and dates you last used in the Stamp 1G and permit estimators.</li>
       </ul>
       <p>
         Clearing site data in your browser removes all of it. There is no cross-site tracker and
@@ -127,7 +127,7 @@
           store the application date, decision date, outcome and tracker. These rows are public by
           design: they are merged into <a href="/data/community_timelines.json">community_timelines.json</a>
           and served, without names, at <code>GET /api/community-submissions</code> for the nightly sync.
-          Do not include personal details in a timeline ‚Äî the form does not ask for a name.
+          Do not include personal details in a timeline ó the form does not ask for a name.
         </li>
         <li>
           <strong>Feedback</strong> (<code>suggestions</code>) stores the name and free text you
@@ -170,8 +170,8 @@
       <h2>Hosting and server logs</h2>
       <p>
         The site runs on Cloudflare Pages with a Pages Function and a D1 database. Cloudflare
-        processes the request needed to serve a page or accept a form ‚Äî including IP address,
-        requested URL, user agent and timestamp ‚Äî under its own privacy terms, and may keep
+        processes the request needed to serve a page or accept a form ó including IP address,
+        requested URL, user agent and timestamp ó under its own privacy terms, and may keep
         security and operational logs. Parth does not run an analytics product over those logs,
         does not build visitor profiles and does not sell or share them.
       </p>
@@ -223,16 +223,35 @@
       </a>
       <p>Independent and unofficial. Not immigration advice.</p>
     </div>
-    <nav class="sitebar-footer-links" aria-label="Footer">
-      <a href="/status">Data status</a>
-      <a href="/comparison">Method &amp; sources</a>
-      <a href="/help">Help</a>
-      <a href="/contact">Contact</a>
-      <a href="/privacy">Privacy</a>
-      <a href="/terms">Terms</a>
-      <a href="https://github.com/parth-soni-10/Irish-Visa-Tracker" rel="noopener">GitHub</a>
-    </nav>
-    <p class="sitebar-footer-copy">&copy; 2026 Parth Soni &middot; Dublin, Ireland</p>
+    <div class="sitebar-footer-col">
+      <p class="sitebar-footer-title">Data</p>
+      <ul>
+        <li><a href="/status">Data status</a></li>
+        <li><a href="/comparison">Method & sources</a></li>
+        <li><a href="/monthly-report">Monthly report</a></li>
+      </ul>
+    </div>
+    <div class="sitebar-footer-col">
+      <p class="sitebar-footer-title">Trackers</p>
+      <ul>
+        <li><a href="/stamp-1g-processing-dates">Stamp 1G</a></li>
+        <li><a href="/employment-permit-processing-dates">Employment permits</a></li>
+        <li><a href="/vac-transit">VAC & transit</a></li>
+      </ul>
+    </div>
+    <div class="sitebar-footer-col">
+      <p class="sitebar-footer-title">Legal</p>
+      <ul>
+        <li><a href="/help">Help</a></li>
+        <li><a href="/contact">Contact</a></li>
+        <li><a href="/privacy">Privacy</a></li>
+        <li><a href="/terms">Terms</a></li>
+        <li><a href="https://github.com/parth-soni-10/Irish-Visa-Tracker" rel="noopener">GitHub</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="sitebar-footer-bottom">
+    <p>&copy; 2026 Parth Soni &middot; Dublin, Ireland</p>
   </div>
 </footer>
 

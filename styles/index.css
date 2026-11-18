@@ -2315,7 +2315,9 @@
         table-layout: fixed;
       }
       #visa-dash .coverage-table th:nth-child(4),
-      #visa-dash .coverage-table td:nth-child(4) { display: none; }
+      #visa-dash .coverage-table td:nth-child(4),
+      #visa-dash .coverage-table th:nth-child(5),
+      #visa-dash .coverage-table td:nth-child(5) { display: none; }
       #visa-dash .coverage-table th,
       #visa-dash .coverage-table td {
         padding: 9px 7px;
@@ -2323,11 +2325,11 @@
         white-space: normal;
       }
       #visa-dash .coverage-table th:nth-child(1),
-      #visa-dash .coverage-table td:nth-child(1) { width: 34%; }
+      #visa-dash .coverage-table td:nth-child(1) { width: 30%; }
       #visa-dash .coverage-table th:nth-child(2),
-      #visa-dash .coverage-table td:nth-child(2) { width: 26%; }
+      #visa-dash .coverage-table td:nth-child(2) { width: 22%; }
       #visa-dash .coverage-table th:nth-child(3),
-      #visa-dash .coverage-table td:nth-child(3) { width: 40%; }
+      #visa-dash .coverage-table td:nth-child(3) { width: 48%; }
 
       /* Home and Past are three-column tables; let them use the card width
          instead of forcing a 360px minimum. */
@@ -3401,14 +3403,14 @@
 #visa-dash .coverage-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
 #visa-dash .coverage-table caption {
   caption-side: top;
-  padding: 0 0 6px;
+  padding: 0 0 10px;
   color: var(--ink-muted);
   font-size: 11.5px;
   text-align: left;
 }
 #visa-dash .coverage-table th,
 #visa-dash .coverage-table td {
-  padding: 8px 10px 8px 0;
+  padding: 10px 12px;
   border-bottom: 1px solid var(--border);
   text-align: left;
   vertical-align: top;
@@ -3423,7 +3425,8 @@
 #visa-dash .coverage-table .num { text-align: right; }
 #visa-dash .coverage-table tbody th,
 #visa-dash .coverage-table tbody td { color: var(--ink-soft); }
-#visa-dash .coverage-table tbody td:first-of-type { color: var(--ink); }
+#visa-dash .coverage-table tbody td:first-of-type { color: var(--ink); font-weight: 600; }
+#visa-dash .coverage-table tbody tr:hover td { background: var(--raised); }
 #visa-dash .landing-foot {
   max-width: 1080px;
   margin: 18px auto 0;
