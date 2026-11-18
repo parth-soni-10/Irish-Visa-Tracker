@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-18T05:02:08.506Z",
+  "generated_at": "2026-11-18T05:31:54.722Z",
   "offices": [
     {
       "slug": "new-delhi",
@@ -9,7 +9,7 @@
       "source_name": "Embassy of Ireland, New Delhi",
       "report_date": "2026-11-17",
       "as_of": "2026-11-18",
-      "fetched_at": "2026-11-18T05:01:51.456Z",
+      "fetched_at": "2026-11-18T05:31:39.518Z",
       "status": "official",
       "note": null,
       "decisions": 43351,
@@ -23,8 +23,8 @@
       ],
       "approved": 36567,
       "refused": 6784,
-      "corrections": 1,
-      "added": 199
+      "corrections": 0,
+      "added": 0
     },
     {
       "slug": "beijing",
@@ -34,7 +34,7 @@
       "source_name": "Embassy of Ireland, Beijing",
       "report_date": "2026-11-01",
       "as_of": "2026-11-18",
-      "fetched_at": "2026-11-18T05:01:53.961Z",
+      "fetched_at": "2026-11-18T05:31:41.913Z",
       "status": "official",
       "note": null,
       "decisions": 13724,
@@ -59,7 +59,7 @@
       "source_name": "Embassy of Ireland, Abu Dhabi",
       "report_date": "2026-11-13",
       "as_of": "2026-11-18",
-      "fetched_at": "2026-11-18T05:01:54.758Z",
+      "fetched_at": "2026-11-18T05:31:42.913Z",
       "status": "official",
       "note": null,
       "decisions": 283,
@@ -120,7 +120,7 @@
       "source_name": "Embassy of Ireland, Abuja",
       "report_date": "2026-10-18",
       "as_of": "2026-11-18",
-      "fetched_at": "2026-11-18T05:01:55.009Z",
+      "fetched_at": "2026-11-18T05:31:43.413Z",
       "status": "official",
       "note": null,
       "decisions": 52,
@@ -249,7 +249,7 @@
       "source_name": "Embassy of Ireland, Ankara",
       "report_date": "2026-11-15",
       "as_of": "2026-11-18",
-      "fetched_at": "2026-11-18T05:01:55.106Z",
+      "fetched_at": "2026-11-18T05:31:43.743Z",
       "status": "official",
       "note": "Scanned PDF extracted with poppler+tesseract at 300 DPI (5 pages).",
       "decisions": 165,
@@ -290,7 +290,7 @@
       "source_name": "Immigration Service Delivery, Dublin Visa Office",
       "report_date": "2026-11-18",
       "as_of": "2026-11-18",
-      "fetched_at": "2026-11-18T05:02:03.798Z",
+      "fetched_at": "2026-11-18T05:31:52.634Z",
       "status": "official",
       "note": null,
       "decisions": 4475,
