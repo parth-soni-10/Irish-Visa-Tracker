@@ -66,8 +66,16 @@ jobs:
 
       - name: Audit served HTML for inline assets
         # The deployed CSP has no unsafe-inline for scripts or <style> elements;
-        # every executable byte must come from /scripts or /styles.
+        # every executable byte must come from /scripts or /styles. This also
+        # rejects non-UTF-8 source files with a file:line:column diagnostic.
         run: python tools/check_html_scripts.py
+
+      - name: Verify shared header and footer are generated
+        # One partial owns the chrome; a page that drifts is stale markup.
+        run: node tools/site-chrome.mjs --check
+
+      - name: Syntax-check served CSS
+        run: node tools/check-css.mjs
 
       - name: Syntax-check served JavaScript
         run: node tools/check-js-syntax.mjs
@@ -126,3 +134,46 @@ jobs:
 
       - name: Run Chromium E2E
         run: npx playwright test --project=chromium --timeout=120000 --workers=1
+
+      - name: Install WebKit
+        run: npx playwright install --with-deps webkit
+
+      - name: Run WebKit chrome tests
+        # details markers and scrollbars differ between engines; the chrome
+        # behaviour is the part worth checking on a second engine.
+        run: npx playwright test chrome-tests.js --project="Mobile Safari" --timeout=120000 --workers=1
+
+  chrome:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v5
+
+      - name: Set up Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Check internal links and header layout
+        # Link targets and the header-height invariant need the site served by
+        # the same static layer production uses.
+        run: |
+          npx wrangler pages dev . --port 8795 > /tmp/wrangler-chrome.log 2>&1 &
+          server_pid=$!
+          trap 'kill $server_pid 2>/dev/null || true' EXIT
+          for i in $(seq 1 45); do
+            if curl -fsS http://127.0.0.1:8795/ > /dev/null; then
+              node tools/check-links.mjs --base http://127.0.0.1:8795 &&
+              node tools/check-chrome-layout.mjs --base http://127.0.0.1:8795
+              exit $?
+            fi
+            sleep 2
+          done
+          cat /tmp/wrangler-chrome.log
+          exit 1

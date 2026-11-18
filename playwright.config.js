@@ -9,7 +9,7 @@ const port = new URL(baseURL).port || '8788';
 
 export default defineConfig({
   testDir: '.',
-  testMatch: 'e2e-tests.js',
+  testMatch: ['e2e-tests.js', 'chrome-tests.js'],
   
   // Run tests in parallel
   fullyParallel: true,
