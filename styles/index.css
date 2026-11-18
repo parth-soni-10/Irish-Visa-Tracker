@@ -22,6 +22,7 @@
             --surface-raised: #f8fafc;
             --surface-hover: #f1f5f9;
             --border: #e2e8f0;
+            --border-strong: #cbd5e1;
             --green: #047857;
             --green-deep: #047857;
             --green-deeper: #065f46;
@@ -37,6 +38,7 @@
             /* Radius scale: 14px containers, 6px controls, 999px pills. */
             --r-container: 14px;
             --r-control: 6px;
+            --r-inner-radius: 4px;
             font-family: "Inter", "Geist", -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
             background: var(--surface);
             color: var(--ink);
@@ -1072,6 +1074,11 @@
             box-shadow: 0 4px 14px rgba(4, 120, 87, 0.4);
         }
         #visa-dash .btn:active { transform: scale(0.97); }
+        /* The dark palette raises --green-deep to emerald-500 so accent text
+           stays readable on the dark shell; as a button fill with white text
+           that is only 2.5:1. Keep the darker fill for filled buttons. */
+        html[data-theme="dark"] #visa-dash .btn { background: #047857; }
+        html[data-theme="dark"] #visa-dash .btn:hover { background: #065f46; }
         #visa-dash .btn:disabled {
             opacity: .5;
             cursor: default;
@@ -1301,7 +1308,7 @@
         @keyframes spark-pop {
             0%   { opacity: 0; transform: translate(0, 0) scale(0.3); }
             18%  { opacity: 1; }
-            100% { opacity: 0; transform: translate(var(--tx), var(--ty)) scale(0.85); }
+            100% { opacity: 0; transform: translate(var(--tx, 0px), var(--ty, 0px)) scale(0.85); }
         }
         #visa-dash .sugg-success .check circle {
             fill: none;

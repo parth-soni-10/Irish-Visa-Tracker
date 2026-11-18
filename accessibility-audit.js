@@ -1,195 +1,173 @@
 /**
- * Accessibility Audit Script
- * Runs axe-core accessibility tests against the site
- * Checks WCAG 2.1 AA compliance
+ * Accessibility audit (WCAG 2.1 AA) for the whole site.
+ *
+ * It used to cover three pages at three widths in the light theme, which left
+ * the shared header unaudited on the other fourteen pages and never exercised
+ * the dashboard's dark theme. This walks every page at four widths, plus the
+ * dark theme on the pages that actually implement one.
+ *
+ *   AUDIT_BASE_URL=http://127.0.0.1:8788 node accessibility-audit.js
  */
 
-import { execSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { chromium } from 'playwright';
+import AxeBuilder from '@axe-core/playwright';
+import { PAGES } from './tools/site-chrome.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const BASE_URL = process.env.AUDIT_BASE_URL || 'http://127.0.0.1:8788';
-
-// Configuration
-const PAGES_TO_TEST = [
-  { url: '/', name: 'Home Page' },
-  { url: '/vac-transit', name: 'VAC/Transit Page' },
-  { url: '/admin', name: 'Admin Page' },
-];
+const BASE_URL = (process.env.AUDIT_BASE_URL || 'http://127.0.0.1:8788').replace(/\/+$/, '');
+const CONCURRENCY = Number(process.env.AUDIT_CONCURRENCY || 3);
 
 const VIEWPORTS = [
-  { width: 1920, height: 1080, name: 'desktop' },
-  { width: 768, height: 1024, name: 'tablet' },
+  { width: 1280, height: 900, name: 'desktop' },
+  { width: 960, height: 900, name: 'tablet-wide' },
+  { width: 760, height: 900, name: 'tablet' },
   { width: 375, height: 667, name: 'mobile' },
 ];
 
-async function runAxeAudit(pageUrl, viewport) {
-  console.log(`\n🔍 Testing ${pageUrl} at ${viewport.name} (${viewport.width}x${viewport.height})`);
-  
-  // Create a temporary Playwright script
-  const script = `
-const { chromium } = require('playwright');
-const AxeBuilder = require('@axe-core/playwright').default;
+// site-chrome.js applies the stored theme only where the dashboard exists;
+// every other page is deliberately forced light, so a dark pass there would
+// just repeat the light result.
+const THEMED_PAGES = new Set(['index.html']);
 
-(async () => {
-  const browser = await chromium.launch({ headless: true });
-  const context = await browser.newContext({
-    viewport: { width: ${viewport.width}, height: ${viewport.height} }
-  });
-  const page = await context.newPage();
-  
-  try {
-    await page.goto('${BASE_URL}${pageUrl}', { waitUntil: 'networkidle', timeout: 30000 });
-    await page.waitForTimeout(2000); // Wait for dynamic content
-    
-    // Run all available rules
-    const results = await new AxeBuilder({ page })
-      .analyze();
-    
-    console.log(JSON.stringify(results, null, 2));
-  } catch (error) {
-    console.error('Error:', error.message);
-    process.exit(1);
-  } finally {
-    await browser.close();
+const pages = PAGES.filter((page) => page.route && page.layout !== false);
+
+function buildMatrix() {
+  const matrix = [];
+  for (const page of pages) {
+    for (const viewport of VIEWPORTS) matrix.push({ page, viewport, theme: 'light' });
   }
-})();
-`;
+  for (const page of pages.filter((candidate) => THEMED_PAGES.has(candidate.file))) {
+    for (const viewport of VIEWPORTS.filter((candidate) => candidate.name === 'desktop' || candidate.name === 'mobile')) {
+      matrix.push({ page, viewport, theme: 'dark' });
+    }
+  }
+  return matrix;
+}
 
-  const scriptPath = path.join(__dirname, `temp-audit-${viewport.name}.cjs`);
-  fs.writeFileSync(scriptPath, script);
-  
-  try {
-    const output = execSync(`node ${scriptPath}`, { 
-      encoding: 'utf8', 
-      timeout: 60000,
-      cwd: __dirname
+async function runAudit(browser, job) {
+  const context = await browser.newContext({
+    viewport: { width: job.viewport.width, height: job.viewport.height },
+    colorScheme: job.theme === 'dark' ? 'dark' : 'light',
+  });
+  if (job.theme === 'dark') {
+    await context.addInitScript(() => {
+      try {
+        localStorage.setItem('visa-theme', 'dark');
+      } catch (error) {
+        /* private mode */
+      }
     });
-    fs.unlinkSync(scriptPath);
-    return JSON.parse(output);
-  } catch (error) {
-    fs.unlinkSync(scriptPath);
-    throw new Error(`Audit failed for ${viewport.name}: ${error.message}`);
+  }
+  const page = await context.newPage();
+  try {
+    await page.goto(BASE_URL + job.page.route, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await page.evaluate(() => (document.fonts ? document.fonts.ready : Promise.resolve()));
+    await page.waitForTimeout(250);
+
+    if (job.theme === 'dark') {
+      const applied = await page.evaluate(() => document.documentElement.getAttribute('data-theme'));
+      if (applied !== 'dark') throw new Error(`dark theme was not applied (data-theme=${applied})`);
+    }
+
+    const results = await new AxeBuilder({ page }).analyze();
+    return {
+      violations: results.violations,
+      incomplete: results.incomplete,
+      passes: results.passes.length,
+    };
+  } finally {
+    await context.close();
   }
 }
 
-function generateReport(results, pageName, viewportName) {
-  const violations = results.violations || [];
-  const passes = results.passes || [];
-  const incomplete = results.incomplete || [];
-  
-  let report = `\n## ${pageName} - ${viewportName}\n\n`;
-  report += `**Violations:** ${violations.length} | **Passes:** ${passes.length} | **Incomplete:** ${incomplete.length}\n\n`;
-  
-  if (violations.length > 0) {
-    report += `### ❌ Violations (${violations.length})\n\n`;
-    violations.forEach(v => {
-      report += `#### ${v.id} (${v.impact} impact)\n`;
-      report += `${v.description}\n\n`;
-      report += `**Help:** ${v.help}\n\n`;
-      report += `**Help URL:** ${v.helpUrl}\n\n`;
-      report += `**Nodes affected:** ${v.nodes.length}\n`;
-      v.nodes.forEach(node => {
-        report += `- \`${node.html}\`\n`;
-        if (node.target) {
-          report += `  Selector: \`${node.target.join(' ')}\`\n`;
-        }
-      });
-      report += '\n';
-    });
-  }
-  
-  if (incomplete.length > 0) {
-    report += `### ⚠️ Incomplete (${incomplete.length}) - Manual Review Required\n\n`;
-    incomplete.forEach(i => {
-      report += `- **${i.id}**: ${i.description}\n`;
-    });
-    report += '\n';
-  }
-  
-  return report;
+function violationReport(violation) {
+  const nodes = violation.nodes
+    .slice(0, 8)
+    .map((node) => `  - \`${node.html}\``)
+    .join('\n');
+  return `### ${violation.id} (${violation.impact} impact)\n${violation.help}\n${nodes}\n`;
 }
 
 async function main() {
-  console.log('🚀 Starting Accessibility Audit (WCAG 2.1 AA)');
-  console.log('==============================================');
-  
-  // Check if dev server is running
+  console.log('Accessibility audit (WCAG 2.1 AA)');
+  console.log('='.repeat(60));
+
   try {
     const response = await fetch(BASE_URL + '/');
-    if (!response.ok) {
-      throw new Error('Dev server not responding');
-    }
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
   } catch (error) {
-    console.error('❌ Dev server not running on ' + BASE_URL);
-    console.log('Please run: npx wrangler pages dev . --port ' + (new URL(BASE_URL).port || '8788'));
+    console.error(`Dev server not responding on ${BASE_URL} (${error.message})`);
+    console.log('Run: npx wrangler pages dev . --port ' + (new URL(BASE_URL).port || '8788'));
     process.exit(1);
   }
-  
-  console.log('✅ Dev server is running');
-  
-  const allReports = [];
-  let totalViolations = 0;
-  let totalIncomplete = 0;
-  
-  for (const page of PAGES_TO_TEST) {
-    for (const viewport of VIEWPORTS) {
+
+  const matrix = buildMatrix();
+  const browser = await chromium.launch();
+  const results = [];
+  let cursor = 0;
+
+  async function worker() {
+    while (cursor < matrix.length) {
+      const job = matrix[cursor++];
+      const label = `${job.page.file} @ ${job.viewport.name}${job.theme === 'dark' ? ' (dark)' : ''}`;
       try {
-        const results = await runAxeAudit(page.url, viewport);
-        const report = generateReport(results, page.name, viewport.name);
-        allReports.push(report);
-        
-        totalViolations += results.violations?.length || 0;
-        totalIncomplete += results.incomplete?.length || 0;
-        
-        console.log(`✅ ${page.name} (${viewport.name}): ${results.violations?.length || 0} violations, ${results.incomplete?.length || 0} incomplete`);
+        const audit = await runAudit(browser, job);
+        results.push({ ...job, ...audit });
+        console.log(
+          `  ${audit.violations.length ? 'FAIL' : 'ok  '} ${label}: ${audit.violations.length} violation(s), ${audit.incomplete.length} incomplete`
+        );
       } catch (error) {
-        console.error(`❌ Failed to audit ${page.name} (${viewport.name}):`, error.message);
+        results.push({ ...job, error: error.message });
+        console.error(`  FAIL ${label}: ${error.message}`);
       }
     }
   }
-  
-  // Generate summary report
-  const summary = `
-# Accessibility Audit Report (WCAG 2.1 AA)
-**Generated:** ${new Date().toISOString()}
-**Total Violations:** ${totalViolations}
-**Total Incomplete (Manual Review):** ${totalIncomplete}
 
-${allReports.join('\n---\n')}
+  await Promise.all(Array.from({ length: Math.min(CONCURRENCY, matrix.length) }, worker));
+  await browser.close();
+
+  const failures = results.filter((result) => result.error);
+  const violations = results.filter((result) => result.violations && result.violations.length);
+  const violationCount = violations.reduce((total, result) => total + result.violations.length, 0);
+  const incompleteCount = results.reduce((total, result) => total + (result.incomplete ? result.incomplete.length : 0), 0);
+
+  const sections = violations.map(
+    (result) =>
+      `## ${result.page.file} — ${result.viewport.name}${result.theme === 'dark' ? ' (dark)' : ''}\n\n` +
+      result.violations.map(violationReport).join('\n')
+  );
+
+  const report = `# Accessibility Audit Report (WCAG 2.1 AA)
+
+**Generated:** ${new Date().toISOString()}
+**Pages:** ${pages.length} | **Combinations:** ${results.length} | **Total violations:** ${violationCount}
+**Total incomplete (manual review):** ${incompleteCount}
+
+${sections.length ? sections.join('\n---\n\n') : 'No violations found.'}
 
 ## Summary
 
-${totalViolations === 0 ? '✅ **No violations found!**' : `❌ **${totalViolations} violations found** - Fix required for WCAG 2.1 AA compliance`}
-
-${totalIncomplete > 0 ? `⚠️ **${totalIncomplete} items need manual review**` : ''}
-
-## Next Steps
-
-1. Fix all violations (critical/high impact first)
-2. Review incomplete items manually
-3. Re-run audit after fixes
-4. Test with screen readers (NVDA, JAWS, VoiceOver)
-5. Test keyboard navigation
-6. Verify color contrast ratios
+${violationCount === 0 ? '✅ **No violations found.**' : `❌ **${violationCount} violations found** — fix required for WCAG 2.1 AA compliance.`}
+${failures.length ? `\n❌ ${failures.length} combination(s) could not be audited.` : ''}
 `;
 
+  fs.writeFileSync(path.join(__dirname, 'accessibility-report.md'), report);
+
   console.log('\n' + '='.repeat(60));
-  console.log('📊 AUDIT SUMMARY');
-  console.log('='.repeat(60));
-  console.log(summary);
-  
-  // Save report
-  const reportPath = path.join(__dirname, 'accessibility-report.md');
-  fs.writeFileSync(reportPath, summary);
-  console.log(`\n📄 Report saved to: ${reportPath}`);
-  
-  // Exit with error code if violations found
-  if (totalViolations > 0) {
-    process.exit(1);
+  console.log(`Pages: ${pages.length}; combinations: ${results.length}; violations: ${violationCount}; incomplete: ${incompleteCount}`);
+  for (const failure of failures) console.error(`Audit error: ${failure.page.file} ${failure.viewport.name}: ${failure.error}`);
+  for (const result of violations) {
+    console.error(`${result.page.file} ${result.viewport.name}: ${result.violations.map((violation) => violation.id).join(', ')}`);
   }
+  console.log('Report: accessibility-report.md');
+
+  if (violationCount > 0 || failures.length) process.exitCode = 1;
 }
 
-main().catch(console.error);
+main().catch((error) => {
+  console.error(error);
+  process.exitCode = 1;
+});
