@@ -38,10 +38,13 @@
   Content-Security-Policy: default-src 'none'; script-src 'self' https://cdn.jsdelivr.net https://static.cloudflareinsights.com; script-src-attr 'none'; style-src 'self'; style-src-attr 'unsafe-inline'; style-src-elem 'self'; font-src 'self' data:; img-src 'self' data: https:; connect-src 'self' https://fcm.googleapis.com https://cloudflareinsights.com; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'
 
 /site-chrome.css
+  ! Cache-Control
   Cache-Control: public, max-age=300, must-revalidate
 
 /site-chrome.js
+  ! Cache-Control
   Cache-Control: public, max-age=300, must-revalidate
 
 /fonts/*
+  ! Cache-Control
   Cache-Control: public, max-age=86400
