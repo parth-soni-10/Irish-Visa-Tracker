@@ -117,6 +117,7 @@ jobs:
 
   e2e:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Check out repo
         uses: actions/checkout@v5
@@ -135,8 +136,26 @@ jobs:
       - name: Run Chromium E2E
         run: npx playwright test --project=chromium --timeout=120000 --workers=1
 
+  webkit:
+    # WebKit on an Ubuntu runner spends minutes in apt installing system
+    # libraries (and hung there once). macOS ships them, so the browser is the
+    # only download.
+    runs-on: macos-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v5
+
+      - name: Set up Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+
       - name: Install WebKit
-        run: npx playwright install --with-deps webkit
+        run: npx playwright install webkit
 
       - name: Run WebKit chrome tests
         # details markers and scrollbars differ between engines; the chrome
