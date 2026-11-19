@@ -3,21 +3,15 @@
     "new-delhi": [
       {
         "report_date": "2026-11-18",
-        "fetched_at": "2026-11-19T04:31:38.233Z",
+        "fetched_at": "2026-11-19T05:01:48.302Z",
         "decisions": 43534,
         "approved": 36711,
         "refused": 6823,
         "source_file": "https://www.ireland.ie/5330/20261118_NDVO_Visa_Decisions.ods",
         "checksum": "68ca085775ee4578",
-        "added": 183,
+        "added": 0,
         "removed": 0,
-        "changed": [
-          {
-            "number": "84775542",
-            "from": "Refused",
-            "to": "Approved"
-          }
-        ]
+        "changed": []
       },
       {
         "report_date": "2026-11-17",
@@ -127,7 +121,7 @@
     "abu-dhabi": [
       {
         "report_date": "2026-11-13",
-        "fetched_at": "2026-11-19T04:31:40.830Z",
+        "fetched_at": "2026-11-19T05:01:50.874Z",
         "decisions": 283,
         "approved": 219,
         "refused": 64,
@@ -257,7 +251,7 @@
     "abuja": [
       {
         "report_date": "2026-10-18",
-        "fetched_at": "2026-11-19T04:31:41.122Z",
+        "fetched_at": "2026-11-19T05:01:51.477Z",
         "decisions": 52,
         "approved": 19,
         "refused": 33,
@@ -608,7 +602,7 @@
     "ankara": [
       {
         "report_date": "2026-11-15",
-        "fetched_at": "2026-11-19T04:31:41.221Z",
+        "fetched_at": "2026-11-19T05:01:51.629Z",
         "decisions": 165,
         "approved": 128,
         "refused": 37,
@@ -634,7 +628,7 @@
     "dublin": [
       {
         "report_date": "2026-11-19",
-        "fetched_at": "2026-11-19T04:31:49.874Z",
+        "fetched_at": "2026-11-19T05:02:00.622Z",
         "decisions": 4475,
         "approved": 2624,
         "refused": 1851,
