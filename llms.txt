@@ -105,8 +105,8 @@ an official confirmation.
   - the date reached in each published DETE permit category.
 - [Irish visa processing times](https://irishvisaupdatetracker.pages.dev/visa-processing-times)
   - what the published queues show, and what they cannot tell you.
-- [Compare Irish visa trackers](https://irishvisaupdatetracker.pages.dev/comparison) - a sourced
-  comparison with VisaRelay, Snifox/Visastat and the official sources, including where each fits.
+- [Method & sources](https://irishvisaupdatetracker.pages.dev/comparison) - how each office's
+  figures are collected and checked, the official sources behind them and the limits of the data.
 - [Data status](https://irishvisaupdatetracker.pages.dev/status) - office coverage, report dates,
   freshness and known snapshot limits.
 - [About](https://irishvisaupdatetracker.pages.dev/about) - what is tracked, sources, limits.

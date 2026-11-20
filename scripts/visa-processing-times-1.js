@@ -55,13 +55,13 @@
 
       /* ---- snapshot ---- */
       if (Array.isArray(g1) && g1.length) {
-        var latest = g1.reduce(function (a, r) { return r.run_date > a ? r.run_date : a; }, '');
-        var same = g1.filter(function (r) { return r.run_date === latest; });
+        // Stamp 1G is the 1G queue; the "Other" row is a different queue.
         var row = null;
-        for (var i = 0; i < same.length; i++) {
-          if (String(same[i].category).toLowerCase() === 'other') { row = same[i]; break; }
+        for (var i = 0; i < g1.length; i++) {
+          if (String(g1[i].category).toUpperCase() !== '1G') continue;
+          if (!g1[i].run_date || !g1[i].processing_date) continue;
+          if (!row || g1[i].run_date > row.run_date) row = g1[i];
         }
-        if (!row) row = same[same.length - 1];
         if (row) {
           var d = document.getElementById('t-g1-date');
           var l = document.getElementById('t-g1-lag');

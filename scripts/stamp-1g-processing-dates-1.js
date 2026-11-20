@@ -34,18 +34,18 @@
       var meta = out[1];
       if (meta && status) status.textContent = meta.ok ? 'OK' : 'Degraded';
       if (!Array.isArray(rows) || !rows.length) return;
-      var latest = rows.reduce(function (a, r) {
-        return r && r.run_date && r.run_date > a ? r.run_date : a;
-      }, '');
-      var sameDay = rows.filter(function (r) { return r && r.run_date === latest; });
+      // Quote the 1G queue, never the "Other" queue: this page is about Stamp
+      // 1G, and the categories move independently.
       var row = null;
-      for (var i = 0; i < sameDay.length; i++) {
-        if (String(sameDay[i].category).toLowerCase() === 'other') { row = sameDay[i]; break; }
+      for (var i = 0; i < rows.length; i++) {
+        var candidate = rows[i];
+        if (!candidate || String(candidate.category).toUpperCase() !== '1G') continue;
+        if (!candidate.run_date || !candidate.processing_date) continue;
+        if (!row || candidate.run_date > row.run_date) row = candidate;
       }
-      if (!row) row = sameDay[sameDay.length - 1];
       if (!row) return;
-      setDate(asOf, latest);
-      setDate(run, latest);
+      setDate(asOf, row.run_date);
+      setDate(run, row.run_date);
       setDate(processing, row.processing_date);
       if (lag && typeof row.lag_days === 'number') {
         lag.textContent = row.lag_days + ' days';

@@ -54,7 +54,7 @@ test.use({ serviceWorkers: 'block' });
 test.describe('SPA shell', () => {
   test('loads the landing page', async ({ page }) => {
     await gotoHome(page);
-    await expect(page.locator('h1').first()).toContainText('Published Irish visa decisions');
+    await expect(page.locator('h1').first()).toContainText('Check your Irish visa decision');
     await expect(page.locator('.tracker-card')).toHaveCount(3);
   });
 
@@ -503,7 +503,7 @@ test.describe('Mobile responsiveness', () => {
 
   test('renders the landing page on a mobile viewport', async ({ page }) => {
     await gotoHome(page);
-    await expect(page.locator('h1').first()).toContainText('Published Irish visa decisions');
+    await expect(page.locator('h1').first()).toContainText('Check your Irish visa decision');
     await expect(page.locator('.tracker-card')).toHaveCount(3);
   });
 

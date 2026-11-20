@@ -188,6 +188,63 @@ function bundleIndexAssets() {
   console.log(`Bundled ${cssFiles.length} stylesheets and ${scriptFiles.length} scripts for index.html`);
 }
 
+/**
+ * The home page and daily summaries are static HTML. Write the latest New
+ * Delhi count and report date into that text at build time so readers without
+ * JavaScript - and AI tools that do not execute it - see the same fresh
+ * figures as the dashboard. The checked-in HTML carries the same sentence as
+ * a fallback for local development.
+ */
+function injectLiveSummary() {
+  const metaPath = path.resolve(assetsRootDir, 'data', 'visa_meta.json');
+  if (!fs.existsSync(metaPath)) return;
+  let meta;
+  try {
+    meta = JSON.parse(fs.readFileSync(metaPath, 'utf8'));
+  } catch {
+    console.warn('Warning: visa_meta.json is not valid JSON; keeping static summary text');
+    return;
+  }
+  if (!meta || typeof meta.sheetRows !== 'number' || !meta.fileDate) return;
+
+  const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July',
+    'August', 'September', 'October', 'November', 'December'];
+  const longDate = (iso) => {
+    const parts = String(iso).slice(0, 10).split('-');
+    const month = months[Number(parts[1]) - 1];
+    if (parts.length !== 3 || !month) return null;
+    return `${Number(parts[2])} ${month} ${parts[0]}`;
+  };
+
+  const fileDate = longDate(meta.fileDate);
+  if (!fileDate) return;
+  const checked = longDate(meta.lastRunAt) || fileDate;
+  const count = meta.sheetRows.toLocaleString('en-IE');
+  const summary = `${count} New Delhi decisions on record. Latest list: ${fileDate}. Checked ${checked}.`;
+
+  for (const page of ['index.html', 'daily-summaries.html']) {
+    const file = path.resolve(distDir, page);
+    if (!fs.existsSync(file)) continue;
+    const html = fs.readFileSync(file, 'utf8').replace(
+      /(<p[^>]*data-live-summary[^>]*>)[\s\S]*?(<\/p>)/,
+      `$1${summary}$2`
+    );
+    fs.writeFileSync(file, html);
+  }
+
+  // Keep the daily summaries freshness line fresh for no-JavaScript readers too.
+  const dailyPath = path.resolve(distDir, 'daily-summaries.html');
+  if (fs.existsSync(dailyPath)) {
+    const iso = String(meta.lastRunAt || meta.fileDate).slice(0, 10);
+    const daily = fs.readFileSync(dailyPath, 'utf8')
+      .replace(/(<time id="visa-as-of" datetime=")[^"]*(">)[\s\S]*?(<\/time>)/, `$1${iso}$2${checked}$3`)
+      .replace(/(<span id="visa-rows">)[\s\S]*?(<\/span>)/, `$1${count}$2`);
+    fs.writeFileSync(dailyPath, daily);
+  }
+
+  console.log(`Live summary: ${summary}`);
+}
+
 function localDistPath(href) {
   if (!href || /^(?:[a-z]+:)?\/\//i.test(href) || href.startsWith('data:')) return null;
   const pathname = decodeURIComponent(href.split(/[?#]/)[0]).replace(/^\/+/, '');
@@ -241,6 +298,7 @@ async function main() {
     }
   }
 
+  injectLiveSummary();
   bundleIndexAssets();
   
   const fallback = buildSearchFallback({

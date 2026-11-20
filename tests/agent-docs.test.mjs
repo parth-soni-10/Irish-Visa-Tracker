@@ -284,7 +284,12 @@ test("every page title the app sets carries the brand", async () => {
   const script = await read("scripts/index.js");
   const titles = [...script.matchAll(/document\.title = '([^']+)'/g)].map((match) => match[1]);
   assert.ok(titles.length >= 4, "expected the app's four titles");
-  for (const title of titles) assert.match(title, /Irish Visa Decision Tracker/);
+  const homeTitle = 'Ireland Visa Decision List: New Delhi & 5 More Offices | Free Check';
+  assert.ok(titles.includes(homeTitle), 'the home page title is missing');
+  for (const title of titles) {
+    if (title === homeTitle) continue;
+    assert.match(title, /Irish Visa Decision Tracker/);
+  }
 });
 
 test("homepage HTML has content without JavaScript", async () => {

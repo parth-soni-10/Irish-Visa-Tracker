@@ -5659,7 +5659,7 @@
             }
 
 async function renderLandingPage() {
-                document.title = 'Irish Visa Decision Tracker - Six Offices, Stamp 1G & Employment Permits';
+                document.title = 'Ireland Visa Decision List: New Delhi & 5 More Offices | Free Check';
                 // Paint the cards IMMEDIATELY with placeholder stats - never
                 // block on the network. Each card's meta line fills in as its
                 // own fetch resolves (both are small static files, so this is
@@ -5667,7 +5667,7 @@ async function renderLandingPage() {
                 // Clicking a card works from the first paint.
                 root.innerHTML =
                     '<div class="landing-wrap page-title-block">' +
-                    '<h1>Published Irish visa decisions</h1>' +
+                    '<h1>Check your Irish visa decision</h1>' +
                     '<p class="page-task">Search six offices by application number, or open a processing-date tracker.</p>' +
                     '<div class="landing-status" id="landing-status" aria-live="polite"><span class="note2">Checking today’s updates…</span></div>' +
                     '<form class="landing-search" id="landing-search" role="search" novalidate>' +
@@ -5685,7 +5685,7 @@ async function renderLandingPage() {
                     trackerCardHTML('permits', 'briefcase', 'Employment permits',
                         'DETE queue by permit category, with the current lag.', 'Loading…', 'permits-meta', 'permits') +
                     '</div>' +
-                    '<p class="landing-alert-line"><strong>Decision alerts on Telegram.</strong> One message when your application is published. <a href="/?tracker=visa&amp;tab=alerts">Set up alerts</a>.</p>' +
+                    '<p class="landing-alert-line"><strong>Free decision alerts.</strong> Get a free Telegram message the day your number is published. No account, no fee. <a href="/?tracker=visa&amp;tab=alerts">Set up alerts</a>.</p>' +
                     '<section class="landing-publications" aria-labelledby="landing-publications-title">' +
                     '<div class="landing-publications-head"><div>' +
                     '<h2 id="landing-publications-title">Latest official publications</h2>' +
@@ -5735,9 +5735,13 @@ async function renderLandingPage() {
                         ? n.toLocaleString() + ' decisions on record'
                         : 'Awaiting data';
                     var g1 = document.getElementById('g1-meta');
-                    if (g1) g1.textContent = grows.length
-                        ? 'Processing ' + fmtG1Date(grows[grows.length - 1].processing_date) +
-                          ' \u00b7 ' + grows[grows.length - 1].lag_days + 'd lag (~' + fmtLagMonths(grows[grows.length - 1].lag_days) + ' mo) \u00b7 ' + grows.length + ' observations'
+                    var g1row = null;
+                    for (var gi = 0; gi < grows.length; gi++) {
+                        if (String(grows[gi].category).toUpperCase() === '1G' && (!g1row || grows[gi].run_date >= g1row.run_date)) g1row = grows[gi];
+                    }
+                    if (g1) g1.textContent = g1row
+                        ? 'Processing ' + fmtG1Date(g1row.processing_date) +
+                          ' \u00b7 ' + g1row.lag_days + 'd lag (~' + fmtLagMonths(g1row.lag_days) + ' mo) \u00b7 ' + grows.length + ' observations'
                         : 'Awaiting first observation';
                     var pm = document.getElementById('permits-meta');
                     if (pm) {
