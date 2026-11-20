@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-20T05:33:04.264Z",
+  "generated_at": "2026-11-20T06:03:15.271Z",
   "offices": [
     {
       "slug": "new-delhi",
@@ -9,7 +9,7 @@
       "source_name": "Embassy of Ireland, New Delhi",
       "report_date": "2026-11-19",
       "as_of": "2026-11-20",
-      "fetched_at": "2026-11-20T05:32:36.091Z",
+      "fetched_at": "2026-11-20T06:03:02.445Z",
       "status": "official",
       "note": null,
       "decisions": 43599,
@@ -24,7 +24,7 @@
       "approved": 36769,
       "refused": 6830,
       "corrections": 0,
-      "added": 65
+      "added": 0
     },
     {
       "slug": "beijing",
@@ -59,7 +59,7 @@
       "source_name": "Embassy of Ireland, Abu Dhabi",
       "report_date": "2026-11-13",
       "as_of": "2026-11-20",
-      "fetched_at": "2026-11-20T05:32:37.738Z",
+      "fetched_at": "2026-11-20T06:03:04.175Z",
       "status": "official",
       "note": null,
       "decisions": 283,
@@ -120,7 +120,7 @@
       "source_name": "Embassy of Ireland, Abuja",
       "report_date": "2026-11-07",
       "as_of": "2026-11-20",
-      "fetched_at": "2026-11-20T05:32:38.158Z",
+      "fetched_at": "2026-11-20T06:03:04.804Z",
       "status": "official",
       "note": null,
       "decisions": 99,
@@ -253,7 +253,7 @@
       "source_name": "Embassy of Ireland, Ankara",
       "report_date": "2026-11-15",
       "as_of": "2026-11-20",
-      "fetched_at": "2026-11-20T05:32:38.227Z",
+      "fetched_at": "2026-11-20T06:03:05.286Z",
       "status": "official",
       "note": "Scanned PDF extracted with poppler+tesseract at 300 DPI (5 pages).",
       "decisions": 165,
@@ -294,7 +294,7 @@
       "source_name": "Immigration Service Delivery, Dublin Visa Office",
       "report_date": "2026-11-20",
       "as_of": "2026-11-20",
-      "fetched_at": "2026-11-20T05:32:44.959Z",
+      "fetched_at": "2026-11-20T06:03:13.067Z",
       "status": "official",
       "note": null,
       "decisions": 4475,
