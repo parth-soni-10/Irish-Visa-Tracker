@@ -1,30 +1,30 @@
 {
-  "generated_at": "2026-11-20T05:02:11.221Z",
+  "generated_at": "2026-11-20T05:33:04.264Z",
   "offices": [
     {
       "slug": "new-delhi",
       "name": "New Delhi",
       "source_url": "https://www.ireland.ie/en/india/newdelhi/services/visas/processing-times-and-decisions/",
-      "source_file": "https://www.ireland.ie/5330/20261118_NDVO_Visa_Decisions.ods",
+      "source_file": "https://www.ireland.ie/5346/20261119_NDVO_Visa_Decisions.ods",
       "source_name": "Embassy of Ireland, New Delhi",
-      "report_date": "2026-11-18",
+      "report_date": "2026-11-19",
       "as_of": "2026-11-20",
-      "fetched_at": "2026-11-20T05:01:54.065Z",
+      "fetched_at": "2026-11-20T05:32:36.091Z",
       "status": "official",
       "note": null,
-      "decisions": 43534,
-      "archive_decisions": 43534,
+      "decisions": 43599,
+      "archive_decisions": 43599,
       "historical_decisions": 0,
       "archive_reports": [
         {
-          "report_date": "2026-11-18",
-          "decisions": 43534
+          "report_date": "2026-11-19",
+          "decisions": 43599
         }
       ],
-      "approved": 36711,
-      "refused": 6823,
+      "approved": 36769,
+      "refused": 6830,
       "corrections": 0,
-      "added": 0
+      "added": 65
     },
     {
       "slug": "beijing",
@@ -59,7 +59,7 @@
       "source_name": "Embassy of Ireland, Abu Dhabi",
       "report_date": "2026-11-13",
       "as_of": "2026-11-20",
-      "fetched_at": "2026-11-20T05:01:56.621Z",
+      "fetched_at": "2026-11-20T05:32:37.738Z",
       "status": "official",
       "note": null,
       "decisions": 283,
@@ -120,7 +120,7 @@
       "source_name": "Embassy of Ireland, Abuja",
       "report_date": "2026-11-07",
       "as_of": "2026-11-20",
-      "fetched_at": "2026-11-20T05:01:57.245Z",
+      "fetched_at": "2026-11-20T05:32:38.158Z",
       "status": "official",
       "note": null,
       "decisions": 99,
@@ -253,7 +253,7 @@
       "source_name": "Embassy of Ireland, Ankara",
       "report_date": "2026-11-15",
       "as_of": "2026-11-20",
-      "fetched_at": "2026-11-20T05:01:57.687Z",
+      "fetched_at": "2026-11-20T05:32:38.227Z",
       "status": "official",
       "note": "Scanned PDF extracted with poppler+tesseract at 300 DPI (5 pages).",
       "decisions": 165,
@@ -294,7 +294,7 @@
       "source_name": "Immigration Service Delivery, Dublin Visa Office",
       "report_date": "2026-11-20",
       "as_of": "2026-11-20",
-      "fetched_at": "2026-11-20T05:02:06.593Z",
+      "fetched_at": "2026-11-20T05:32:44.959Z",
       "status": "official",
       "note": null,
       "decisions": 4475,
