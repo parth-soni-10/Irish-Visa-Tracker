@@ -3,7 +3,7 @@
     "new-delhi": [
       {
         "report_date": "2026-11-19",
-        "fetched_at": "2026-11-20T10:44:54.949Z",
+        "fetched_at": "2026-11-20T12:00:40.907Z",
         "decisions": 43599,
         "approved": 36769,
         "refused": 6830,
@@ -133,21 +133,15 @@
     "abu-dhabi": [
       {
         "report_date": "2026-11-20",
-        "fetched_at": "2026-11-20T10:44:56.642Z",
+        "fetched_at": "2026-11-20T12:00:43.256Z",
         "decisions": 232,
         "approved": 161,
         "refused": 71,
         "source_file": "https://www.ireland.ie/5347/Decisions_for_period_from_15-11-2026_to_20-11-2026.pdf",
         "checksum": "7add50269c346a57",
-        "added": 231,
+        "added": 0,
         "removed": 0,
-        "changed": [
-          {
-            "number": "85236042",
-            "from": "Refused",
-            "to": "Approved"
-          }
-        ]
+        "changed": []
       },
       {
         "report_date": "2026-11-13",
@@ -281,7 +275,7 @@
     "abuja": [
       {
         "report_date": "2026-11-07",
-        "fetched_at": "2026-11-20T10:44:58.000Z",
+        "fetched_at": "2026-11-20T12:00:43.518Z",
         "decisions": 99,
         "approved": 34,
         "refused": 65,
@@ -644,7 +638,7 @@
     "ankara": [
       {
         "report_date": "2026-11-15",
-        "fetched_at": "2026-11-20T10:44:58.112Z",
+        "fetched_at": "2026-11-20T12:00:43.614Z",
         "decisions": 165,
         "approved": 128,
         "refused": 37,
@@ -670,7 +664,7 @@
     "dublin": [
       {
         "report_date": "2026-11-20",
-        "fetched_at": "2026-11-20T10:45:03.880Z",
+        "fetched_at": "2026-11-20T12:00:52.566Z",
         "decisions": 4475,
         "approved": 2624,
         "refused": 1851,
