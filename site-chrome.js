@@ -66,17 +66,12 @@
   }
 
   function initTheme() {
-    // The theme is a dashboard preference. Static trust pages stay in their
-    // reading theme so a dark dashboard choice cannot leave half a page dark.
-    var canTheme = Boolean(document.getElementById('visa-dash'));
-    applyTheme(canTheme ? readTheme() : 'light', false);
+    // One theme choice for the whole site. The dashboard applies its own
+    // scoped theme from this same preference; every other page uses the
+    // shared dark palette in pages.css / monthly-report.css.
+    applyTheme(readTheme(), false);
     var buttons = document.querySelectorAll('[data-theme-toggle]');
     for (var i = 0; i < buttons.length; i++) {
-      var row = buttons[i].closest('.sitebar-pref-row');
-      if (!canTheme) {
-        if (row) row.hidden = true;
-        continue;
-      }
       buttons[i].addEventListener('click', function () {
         var next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
         try { localStorage.setItem(THEME_KEY, next); } catch (error) { /* private mode */ }
@@ -85,39 +80,5 @@
     }
   }
 
-  function initLanguage() {
-    var selects = document.querySelectorAll('[data-language-select]');
-    if (!selects.length) return;
-    var rows = [].map.call(selects, function (select) {
-      return select.closest('[data-language-row]');
-    });
-    if (typeof window.getAvailableLanguages !== 'function' ||
-        typeof window.setLanguage !== 'function') {
-      rows.forEach(function (row) { if (row) row.hidden = true; });
-      return;
-    }
-    var languages = window.getAvailableLanguages();
-    if (!languages.length) {
-      rows.forEach(function (row) { if (row) row.hidden = true; });
-      return;
-    }
-    var options = languages.map(function (language) {
-      return '<option value="' + language.code + '">' + language.nativeName + '</option>';
-    }).join('');
-    [].forEach.call(selects, function (select, index) {
-      var row = rows[index];
-      select.innerHTML = options;
-      if (typeof window.getLanguage === 'function') select.value = window.getLanguage();
-      if (row) row.hidden = false;
-      select.addEventListener('change', function () {
-        if (!window.setLanguage(select.value)) return;
-        if (typeof window.translatePage === 'function') window.translatePage();
-        var active = typeof window.getLanguage === 'function' ? window.getLanguage() : select.value;
-        [].forEach.call(selects, function (other) { other.value = active; });
-      });
-    });
-  }
-
   initTheme();
-  initLanguage();
 })();

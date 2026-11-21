@@ -38,6 +38,66 @@
   --mono: ui-monospace, 'SF Mono', Consolas, Menlo, monospace;
 }
 
+/* The shared header offers one theme for the whole site. Keep the trust and
+   data pages in the same palette as the dashboard instead of resetting to
+   light when someone follows a citation. */
+html[data-theme="dark"] {
+  color-scheme: dark;
+  --ink: #ededed;
+  --ink-soft: #b4b4b4;
+  --ink-muted: #969696;
+  --surface: #0a0a0a;
+  --raised: #141414;
+  --hover: #1c1c1c;
+  --border: #2a2a2a;
+  --border-strong: #3a3a3a;
+  --green: #4ade80;
+  --green-deep: #86efac;
+  --green-deeper: #bbf7d0;
+  --green-soft: rgba(74, 222, 128, 0.12);
+  --surface-raised: var(--raised);
+}
+
+html[data-theme="dark"] .callout,
+html[data-theme="dark"] .page .callout,
+html[data-theme="dark"] .freshness-chip,
+html[data-theme="dark"] .status-pill,
+html[data-theme="dark"] .compare-table .is-us,
+html[data-theme="dark"] .notfound-links a {
+  background: var(--raised);
+  color: var(--ink);
+}
+html[data-theme="dark"] .status-pill.is-error,
+html[data-theme="dark"] .freshness-chip.is-error {
+  border-color: #7f1d1d;
+  background: #1a0d0d;
+  color: #fca5a5;
+}
+html[data-theme="dark"] .status-pill.is-warn,
+html[data-theme="dark"] .freshness-chip.is-warn {
+  border-color: #78350f;
+  background: #1c1408;
+  color: #fcd34d;
+}
+html[data-theme="dark"] .btn.primary {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: #0a0a0a;
+}
+html[data-theme="dark"] .btn.primary:hover {
+  border-color: #fff;
+  background: #fff;
+  color: #0a0a0a;
+}
+html[data-theme="dark"] .compare-table .yes,
+html[data-theme="dark"] .page .callout code {
+  color: var(--green-deep);
+}
+html[data-theme="dark"] .page .office-freshness-warning,
+html[data-theme="dark"] .page .contact-form-status.is-error {
+  color: #fca5a5;
+}
+
 *, *::before, *::after { box-sizing: border-box; }
 
 html { scroll-behavior: smooth; }
@@ -1012,6 +1072,24 @@ a:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; border-rad
 }
 .status-page .compare-table th,
 .status-page .compare-table td { padding: 9px 10px; }
+.status-page .status-table td:first-child { min-width: 128px; }
+.status-page .status-table td:nth-child(2) { min-width: 260px; }
+.status-page .status-table details summary {
+  color: var(--green-deep);
+  cursor: pointer;
+  font-size: 12.5px;
+  font-weight: 650;
+}
+.status-page .status-details {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 4px 12px;
+  margin: 8px 0 0;
+  font-size: 12px;
+  line-height: 1.45;
+}
+.status-page .status-details dt { color: var(--ink-muted); }
+.status-page .status-details dd { margin: 0; color: var(--ink-soft); }
 .status-page .feed-section { padding-top: 4px; }
 .feed-links { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 

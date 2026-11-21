@@ -203,11 +203,11 @@
             // reloads. Tab switches push history entries; search/date updates
             // replace the current one (no per-keystroke history spam).
             const TABS = [
-                { id: 'search', label: 'Search', icon: 'search' },
-                { id: 'history', label: 'History', icon: 'calendar-days' },
+                { id: 'search', label: 'Check a decision', icon: 'search' },
+                { id: 'history', label: 'Decision history', icon: 'calendar-days' },
                 { id: 'alerts', label: 'Alerts', icon: 'bell' },
-                { id: 'saved', label: 'Saved', icon: 'bookmark' },
-                { id: 'tools', label: 'Tools', icon: 'wrench' },
+                { id: 'saved', label: 'My applications', icon: 'bookmark' },
+                { id: 'tools', label: 'Guides', icon: 'wrench' },
             ];
             const KNOWN_TABS = TABS.map(function(tab) { return tab.id; });
             // Old bookmarks keep working after the eight-tab layout was
@@ -493,7 +493,7 @@
                 const newDelhiDate = newDelhiNowValue.date;
                 const wd = newDelhiNowValue.weekdayIndex;
                 if (wd === 0 || wd === 6) {
-                    return '<div class="status-line">Embassy closed today (' + weekdayLong(newDelhiDate) +
+                    return '<div class="status-line">New Delhi office closed today (' + weekdayLong(newDelhiDate) +
                         '). The next file is expected Monday after <strong>' +
                         scheduleTimeNode(NEW_DELHI_UPDATE_HOUR, NEW_DELHI_UPDATE_MINUTE) + '</strong>.</div>';
                 }
@@ -999,25 +999,21 @@
                 var meta = officeLookupMeta || {};
                 return Object.keys(meta).map(function(slug) { return meta[slug]; }).filter(function(office) {
                     var fresh = office && office.freshness;
-                    return Boolean(fresh && (fresh.status === 'error' || fresh.overdue));
+                    return Boolean(fresh && (fresh.status === 'error' || fresh.overdue || fresh.stale));
                 });
             }
 
             function siteFreshnessBannerHTML() {
                 var issues = siteFreshnessIssues();
                 if (!issues.length) return '';
-                var parts = issues.map(function(office) {
-                    var fresh = office.freshness;
-                    if (fresh.status === 'error') {
-                        return office.name + ': latest check failed; last successful ' +
-                            (fresh.last_success_label || 'not recorded');
-                    }
-                    var due = fresh.due_short_label || 'overdue';
-                    due = due.charAt(0).toLowerCase() + due.slice(1);
-                    return office.name + ': report ' + due;
-                });
-                return '<strong>Some office data is not current.</strong> ' + escapeHtml(parts.join(' · ')) +
-                    ' · <a href="/status">Check office status</a>';
+                return '<strong>Some search results may be incomplete.</strong>' +
+                    '<ul class="site-freshness-list">' + issues.map(function(office) {
+                        var impact = officeSearchImpact(office.slug, office);
+                        return '<li>' + escapeHtml(impact) +
+                            ' <a href="/' + escapeHtml(office.slug) + '-visa-decisions">Open the office page</a></li>';
+                    }).join('') + '</ul>' +
+                    '<p>Check the office page before assuming a decision is not published. ' +
+                    '<a href="/status">See what each office covers</a>.</p>';
             }
 
             function paintSiteFreshnessBanner() {
@@ -1066,13 +1062,13 @@
                     },
                     saved: {
                         title: 'Your applications, on this device.',
-                        sub: 'Save a number, restore a backup, and choose which saved applications get browser push.',
-                        visual: '<div class="paper"><div class="paper-title">Saved</div><div class="paper-text">No account. No server-side watchlist.</div></div>'
+                        sub: 'Save a number, choose browser or Telegram alerts, and restore a backup on a new device.',
+                        visual: '<div class="paper"><div class="paper-title">My applications</div><div class="paper-text">No account. No server-side watchlist.</div></div>'
                     },
                     tools: {
-                        title: 'Checklists and VFS, together.',
+                        title: 'Guides for the next step.',
                         sub: 'Build a document checklist, print it, or open the official VFS handoff.',
-                        visual: '<div class="paper"><div class="paper-title">Tools</div><div class="paper-text">Plan before you apply. This page cannot book a VFS slot.</div></div>'
+                        visual: '<div class="paper"><div class="paper-title">Guides</div><div class="paper-text">Plan before you apply. This page cannot book a VFS slot.</div></div>'
                     },
                     home: {
                         title: latestPlaceholder
@@ -2198,7 +2194,7 @@
             function renderWatchlistLayout() {
                 return '<div class="watch-card">' +
                     '<h3 class="watch-h3">Watch an application</h3>' +
-                    '<p class="note2" style="margin:0 0 12px;">Saved in this browser only. No account or sign-in is needed.</p>' +
+                    '<p class="note2" style="margin:0 0 12px;">Saved on this device only; no account is needed. After saving, choose browser notifications for this device or Telegram alerts through the bot.</p>' +
                     '<form id="watch-add-form" novalidate>' +
                     '<div class="watch-field"><label>Application number</label>' +
                     '<input type="text" name="application_number" required inputmode="numeric" ' +
@@ -2221,7 +2217,7 @@
                     '<div class="note2" id="watch-data-note"></div>' +
                     '<div class="watch-change-summary" id="watch-change-summary" role="status" aria-live="polite" hidden></div>' +
                     '<div id="watch-local-rows"></div>' +
-                    '<p class="note2" style="margin-bottom:0;">For Telegram alerts, use the Alerts tab. Browser notifications can also be enabled per application below.</p>' +
+                    '<p class="note2" style="margin-bottom:0;">Browser notifications are per application and stay on this device. Telegram alerts require linking the bot from the Alerts tab.</p>' +
                     '</div>' +
                     '<div class="watch-card">' +
                     '<h3 class="watch-h3">Back up this list</h3>' +
@@ -2434,9 +2430,11 @@
                 form.addEventListener('submit', function(e) {
                     e.preventDefault();
                     var status = document.getElementById('watch-add-status');
+                    var number = normalizeIRL(form.elements['application_number'].value);
+                    var office = form.elements['embassy_slug'].value;
                     var result = addWatchItem({
                         number: form.elements['application_number'].value,
-                        office: form.elements['embassy_slug'].value,
+                        office: office,
                         nickname: form.elements['nickname'].value.trim()
                     });
                     if (result === 'invalid') {
@@ -2455,7 +2453,10 @@
                         if (status) { status.textContent = 'Could not save this watchlist in this browser.'; status.style.color = 'var(--red)'; }
                         return;
                     }
-                    if (status) { status.textContent = 'Saved in this browser.'; status.style.color = 'var(--green)'; }
+                    if (status) {
+                        status.innerHTML = watchNotifyChooserHTML(number, office);
+                        status.style.color = '';
+                    }
                     form.reset();
                     trackConversion('watchlist_added', 'watchlist');
                     paintWatchlist();
@@ -2786,18 +2787,57 @@
                 };
             }
 
-            function lookupFreshnessHTML(meta) {
+            function officeSearchImpact(office, meta) {
+                var fresh = meta && meta.freshness;
+                var name = officeName(office);
+                if (!fresh) return '';
+                var report = lookupFormatDate(fresh.report_date || (meta && meta.report_date));
+                var missing = ' A decision published after that may not appear in a search yet.';
+                if (fresh.status === 'error') {
+                    return 'We couldn\'t refresh ' + name + ' this time.' +
+                        (report ? ' The latest official report is ' + report + '.' : '') + missing;
+                }
+                if (fresh.overdue) {
+                    var due = lookupFormatDate(fresh.due_at);
+                    return 'The ' + name + ' report is overdue' +
+                        (due ? ' (expected since ' + due + ')' : '') + '.' +
+                        (report ? ' The latest official report is ' + report + '.' : '') + missing;
+                }
+                if (fresh.stale) {
+                    return 'The latest ' + name + ' report is ' + (fresh.age_label || 'older than expected') + '.' +
+                        (report ? ' It is dated ' + report + '.' : '') + missing;
+                }
+                return '';
+            }
+
+            function staleSearchNoticeHTML(metas, officeFilter) {
+                var issues = siteFreshnessIssues().filter(function(office) {
+                    return !officeFilter || officeFilter === 'all' || office.slug === officeFilter;
+                });
+                if (!issues.length) return '';
+                return '<div class="home-lookup-stale" role="note">' +
+                    '<strong>Some search results may be incomplete.</strong>' +
+                    '<ul>' + issues.map(function(office) {
+                        var impact = officeSearchImpact(office.slug, office);
+                        return '<li>' + escapeHtml(impact) +
+                            ' <a href="/' + escapeHtml(office.slug) + '-visa-decisions">Open the office page</a></li>';
+                    }).join('') + '</ul>' +
+                    '<p>Check the office page before assuming a decision is not published. <a href="/status">See what each office covers</a>.</p></div>';
+            }
+
+            function lookupFreshnessHTML(meta, office) {
                 var fresh = meta && meta.freshness;
                 if (!fresh) return '';
-                var out = '<div class="lookup-result-freshness' + (fresh.warning ? ' is-warning' : '') + '"' +
-                    (fresh.warning ? ' role="note"' : '') + '>' +
-                    '<strong>Data freshness:</strong> ' + escapeHtml(fresh.summary) + '. ';
-                if (fresh.observation_note) out += escapeHtml(fresh.observation_note) + ' ';
-                if (fresh.warning) out += escapeHtml(fresh.warning) + ' ';
-                if (fresh.note && fresh.note !== fresh.warning) {
-                    out += '<span class="lookup-result-source-note">' + escapeHtml(fresh.note) + '</span>';
-                }
-                return out + '</div>';
+                var impact = officeSearchImpact(office, meta);
+                var details = [fresh.summary, fresh.observation_note, fresh.note].filter(Boolean).join(' ');
+                return '<div class="lookup-result-freshness' + (impact ? ' is-warning' : '') + '"' +
+                    (impact ? ' role="note"' : '') + '>' +
+                    '<strong>Data freshness:</strong> ' +
+                    (impact ? '<strong>Newer decisions may be missing.</strong> ' + escapeHtml(impact) + ' ' : '') +
+                    ' <a href="/status">Data status</a>.' +
+                    (details ? '<details class="lookup-result-freshness-details"><summary>Report details</summary>' +
+                        '<p>' + escapeHtml(details) + '</p></details>' : '') +
+                    '</div>';
             }
 
             function lookupWatchSaved(number, office) {
@@ -2893,8 +2933,9 @@
                     lastSuccessAt: lastSuccessAt,
                     checked: checked,
                     stale: stale || attention,
-                    state: status === 'error' ? 'Latest check failed' :
-                        stale ? 'Stale' : attention ? 'Needs attention' : '',
+                    state: status === 'error' ? 'Couldn\'t refresh' :
+                        fresh && fresh.overdue ? 'Report overdue' :
+                            stale ? 'Older report' : attention ? 'Check data status' : '',
                     status: status
                 };
             }
@@ -2950,7 +2991,7 @@
                         ? '<div class="lookup-result-fact"><dt>Source</dt><dd>' + escapeHtml(provenance.sourceLabel) + '</dd></div>' + trackerNote
                         : '<div class="lookup-result-fact"><dt>Report date</dt><dd>' +
                             (reportDate ? '<time datetime="' + escapeHtml(row.report_date || meta.report_date || '') + '">' + reportDate + '</time>' : 'Not listed') + '</dd></div>') +
-                    '<div class="lookup-result-fact"><dt>Last checked</dt><dd>' + checkState + checked + '</dd></div>' +
+                    '<div class="lookup-result-fact"><dt>Last successful check</dt><dd>' + checkState + checked + '</dd></div>' +
                     '</dl>' +
                     '<p class="lookup-result-source"><span class="lookup-result-source-label">' +
                     (provenance.isTracker ? 'Tracker observation' : 'Official source') + '</span>' + source +
@@ -2958,12 +2999,12 @@
                         ? '<span class="lookup-result-source-note">Not in the ' + escapeHtml(provenance.officialDate) + ' official file</span>'
                         : '') + '</p>' +
                     exactSource +
-                    lookupFreshnessHTML(meta) +
+                    lookupFreshnessHTML(meta, office) +
                     '<div class="lookup-result-actions">' +
                     lookupWatchButtonHTML(number, office) +
                     '<button type="button" class="btn lookup-result-btn lookup-result-alert" data-lookup-alert="' +
                     escapeHtml(number) + '" data-lookup-alert-office="' + escapeHtml(office) +
-                    '" aria-label="Get decision alerts for application ' + escapeHtml(number) + '">Get decision alerts</button>' +
+                    '" aria-label="Set up Telegram alerts for application ' + escapeHtml(number) + '" title="Telegram alerts require linking the bot">Telegram alerts</button>' +
                     '<button type="button" class="btn secondary lookup-result-btn lookup-result-share" data-lookup-share="' +
                     escapeHtml(number) + '" data-lookup-share-office="' + escapeHtml(office) +
                     '" aria-label="Copy result link for application ' + escapeHtml(number) + '" aria-describedby="' + privacyId +
@@ -3007,21 +3048,22 @@
                 var notify = number.length >= 4 ?
                     '<div class="home-noresult-notify">' +
                     '<h4>Get notified if this number appears</h4>' +
-                    '<p>Choose the office that processed the application. You can save it in this browser or set a Telegram alert.</p>' +
+                    '<p>Choose the office that processed the application. Saving keeps the number on this device; Telegram alerts require linking the bot.</p>' +
                     '<div class="home-noresult-controls">' + officePicker +
                     '<button type="button" class="btn lookup-result-btn" data-home-noresult-watch="' + escapeHtml(number) +
                     '" aria-pressed="false">Track this number</button>' +
                     '<button type="button" class="btn lookup-result-btn lookup-result-alert" data-home-noresult-alert="' +
-                    escapeHtml(number) + '">Get decision alerts</button>' +
+                    escapeHtml(number) + '" title="Telegram alerts require linking the bot">Telegram alerts</button>' +
                     '</div><div class="home-noresult-status" data-home-noresult-status role="status" aria-live="polite"></div>' +
                     '</div>' : '';
                 return '<div class="home-lookup-empty">' +
-                    '<h3>No published decision found</h3>' +
+                    '<h3>No matching decision in the reports we could check</h3>' +
                     '<p>We searched ' + escapeHtml(scope) + ' for <strong>' +
                         escapeHtml(term || homeSearchTerm.trim()) + '</strong>. This is not a refusal: the number is not in the reports we could check.</p>' +
                     '<p class="home-lookup-empty-tip">' + (homeSearchOffice === 'all'
                         ? 'Try another number format, or check that the application is under the office on your receipt. We already searched all six offices.'
                         : 'Try another office in the selector above, or choose <strong>All six offices</strong>.') + '</p>' +
+                    staleSearchNoticeHTML(metas, homeSearchOffice) +
                     notify +
                     '<div class="lookup-steps home-lookup-check-next"><h4>What to check next</h4><ol>' +
                     '<li>Use the application number on your receipt or decision email. Do not use a VFS reference or passport number; an <strong>IRL</strong> prefix, spaces and dashes are optional.</li>' +
@@ -3074,9 +3116,7 @@
                     btn.textContent = 'Tracking';
                     btn.classList.add('is-saved');
                     if (status) {
-                        status.textContent = added === 'duplicate'
-                            ? 'Already saved in this browser.'
-                            : 'Saved. Open Saved to check it whenever you visit.';
+                        status.innerHTML = watchNotifyChooserHTML(number, office);
                         status.classList.remove('is-error');
                     }
                     if (added === 'added') trackConversion('watchlist_added', 'lookup_empty');
@@ -3118,15 +3158,12 @@
                 var status = document.getElementById('home-lookup-status');
                 if (!box) return;
                 var fallbackNote = lookupFallbackNoteHTML(fallback);
-                var freshnessNote = homeSearchOffice !== 'all'
-                    ? lookupFreshnessHTML(lookupOfficeMeta(homeSearchOffice, metas))
-                    : '';
                 if (!rows.length) {
                     // The card below already carries the heading; keep the live
                     // status as a count so screen readers do not hear it twice.
                     if (status) status.textContent = '0 results for ' + (term || homeSearchTerm.trim()) +
                         (fallback ? ' in the fallback index.' : ' in the latest reports.');
-                    box.innerHTML = fallbackNote + freshnessNote + homeLookupNoResultHTML(term, metas);
+                    box.innerHTML = fallbackNote + homeLookupNoResultHTML(term, metas);
                     var noResultWatch = box.querySelector('[data-home-noresult-watch]');
                     if (noResultWatch) noResultWatchButtonState(noResultWatch, noResultWatch.getAttribute('data-home-noresult-watch'));
                     return;
@@ -3135,7 +3172,7 @@
                 var countText = total + ' published match' + (total === 1 ? '' : 'es') +
                     ' across ' + scope + (rows.length < total ? ' \u00b7 showing first ' + rows.length : '');
                 if (status) status.textContent = countText + (fallback ? ' \u00b7 fallback index' : '');
-                box.innerHTML = fallbackNote + freshnessNote + safetyNoticeHTML() + '<div class="home-lookup-result-list">' +
+                box.innerHTML = fallbackNote + safetyNoticeHTML() + '<div class="home-lookup-result-list">' +
                     rows.map(function(row) { return lookupResultCardHTML(row, metas); }).join('') + '</div>' +
                     '<p class="home-lookup-foot">Decision and report dates come from the office\'s published report. Always confirm details with the official source and your decision letter.</p>';
             }
@@ -3195,9 +3232,7 @@
                     if (added === 'added' || added === 'duplicate') {
                         lookupSetWatchButton(btn, true);
                         if (status) {
-                            status.textContent = added === 'duplicate'
-                                ? 'Already saved in this browser.'
-                                : 'Saved to your watchlist in this browser.';
+                            status.innerHTML = watchNotifyChooserHTML(number, office);
                             status.classList.remove('is-error');
                         }
                     } else if (status) {
@@ -3882,19 +3917,27 @@
 
             function renderAlertsLayout() {
                 return safetyNoticeHTML() +
-                    '<p class="alerts-digest-help" role="note"><strong>Telegram-only digest.</strong> The daily and weekly digest groups applications linked to the Telegram bot. Applications saved only in this browser are never uploaded, so they are not included; use browser push for those. After linking, send ' +
+                    '<div class="alerts-channel-grid" role="note">' +
+                    '<section><h3>Browser notifications</h3><p>Work on this device and this browser only. ' +
+                    'Save an application first, then enable notifications for it below or in <a href="?tracker=visa&amp;tab=saved">My applications</a>.</p></section>' +
+                    '<section><h3>Telegram alerts</h3><p>Require linking this tracker to the Telegram bot. ' +
+                    'Once linked, the bot can send each decision immediately or include it in a daily or weekly digest.</p></section>' +
+                    '</div>' +
+                    '<details class="alerts-digest-help"><summary>Telegram digest commands</summary>' +
+                    '<p>The daily and weekly digest groups applications linked to the Telegram bot. Applications saved only ' +
+                    'in this browser are never uploaded, so use browser notifications for those. After linking, send ' +
                     '<code>/digest weekly</code> in the bot for one grouped summary, or <code>/digest daily</code> for a ' +
                     'digest only when something changes. Add your preferred hour and IANA timezone, for example ' +
                     '<code>/digest daily 8 Europe/Dublin</code>, then use <code>/digest status</code> or ' +
                     '<code>/digest preview</code>. <code>/immediate 12345678</code> keeps one application immediate, ' +
-                    '<code>/digest 12345678</code> returns it to the digest, and <code>/remove 12345678</code> stops it.</p>' +
+                    '<code>/digest 12345678</code> returns it to the digest, and <code>/remove 12345678</code> stops it.</p></details>' +
                     '<div class="alerts-grid">' +
                         '<form class="card alerts-card" id="alert-form" name="telegram-alerts" novalidate style="max-width:100%;">' +
                             ALERT_FORM_HTML +
                         '</form>' +
                         '<section class="card alerts-card alerts-push-card" id="alerts-push-card" aria-labelledby="alerts-push-title">' +
                             '<h3 class="readme-title" id="alerts-push-title" style="margin-top:0;">Your alert subscriptions</h3>' +
-                            '<p class="note2">Saved applications appear here. Browser push is per application and arrives through this browser. Telegram subscriptions are managed inside the Telegram bot.</p>' +
+                            '<p class="note2">These are applications saved on this device. Browser notifications arrive through this browser; Telegram subscriptions are managed inside the bot.</p>' +
                             '<div id="alerts-push-list"></div>' +
                             '<div class="note" id="alerts-push-status" role="status" aria-live="polite"></div>' +
                             '<p class="note2" style="margin-bottom:0;"><a href="?tracker=visa&amp;tab=saved">Manage saved applications and backups</a></p>' +
@@ -4087,39 +4130,6 @@
                 if (!hero) return;
                 if (window._heroHasRendered) hero.style.opacity = '1';
                 else morphHero();
-
-            // Initialize i18n
-            if (typeof initLanguage === 'function') {
-                initLanguage();
-                translatePage();
-                // Create language selector after i18n module loads
-                var langBtn = document.querySelector('.lang-btn');
-                if (langBtn && typeof createLanguageSelector === 'function') {
-                    langBtn.outerHTML = createLanguageSelector();
-                }
-            }
-            // Language selector dropdown toggle
-            document.addEventListener('click', function(e) {
-                var btn = e.target.closest('.lang-btn');
-                if (btn) {
-                    var dropdown = btn.nextElementSibling;
-                    if (dropdown && dropdown.classList.contains('lang-dropdown')) {
-                        var isOpen = dropdown.style.display === 'block';
-                        document.querySelectorAll('.lang-dropdown').forEach(d => d.style.display = 'none');
-                        dropdown.style.display = isOpen ? 'none' : 'block';
-                    }
-                } else if (!e.target.closest('.lang-dropdown')) {
-                    document.querySelectorAll('.lang-dropdown').forEach(d => d.style.display = 'none');
-                }
-                var langItem = e.target.closest('.lang-dropdown li[data-lang]');
-                if (langItem) {
-                    var lang = langItem.getAttribute('data-lang');
-                    if (typeof setLanguage === 'function' && setLanguage(lang)) {
-                        translatePage();
-                    }
-                    langItem.closest('.lang-dropdown').style.display = 'none';
-                }
-            });
 
             }
 
@@ -4383,6 +4393,58 @@
                     }
                 });
                 return found && saveWatchlist(list);
+            }
+            function watchNotifyChooserHTML(number, office) {
+                var item = getWatchlist().filter(function(entry) {
+                    return entry.number === number && entry.office === office;
+                })[0];
+                var pushOn = Boolean(item && item.push);
+                return '<div class="watch-notify-next" data-watch-notify data-watch-notify-number="' +
+                    escapeHtml(number) + '" data-watch-notify-office="' + escapeHtml(office) + '">' +
+                    '<p class="watch-notify-lead"><strong>Saved on this device only.</strong> Choose how to hear about a decision:</p>' +
+                    '<div class="watch-notify-actions">' +
+                    '<button type="button" class="btn secondary" data-watch-notify-push="' + escapeHtml(number) +
+                    '" data-watch-notify-push-office="' + escapeHtml(office) + '" aria-pressed="' +
+                    (pushOn ? 'true' : 'false') + '"' + (pushOn ? ' disabled' : '') + '>' +
+                    (pushOn ? 'Browser notifications on' : 'Enable browser notifications') + '</button>' +
+                    '<button type="button" class="btn secondary" data-watch-notify-telegram="' +
+                    escapeHtml(number) + '" data-watch-notify-telegram-office="' + escapeHtml(office) + '">' +
+                    'Use Telegram alerts</button></div>' +
+                    '<p class="watch-notify-note">Browser notifications work in this browser on this device. ' +
+                    'Telegram alerts require linking the bot and are sent to your Telegram account.</p>' +
+                    '<div class="watch-notify-status" data-watch-notify-status role="status" aria-live="polite"></div></div>';
+            }
+            function handleWatchNotifyPush(btn) {
+                var app = btn.getAttribute('data-watch-notify-push') || '';
+                var office = btn.getAttribute('data-watch-notify-push-office') || '';
+                var wrap = btn.closest('[data-watch-notify]');
+                var status = wrap && wrap.querySelector('[data-watch-notify-status]');
+                if (!app || WATCH_OFFICES.indexOf(office) === -1) return;
+                if (typeof window.enablePushNotifications !== 'function') {
+                    if (status) status.textContent = 'Browser notifications are not available in this browser.';
+                    return;
+                }
+                btn.disabled = true;
+                if (status) status.textContent = 'Requesting notification permission\u2026';
+                Promise.resolve(window.enablePushNotifications(app, office)).then(function(result) {
+                    if (!result || !result.ok) {
+                        if (status) status.textContent = (result && result.error) || 'Could not enable browser notifications.';
+                        btn.disabled = false;
+                        return;
+                    }
+                    var stored = updateWatchItemPush(app, office, true);
+                    btn.textContent = 'Browser notifications on';
+                    btn.setAttribute('aria-pressed', 'true');
+                    btn.disabled = true;
+                    if (status) {
+                        status.textContent = stored
+                            ? 'Browser notifications are on for this device.'
+                            : 'Browser notifications are on, but this browser could not remember the setting.';
+                    }
+                }).catch(function() {
+                    btn.disabled = false;
+                    if (status) status.textContent = 'Could not enable browser notifications.';
+                });
             }
             function disableWatchPush(item) {
                 if (!item || typeof window.disablePushNotifications !== 'function') return;
@@ -4991,7 +5053,7 @@
                 g1Rows = g1RowsFor(g1Rows, '1G');
                 var wd = new Date(todayNewDelhi + 'T00:00:00').getDay();
                 if (wd === 0 || wd === 6) {
-                    parts.push('Embassy closed today - back Monday');
+                    parts.push('New Delhi office closed today - back Monday');
                 } else if (meta && meta.lastRunAt) {
                     if (String(meta.lastRunAt).slice(0, 10) === todayNewDelhi) {
                         parts.push('Today\u2019s embassy file is in' +
@@ -5031,7 +5093,6 @@
 
             function initLandingComponents() {
                 try { updateLandingStats(); } catch (e) { console.warn('stats:', e); }
-                try { renderEmbassyStatusGrid(); } catch (e) { console.warn('embassies:', e); }
                 try { renderCommunityWaitTimes(); } catch (e) { console.warn('community:', e); }
                 try { renderRecentDecisionsFeed(); } catch (e) { console.warn('recent:', e); }
                 try { setupPWAInstallButton(); } catch (e) { console.warn('pwa:', e); }
@@ -5046,7 +5107,6 @@
                         if (activeTracker !== 'home') return;
                         try { updateLandingStats(); } catch (e) { /* noop */ }
                         try { renderRecentDecisionsFeed(); } catch (e) { /* noop */ }
-                        try { renderEmbassyCoverageTable(); } catch (e) { /* noop */ }
                     }).catch(function() { /* offline: empty states are fine */ });
                 }
             }
@@ -5132,9 +5192,12 @@
                 } catch (error) { /* private mode */ }
                 if (lastRows && lastSeen && current > lastRows) {
                     var added = current - lastRows;
+                    var seenDate = new Date(lastSeen);
                     el.hidden = false;
                     el.innerHTML = '<strong>' + added.toLocaleString('en-IE') + ' new New Delhi decision' +
-                        (added === 1 ? '' : 's') + '</strong> since your last visit. ' +
+                        (added === 1 ? '' : 's') + '</strong> since your last visit' +
+                        (Number.isNaN(seenDate.getTime()) ? '' :
+                            ' on ' + seenDate.toLocaleDateString(displayLocale(), { day: 'numeric', month: 'short' })) + '. ' +
                         '<a href="?tracker=visa&amp;tab=history&amp;view=daily">See the latest day</a>';
                 }
                 try {
@@ -5143,82 +5206,26 @@
                 } catch (error) { /* private mode */ }
             }
 
-            // Embassy status cards. Each embassy data file is
-            // { decisions: [...] } - there is no separate meta file for them,
-            // so derive "latest decision" and the record count from the rows.
-            function renderEmbassyStatusGrid() {
-                var container = document.getElementById('embassy-status-grid');
-                if (!container) return;
-
-                container.innerHTML =
-                    '<div class="table-wrap coverage-table-wrap" role="region" aria-label="Office coverage table" tabindex="0">' +
-                    '<table class="coverage-table">' +
-                    '<caption>Latest official publication from each office, with a link to the source.</caption>' +
-                    '<thead><tr><th scope="col">Office</th><th scope="col">Latest report</th><th scope="col" class="num">Decisions</th><th scope="col">Source</th><th scope="col">Last successful check</th></tr></thead>' +
-                    '<tbody id="embassy-coverage-body"><tr><td colspan="5" class="coverage-empty">Loading publications…</td></tr></tbody>' +
-                    '</table></div>';
-
-                loadOfficeLookupMeta()
-                    .then(function(map) {
-                        var offices = Object.keys(map).map(function(slug) { return map[slug]; });
-                        if (!offices.length) throw new Error('no manifest');
-                        _embassyManifest = offices;
-                        var nd = map['new-delhi'];
-                        var visaCard = document.getElementById('visa-meta');
-                        if (nd && visaCard) {
-                            visaCard.textContent = (Number(nd.decisions) || 0).toLocaleString('en-IE') +
-                                ' decisions · report ' + lookupFormatDate(nd.report_date);
-                        }
-                        renderEmbassyCoverageTable();
-                        paintLandingVisitDelta(offices);
-                    })
-                    .catch(function() {
-                        _embassyManifest = null;
-                        var coverageBody = document.getElementById('embassy-coverage-body');
-                        if (coverageBody) coverageBody.innerHTML = '<tr><td colspan="5" class="coverage-empty">Coverage data is unavailable right now. <a href="/data/data_manifest.json">Open the manifest</a>.</td></tr>';
-                    });
-            }
-
-            // Latest manifest counts and report dates, with New Delhi history
-            // derived from the decision cache already used by the landing page.
-            function renderEmbassyCoverageTable() {
-                var body = document.getElementById('embassy-coverage-body');
-                if (!body || !_embassyManifest) return;
-
-                var order = ['new-delhi', 'beijing', 'dublin', 'abu-dhabi', 'abuja', 'ankara'];
-                var bySlug = {};
-                _embassyManifest.forEach(function(office) { bySlug[office.slug] = office; });
-
-                var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-                function formatDate(value) {
-                    var match = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(value || ''));
-                    if (!match) return '—';
-                    return Number(match[3]) + ' ' + (months[Number(match[2]) - 1] || '') + ' ' + match[1];
-                }
-                function sourceCell(office) {
-                    var links = [];
-                    if (office.source_url) {
-                        links.push('<a href="' + escapeHtml(office.source_url) + '" target="_blank" rel="noopener noreferrer">Office page</a>');
-                    }
-                    if (office.source_file) {
-                        links.push('<a href="' + escapeHtml(office.source_file) + '" target="_blank" rel="noopener noreferrer">Published file</a>');
-                    }
-                    return links.length ? links.join(' · ') : 'Not recorded';
-                }
-
-                body.innerHTML = order.map(function(slug) {
-                    var office = bySlug[slug];
-                    if (!office) {
-                        return '<tr><td><strong>' + escapeHtml(slug.replace(/-/g, ' ')) + '</strong></td><td>—</td><td class="num">—</td><td>—</td><td>—</td></tr>';
-                    }
-                    return '<tr>' +
-                        '<td><strong>' + escapeHtml(office.name || slug) + '</strong></td>' +
-                        '<td>' + formatDate(office.report_date) + '</td>' +
-                        '<td class="num">' + Number(office.decisions || 0).toLocaleString() + '</td>' +
-                        '<td>' + sourceCell(office) + '</td>' +
-                        '<td>' + (office.fetched_at ? fmtISTStamp(office.fetched_at) : '—') + '</td>' +
-                        '</tr>';
-                }).join('');
+            function paintLandingCoverageSummary(offices) {
+                var el = document.getElementById('landing-overview-meta');
+                if (!el) return;
+                var newDelhi = null;
+                var latestCheck = '';
+                (offices || []).forEach(function(office) {
+                    var fresh = office.freshness || {};
+                    if (office.slug === 'new-delhi') newDelhi = office;
+                    var check = fresh.last_success_at || office.fetched_at || office.as_of || '';
+                    if (check && String(check) > String(latestCheck)) latestCheck = check;
+                });
+                var ndFresh = (newDelhi && newDelhi.freshness) || {};
+                var latestDecision = String(ndFresh.latest_decision_date || '').slice(0, 10);
+                var decisionLabel = latestDecision ? lookupFormatDate(latestDecision) : '';
+                var check = ndFresh.last_success_at || (newDelhi && newDelhi.fetched_at) || latestCheck;
+                var checkLabel = check ? lookupFormatChecked(check) : '';
+                el.innerHTML = (decisionLabel
+                    ? 'Latest New Delhi decision ' + escapeHtml(decisionLabel)
+                    : 'Recent New Delhi decisions') +
+                    (checkLabel ? ' · Last successful check ' + checkLabel : '') + '.';
             }
 
             // Community-reported wait times for embassy visas. The JSON is an
@@ -5287,16 +5294,14 @@
 
                 var real = realRows(cache || []);
                 if (!real.length) {
-                    container.innerHTML = '<h3 class="landing-h3">Latest decisions</h3>' +
-                        '<p class="note2">' + (cache === null || cache === undefined
+                    container.innerHTML = '<p class="note2">' + (cache === null || cache === undefined
                             ? 'Loading the latest published decisions\u2026'
                             : 'No decisions published yet.') + '</p>';
                     return;
                 }
 
-                var recent = real.slice(0, 10);
-                var html = '<h3 class="landing-h3">Latest decisions <span class="note2">(most recent file)</span></h3>' +
-                    '<div class="table-wrap"><table class="results-table"><thead><tr>' +
+                var recent = real.slice(0, 4);
+                var html = '<div class="table-wrap"><table class="results-table landing-recent-table"><thead><tr>' +
                     '<th scope="col">Decision date</th><th scope="col">Application no.</th>' +
                     '<th scope="col">Decision</th><th scope="col">Office</th>' +
                     '</tr></thead><tbody>';
@@ -5306,7 +5311,7 @@
                         '<td class="mono">' + escapeHtml(r.irl) + '</td>' +
                         '<td><span class="pill ' + (r._pillClass || 'amber') + '">' +
                         escapeHtml(r.decision || '-') + '</span></td>' +
-                        '<td>' + escapeHtml(r.embassy || 'new-delhi') + '</td>' +
+                        '<td>' + escapeHtml(officeName(r.embassy || 'new-delhi')) + '</td>' +
                         '</tr>';
                 });
                 container.innerHTML = html + '</tbody></table></div>';
@@ -5379,19 +5384,32 @@ async function renderLandingPage() {
                         'DETE queue by permit category, with the current lag.', 'Loading…', 'permits-meta', 'permits') +
                     '</div>' +
                     '<p class="landing-alert-line"><strong>Free decision alerts.</strong> Get a free Telegram message the day your number is published. No account, no fee. <a href="/?tracker=visa&amp;tab=alerts">Set up alerts</a>.</p>' +
-                    '<section class="landing-publications" aria-labelledby="landing-publications-title">' +
-                    '<div class="landing-publications-head"><div>' +
-                    '<h2 id="landing-publications-title">Latest official publications</h2>' +
-                    '<p class="note2">Last checked <span id="stat-updated">—</span></p>' +
-                    '</div><a href="/status">Data status</a></div>' +
-                    '<div class="embassy-status-grid" id="embassy-status-grid" role="group" aria-label="Office coverage table"></div>' +
-                    '<p class="note2">Report dates vary by office. New Delhi, Abu Dhabi, Abuja and Ankara keep dated history; Beijing and Dublin publish a latest snapshot. <a href="/visa-processing-times">Dublin queue dates</a>.</p>' +
+                    '<section class="landing-overview" aria-labelledby="landing-overview-title">' +
+                    '<div class="landing-overview-head"><div>' +
+                    '<h2 id="landing-overview-title">Latest New Delhi decisions</h2>' +
+                    '<p class="note2" id="landing-overview-meta">Checking the latest office files…</p>' +
+                    '</div><a href="/?tracker=visa&amp;tab=history&amp;view=daily">Daily summaries</a></div>' +
+                    '<div id="recent-decisions-section" class="landing-recent"></div>' +
+                    '<p class="note2 landing-overview-foot">Newest rows in the New Delhi tracker, including observations after the latest official file. <a href="/status">See every office’s latest report and check time</a>.</p>' +
                     '</section>' +
                     '<div class="landing-foot">Source: official Irish visa office reports. Updated when the offices publish.</div></div>';
                 wireChrome();
-                loadOfficeLookupMeta().then(function() {
-                    if (activeTracker === 'home') paintSiteFreshnessBanner();
-                }).catch(function() { /* the office detail stays on /status */ });
+                loadOfficeLookupMeta().then(function(map) {
+                    if (activeTracker !== 'home') return;
+                    _embassyManifest = Object.keys(map).map(function(slug) { return map[slug]; });
+                    var nd = map['new-delhi'];
+                    var visaCard = document.getElementById('visa-meta');
+                    if (nd && visaCard) {
+                        visaCard.textContent = (Number(nd.decisions) || 0).toLocaleString('en-IE') +
+                            ' decisions' + (nd.report_date ? ' · report ' + lookupFormatDate(nd.report_date) : '');
+                    }
+                    paintSiteFreshnessBanner();
+                    paintLandingVisitDelta(_embassyManifest);
+                    paintLandingCoverageSummary(_embassyManifest);
+                }).catch(function() {
+                    var meta = document.getElementById('landing-overview-meta');
+                    if (meta) meta.innerHTML = 'Office check times are unavailable right now. <a href="/status">Open data status</a>.';
+                });
                 var cards = root.querySelectorAll('.tracker-card');
                 for (var i = 0; i < cards.length; i++) {
                     cards[i].addEventListener('click', function() {
@@ -5590,6 +5608,23 @@ async function renderLandingPage() {
             window.addEventListener('storage', function(e) {
                 if (e.key !== 'visa-watchlist') return;
                 paintWatchlist();
+            });
+            document.addEventListener('click', function(e) {
+                var target = e.target && e.target.closest ? e.target : null;
+                if (!target) return;
+                var push = target.closest('[data-watch-notify-push]');
+                if (push) {
+                    e.preventDefault();
+                    handleWatchNotifyPush(push);
+                    return;
+                }
+                var telegram = target.closest('[data-watch-notify-telegram]');
+                if (!telegram) return;
+                e.preventDefault();
+                openAlertForResult(
+                    telegram.getAttribute('data-watch-notify-telegram'),
+                    telegram.getAttribute('data-watch-notify-telegram-office')
+                );
             });
             render();
         })();

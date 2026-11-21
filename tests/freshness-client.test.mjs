@@ -127,6 +127,23 @@ test("the browser paint updates tagged static rows from absolute dates", () => {
   assert.equal(pill.className, "status-pill is-warn");
 });
 
+test("a failed refresh explains the failed check, not the office's snapshot format", () => {
+  const freshness = loadClient();
+  const beijing = office({
+    slug: "beijing",
+    name: "Beijing",
+    status: "error",
+    snapshot: true,
+    report_date: "2026-11-01",
+  });
+  const view = freshness.compute(beijing, new Date("2026-11-21T12:00:00Z"));
+
+  assert.equal(view.status, "error");
+  assert.match(view.search_impact, /^We couldn't refresh Beijing this time\./);
+  assert.match(view.search_impact, /latest official report is 1 November 2026/);
+  assert.doesNotMatch(view.search_impact, /Live snapshot/);
+});
+
 test("schedule view keeps Dublin on Tuesdays and Abuja on its report cadence", () => {
   const freshness = loadClient();
   const dublin = office({

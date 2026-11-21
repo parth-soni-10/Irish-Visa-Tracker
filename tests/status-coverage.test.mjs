@@ -15,7 +15,7 @@ function columns(section) {
     .map((match) => match[1].trim());
 }
 
-test("status page has one static coverage table with check provenance", async () => {
+test("status page answers search freshness and keeps provenance in details", async () => {
   const [html, manifestSource, freshnessSource] = await Promise.all([
     read("status.html"),
     read("data/data_manifest.json"),
@@ -26,9 +26,15 @@ test("status page has one static coverage table with check provenance", async ()
 
   const section = html.match(/<section id="office-coverage">[\s\S]*?<\/thead>/)?.[0] || "";
   const coverageColumns = columns(section);
-  assert.equal(coverageColumns.length, 9);
-  assert.ok(coverageColumns.includes("Last successful check"));
-  assert.ok(coverageColumns.includes("Last attempt"));
+  assert.equal(coverageColumns.length, 5);
+  assert.deepEqual(coverageColumns, [
+    "Office",
+    "What this means for your search",
+    "Latest official report",
+    "Last successful check",
+    "Details",
+  ]);
+  assert.ok(!coverageColumns.includes("Approved share"));
   assert.equal((html.match(/<section id="office-coverage">/g) || []).length, 1);
   assert.doesNotMatch(html, /id="latest-report-by-office"/);
 
@@ -36,13 +42,18 @@ test("status page has one static coverage table with check provenance", async ()
   const rows = [...body.matchAll(/<tr\b[\s\S]*?<\/tr>/g)].map((match) => match[0]);
   assert.equal(rows.length, manifest.offices.length);
   for (const row of rows) {
-    assert.equal((row.match(/<td\b/g) || []).length, 9, row);
+    assert.equal((row.match(/<td\b/g) || []).length, 5, row);
+    assert.ok(row.includes("<details><summary>Provenance and counts</summary>"), row);
+    assert.ok(row.includes("Last attempt"), row);
+    assert.ok(row.includes("Approved share"), row);
   }
 
   const beijing = freshness.offices.find((office) => office.slug === "beijing");
   const newDelhi = freshness.offices.find((office) => office.slug === "new-delhi");
   const beijingRow = rows.find((row) => row.includes(">Beijing<"));
   assert.ok(beijingRow, "Beijing row should render");
+  assert.ok(beijingRow.includes("Couldn't refresh"), "Beijing status uses plain language");
+  assert.ok(beijingRow.includes("We couldn't refresh Beijing this time."), "Beijing explains the search impact");
   assert.ok(beijingRow.includes(beijing.last_success_label), "Beijing last successful check");
   assert.ok(beijingRow.includes(beijing.last_attempt_label), "Beijing last attempt");
   assert.ok(beijingRow.includes("is-error"), "Beijing should keep its error state");
@@ -55,4 +66,10 @@ test("status page has one static coverage table with check provenance", async ()
     "New Delhi tracker observation is labelled separately",
   );
   assert.ok(newDelhiRow.includes(newDelhi.decisions.toLocaleString("en-IE")), "New Delhi decisions");
+  const abuja = freshness.offices.find((office) => office.slug === "abuja");
+  const abujaRow = rows.find((row) => row.includes(">Abuja<"));
+  assert.ok(abujaRow, "Abuja row should render");
+  assert.ok(abujaRow.includes("Report overdue"), "Abuja reports the overdue state plainly");
+  assert.ok(abujaRow.includes("may not appear in a search yet"), "Abuja explains the search impact");
+  assert.ok(abujaRow.includes(abuja.last_success_label), "Abuja last successful check");
 });

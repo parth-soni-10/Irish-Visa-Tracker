@@ -104,7 +104,7 @@ test('search exposes the last successful check and stale/error state for each of
   assert.ok(result, 'Beijing row should be returned by search');
   assert.equal(result.office_status, 'error');
   assert.equal(result.freshness_status, 'error');
-  assert.equal(result.freshness_status_label, 'Error');
+  assert.equal(result.freshness_status_label, "Couldn't refresh");
   assert.equal(result.office_attention, true);
   assert.equal(result.stale, false);
   assert.equal(result.last_success_label, '18 Nov 2026, 06:01 UTC');

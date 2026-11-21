@@ -71,7 +71,7 @@ test.describe('shared header interaction', () => {
     await expect(more).not.toHaveAttribute('open', '');
   });
 
-  test('theme choice persists and does not leak onto trust pages', async ({ page }) => {
+  test('theme choice persists across the site', async ({ page }) => {
     await page.goto('/');
     await page.locator('details.sitebar-prefs > summary').click();
     await page.locator('details.sitebar-prefs [data-theme-toggle]').click();
@@ -81,7 +81,8 @@ test.describe('shared header interaction', () => {
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
 
     await page.goto('/about');
-    await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+    await expect(page.locator('body')).toHaveCSS('background-color', 'rgb(10, 10, 10)');
   });
 
   test('respects prefers-reduced-motion', async ({ page }) => {

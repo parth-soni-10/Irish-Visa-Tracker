@@ -30,7 +30,8 @@ test("status gets a build-time latest-report row for every office", async (t) =>
   const freshness = loadFreshness(ROOT);
   const beijing = freshness.bySlug.beijing;
   assert.match(html, /<th scope="col">Last successful check<\/th>/);
-  assert.match(html, /<th scope="col">Last attempt<\/th>/);
+  assert.match(html, /<th scope="col">What this means for your search<\/th>/);
+  assert.match(html, /<th scope="col">Details<\/th>/);
   assert.match(html, /id="latest-reports-generated"[^>]*datetime="\d{4}-\d{2}-\d{2}T[^"]+Z"/);
   assert.match(html, /id="latest-reports-generated"[^>]*>[^<]*UTC<\/time>/);
   assert.match(html, /14 days old at last build · Due since 14 Nov 2026/);
@@ -40,9 +41,11 @@ test("status gets a build-time latest-report row for every office", async (t) =>
   assert.notEqual(beijing.last_success_label, beijing.last_attempt_label, "a failed attempt must not look like a successful check");
   const manifest = JSON.parse(await readFile(path.join(ROOT, "data", "data_manifest.json"), "utf8"));
   for (const office of manifest.offices) {
-    assert.match(html, new RegExp(`<td>${office.name}</td>`), office.slug);
+    assert.match(html, new RegExp(`<strong>${office.name}</strong>`), office.slug);
     assert.match(html, new RegExp(`href="/${office.slug}-visa-decisions"`), office.slug);
   }
+  assert.ok(html.includes("We couldn't refresh Beijing this time."), "Beijing explains the search impact");
+  assert.ok(html.includes("The Abuja report is overdue"), "Abuja explains the search impact");
   assert.match(html, /<time datetime="2026-11-19">19 November 2026<\/time>/);
   const tbody = html.match(/<tbody[^>]*data-latest-reports[^>]*>([\s\S]*?)<\/tbody>/)[1];
   assert.doesNotMatch(tbody, /Loading/);

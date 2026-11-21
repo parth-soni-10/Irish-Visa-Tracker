@@ -284,7 +284,7 @@ export function loadFreshness(assetsRoot = ROOT) {
       last_success_label: checkedStamp(successAt),
       last_attempt_label: checkedStamp(attemptAt),
       status,
-      status_label: status === 'error' ? 'Error' : snapshot ? 'Snapshot' : status.charAt(0).toUpperCase() + status.slice(1),
+      status_label: status === 'error' ? 'Couldn\'t refresh' : overdue ? 'Report overdue' : snapshot ? 'Snapshot' : status.charAt(0).toUpperCase() + status.slice(1),
       status_tone: statusTone,
       attention: Boolean(statusTone),
       note: office.note || '',

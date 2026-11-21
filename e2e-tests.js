@@ -91,7 +91,9 @@ test.describe('SPA shell', () => {
     await page.fill('#watch-add-form input[name="application_number"]', 'IRL2023981083');
     await page.selectOption('#watch-add-form select[name="embassy_slug"]', 'new-delhi');
     await page.click('#watch-add-btn');
-    await expect(page.locator('#watch-add-status')).toContainText('Saved in this browser');
+    await expect(page.locator('#watch-add-status')).toContainText('Saved on this device only');
+    await expect(page.locator('#watch-add-status')).toContainText('Enable browser notifications');
+    await expect(page.locator('#watch-add-status')).toContainText('Use Telegram alerts');
 
     const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('visa-watchlist') || '[]'));
     expect(saved).toHaveLength(1);
@@ -384,19 +386,13 @@ test.describe('Time zone toggle', () => {
     await openPreferences(page);
     const toggle = page.locator('details.sitebar-prefs [data-time-mode-toggle]');
     await expect(toggle).toBeVisible();
-    await expect(toggle).toHaveAttribute('data-mode', 'utc');
-    await expect(toggle).toHaveAttribute('aria-pressed', 'false');
-    await expect(page.locator('#stat-updated')).toContainText('17 Nov 2026, 11:20 UTC');
-    const zonedTimestamp = await page.evaluate(() =>
-      window.IVTimeMode.newDelhiNode('2026-11-17T12:17:53.093Z', 'short')
-    );
-    expect(zonedTimestamp).toContain('12:17 UTC');
-
-    await toggle.click();
     await expect(toggle).toHaveAttribute('data-mode', 'local');
     await expect(toggle).toHaveAttribute('aria-pressed', 'true');
-    await expect(page.locator('#stat-updated')).toContainText('03:20');
-    await expect(page.locator('#stat-updated')).not.toContainText('UTC');
+    const localTimestamp = await page.evaluate(() =>
+      window.IVTimeMode.node('2026-11-17T11:20:00Z', 'short')
+    );
+    expect(localTimestamp).toContain('03:20');
+    expect(localTimestamp).not.toContain('UTC');
 
     await page.goto(`${BASE_URL}/?tracker=visa&tab=search`, { waitUntil: 'networkidle' });
     await expect(page.locator('#home-search')).toBeVisible({ timeout: 15000 });
@@ -436,13 +432,13 @@ test.describe('Status page clocks', () => {
     }));
 
     await page.goto(`${BASE_URL}/status`, { waitUntil: 'networkidle' });
-    await expect(page.locator('#status-summary')).toContainText('17 Nov 2026, 16:50 UTC');
+    await expect(page.locator('#status-summary')).toContainText('17 Nov 2026, 08:50');
+    await expect(page.locator('#status-summary')).not.toContainText('UTC');
     await openPreferences(page);
 
     const toggle = page.locator('details.sitebar-prefs [data-time-mode-toggle]');
     await toggle.click();
-    await expect(page.locator('#status-summary')).toContainText('17 Nov 2026, 08:50');
-    await expect(page.locator('#status-summary')).not.toContainText('UTC');
+    await expect(page.locator('#status-summary')).toContainText('17 Nov 2026, 16:50 UTC');
   });
 });
 
@@ -688,22 +684,23 @@ test.describe('All-office search result cards', () => {
     await expect(card).toContainText('Latest published snapshot');
     await expect(card).toContainText('Decision date');
     await expect(card).toContainText('Report date');
-    await expect(card).toContainText('Last checked');
-    const checked = card.locator('.lookup-result-fact').filter({ hasText: 'Last checked' });
-    await expect(checked).toContainText('09:31 UTC');
+    await expect(card).toContainText('Last successful check');
+    const checked = card.locator('.lookup-result-fact').filter({ hasText: 'Last successful check' });
+    await expect(checked).toContainText('01:31');
+    await expect(checked).not.toContainText('UTC');
     await openPreferences(page);
+    await page.locator('details.sitebar-prefs [data-time-mode-toggle]').click();
+    await expect(checked).toContainText('09:31 UTC');
     await page.locator('details.sitebar-prefs [data-time-mode-toggle]').click();
     await expect(checked).toContainText('01:31');
     await expect(checked).not.toContainText('UTC');
-    await page.locator('details.sitebar-prefs [data-time-mode-toggle]').click();
-    await expect(checked).toContainText('09:31 UTC');
     await expect(card).toContainText('Official source');
     await expect(card.locator('.lookup-result-source a[href="https://www.ireland.ie/en/china/beijing/services/visas/visa-decisions/"]')).toBeVisible();
     await expect(card.locator('[data-lookup-source-file]')).toHaveAttribute(
       'href',
       'https://www.ireland.ie/5288/20261101_BVO_visa_decisions.ods'
     );
-    await expect(checked).toContainText('Needs attention');
+    await expect(checked).toContainText('Check data status');
     await expect(card).toContainText('Data freshness');
     await expect(card).toContainText('snapshot 1 November 2026');
     await expect(card).toContainText('Test manifest note');
@@ -801,7 +798,7 @@ test.describe('All-office search result cards', () => {
     await page.goto(`${BASE_URL}/?tracker=visa&tab=search`, { waitUntil: 'domcontentloaded' });
     await page.locator('#home-search').fill('99999999');
     await page.locator('#home-search').press('Enter');
-    await expect(page.locator('.home-lookup-empty h3')).toContainText('No published decision found');
+    await expect(page.locator('.home-lookup-empty h3')).toContainText('No matching decision in the reports we could check');
     expect(await seriousA11yViolations(page, '.home-lookup-empty')).toEqual([]);
 
     const watch = page.locator('[data-home-noresult-watch]');

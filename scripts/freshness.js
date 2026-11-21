@@ -246,6 +246,27 @@
     return '';
   }
 
+  function searchImpact(office, view) {
+    var name = office.name || office.slug || 'This office';
+    var report = longDate(view.report_date);
+    var missing = ' A decision published after that may not appear in a search yet.';
+    if (view.status === 'error') {
+      return 'We couldn\'t refresh ' + name + ' this time.' +
+        (report ? ' The latest official report is ' + report + '.' : '') + missing;
+    }
+    if (view.overdue) {
+      return 'The ' + name + ' report is overdue' +
+        (view.due_at ? ' (expected since ' + longDate(view.due_at) + ')' : '') + '.' +
+        (report ? ' The latest official report is ' + report + '.' : '') + missing;
+    }
+    if (view.stale) {
+      return 'The latest ' + name + ' report is ' + (view.age_label || 'older than expected') + '.' +
+        (report ? ' It is dated ' + report + '.' : '') + missing;
+    }
+    if (office.snapshot) return 'Live snapshot. A search covers the latest published list.';
+    return 'Current. A search covers the latest official report.';
+  }
+
   function compute(office, now) {
     office = office || {};
     var slug = office.slug || '';
@@ -268,6 +289,8 @@
       : '';
     var nextDueLabel = overdue && nextDueAt ? 'Next expected ' + longDate(nextDueAt) : '';
     var view = {
+      status: status,
+      report_date: reportDate,
       age_days: age,
       age_label: ageLabel(age),
       stale: stale,
@@ -281,11 +304,12 @@
       status_tone: statusTone,
       attention: Boolean(statusTone)
     };
-    view.status_label = office.status_label ||
-      (status === 'error' ? 'Error' : office.snapshot ? 'Snapshot' : status.charAt(0).toUpperCase() + status.slice(1));
+    view.status_label = status === 'error' ? 'Couldn\'t refresh' : overdue ? 'Report overdue' :
+      (office.status_label || (office.snapshot ? 'Snapshot' : status.charAt(0).toUpperCase() + status.slice(1)));
     view.observation_note = observationNote(office);
     view.summary = summary(office, view);
     view.warning = warning(office, view);
+    view.search_impact = searchImpact(office, view);
     return Object.assign({}, office, view);
   }
 
@@ -359,6 +383,8 @@
       var view = compute(office, now);
       var age = row.querySelector('[data-freshness-age]');
       if (age) age.textContent = [view.age_label, view.due_short_label].filter(Boolean).join(' · ');
+      var impact = row.querySelector('[data-freshness-impact]');
+      if (impact) impact.textContent = view.search_impact;
       var pill = row.querySelector('[data-freshness-status]');
       if (pill) {
         pill.className = 'status-pill' + (view.status_tone ? ' is-' + view.status_tone : '');

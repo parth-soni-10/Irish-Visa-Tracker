@@ -287,8 +287,7 @@ html[data-theme="dark"] .sitebar-footer .brand img {
   .sitebar-more > summary::after,
   .sitebar-prefs > summary::after,
   .sitebar-more-panel a,
-  .sitebar-pref-button,
-  .sitebar-pref-select { transition: none; }
+  .sitebar-pref-button { transition: none; }
   .sitebar-more-panel { animation: none; }
 }
 .sitebar-more:not([open]) > .sitebar-more-panel { display: none; }
@@ -323,8 +322,7 @@ html[data-theme="dark"] .sitebar-footer .brand img {
   font-weight: 600;
 }
 .sitebar-pref-label { color: var(--sc-ink-soft); font-weight: 650; }
-.sitebar-pref-button,
-.sitebar-pref-select {
+.sitebar-pref-button {
   min-height: 36px;
   padding: 6px 12px;
   border: 1px solid var(--sc-border);
@@ -337,11 +335,8 @@ html[data-theme="dark"] .sitebar-footer .brand img {
   transition: border-color .15s ease, background-color .15s ease;
 }
 .sitebar-pref-button { cursor: pointer; }
-.sitebar-pref-button:hover,
-.sitebar-pref-select:hover { border-color: #a3a3a3; background: var(--sc-hover); }
-.sitebar-pref-button:focus-visible,
-.sitebar-pref-select:focus-visible { outline: 2px solid var(--sc-accent); outline-offset: 2px; }
-.sitebar-pref-select { max-width: 160px; }
+.sitebar-pref-button:hover { border-color: #a3a3a3; background: var(--sc-hover); }
+.sitebar-pref-button:focus-visible { outline: 2px solid var(--sc-accent); outline-offset: 2px; }
 .sitebar-pref-row[hidden] { display: none; }
 
 /* Below the desktop width the brand and the links no longer fit on one line:

@@ -444,6 +444,9 @@
             line-height: 1.5;
         }
         #visa-dash .site-freshness a { color: inherit; font-weight: 600; }
+        #visa-dash .site-freshness-list { margin: 6px 0; padding-left: 18px; }
+        #visa-dash .site-freshness-list li + li { margin-top: 5px; }
+        #visa-dash .site-freshness p { margin: 0; }
         #visa-dash .stale-retry {
             flex-shrink: 0;
             padding: 4px 12px;
@@ -2810,6 +2813,20 @@
     color: var(--ink-soft);
 }
 #visa-dash .lookup-result-status.is-error { color: var(--red-text); }
+#visa-dash .watch-notify-next {
+    flex-basis: 100%;
+    margin-top: 2px;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface-raised);
+}
+#visa-dash .watch-notify-lead { margin: 0 0 8px; color: var(--ink-soft); font-size: 12px; line-height: 1.5; }
+#visa-dash .watch-notify-lead strong { color: var(--ink); }
+#visa-dash .watch-notify-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+#visa-dash .watch-notify-actions .btn { min-height: 36px; padding: 7px 10px; font-size: 12px; }
+#visa-dash .watch-notify-note { margin: 8px 0 0; color: var(--ink-muted); font-size: 11px; line-height: 1.45; }
+#visa-dash .watch-notify-status { margin-top: 6px; color: var(--ink-soft); font-size: 12px; line-height: 1.45; }
 #visa-dash .lookup-result-privacy {
     flex-basis: 100%;
     margin: 0;
@@ -2960,6 +2977,20 @@
     color: var(--ink-soft);
 }
 #visa-dash .home-noresult-status.is-error { color: var(--red-text); }
+#visa-dash .home-lookup-stale {
+    margin: 12px 0 0;
+    padding: 10px 12px;
+    border: 1px solid rgba(180, 83, 9, .35);
+    border-radius: var(--r-container);
+    background: rgba(251, 191, 36, .08);
+    color: var(--ink-soft);
+    font-size: 12.5px;
+    line-height: 1.55;
+}
+#visa-dash .home-lookup-stale strong { color: var(--ink); }
+#visa-dash .home-lookup-stale ul { margin: 6px 0; padding-left: 18px; }
+#visa-dash .home-lookup-stale li + li { margin-top: 5px; }
+#visa-dash .home-lookup-stale p { margin: 0; font-size: 12px; }
 #visa-dash .home-noresult-controls .lookup-result-btn { min-height: 40px; }
 #visa-dash .home-lookup-link {
     font-size: 13px;
@@ -3195,6 +3226,25 @@
     color: var(--green-text);
     font-size: 11px;
 }
+#visa-dash .alerts-channel-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    margin: 0 0 14px;
+}
+#visa-dash .alerts-channel-grid section {
+    padding: 12px 14px;
+    border: 1px solid var(--border);
+    border-radius: var(--r-container);
+    background: var(--surface-raised);
+}
+#visa-dash .alerts-channel-grid h3 { margin: 0 0 4px; font-size: 14px; }
+#visa-dash .alerts-channel-grid p { margin: 0; color: var(--ink-soft); font-size: 12px; line-height: 1.55; }
+#visa-dash details.alerts-digest-help summary { cursor: pointer; color: var(--ink); font-weight: 600; }
+#visa-dash details.alerts-digest-help p { margin: 8px 0 0; }
+@media (max-width: 700px) {
+    #visa-dash .alerts-channel-grid { grid-template-columns: 1fr; }
+}
 #visa-dash .home-freshness-links {
     display: flex;
     align-items: center;
@@ -3417,6 +3467,22 @@
   background: transparent;
   box-shadow: none;
 }
+#visa-dash .landing-overview {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 2px 0 0;
+}
+#visa-dash .landing-overview-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 10px;
+}
+#visa-dash .landing-overview-head h2 { margin: 0; font-size: 18px; line-height: 1.25; letter-spacing: -.015em; }
+#visa-dash .landing-overview-head .note2 { margin: 2px 0 0; font-size: 12px; }
+#visa-dash .landing-recent-table { font-size: 13px; }
+#visa-dash .landing-overview-foot { margin: 10px 0 0; font-size: 12px; }
 #visa-dash .landing-publications-head {
   display: flex;
   align-items: flex-end;
@@ -4443,6 +4509,14 @@
   font-size: 12.5px;
 }
 #visa-dash .lookup-result-freshness.is-warning { border-left-color: var(--amber); background: transparent; color: var(--ink-soft); }
+#visa-dash .lookup-result-freshness-details { margin-top: 4px; }
+#visa-dash .lookup-result-freshness-details summary {
+  width: fit-content;
+  cursor: pointer;
+  color: var(--ink);
+  font-weight: 600;
+}
+#visa-dash .lookup-result-freshness-details p { margin: 6px 0 0; }
 #visa-dash .lookup-result-alert { border-color: var(--ink); background: var(--ink); color: var(--surface); }
 #visa-dash .lookup-result-alert:hover,
 #visa-dash .lookup-result-alert:focus-visible { border-color: #333; background: #333; color: #fff; }

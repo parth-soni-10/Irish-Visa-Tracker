@@ -1,8 +1,9 @@
 /*
  * One time-zone choice for every clock KPI on the site.
  *
- * UTC is the default and the storage-independent fallback. Times are rendered
- * as <time data-iv-time="ISO" data-iv-time-format="preset"> so toggling updates
+ * Local time is the default; UTC remains available for citations and audits.
+ * Times are rendered as
+ * <time data-iv-time="ISO" data-iv-time-format="preset"> so toggling updates
  * existing nodes in place instead of re-rendering a tab (and losing a search).
  */
 (function () {
@@ -27,9 +28,9 @@
 
   function readMode() {
     try {
-      return localStorage.getItem(STORAGE_KEY) === 'local' ? 'local' : 'utc';
+      return localStorage.getItem(STORAGE_KEY) === 'utc' ? 'utc' : 'local';
     } catch (error) {
-      return 'utc';
+      return 'local';
     }
   }
 

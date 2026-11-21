@@ -624,7 +624,8 @@ export function injectLatestReports(options = {}) {
     const decisions = Number(office.decisions) || 0;
     const approved = Number(office.approved) || 0;
     const rate = decisions ? `${((approved / decisions) * 100).toFixed(1)}%` : '—';
-    const statusLabel = office.status_label;
+    const statusLabel = office.status === 'error' ? "Couldn't refresh" :
+      office.overdue ? 'Report overdue' : (office.status_label || 'Published');
     const statusClass = office.status_tone ? ` is-${office.status_tone}` : '';
     const statusTitle = office.status === 'error'
       ? office.warning_at_build
@@ -639,17 +640,45 @@ export function injectLatestReports(options = {}) {
     const observationNote = observedThrough && officialThrough && observedThrough > officialThrough
       ? `<br><span class="small-note" data-observation="tracker">Tracker observed through ${escapeHtml(longDate(observedThrough))} — not in this official file</span>`
       : '';
+    const reportLabel = reportDate ? escapeHtml(longDate(reportDate)) : '';
+    const missing = ' A decision published after that may not appear in a search yet.';
+    let impact;
+    if (office.status === 'error') {
+      impact = `We couldn't refresh ${office.name} this time.` +
+        (reportLabel ? ` The latest official report is ${reportLabel}.` : '') + missing;
+    } else if (office.overdue) {
+      impact = `The ${office.name} report is overdue` +
+        (office.due_at ? ` (expected since ${escapeHtml(longDate(office.due_at))})` : '') + '.' +
+        (reportLabel ? ` The latest official report is ${reportLabel}.` : '') + missing;
+    } else if (office.stale) {
+      impact = `The latest ${office.name} report is ${escapeHtml(office.age_label || 'older than expected')}.` +
+        (reportLabel ? ` It is dated ${reportLabel}.` : '') + missing;
+    } else if (office.snapshot) {
+      impact = 'Live snapshot. A search covers the latest published list.';
+    } else {
+      impact = 'Current. A search covers the latest official report.';
+    }
+    const lag = office.observation_lag;
+    const lagText = lag && lag.sample_size
+      ? `Median ${lag.median_days} day${lag.median_days === 1 ? '' : 's'} (range ${lag.min_days}–${lag.max_days}; ${lag.sample_size} report${lag.sample_size === 1 ? '' : 's'})`
+      : 'Not enough observations yet';
     const timeCell = (value, label) => value
       ? `<td data-label="${label}">${timeHTML(value)}</td>`
       : `<td data-label="${label}">—</td>`;
-    return `<tr data-freshness-slug="${office.slug}" data-freshness-view="status"><td>${escapeHtml(office.name)}</td>` +
-      `<td data-label="Report">${reportDate ? `<time datetime="${reportDate}">${escapeHtml(longDate(reportDate))}</time>` : '—'}${ageNote ? `<br><span class="small-note" data-freshness-age>${escapeHtml(ageNote)}</span>` : ''}</td>` +
-      `<td data-label="Official data through">${officialThrough ? `<time datetime="${officialThrough}">${escapeHtml(longDate(officialThrough))}</time>${observationNote}` : '—'}</td>` +
+    return `<tr data-freshness-slug="${office.slug}" data-freshness-view="status">` +
+      `<td><a href="/${office.slug}-visa-decisions"><strong>${escapeHtml(office.name)}</strong></a><br>` +
+      `<span class="status-pill${statusClass}" data-freshness-status${statusTitle ? ` title="${escapeHtml(statusTitle)}"` : ''}>${escapeHtml(statusLabel)}</span></td>` +
+      `<td data-label="What this means for your search"><span data-freshness-impact>${escapeHtml(impact)}</span>` +
+      (ageNote ? `<br><span class="small-note" data-freshness-age>${escapeHtml(ageNote)}</span>` : '') + `</td>` +
+      `<td data-label="Latest official report">${reportDate ? `<time datetime="${reportDate}">${escapeHtml(longDate(reportDate))}</time>` : '—'}${observationNote}</td>` +
       timeCell(successAt, 'Last successful check') +
-      timeCell(attemptAt, 'Last attempt') +
-      `<td data-label="Status"><span class="status-pill${statusClass}" data-freshness-status${statusTitle ? ` title="${escapeHtml(statusTitle)}"` : ''}>${statusLabel}</span></td>` +
-      `<td data-label="Decisions">${decisions.toLocaleString('en-IE')}</td><td data-label="Approved share">${rate}</td>` +
-      `<td data-label="Office page"><a href="/${office.slug}-visa-decisions">${escapeHtml(office.name)} decisions</a></td></tr>`;
+      `<td data-label="Details"><details><summary>Provenance and counts</summary><dl class="status-details">` +
+      `<dt>Official data through</dt><dd>${officialThrough ? escapeHtml(longDate(officialThrough)) : '—'}</dd>` +
+      `<dt>Last successful check</dt><dd>${successAt ? timeHTML(successAt) : '—'}</dd>` +
+      `<dt>Last attempt</dt><dd>${attemptAt ? timeHTML(attemptAt) : '—'}</dd>` +
+      `<dt>Decisions in report</dt><dd>${decisions.toLocaleString('en-IE')}</dd>` +
+      `<dt>Approved share</dt><dd>${rate}</dd>` +
+      `<dt>Observation lag</dt><dd>${escapeHtml(lagText)}</dd></dl></details></td></tr>`;
   }).join('\n            ');
   let html = fs.readFileSync(pagePath, 'utf8').replace(
     /(<tbody[^>]*data-latest-reports[^>]*>)[\s\S]*?(<\/tbody>)/i,
