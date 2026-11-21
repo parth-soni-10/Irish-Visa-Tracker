@@ -224,6 +224,171 @@ function replaceFields(html, attribute, values) {
     Object.prototype.hasOwnProperty.call(values, key) ? open + values[key] + close : match);
 }
 
+const REPORT_HISTORY_LIMIT = 8;
+const HTML_ESCAPES = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' };
+const escapeHtml = (value) => String(value).replace(/[&<>"]/g, (char) => HTML_ESCAPES[char]);
+
+function httpUrl(value) {
+  const raw = String(value || '').trim();
+  if (!/^https?:\/\//i.test(raw)) return '';
+  try {
+    return new URL(raw).href;
+  } catch {
+    return '';
+  }
+}
+
+function loadReportArchive(assetsRoot) {
+  const file = path.resolve(assetsRoot, 'data', 'reports', 'index.json');
+  if (!fs.existsSync(file)) return null;
+  try {
+    return JSON.parse(fs.readFileSync(file, 'utf8'));
+  } catch {
+    console.warn('Warning: data/reports/index.json is not valid JSON; keeping office report-history fallbacks');
+    return null;
+  }
+}
+
+function summarizeOfficeDecisions(rows) {
+  const byDate = new Map();
+  for (const row of Array.isArray(rows) ? rows : []) {
+    const date = String(row && row.date || '').slice(0, 10);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) continue;
+    if (!byDate.has(date)) byDate.set(date, { total: 0, approved: 0, refused: 0 });
+    const bucket = byDate.get(date);
+    bucket.total += 1;
+    if (/^approved/i.test(String(row.decision || ''))) bucket.approved += 1;
+    else bucket.refused += 1;
+  }
+  return byDate;
+}
+
+function loadOfficeDecisionSummary(assetsRoot, slug) {
+  const file = path.resolve(assetsRoot, 'data', `embassy-${slug}.json`);
+  if (!fs.existsSync(file)) return new Map();
+  try {
+    const parsed = JSON.parse(fs.readFileSync(file, 'utf8'));
+    return summarizeOfficeDecisions(parsed && parsed.decisions);
+  } catch {
+    console.warn(`Warning: data/embassy-${slug}.json is not valid JSON; using archive counts without row outcomes`);
+    return new Map();
+  }
+}
+
+/**
+ * Rows for the office page's report-history table, newest first.
+ *
+ * The report index supplies report-specific outcomes where they were recorded.
+ * The manifest's archive_reports supplies every archived report date, including
+ * older reports whose outcomes are absent from the report index. For those
+ * dates, approved/refused counts come from the office's own decision file,
+ * grouped by report-period date. A date links to a report permalink only when
+ * that permalink exists in the report index. Consecutive entries with the same
+ * counts and source are one unchanged snapshot checked again (Dublin's list)
+ * and are collapsed into one row.
+ */
+function reportHistoryHtml(office, reports, decisionSummary = new Map()) {
+  const entries = reports && reports.offices && Array.isArray(reports.offices[office.slug])
+    ? reports.offices[office.slug]
+    : [];
+  const indexed = new Map();
+  for (const entry of entries) {
+    if (!entry || !/^\d{4}-\d{2}-\d{2}/.test(String(entry.report_date || ''))) continue;
+    indexed.set(String(entry.report_date).slice(0, 10), entry);
+  }
+
+  const archived = new Map();
+  for (const report of Array.isArray(office.archive_reports) ? office.archive_reports : []) {
+    if (!report || !/^\d{4}-\d{2}-\d{2}/.test(String(report.report_date || ''))) continue;
+    const date = String(report.report_date).slice(0, 10);
+    if (!archived.has(date)) archived.set(date, report);
+  }
+
+  const dates = [...new Set([...indexed.keys(), ...archived.keys()])]
+    .sort((a, b) => b.localeCompare(a));
+  const rows = [];
+  let previous = '';
+  for (const date of dates) {
+    const report = indexed.get(date);
+    const archiveReport = archived.get(date);
+    const summary = decisionSummary.get(date);
+    const decisions = Math.max(0,
+      Number(report && report.decisions) ||
+      Number(archiveReport && archiveReport.decisions) ||
+      Number(summary && summary.total) || 0);
+
+    let approved = report ? Number(report.approved) : NaN;
+    let refused = report ? Number(report.refused) : NaN;
+    let hasOutcomes = Boolean(report) && Number.isFinite(approved) && Number.isFinite(refused) &&
+      (approved + refused > 0 || decisions === 0);
+    if (!hasOutcomes && summary) {
+      approved = Math.max(0, Number(summary.approved) || 0);
+      refused = Math.max(0, Number(summary.refused) || 0);
+      hasOutcomes = true;
+    }
+    if (!Number.isFinite(approved)) approved = 0;
+    if (!Number.isFinite(refused)) refused = 0;
+
+    const sourceFile = String(
+      (report && (report.source_file || report.source_url)) ||
+      (archiveReport && (archiveReport.source_file || archiveReport.source_url)) ||
+      (date === String(office.report_date || '').slice(0, 10) ? office.source_file : '') ||
+      ''
+    );
+    const row = {
+      reportDate: date,
+      decisions,
+      approved: Math.max(0, approved),
+      refused: Math.max(0, refused),
+      sourceFile,
+      hasReportPage: Boolean(report),
+      hasOutcomes,
+    };
+    const key = [
+      row.decisions, row.approved, row.refused, row.sourceFile, row.hasReportPage, row.hasOutcomes,
+    ].join('|');
+    if (key === previous) continue;
+    previous = key;
+    rows.push(row);
+    if (rows.length >= REPORT_HISTORY_LIMIT) break;
+  }
+
+  // An office missing from both public archives still gets its latest manifest report.
+  if (!rows.length && /^\d{4}-\d{2}-\d{2}/.test(String(office.report_date || ''))) {
+    const reportDate = String(office.report_date).slice(0, 10);
+    rows.push({
+      reportDate,
+      decisions: Math.max(0, Number(office.decisions) || 0),
+      approved: Math.max(0, Number(office.approved) || 0),
+      refused: Math.max(0, Number(office.refused) || 0),
+      sourceFile: String(office.source_file || office.source_url || ''),
+      hasReportPage: indexed.has(reportDate),
+      hasOutcomes: Number.isFinite(Number(office.approved)) && Number.isFinite(Number(office.refused)),
+    });
+  }
+
+  if (!rows.length) return '<tr><td colspan="6">No dated reports are recorded yet.</td></tr>';
+
+  return rows.map((row) => {
+    const rate = row.hasOutcomes && row.decisions
+      ? `${((row.approved / row.decisions) * 100).toFixed(1)}%`
+      : '—';
+    const href = httpUrl(row.sourceFile) || httpUrl(office.source_url);
+    const source = href
+      ? `<a href="${escapeHtml(href)}" target="_blank" rel="noopener noreferrer">Official source</a>`
+      : '—';
+    const dateCell = row.hasReportPage
+      ? `<a href="/reports/${office.slug}/${row.reportDate}"><time datetime="${row.reportDate}">${escapeHtml(formatLongDate(row.reportDate))}</time></a>`
+      : `<time datetime="${row.reportDate}">${escapeHtml(formatLongDate(row.reportDate))}</time>`;
+    return `<tr><td>${dateCell}</td>` +
+      `<td>${row.decisions.toLocaleString('en-IE')}</td>` +
+      `<td>${row.approved.toLocaleString('en-IE')}</td>` +
+      `<td>${row.refused.toLocaleString('en-IE')}</td>` +
+      `<td>${rate}</td>` +
+      `<td>${source}</td></tr>`;
+  }).join('\n            ');
+}
+
 /**
  * The home page and daily summaries are static HTML. Write the latest New
  * Delhi count and report date into that text at build time so readers without
@@ -286,6 +451,8 @@ export function injectOfficePages(options = {}) {
   }
   if (!Array.isArray(manifest.offices)) return;
 
+  const reports = loadReportArchive(assetsRoot);
+
   const decisionsPath = path.resolve(assetsRoot, 'data', 'visa_decisions.json');
   let visaRows = [];
   if (fs.existsSync(decisionsPath)) {
@@ -304,6 +471,7 @@ export function injectOfficePages(options = {}) {
     const file = `${office.slug}-visa-decisions.html`;
     const pagePath = path.resolve(dist, file);
     if (!fs.existsSync(pagePath)) continue;
+    const decisionSummary = loadOfficeDecisionSummary(assetsRoot, office.slug);
 
     const decisions = Number(office.decisions) || 0;
     const approved = Number(office.approved) || 0;
@@ -363,6 +531,9 @@ export function injectOfficePages(options = {}) {
     }
 
     let html = replaceFields(fs.readFileSync(pagePath, 'utf8'), 'data-office', fields);
+    html = replaceFields(html, 'data-report-history', {
+      [office.slug]: reportHistoryHtml(office, reports, decisionSummary),
+    });
 
     if (office.source_file) {
       html = html.replace(

@@ -32,6 +32,11 @@ test("office pages carry unique crawl metadata and working schema", async () => 
     assert.match(html, /data-office="decisions"/);
     assert.match(html, /data-office="latest-date"/);
     assert.match(html, /data-office="source-file"/);
+    assert.match(html, /Recent report history/);
+    assert.match(html, new RegExp(`<tbody[^>]*data-report-history="${page.slug}"`), page.file);
+    assert.match(html, /Approval rate/);
+    assert.match(html, /Official source/);
+    assert.match(html, /At most 8 rows are shown; consecutive unchanged snapshots are collapsed into one row\./);
     assert.doesNotMatch(html, /undefined|\[object Object\]/, page.file);
     assert.match(html, /src="\/scripts\/time-mode.js"/, page.file);
     assert.doesNotMatch(html, /src="\/time-mode.js"/, page.file);
@@ -60,6 +65,8 @@ test("each office page links the tracker, all other offices and its CTA", async 
     assert.match(html, /href="\/help"/, page.file);
     assert.match(html, /Searchable history/);
     assert.match(html, /class="table-wrap"[^>]*role="region"[^>]*tabindex="0"/);
+    assert.match(html, /<section id="report-history">/);
+    assert.match(html, /aria-label="Recent [^"]+ report history"/);
 
     const footer = html.slice(html.indexOf('<footer'), html.indexOf('</footer>'));
     for (const other of PAGES) {

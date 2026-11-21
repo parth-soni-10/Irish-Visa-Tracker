@@ -415,6 +415,24 @@ function latestTable(office) {
       </div>`;
 }
 
+function reportHistory(office) {
+  const f = office.fallback;
+  return `<section id="report-history">
+      <h2>Recent report history</h2>
+      <p>${office.historyNote}</p>
+      <div class="table-wrap" role="region" aria-label="Recent ${office.name} report history" tabindex="0">
+        <table class="office-table">
+          <caption>Recent reports in the tracker’s public archive, newest first. At most 8 rows are shown; consecutive unchanged snapshots are collapsed into one row.</caption>
+          <thead><tr><th scope="col">Report date</th><th scope="col">Decisions</th><th scope="col">Approved</th><th scope="col">Refused</th><th scope="col">Approval rate</th><th scope="col">Official source</th></tr></thead>
+          <tbody data-report-history="${office.slug}">
+            <tr><td><time datetime="${f.latest}">${longDate(f.latest)}</time></td><td>${f.decisions.toLocaleString('en-IE')}</td><td>${f.approved.toLocaleString('en-IE')}</td><td>${f.refused.toLocaleString('en-IE')}</td><td>${pct(f.approved, f.decisions)}</td><td><a href="${esc(office.sourceFile)}" target="_blank" rel="noopener noreferrer">Official source</a></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="small-note">Approval rate is approved decisions divided by the decisions in that report. The latest official file table above remains the authority for the current counts. <a href="/reports/${office.slug}">Open the full ${office.name} report archive</a> for every dated report with its checksum and official file.</p>
+    </section>`;
+}
+
 function faqSection(office) {
   const faq = office.faq(office.fallback);
   return `<section>
@@ -493,6 +511,8 @@ ${schemaFor(office)}
       <p class="small-note">Source: <a href="${office.sourceUrl}" target="_blank" rel="noopener noreferrer">${office.sourceName}</a>. The table links the latest ingested source file.</p>
       <p class="small-note">The tracker checked the source on <span data-office="checked-date">${longDate(f.checked)}</span>. The approval share describes the published rows, not the chance that a particular application will be approved.</p>
     </section>
+
+    ${reportHistory(office)}
 
     <section>
       <h2>Which applications are handled by ${office.name}</h2>

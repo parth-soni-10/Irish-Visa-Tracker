@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { copyFile, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { test } from "node:test";
@@ -36,6 +36,8 @@ function assertOfficeField(html, key, value, file) {
 test("deploy office-page injection writes current manifest data into a temporary build", async (t) => {
   const manifest = JSON.parse(await readFile(path.join(ROOT, "data", "data_manifest.json"), "utf8"));
   assert.ok(Array.isArray(manifest.offices), "data_manifest.json must contain offices");
+  const archive = JSON.parse(await readFile(path.join(ROOT, "data", "reports", "index.json"), "utf8"));
+  assert.ok(archive.offices, "data/reports/index.json must contain offices");
 
   const temp = await mkdtemp(path.join(os.tmpdir(), "office-page-injection-"));
   t.after(() => rm(temp, { recursive: true, force: true }));
@@ -43,9 +45,13 @@ test("deploy office-page injection writes current manifest data into a temporary
   const assets = path.join(temp, "assets");
   const dist = path.join(temp, "dist");
   const data = path.join(assets, "data");
-  await mkdir(data, { recursive: true });
+  await mkdir(path.join(data, "reports"), { recursive: true });
   await mkdir(dist, { recursive: true });
   await writeFile(path.join(data, "data_manifest.json"), JSON.stringify(manifest));
+  await writeFile(path.join(data, "reports", "index.json"), JSON.stringify(archive));
+  // Ankara has archived report dates missing from the report index; the
+  // injector must read its decision file to fill those rows.
+  await copyFile(path.join(ROOT, "data", "embassy-ankara.json"), path.join(data, "embassy-ankara.json"));
 
   const delhi = manifest.offices.find((office) => office.slug === "new-delhi");
   assert.ok(delhi, "data_manifest.json must contain New Delhi");
@@ -79,6 +85,10 @@ test("deploy office-page injection writes current manifest data into a temporary
     stale = stale.replace(
       /(<a[^>]*data-office="source-file"[^>]*href=")[^"]*(")/i,
       "$1https://stale.invalid/source$2",
+    );
+    stale = stale.replace(
+      /(<tbody[^>]*data-report-history="[^"]*"[^>]*>)[\s\S]*?(<\/tbody>)/i,
+      "$1<tr><td>STALE-history</td></tr>$2",
     );
     await writeFile(path.join(dist, file), stale);
   }
@@ -116,5 +126,68 @@ test("deploy office-page injection writes current manifest data into a temporary
       new RegExp(`href="/\\?tracker=visa&amp;tab=search&amp;office=${escapeRegExp(office.slug)}"`),
       `${file}: missing office-preselected Search CTA`,
     );
+
+    const history = html.match(
+      new RegExp(`<tbody[^>]*data-report-history="${escapeRegExp(office.slug)}"[^>]*>([\\s\\S]*?)<\\/tbody>`),
+    );
+    assert.ok(history, `${file}: missing report-history table body`);
+    const rows = history[1];
+    assert.doesNotMatch(rows, /STALE/, `${file}: report history was not regenerated`);
+
+    const entries = (archive.offices[office.slug] || [])
+      .filter((entry) => /^\d{4}-\d{2}-\d{2}/.test(String(entry.report_date || "")))
+      .slice()
+      .sort((a, b) => String(b.report_date).localeCompare(String(a.report_date)));
+    assert.ok(entries.length, `${office.slug}: report archive has no dated entries`);
+    const latest = entries[0];
+    assert.match(rows, new RegExp(`<time datetime="${latest.report_date}">`), file);
+    assert.match(
+      rows,
+      new RegExp(`<td>${escapeRegExp(Number(latest.decisions).toLocaleString("en-IE"))}</td>`),
+      `${file}: report history is missing the latest decision count`,
+    );
+    const rate = `${((Number(latest.approved) / Number(latest.decisions)) * 100).toFixed(1)}%`;
+    assert.match(rows, new RegExp(`<td>${escapeRegExp(rate)}</td>`), `${file}: report history is missing the approval rate`);
+    assert.match(
+      rows,
+      new RegExp(`href="${escapeRegExp(String(latest.source_file).replace(/&/g, "&amp;"))}"`),
+      `${file}: report history is missing the official source link`,
+    );
+    assert.ok((rows.match(/<tr>/g) || []).length <= 8, `${file}: report history should list at most 8 reports`);
+    if (office.slug === "ankara") {
+      assert.equal(
+        (rows.match(/<tr>/g) || []).length,
+        office.archive_reports.length,
+        `${file}: every archived Ankara report date should be listed`,
+      );
+      for (const report of office.archive_reports) {
+        assert.match(rows, new RegExp(`<time datetime="${report.report_date}">`), `${file}: missing ${report.report_date}`);
+      }
+      assert.match(
+        rows,
+        /<td>167<\/td><td>142<\/td><td>25<\/td><td>85\.0%<\/td>/,
+        `${file}: missing OCR-derived outcomes for the 11 October 2026 report`,
+      );
+      assert.doesNotMatch(
+        rows,
+        /href="\/reports\/ankara\/2026-10-11"/,
+        `${file}: dates without a report permalink must not link to a missing page`,
+      );
+    }
+    if (office.slug === "dublin") {
+      // Dublin checks one published list repeatedly; identical consecutive
+      // snapshots collapse, but each distinct published list keeps a row.
+      const distinct = entries.filter((entry, index) => index === 0 || [
+        entry.decisions, entry.approved, entry.refused, entry.source_file,
+      ].join("|") !== [
+        entries[index - 1].decisions, entries[index - 1].approved,
+        entries[index - 1].refused, entries[index - 1].source_file,
+      ].join("|"));
+      assert.equal(
+        (rows.match(/<tr>/g) || []).length,
+        Math.min(distinct.length, 8),
+        `${file}: repeated identical Dublin snapshots should collapse to one row each`,
+      );
+    }
   }
 });
