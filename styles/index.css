@@ -3728,7 +3728,6 @@
   #visa-dash .tracker-card { align-items: flex-start; gap: 12px; }
   #visa-dash .tracker-row-meta { max-width: 46%; }
   #visa-dash .landing-publications { overflow-x: auto; }
-  #visa-dash .coverage-table { min-width: 620px; }
   #visa-dash .cards { grid-template-columns: 1fr; }
   #visa-dash .cards .card,
   #visa-dash .cards .card + .card {

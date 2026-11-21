@@ -5154,7 +5154,7 @@
                     '<div class="table-wrap coverage-table-wrap" role="region" aria-label="Office coverage table" tabindex="0">' +
                     '<table class="coverage-table">' +
                     '<caption>Latest official publication from each office, with a link to the source.</caption>' +
-                    '<thead><tr><th scope="col">Office</th><th scope="col">Latest report</th><th scope="col" class="num">Decisions</th><th scope="col">Source</th><th scope="col">Fetched</th></tr></thead>' +
+                    '<thead><tr><th scope="col">Office</th><th scope="col">Latest report</th><th scope="col" class="num">Decisions</th><th scope="col">Source</th><th scope="col">Last successful check</th></tr></thead>' +
                     '<tbody id="embassy-coverage-body"><tr><td colspan="5" class="coverage-empty">Loading publications…</td></tr></tbody>' +
                     '</table></div>';
 

@@ -386,11 +386,6 @@ html[data-theme="dark"] .sitebar-footer .brand img {
     overscroll-behavior: contain;
     padding-bottom: max(24px, env(safe-area-inset-bottom));
   }
-  .sitebar-footer-inner { grid-template-columns: 1fr; gap: 24px; padding: 24px 16px 16px; }
-  .sitebar-footer-brand p { max-width: 100%; }
-  .sitebar-footer-col:last-child { display: none; }
-  .sitebar-footer-bottom { padding: 16px 16px 12px; }
-  .sitebar-footer-copy { width: 100%; }
 }
 
 .sitebar-footer {
@@ -463,4 +458,12 @@ html[data-theme="dark"] .sitebar-footer .brand img {
 
 @media (max-width: 960px) {
   .sitebar-footer-inner { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px 24px; }
+}
+
+@media (max-width: 760px) {
+  .sitebar-footer-inner { grid-template-columns: 1fr; gap: 24px; padding: 24px 16px 16px; }
+  .sitebar-footer-brand p { max-width: 100%; }
+  .sitebar-footer-col:last-child { display: none; }
+  .sitebar-footer-bottom { padding: 16px 16px 12px; }
+  .sitebar-footer-copy { width: 100%; }
 }

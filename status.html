@@ -100,6 +100,10 @@
               <span data-theme-label>Light</span>
             </button>
           </div>
+          <label class="sitebar-pref-row" data-language-row hidden>
+            <span class="sitebar-pref-label">Language</span>
+            <select class="sitebar-pref-select" data-language-select aria-label="Language"></select>
+          </label>
         </div>
       </details>
     </div>
@@ -118,7 +122,7 @@
       <p class="note2">Loading the current data manifest&hellip;</p>
     </div>
 
-    <section id="latest-report-by-office">
+    <section id="office-coverage">
       <h2>Latest official report by office</h2>
       <p class="small-note">The newest official file the tracker holds for each office, with the same counts as that office’s page. <strong>Report</strong> is the file’s own date; <strong>data through</strong> is the newest decision date inside that official file. Where the tracker has seen later decision dates, a separate <strong>tracker observation</strong> line is shown; those dates are not part of the official count. <strong>Last successful check</strong> is the most recent check that read the office’s file; <strong>last attempt</strong> is the latest scheduled run, which may have failed. Times are UTC. Beijing and Dublin publish live snapshots, not dated reports. <strong>Table generated</strong> <time id="latest-reports-generated" datetime="2026-11-21T21:49:35.557Z" data-iv-time="2026-11-21T21:49:35.557Z" data-iv-time-format="full">21 Nov 2026, 21:49 UTC</time>; the manifest remains the machine-readable source.</p>
       <div class="compare-table-wrap" role="region" aria-label="Latest official report by office" tabindex="0">
@@ -182,37 +186,6 @@
         including the latest report for every office. Expected times are estimates, not
         publication guarantees. The subscription refreshes from the same public report archive
         used by the rest of this page.
-      </p>
-    </section>
-
-    <section id="office-coverage">
-      <h2>Office coverage</h2>
-      <div class="compare-table-wrap" role="region" aria-label="Office coverage and freshness" tabindex="0">
-        <table class="compare-table status-table">
-          <caption>Current office coverage and freshness from the public data manifest and freshness model</caption>
-          <thead>
-            <tr>
-              <th scope="col">Office</th>
-              <th scope="col">Report</th>
-              <th scope="col">Official data through</th>
-              <th scope="col">Last successful check</th>
-              <th scope="col">Last attempt</th>
-              <th scope="col">Status</th>
-              <th scope="col">Decisions</th>
-              <th scope="col">Approved share</th>
-              <th scope="col">Office page</th>
-            </tr>
-          </thead>
-          <tbody id="status-rows">
-            <tr><td colspan="9" class="note2">Loading office coverage&hellip;</td></tr>
-          </tbody>
-        </table>
-      </div>
-      <p class="small-note">
-        The manifest and freshness files are the source of truth for this page:
-        <a href="/data/data_manifest.json">data_manifest.json</a> and
-        <a href="/data/freshness.json">freshness.json</a>.
-        The machine-readable summary is <a href="/data/data_manifest.json">data_manifest.json</a>; the public developer API has been retired.
       </p>
     </section>
 

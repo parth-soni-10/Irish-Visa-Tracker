@@ -86,28 +86,35 @@
   }
 
   function initLanguage() {
-    var select = document.querySelector('[data-language-select]');
-    if (!select) return;
-    var row = select.closest('[data-language-row]');
+    var selects = document.querySelectorAll('[data-language-select]');
+    if (!selects.length) return;
+    var rows = [].map.call(selects, function (select) {
+      return select.closest('[data-language-row]');
+    });
     if (typeof window.getAvailableLanguages !== 'function' ||
         typeof window.setLanguage !== 'function') {
-      if (row) row.hidden = true;
+      rows.forEach(function (row) { if (row) row.hidden = true; });
       return;
     }
     var languages = window.getAvailableLanguages();
     if (!languages.length) {
-      if (row) row.hidden = true;
+      rows.forEach(function (row) { if (row) row.hidden = true; });
       return;
     }
-    select.innerHTML = languages.map(function (language) {
+    var options = languages.map(function (language) {
       return '<option value="' + language.code + '">' + language.nativeName + '</option>';
     }).join('');
-    if (typeof window.getLanguage === 'function') select.value = window.getLanguage();
-    if (row) row.hidden = false;
-    select.addEventListener('change', function () {
-      if (!window.setLanguage(select.value)) return;
-      if (typeof window.translatePage === 'function') window.translatePage();
-      select.value = typeof window.getLanguage === 'function' ? window.getLanguage() : select.value;
+    [].forEach.call(selects, function (select, index) {
+      var row = rows[index];
+      select.innerHTML = options;
+      if (typeof window.getLanguage === 'function') select.value = window.getLanguage();
+      if (row) row.hidden = false;
+      select.addEventListener('change', function () {
+        if (!window.setLanguage(select.value)) return;
+        if (typeof window.translatePage === 'function') window.translatePage();
+        var active = typeof window.getLanguage === 'function' ? window.getLanguage() : select.value;
+        [].forEach.call(selects, function (other) { other.value = active; });
+      });
     });
   }
 
