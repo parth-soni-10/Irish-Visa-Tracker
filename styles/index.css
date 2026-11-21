@@ -3377,6 +3377,10 @@
   color: var(--ink-soft);
   font-size: 12.5px;
   line-height: 1.5;
+  /* Reserve two lines for the live update summary. The placeholder is one
+     line, so without this the search form and cards move down when the
+     summary arrives (mobile CLS). */
+  min-height: 3em;
 }
 #visa-dash .landing-alert-line {
   max-width: 1080px;

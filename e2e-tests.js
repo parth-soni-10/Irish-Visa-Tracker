@@ -807,8 +807,9 @@ test.describe('History and Help routes', () => {
   test('serves the Help and FAQ route', async ({ page }) => {
     const response = await page.goto(`${BASE_URL}/help`, { waitUntil: 'domcontentloaded' });
     expect(response.status()).toBe(200);
-    await expect(page).toHaveTitle(/Help & FAQ/);
-    await expect(page.locator('h1')).toContainText('Using the Irish Visa Decision Tracker');
+    await expect(page).toHaveTitle(/How to Check Your Irish Visa Application Status/);
+    await expect(page.locator('h1')).toContainText('How to check your Irish visa application status');
+    await expect(page.locator('#check-status')).toBeVisible();
     await expect(page.locator('#find-number')).toBeVisible();
     await expect(page.locator('#checklist')).toBeVisible();
   });

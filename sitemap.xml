@@ -9,53 +9,87 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://irishvisaupdatetracker.pages.dev/</loc>
-    <lastmod>2026-11-07</lastmod>
+    <lastmod>2026-11-21</lastmod>
   </url>
   <url>
     <loc>https://irishvisaupdatetracker.pages.dev/daily-summaries</loc>
-    <lastmod>2026-11-07</lastmod>
+    <lastmod>2026-11-21</lastmod>
   </url>
   <url>
     <loc>https://irishvisaupdatetracker.pages.dev/stamp-1g-processing-dates</loc>
-    <lastmod>2026-11-07</lastmod>
+    <lastmod>2026-11-21</lastmod>
   </url>
   <url>
     <loc>https://irishvisaupdatetracker.pages.dev/employment-permit-processing-dates</loc>
-    <lastmod>2026-11-07</lastmod>
+    <lastmod>2026-11-21</lastmod>
   </url>
   <url>
     <loc>https://irishvisaupdatetracker.pages.dev/visa-processing-times</loc>
-    <lastmod>2026-11-07</lastmod>
+    <lastmod>2026-11-21</lastmod>
   </url>
   <url>
     <loc>https://irishvisaupdatetracker.pages.dev/comparison</loc>
-    <lastmod>2026-11-10</lastmod>
+    <lastmod>2026-11-21</lastmod>
   </url>
   <url>
     <loc>https://irishvisaupdatetracker.pages.dev/status</loc>
-    <lastmod>2026-11-10</lastmod>
+    <lastmod>2026-11-21</lastmod>
   </url>
   <url>
     <loc>https://irishvisaupdatetracker.pages.dev/about</loc>
-    <lastmod>2026-11-07</lastmod>
+    <lastmod>2026-11-21</lastmod>
   </url>
   <url>
     <loc>https://irishvisaupdatetracker.pages.dev/help</loc>
-    <lastmod>2026-11-17</lastmod>
+    <lastmod>2026-11-21</lastmod>
   </url>
   <url>
     <loc>https://irishvisaupdatetracker.pages.dev/contact</loc>
-    <lastmod>2026-11-17</lastmod>
+    <lastmod>2026-11-21</lastmod>
   </url>
   <url>
     <loc>https://irishvisaupdatetracker.pages.dev/corrections</loc>
-    <lastmod>2026-11-17</lastmod>
+    <lastmod>2026-11-21</lastmod>
   </url>
   <url>
     <loc>https://irishvisaupdatetracker.pages.dev/privacy</loc>
-    <lastmod>2026-11-07</lastmod>
+    <lastmod>2026-11-21</lastmod>
   </url>
-  <url><loc>https://irishvisaupdatetracker.pages.dev/terms</loc></url>
-  <url><loc>https://irishvisaupdatetracker.pages.dev/monthly-report</loc></url>
+  <url>
+    <loc>https://irishvisaupdatetracker.pages.dev/terms</loc>
+    <lastmod>2026-11-21</lastmod>
+  </url>
+  <url>
+    <loc>https://irishvisaupdatetracker.pages.dev/monthly-report</loc>
+    <lastmod>2026-11-21</lastmod>
+  </url>
+  <url>
+    <loc>https://irishvisaupdatetracker.pages.dev/vac-transit</loc>
+    <lastmod>2026-11-21</lastmod>
+  </url>
+  <url>
+    <loc>https://irishvisaupdatetracker.pages.dev/new-delhi-visa-decisions</loc>
+    <lastmod>2026-11-21</lastmod>
+  </url>
+  <url>
+    <loc>https://irishvisaupdatetracker.pages.dev/beijing-visa-decisions</loc>
+    <lastmod>2026-11-21</lastmod>
+  </url>
+  <url>
+    <loc>https://irishvisaupdatetracker.pages.dev/abu-dhabi-visa-decisions</loc>
+    <lastmod>2026-11-21</lastmod>
+  </url>
+  <url>
+    <loc>https://irishvisaupdatetracker.pages.dev/abuja-visa-decisions</loc>
+    <lastmod>2026-11-21</lastmod>
+  </url>
+  <url>
+    <loc>https://irishvisaupdatetracker.pages.dev/ankara-visa-decisions</loc>
+    <lastmod>2026-11-21</lastmod>
+  </url>
+  <url>
+    <loc>https://irishvisaupdatetracker.pages.dev/dublin-visa-decisions</loc>
+    <lastmod>2026-11-21</lastmod>
+  </url>
 
 </urlset>

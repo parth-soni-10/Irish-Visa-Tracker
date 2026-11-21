@@ -99,6 +99,18 @@ an official confirmation.
 - [Markdown home](https://irishvisaupdatetracker.pages.dev/index.md)
 - [Daily summaries](https://irishvisaupdatetracker.pages.dev/daily-summaries) - approved
   and refused counts by published day, with closures and the raw data.
+- [New Delhi visa decisions](https://irishvisaupdatetracker.pages.dev/new-delhi-visa-decisions)
+  - daily New Delhi decisions, processing times and how to search the list.
+- [Beijing visa decisions](https://irishvisaupdatetracker.pages.dev/beijing-visa-decisions)
+  - the latest Beijing snapshot, its country scope and snapshot limits.
+- [Abu Dhabi visa decisions](https://irishvisaupdatetracker.pages.dev/abu-dhabi-visa-decisions)
+  - weekly Abu Dhabi reports, country scope and report dates.
+- [Abuja visa decisions](https://irishvisaupdatetracker.pages.dev/abuja-visa-decisions)
+  - weekly Abuja reports, country scope and report dates.
+- [Ankara visa decisions](https://irishvisaupdatetracker.pages.dev/ankara-visa-decisions)
+  - weekly Ankara reports, OCR notes and country scope.
+- [Dublin visa decisions](https://irishvisaupdatetracker.pages.dev/dublin-visa-decisions)
+  - Tuesday Dublin decisions, transferred applications and the Dublin queue.
 - [Stamp 1G processing dates](https://irishvisaupdatetracker.pages.dev/stamp-1g-processing-dates)
   - the queue date ISD has reached, the lag, and how it has moved.
 - [Employment permit processing dates](https://irishvisaupdatetracker.pages.dev/employment-permit-processing-dates)

@@ -42,6 +42,12 @@ const assetsToCopy = [
   'contact.html',
   'corrections.html',
   'daily-summaries.html',
+  'new-delhi-visa-decisions.html',
+  'beijing-visa-decisions.html',
+  'abu-dhabi-visa-decisions.html',
+  'abuja-visa-decisions.html',
+  'ankara-visa-decisions.html',
+  'dublin-visa-decisions.html',
   'employment-permit-processing-dates.html',
   'privacy.html',
   'terms.html',
@@ -245,6 +251,194 @@ function injectLiveSummary() {
   console.log(`Live summary: ${summary}`);
 }
 
+const OFFICE_PAGE_FILES = {
+  'new-delhi': 'new-delhi-visa-decisions.html',
+  beijing: 'beijing-visa-decisions.html',
+  'abu-dhabi': 'abu-dhabi-visa-decisions.html',
+  abuja: 'abuja-visa-decisions.html',
+  ankara: 'ankara-visa-decisions.html',
+  dublin: 'dublin-visa-decisions.html',
+};
+
+function longOfficeDate(iso) {
+  const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July',
+    'August', 'September', 'October', 'November', 'December'];
+  const parts = String(iso || '').slice(0, 10).split('-');
+  const month = months[Number(parts[1]) - 1];
+  if (parts.length !== 3 || !month) return String(iso || '');
+  return `${Number(parts[2])} ${month} ${parts[0]}`;
+}
+
+function replaceOfficeField(html, key, value) {
+  const re = new RegExp(`(<([a-z0-9]+)[^>]*data-office="${key}"[^>]*>)[\\s\\S]*?(</\\2>)`, 'gi');
+  return html.replace(re, (match, open, tag, close) => open + value + close);
+}
+
+function replaceTodayField(html, key, value) {
+  const re = new RegExp(`(<([a-z0-9]+)[^>]*data-today="${key}"[^>]*>)[\\s\\S]*?(</\\2>)`, 'gi');
+  return html.replace(re, (match, open, tag, close) => open + value + close);
+}
+
+function injectOfficePages() {
+  const manifestPath = path.resolve(assetsRootDir, 'data', 'data_manifest.json');
+  if (!fs.existsSync(manifestPath)) return;
+  let manifest;
+  try {
+    manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+  } catch {
+    console.warn('Warning: data_manifest.json is not valid JSON; keeping office fallbacks');
+    return;
+  }
+  if (!Array.isArray(manifest.offices)) return;
+
+  const decisionsPath = path.resolve(assetsRootDir, 'data', 'visa_decisions.json');
+  let visaRows = [];
+  if (fs.existsSync(decisionsPath)) {
+    try {
+      const parsed = JSON.parse(fs.readFileSync(decisionsPath, 'utf8'));
+      if (Array.isArray(parsed)) visaRows = parsed;
+    } catch {
+      console.warn('Warning: visa_decisions.json is not valid JSON; using manifest counts');
+    }
+  }
+
+  const byDate = new Map();
+  for (const row of visaRows) {
+    if (!Array.isArray(row) || !row[0]) continue;
+    const date = String(row[0]).slice(0, 10);
+    if (!byDate.has(date)) byDate.set(date, { total: 0, approved: 0, refused: 0 });
+    const bucket = byDate.get(date);
+    bucket.total += 1;
+    if (/^approved/i.test(String(row[2]))) bucket.approved += 1;
+    else bucket.refused += 1;
+  }
+  const allDates = [...byDate.keys()].sort();
+
+  for (const office of manifest.offices) {
+    const file = OFFICE_PAGE_FILES[office.slug];
+    if (!file) continue;
+    const pagePath = path.resolve(distDir, file);
+    if (!fs.existsSync(pagePath)) continue;
+
+    const decisions = Number(office.decisions) || 0;
+    const approved = Number(office.approved) || 0;
+    const refused = Number(office.refused) || 0;
+    const approvalShare = decisions ? `${((approved / decisions) * 100).toFixed(1)}%` : '0.0%';
+    const refusedShare = decisions ? `${((refused / decisions) * 100).toFixed(1)}%` : '0.0%';
+    const latest = longOfficeDate(office.report_date);
+    const checked = longOfficeDate(office.as_of || office.fetched_at);
+    const reportCount = Array.isArray(office.archive_reports) && office.archive_reports.length
+      ? office.archive_reports.length
+      : 1;
+    const isSnapshot = office.slug === 'beijing' || office.slug === 'dublin';
+    const history = office.slug === 'new-delhi'
+      ? `${allDates.length} published days`
+      : isSnapshot ? 'the latest snapshot' : `${reportCount} weekly reports`;
+    const archiveTotal = Number(office.archive_decisions) || decisions;
+    const firstHistoryDate = allDates.length ? longOfficeDate(allDates[0]) : '';
+    const archive = office.slug === 'new-delhi'
+      ? `${allDates.length} published days${firstHistoryDate ? ` from ${firstHistoryDate}` : ''}`
+      : isSnapshot
+        ? `1 snapshot · ${archiveTotal.toLocaleString('en-IE')} decisions`
+        : `${reportCount} weekly reports · ${archiveTotal.toLocaleString('en-IE')} decisions`;
+
+    let html = fs.readFileSync(pagePath, 'utf8');
+    html = replaceOfficeField(html, 'latest-date', latest);
+    html = replaceOfficeField(html, 'checked-date', checked);
+    html = replaceOfficeField(html, 'decisions', decisions.toLocaleString('en-IE'));
+    html = replaceOfficeField(html, 'approved', approved.toLocaleString('en-IE'));
+    html = replaceOfficeField(html, 'refused', refused.toLocaleString('en-IE'));
+    html = replaceOfficeField(html, 'approval-share', approvalShare);
+    html = replaceOfficeField(html, 'refused-share', refusedShare);
+    html = replaceOfficeField(html, 'history', history);
+    html = replaceOfficeField(html, 'archive', archive);
+
+    if (office.slug === 'new-delhi' && byDate.size) {
+      const eligible = allDates.filter((date) => date <= String(office.report_date).slice(0, 10));
+      const latestDay = eligible[eligible.length - 1];
+      if (latestDay) {
+        const bucket = byDate.get(latestDay);
+        html = replaceOfficeField(
+          html,
+          'latest-day',
+          `${longOfficeDate(latestDay)}: ${bucket.total.toLocaleString('en-IE')} decisions ` +
+            `(${bucket.approved.toLocaleString('en-IE')} approved, ${bucket.refused.toLocaleString('en-IE')} refused)`,
+        );
+
+        // The official file date is the cutoff for the latest published file.
+        // New Delhi rows can exist after that date; show them separately and
+        // label them as a partial tracker day rather than calling them the
+        // latest official-file day.
+        const trackerLatestDay = allDates[allDates.length - 1];
+        const trackerBucket = trackerLatestDay ? byDate.get(trackerLatestDay) : null;
+        const officialDate = String(latestDay).slice(0, 10);
+        const trackerLatest = trackerLatestDay && trackerLatestDay > officialDate && trackerBucket
+          ? `${longOfficeDate(trackerLatestDay)}: ${trackerBucket.total.toLocaleString('en-IE')} decisions ` +
+            `(${trackerBucket.approved.toLocaleString('en-IE')} approved, ${trackerBucket.refused.toLocaleString('en-IE')} refused; ` +
+            `partial day, not in the ${longOfficeDate(latestDay)} official file)`
+          : 'No later tracker rows beyond the latest official file.';
+        html = replaceOfficeField(html, 'tracker-latest', trackerLatest);
+      }
+    }
+
+    if (office.source_file) {
+      html = html.replace(
+        /(<a[^>]*data-office="source-file"[^>]*href=")[^"]*(")/i,
+        (match, open, close) => open + String(office.source_file).replace(/"/g, '&quot;') + close,
+      );
+    }
+    if (office.as_of) {
+      html = html.replace(/"dateModified":\s*"\d{4}-\d{2}-\d{2}"/g, `"dateModified": "${String(office.as_of).slice(0, 10)}"`);
+    }
+    fs.writeFileSync(pagePath, html);
+  }
+  console.log('Office pages: injected latest manifest data.');
+}
+
+function injectDailyToday() {
+  const decisionsPath = path.resolve(assetsRootDir, 'data', 'visa_decisions.json');
+  const metaPath = path.resolve(assetsRootDir, 'data', 'visa_meta.json');
+  const pagePath = path.resolve(distDir, 'daily-summaries.html');
+  if (!fs.existsSync(decisionsPath) || !fs.existsSync(pagePath)) return;
+  let rows;
+  try {
+    rows = JSON.parse(fs.readFileSync(decisionsPath, 'utf8'));
+  } catch {
+    return;
+  }
+  if (!Array.isArray(rows) || !rows.length) return;
+  const byDate = new Map();
+  for (const row of rows) {
+    if (!Array.isArray(row) || !row[0]) continue;
+    const date = String(row[0]).slice(0, 10);
+    if (!byDate.has(date)) byDate.set(date, { total: 0, approved: 0, refused: 0 });
+    const bucket = byDate.get(date);
+    bucket.total += 1;
+    if (/^approved/i.test(String(row[2]))) bucket.approved += 1;
+    else bucket.refused += 1;
+  }
+  if (!byDate.size) return;
+  let cutoff = '';
+  if (fs.existsSync(metaPath)) {
+    try {
+      cutoff = String(JSON.parse(fs.readFileSync(metaPath, 'utf8')).fileDate || '').slice(0, 10);
+    } catch {
+      cutoff = '';
+    }
+  }
+  const eligibleDates = [...byDate.keys()].filter((date) => !cutoff || date <= cutoff).sort();
+  const latest = eligibleDates[eligibleDates.length - 1];
+  if (!latest) return;
+  const bucket = byDate.get(latest);
+  let html = fs.readFileSync(pagePath, 'utf8');
+  html = replaceTodayField(html, 'date', longOfficeDate(latest));
+  html = replaceTodayField(html, 'total', bucket.total.toLocaleString('en-IE'));
+  html = replaceTodayField(html, 'approved', bucket.approved.toLocaleString('en-IE'));
+  html = replaceTodayField(html, 'refused', bucket.refused.toLocaleString('en-IE'));
+  fs.writeFileSync(pagePath, html);
+  console.log(`Daily summary: latest day ${latest} (${bucket.total} decisions).`);
+}
+
 function localDistPath(href) {
   if (!href || /^(?:[a-z]+:)?\/\//i.test(href) || href.startsWith('data:')) return null;
   const pathname = decodeURIComponent(href.split(/[?#]/)[0]).replace(/^\/+/, '');
@@ -299,6 +493,8 @@ async function main() {
   }
 
   injectLiveSummary();
+  injectOfficePages();
+  injectDailyToday();
   bundleIndexAssets();
   
   const fallback = buildSearchFallback({

@@ -25,6 +25,7 @@ import {
   notFoundMarkdown,
 } from "../functions/_agent-docs.js";
 import router from "../functions/_router.js";
+import { PAGES } from "../tools/site-chrome.mjs";
 
 const ROOT = new URL("../", import.meta.url);
 
@@ -350,6 +351,17 @@ test("sitemap, robots and llms.txt point at the published pages", async () => {
   const sitemap = await read("sitemap.xml");
   for (const path of ["/", "/about", "/contact", "/corrections", "/privacy"]) {
     assert.match(sitemap, new RegExp(`<loc>https://irishvisaupdatetracker\\.pages\\.dev${path}</loc>`));
+  }
+  for (const page of PAGES) {
+    if (page.file === "admin.html" || page.file === "404.html") continue;
+    assert.match(
+      sitemap,
+      new RegExp(`<loc>https://irishvisaupdatetracker\\.pages\\.dev${page.route}</loc>`),
+      `${page.file} is missing from sitemap.xml`,
+    );
+  }
+  for (const [, block] of sitemap.matchAll(/<url>([\s\S]*?)<\/url>/g)) {
+    assert.match(block, /<lastmod>\d{4}-\d{2}-\d{2}<\/lastmod>/, "every sitemap entry needs a lastmod");
   }
   const robots = await read("robots.txt");
   assert.match(robots, /Sitemap: https:\/\/irishvisaupdatetracker\.pages\.dev\/sitemap\.xml/);
