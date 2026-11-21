@@ -46,6 +46,16 @@ export function stripCloudflareAnalytics(html) {
     .replace(/\r\n?/g, '\n');
 }
 
+/** The status table's generated clock is intentionally the build time, so two
+ *  correct builds of the same commit will differ there. Compare the table but
+ *  not the moment each environment assembled it. */
+export function stripGeneratedBuildTime(html) {
+  return html.replace(
+    /<time\b[^>]*\bid="latest-reports-generated"[^>]*>[\s\S]*?<\/time>/gi,
+    '<time id="latest-reports-generated"></time>'
+  );
+}
+
 export function normaliseAsset(name, bytes) {
   if (name === 'data/search_fallback.json' || name === 'data/search_preview.json') {
     // The generators stamp each build. The rows and office metadata are the
@@ -58,8 +68,8 @@ export function normaliseAsset(name, bytes) {
       return bytes;
     }
   }
-  if (/\.(?:html?|css|js|json|xml|txt|md|svg)$/i.test(name)) {
-    const text = stripCloudflareAnalytics(bytes.toString('utf8'));
+  if (/\.(?:html?|css|js|json|xml|txt|md|svg|csv)$/i.test(name)) {
+    const text = stripGeneratedBuildTime(stripCloudflareAnalytics(bytes.toString('utf8')));
     return Buffer.from(text.replace(/\r\n?/g, '\n'));
   }
   return bytes;

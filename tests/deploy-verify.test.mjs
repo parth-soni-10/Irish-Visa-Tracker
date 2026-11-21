@@ -7,7 +7,7 @@ import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
-import { isIgnored, normaliseAsset, stripCloudflareAnalytics } from '../tools/verify-deploy.mjs';
+import { isIgnored, normaliseAsset, stripCloudflareAnalytics, stripGeneratedBuildTime } from '../tools/verify-deploy.mjs';
 
 const VERIFY_SCRIPT = fileURLToPath(new URL('../tools/verify-deploy.mjs', import.meta.url));
 
@@ -85,6 +85,9 @@ test('deploy verifier normalises CRLF for text but not binary files', () => {
 
   const binary = Buffer.from([0, 1, 2, 13, 10, 255]);
   assert.deepEqual(normaliseAsset('icon.png', binary), binary);
+
+  const csv = Buffer.from('office,decisions\r\nNew Delhi,43599\r\n');
+  assert.equal(normaliseAsset('data/snapshots/2026-11-20/office-summary.csv', csv).toString('utf8'), 'office,decisions\nNew Delhi,43599\n');
 });
 
 test('deploy verifier ignores the generated timestamp in the search indexes', () => {
@@ -100,6 +103,13 @@ test('deploy verifier skips Pages-consumed platform files', () => {
   assert.equal(isIgnored('_headers'), true);
   assert.equal(isIgnored('404.html'), true);
   assert.equal(isIgnored('index.html'), false);
+});
+
+test('deploy verifier ignores the status table build clock', () => {
+  const first = '<time id="latest-reports-generated" datetime="2026-11-17T10:00:00Z">10:00 UTC</time>';
+  const second = '<time id="latest-reports-generated" datetime="2026-11-17T11:00:00Z">11:00 UTC</time>';
+  assert.equal(stripGeneratedBuildTime(first), '<time id="latest-reports-generated"></time>');
+  assert.equal(stripGeneratedBuildTime(first), stripGeneratedBuildTime(second));
 });
 
 test('deploy verifier retries a transient edge mismatch', async (t) => {
