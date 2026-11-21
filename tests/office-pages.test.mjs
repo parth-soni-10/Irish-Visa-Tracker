@@ -59,6 +59,7 @@ test("each office page links the tracker, all other offices and its CTA", async 
     assert.match(html, /href="\/daily-summaries"/, page.file);
     assert.match(html, /href="\/help"/, page.file);
     assert.match(html, /Searchable history/);
+    assert.match(html, /class="table-wrap"[^>]*role="region"[^>]*tabindex="0"/);
 
     const footer = html.slice(html.indexOf('<footer'), html.indexOf('</footer>'));
     for (const other of PAGES) {

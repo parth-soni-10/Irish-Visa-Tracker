@@ -72,7 +72,7 @@ const OFFICES = [
       <p>If your number is missing here, search <a href="/?tracker=visa&amp;tab=search">all six offices</a> before concluding anything.</p>`,
     scheduleTitle: 'New Delhi processing times',
     scheduleHtml: `
-      <div class="table-wrap">
+      <div class="table-wrap" role="region" aria-label="New Delhi processing times" tabindex="0">
         <table class="office-table">
           <caption>Official usual timeframes published by the embassy</caption>
           <thead><tr><th>Visa category</th><th>First-instance decision</th><th>Appeal decision</th></tr></thead>
@@ -408,7 +408,7 @@ function stats(office) {
 
 function latestTable(office) {
   const f = office.fallback;
-  return `<div class="table-wrap">
+  return `<div class="table-wrap" role="region" aria-label="Latest ${office.name} official file" tabindex="0">
         <table class="office-table">
           <caption>Latest ${office.name} file</caption>
           <thead><tr><th>Measure</th><th>Value</th></tr></thead>
