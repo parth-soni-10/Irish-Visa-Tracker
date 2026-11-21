@@ -8,6 +8,7 @@ import { ensureSchema } from '../_router.js';
 
 // Shared cache for decisions data (module-level, survives across requests)
 let decisionsCache = null;
+let officesCache = null;
 let cacheTimestamp = 0;
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
@@ -83,10 +84,45 @@ async function loadJson(env, request, file) {
   return null;
 }
 
+function normalizeSource(value) {
+  return value === 'official' || value === 'unverified' ? value : 'unverified';
+}
+
+// Add provenance without changing a row's decision fields. Tracker
+// observations are not part of the latest official file, so their report_date
+// is deliberately null; the official file date is kept separately.
+function decorateResult(row, office) {
+  const isTracker = row.source === 'tracker';
+  row.source_kind = isTracker ? 'tracker' : 'official';
+  row.source = isTracker ? 'tracker' : normalizeSource(row.source);
+  row.source_label = isTracker
+    ? 'Tracker observation'
+    : row.source === 'official' ? 'Official report' : 'Unverified report';
+  row.source_url = office.source_url || '';
+  row.source_file = isTracker ? null : (office.source_file || null);
+  row.source_name = office.source_name || '';
+  row.official_report_date = office.report_date || null;
+  row.observed_date = isTracker ? row.date : null;
+  row.observed_at = isTracker ? row.date : (office.last_success_at || null);
+  if (isTracker) row.report_date = null;
+  row.last_success_at = office.last_success_at || null;
+  row.last_success_label = office.last_success_label || '';
+  row.stale = Boolean(office.stale);
+  row.office_status = office.status || '';
+  row.office_status_label = office.status_label || '';
+  row.freshness_status = office.status || '';
+  row.freshness_status_label = office.status_label || '';
+  row.official_data_through = office.official_data_through || null;
+  row.observed_data_through = office.observed_data_through || null;
+  row.office_attention = Boolean(office.attention);
+  row.office_warning = office.warning || '';
+  return row;
+}
+
 async function loadAllDecisions(request, env) {
   const now = Date.now();
   if (decisionsCache && (now - cacheTimestamp) < CACHE_TTL) {
-    return decisionsCache;
+    return { decisions: decisionsCache, offices: officesCache };
   }
 
   const byKey = new Map();
@@ -94,6 +130,9 @@ async function loadAllDecisions(request, env) {
   const tasks = [
     loadJson(env, request, '/data/visa_decisions.json')
       .then((data) => ({ kind: 'tracker', data }))
+      .catch(() => null),
+    loadJson(env, request, '/data/freshness.json')
+      .then((data) => ({ kind: 'freshness', data }))
       .catch(() => null),
     ...OFFICE_FILES.map((file) =>
       loadJson(env, request, '/data/' + file)
@@ -103,39 +142,75 @@ async function loadAllDecisions(request, env) {
   ];
 
   const results = (await Promise.all(tasks)).filter(Boolean);
+  const freshnessBySlug = Object.create(null);
+  for (const result of results) {
+    if (result.kind !== 'freshness' || !result.data) continue;
+    for (const office of result.data.offices || []) {
+      if (office && office.slug) freshnessBySlug[office.slug] = office;
+    }
+  }
 
-  // Build the report-date map first so tracker rows (which do not carry a
-  // report date themselves) can still show New Delhi's latest official date.
-  const reportDates = new Map();
+  // Keep the office-level source and check provenance beside the rows. This
+  // is also returned as a top-level `offices` map so clients can render a
+  // source/check cell without repeating metadata on every result.
+  const offices = Object.create(null);
   for (const result of results) {
     if (result.kind !== 'office' || !result.data) continue;
-    const slug = String(result.data.office || result.file.replace(/^embassy-|\.json$/g, ''));
-    reportDates.set(slug, result.data.report_date || result.data.as_of || null);
+    const data = result.data;
+    const slug = String(data.office || result.file.replace(/^embassy-|\.json$/g, ''));
+    const fresh = freshnessBySlug[slug] || {};
+    const reportDate = data.report_date || data.as_of || null;
+    const lastSuccessAt = fresh.last_success_at || data.fetched_at || data.as_of || null;
+    offices[slug] = {
+      slug,
+      name: data.name || data.office_name || '',
+      source_url: data.source_url || '',
+      source_file: data.source_file || '',
+      source_name: data.source_name || '',
+      report_date: reportDate,
+      official_data_through: fresh.official_data_through || reportDate,
+      observed_data_through: fresh.observed_data_through || null,
+      last_success_at: lastSuccessAt,
+      last_success_label: fresh.last_success_label || '',
+      stale: Boolean(fresh.stale),
+      attention: Boolean(fresh.attention || fresh.status === 'error'),
+      status: fresh.status || data.status || data.data_status || '',
+      status_label: fresh.status_label || '',
+      warning: fresh.warning || '',
+      // Absolute dates and the raw freshness record let browser clients
+      // recompute relative age and overdue state instead of trusting a label
+      // that was true when the deployment was built.
+      freshness: Object.keys(fresh).length ? fresh : null
+    };
   }
 
   for (const result of results) {
     if (result.kind === 'tracker') {
       const rows = Array.isArray(result.data) ? result.data : [];
       for (const row of rows) {
-        const normalized = normalizeRow(row, 'new-delhi', 'tracker', reportDates.get('new-delhi') || null);
+        const normalized = normalizeRow(row, 'new-delhi', 'tracker', null);
         if (!normalized || !normalized.number || !normalized.decision || !normalized.date) continue;
+        decorateResult(normalized, offices['new-delhi'] || {});
         const key = normalized.embassy + '|' + normalized.number;
         const existing = byKey.get(key);
         if (!existing || normalized.date >= existing.date) {
-          if (existing && !normalized.report_date) normalized.report_date = existing.report_date;
           byKey.set(key, normalized);
         }
       }
       continue;
     }
 
+    if (result.kind !== 'office') continue;
     const data = result.data || {};
     const slug = String(data.office || result.file.replace(/^embassy-|\.json$/g, ''));
     const reportDate = data.report_date || data.as_of || null;
-    const source = data.data_status === 'official' ? 'official' : 'unverified';
+    const source = data.data_status === 'official' || data.status === 'official'
+      ? 'official'
+      : 'unverified';
     for (const row of data.decisions || []) {
       const normalized = normalizeRow(row, slug, source, reportDate);
       if (!normalized || !normalized.number || !normalized.decision || !normalized.date) continue;
+      decorateResult(normalized, offices[slug] || {});
       const key = normalized.embassy + '|' + normalized.number;
       const existing = byKey.get(key);
       if (!existing || normalized.date >= existing.date) {
@@ -149,8 +224,9 @@ async function loadAllDecisions(request, env) {
   allDecisions.sort((a, b) => new Date(b.date) - new Date(a.date));
 
   decisionsCache = allDecisions;
+  officesCache = offices;
   cacheTimestamp = Date.now();
-  return allDecisions;
+  return { decisions: allDecisions, offices };
 }
 
 // Search endpoint - supports multiple search modes
@@ -183,8 +259,10 @@ export async function onRequestPost(context) {
     const offset = Math.max(0, Number(body.offset) || 0);
     const sort = body.sort || 'date_desc';
     
-    // Load all decisions
-    const allDecisions = await loadAllDecisions(request, env);
+    // Load all decisions and their office-level provenance
+    const loaded = await loadAllDecisions(request, env);
+    const allDecisions = loaded.decisions;
+    const offices = loaded.offices;
     
     // Build search results based on mode
     let results = [];
@@ -229,6 +307,7 @@ export async function onRequestPost(context) {
     return new Response(JSON.stringify({
       success: true,
       results: paginated,
+      offices,
       pagination: {
         total,
         limit,
@@ -398,6 +477,12 @@ export async function onRequestGet(context) {
         'application_date_from', 'application_date_to', 'country', 'number_range'
       ],
       sort_options: ['date_desc', 'date_asc', 'number_asc', 'number_desc', 'embassy', 'decision'],
+      provenance: [
+        'source', 'source_kind', 'source_label', 'source_url', 'source_file',
+        'report_date', 'official_report_date', 'observed_date', 'observed_at',
+        'last_success_at', 'last_success_label', 'stale', 'office_status',
+        'freshness_status', 'office_attention'
+      ],
       endpoints: {
         search: 'POST /api/search'
       }

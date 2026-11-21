@@ -27,6 +27,8 @@ import {
 } from '../functions/report-data.js';
 import { spliceChrome } from './site-chrome.mjs';
 import { SITE_ORIGIN } from './site-config.mjs';
+import { loadFreshness, timeHTML } from './freshness.mjs';
+import { freshnessFooterHTML } from './freshness-ui.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const SITE = SITE_ORIGIN;
@@ -135,7 +137,7 @@ function archiveNav(months, current, latest) {
     </nav>`;
 }
 
-function archivePage(report, months, latestMonth) {
+function archivePage(report, months, latestMonth, freshness) {
   const route = `/monthly-report/${report.month}`;
   const title = `Irish visa decisions — ${report.label} | Monthly report`;
   const description = `Irish visa decisions published in ${report.label}: ${num(report.totals.total)} dated decisions, ${num(report.totals.approved)} approved and ${num(report.totals.refused)} refused. Independent and unofficial.`;
@@ -204,6 +206,7 @@ function archivePage(report, months, latestMonth) {
       <p><a class="button" href="/monthly-report?utm_source=monthly_archive&amp;utm_medium=referral&amp;utm_campaign=monthly_email#digest-heading">Subscribe on the latest report</a></p>
     </section>
     <p class="note"><a href="/monthly-report">Latest monthly report</a> · <a href="/api/reports/monthly?month=${report.month}">Download this month’s JSON</a> · <a href="/data">Open data</a></p>
+    ${freshnessFooterHTML(freshness)}
   </main>
   <!-- site-footer:start -->
   <!-- site-footer:end -->
@@ -220,7 +223,7 @@ function archivePage(report, months, latestMonth) {
   });
 }
 
-function injectLatest(shell, report, months, latestMonth) {
+function injectLatest(shell, report, months, latestMonth, freshness) {
   const title = `Irish visa decisions — ${report.label} | Monthly report`;
   const description = `Irish visa decisions published in ${report.label}: ${num(report.totals.total)} dated decisions, ${num(report.totals.approved)} approved and ${num(report.totals.refused)} refused. Independent and unofficial.`;
   let html = shell;
@@ -231,16 +234,22 @@ function injectLatest(shell, report, months, latestMonth) {
   html = html.replace('<input id="report-month" type="month" aria-label="Report month">', `<input id="report-month" type="month" aria-label="Report month" value="${report.month}">`);
   html = html.replace('id="download-json" href="/api/reports/monthly"', `id="download-json" href="/api/reports/monthly?month=${report.month}"`);
   const dataThrough = report.latest_date ? longDate(report.latest_date) : '';
+  const latestCheck = (freshness.offices || []).map((office) => office.last_success_at).filter(Boolean).sort().at(-1) || '';
   const dataThroughCopy = dataThrough
-    ? `Data to ${dataThrough}.${isPartialMonth(report) ? ` ${monthLabel(report.month)} is a partial month: totals cover dated decisions recorded so far.` : ''}`
+    ? `Data to ${esc(dataThrough)}.${isPartialMonth(report) ? ` ${esc(monthLabel(report.month))} is a partial month: totals cover dated decisions recorded so far.` : ''}` +
+      (latestCheck ? ` Last successful tracker check: ${timeHTML(latestCheck)}.` : '')
     : '';
-  html = html.replace(/(<p class="note" id="report-data-through">)[\s\S]*?(<\/p>)/, `$1${esc(dataThroughCopy)}$2`);
+  html = html.replace(/(<p class="note" id="report-data-through">)[\s\S]*?(<\/p>)/, `$1${dataThroughCopy}$2`);
   html = html.replace(/(<div class="cards" id="summary-cards"[^>]*>)[\s\S]*?(<\/div>\s*<div class="grid">)/, `$1${summaryCards(report)}$2`);
   html = html.replace(/(<tbody id="office-rows">)[\s\S]*?(<\/tbody>)/, `$1${officeRows(report)}$2`);
   html = html.replace(/(<tbody id="daily-rows">)[\s\S]*?(<\/tbody>)/, `$1${dailyRows(report)}$2`);
   html = html.replace(/<div id="changes-body">[\s\S]*?<\/div>/, `<div id="changes-body">${changesHtml(report.changes)}</div>`);
   html = html.replace(/<nav class="month-nav"[\s\S]*?<\/nav>\s*/g, '');
   html = html.replace('  <div class="cards" id="summary-cards"', `  ${archiveNav(months, report.month, latestMonth)}\n\n  <div class="cards" id="summary-cards"`);
+  // The interactive shell is also a checked-in generated page, so a previous
+  // build may already carry a footer. Replace it rather than stacking copies.
+  html = html.replace(/<section class="freshness-footer"[\s\S]*?<\/section>/g, '');
+  html = html.replace('</main>', `${freshnessFooterHTML(freshness)}</main>`);
   if (!html.includes('src="/scripts/public-channel.js"')) {
     html = html.replace('<script src="/scripts/monthly-report-1.js" defer></script>', '<script src="/scripts/public-channel.js" defer></script>\n  <script src="/scripts/monthly-report-1.js" defer></script>');
   }
@@ -253,6 +262,7 @@ export async function buildMonthlyPages(options = {}) {
   const writeSource = Boolean(options.writeSource);
   const outDir = writeSource ? ROOT : distDir;
   const data = await loadMonthlyData(assetsRoot);
+  const freshness = loadFreshness(assetsRoot);
   if (!data.latestDate) {
     console.warn('Monthly pages skipped: no dated decisions in the public files.');
     return { latestMonth: '', months: [], pages: 0 };
@@ -276,13 +286,13 @@ export async function buildMonthlyPages(options = {}) {
   const latestReport = reports.get(latestMonth);
   fs.mkdirSync(outDir, { recursive: true });
   const shell = fs.readFileSync(path.join(assetsRoot, 'monthly-report.html'), 'utf8');
-  fs.writeFileSync(path.join(outDir, 'monthly-report.html'), injectLatest(shell, latestReport, months, latestMonth));
+  fs.writeFileSync(path.join(outDir, 'monthly-report.html'), injectLatest(shell, latestReport, months, latestMonth, freshness));
 
   let pages = 1;
   for (const month of months.filter((item) => item !== latestMonth)) {
     const report = reports.get(month);
     fs.mkdirSync(path.join(outDir, 'monthly-report'), { recursive: true });
-    fs.writeFileSync(path.join(outDir, 'monthly-report', `${month}.html`), archivePage(report, months, latestMonth));
+    fs.writeFileSync(path.join(outDir, 'monthly-report', `${month}.html`), archivePage(report, months, latestMonth, freshness));
     pages += 1;
   }
 

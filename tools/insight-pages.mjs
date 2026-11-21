@@ -18,7 +18,9 @@ import { fileURLToPath } from 'node:url';
 
 import { PAGES, spliceChrome } from './site-chrome.mjs';
 import { SITE_ORIGIN } from './site-config.mjs';
-import { loadFreshness, SNAPSHOT_OFFICES } from './freshness.mjs';
+import { loadFreshness, SNAPSHOT_OFFICES, timeHTML } from './freshness.mjs';
+import { expectedAfter, expectedDate } from '../shared/publication-schedule.js';
+import { freshnessFooterHTML, freshnessHistoryHTML } from './freshness-ui.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const SITE = SITE_ORIGIN;
@@ -197,13 +199,17 @@ function canonicalFreshness(data) {
       ? `offices last successfully checked ${firstCheck}`
       : `offices last successfully checked ${firstCheck} to ${lastCheck}`;
   const newDelhi = data.freshness.bySlug && data.freshness.bySlug['new-delhi'];
-  const through = newDelhi && longDate(newDelhi.latest_decision_date);
+  const through = newDelhi && longDate(newDelhi.official_data_through);
+  const observed = newDelhi && longDate(newDelhi.observed_data_through);
+  const observation = observed && newDelhi.observed_data_through > newDelhi.official_data_through
+    ? ` · tracker observed through ${observed} (not in the official file)`
+    : '';
   const attention = offices.filter((office) => office.attention).map((office) => office.name);
   const attentionCopy = attention.length
     ? ` · ${attention.length} office${attention.length === 1 ? '' : 's'} ${attention.length === 1 ? 'needs' : 'need'} attention: ${attention.join(', ')}`
     : '';
   return `six offices — ${publication}` + (checkCopy ? ` · ${checkCopy}` : '') +
-    (through ? ` · New Delhi decisions through ${through}` : '') + attentionCopy;
+    (through ? ` · New Delhi official decisions through ${through}` : '') + observation + attentionCopy;
 }
 
 /** Citation date copy. The newest office publication is not a shared
@@ -424,38 +430,6 @@ function addDays(iso, days) {
   const date = new Date(`${String(iso).slice(0, 10)}T00:00:00Z`);
   date.setUTCDate(date.getUTCDate() + days);
   return date.toISOString().slice(0, 10);
-}
-
-function nextWeekday(iso) {
-  let date = addDays(iso, 1);
-  for (let i = 0; i < 7; i += 1) {
-    const day = new Date(`${date}T00:00:00Z`).getUTCDay();
-    if (day !== 0 && day !== 6) return date;
-    date = addDays(date, 1);
-  }
-  return date;
-}
-
-function nextTuesday(iso) {
-  let date = addDays(iso, 1);
-  for (let i = 0; i < 8; i += 1) {
-    if (new Date(`${date}T00:00:00Z`).getUTCDay() === 2) return date;
-    date = addDays(date, 1);
-  }
-  return date;
-}
-
-function nextExpected(latest, mode) {
-  if (!latest || !mode) return '';
-  return mode === 'weekday' ? nextWeekday(latest) : mode === 'tuesday' ? nextTuesday(latest) : addDays(latest, 7);
-}
-
-function nextExpectedAfter(latest, mode, asOf) {
-  let date = nextExpected(latest, mode);
-  for (let i = 0; date && asOf && date <= asOf && i < 60; i += 1) {
-    date = mode === 'weekday' ? nextWeekday(date) : mode === 'tuesday' ? nextTuesday(date) : addDays(date, 7);
-  }
-  return date;
 }
 
 const HTML_ESCAPES = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' };
@@ -764,12 +738,13 @@ function schedulePage(data) {
 
   const rows = data.offices.map((office) => {
     const latest = String(office.report_date || '').slice(0, 10);
-    const expected = nextExpected(latest, office.next);
-    const nextWindow = nextExpectedAfter(latest, office.next, asOf);
     const fresh = data.freshness && data.freshness.bySlug && data.freshness.bySlug[office.slug];
+    const expected = (fresh && fresh.due_at) || expectedDate(latest, office.slug);
+    const nextWindow = (fresh && fresh.next_due_at) || expectedAfter(latest, office.slug, asOf);
     const overdue = Boolean(fresh && fresh.overdue);
-    const age = fresh && fresh.age_label
-      ? `<br><span class="small-note">${esc(fresh.age_label)}</span>`
+    const ageLabel = fresh && (fresh.age_label_at_build || fresh.age_label);
+    const age = ageLabel
+      ? `<br><span class="small-note" data-freshness-age>${esc(ageLabel)}</span>`
       : '';
     const pastWindow = Boolean(expected && asOf && expected < asOf);
     const window = expected
@@ -779,24 +754,32 @@ function schedulePage(data) {
         : `<strong>${esc(weekdayDate(pastWindow ? nextWindow : expected))}</strong>` +
           '<br><span class="small-note">Expected, not guaranteed</span>'
       : 'No fixed date';
-    return `<tr>
+    const statusClass = fresh && fresh.status_tone ? ` is-${fresh.status_tone}` : '';
+    const checkHealth = fresh
+      ? `<span class="status-pill${statusClass}">${esc(fresh.status_label || 'Published')}</span>` +
+        `<br><span class="small-note">Last successful ${timeHTML(fresh.last_success_at)}</span>` +
+        `<br><span class="small-note">Last attempt ${timeHTML(fresh.last_attempt_at)}</span>` +
+        ` <a class="small-note" href="/status#office-coverage">Office coverage</a>`
+      : '<span class="small-note">Not recorded</span>';
+    return `<tr data-freshness-slug="${esc(office.slug)}" data-freshness-view="schedule">
           <th scope="row"><a href="${office.route}">${esc(office.name)}</a></th>
-          <td>${esc(office.cadence)}</td>
-          <td>${latest ? `<time datetime="${latest}">${esc(longDate(latest))}</time>${age}` : '—'}</td>
-          <td>${window}</td>
+          <td data-label="Usual pattern">${esc(office.cadence)}</td>
+          <td data-label="Latest report">${latest ? `<time datetime="${latest}">${esc(longDate(latest))}</time>${age}` : '—'}</td>
+          <td data-label="Expected next file" data-freshness-expected>${window}</td>
+          <td data-label="Check health" data-freshness-check>${checkHealth}</td>
         </tr>`;
   }).join('\n        ');
 
   const observations = data.offices.flatMap((office) => officeEntries(data, office.slug).slice(0, 2).map((entry) => {
     const observed = String(entry.fetched_at || '');
     const when = /^\d{4}-\d{2}-\d{2}T/.test(observed)
-      ? `${longDate(observed)} ${observed.slice(11, 16)} UTC`
+      ? timeHTML(observed)
       : '—';
     return `<tr>
           <th scope="row">${esc(office.name)}</th>
-          <td><time datetime="${String(entry.report_date).slice(0, 10)}">${esc(longDate(entry.report_date))}</time></td>
-          <td>${esc(when)}</td>
-          <td><a href="${esc(entry.source_file || office.source_url || office.route)}" target="_blank" rel="noopener noreferrer">Official source</a></td>
+          <td data-label="Report date"><time datetime="${String(entry.report_date).slice(0, 10)}">${esc(longDate(entry.report_date))}</time></td>
+          <td data-label="Tracker observed">${when}</td>
+          <td data-label="Source"><a href="${esc(entry.source_file || office.source_url || office.route)}" target="_blank" rel="noopener noreferrer">Official source</a></td>
         </tr>`;
   })).join('\n        ');
 
@@ -811,9 +794,9 @@ function schedulePage(data) {
     <section>
       <h2>Expected next publication by office</h2>
       <div class="table-wrap" role="region" aria-label="Expected publication windows" tabindex="0">
-        <table class="office-table">
+        <table class="office-table stack-table">
           <caption>Usual pattern and the next expected file</caption>
-          <thead><tr><th scope="col">Office</th><th scope="col">Usual pattern</th><th scope="col">Latest report</th><th scope="col">Expected next file</th></tr></thead>
+          <thead><tr><th scope="col">Office</th><th scope="col">Usual pattern</th><th scope="col">Latest report</th><th scope="col">Expected next file</th><th scope="col">Check health</th></tr></thead>
           <tbody>
         ${rows}
           </tbody>
@@ -826,7 +809,7 @@ function schedulePage(data) {
       <h2>Recent tracker observations</h2>
       <p>The tracker records when it last saw each report, not the exact moment the office uploaded it. Use these timestamps as an observation window, not as an official publication time.</p>
       <div class="table-wrap" role="region" aria-label="Recent tracker observations" tabindex="0">
-        <table class="office-table">
+        <table class="office-table stack-table">
           <caption>Most recent archived reports per office</caption>
           <thead><tr><th scope="col">Office</th><th scope="col">Report date</th><th scope="col">Tracker observed</th><th scope="col">Source</th></tr></thead>
           <tbody>
@@ -928,10 +911,14 @@ function dataPage(data) {
   const rows = files.map(([url, name, description, cadence]) => `<tr><th scope="row"><a href="${url}"><code>${url}</code></a><br><span class="small-note">${esc(name)}</span></th><td>${esc(description)}</td><td>${esc(cadence)}</td></tr>`).join('\n          ');
   const newDelhi = data.freshness && data.freshness.bySlug && data.freshness.bySlug['new-delhi'];
   const newDelhiReport = newDelhi && newDelhi.report_date ? longDate(newDelhi.report_date) : '';
-  const newDelhiThrough = newDelhi && newDelhi.latest_decision_date ? longDate(newDelhi.latest_decision_date) : '';
+  const newDelhiThrough = newDelhi && newDelhi.official_data_through ? longDate(newDelhi.official_data_through) : '';
+  const newDelhiObserved = newDelhi && newDelhi.observed_data_through ? longDate(newDelhi.observed_data_through) : '';
   const cutoffNote = newDelhiReport
     ? ` For example, New Delhi's latest file is dated ${esc(newDelhiReport)}` +
-      (newDelhiThrough && newDelhiThrough !== newDelhiReport ? ` and its decisions are dated through ${esc(newDelhiThrough)}` : '') + '.'
+      (newDelhiThrough ? ` and its official decisions are dated through ${esc(newDelhiThrough)}` : '') +
+      (newDelhiObserved && newDelhi.observed_data_through > newDelhi.official_data_through
+        ? `; the tracker has observed decisions dated through ${esc(newDelhiObserved)} in a partial day not in that file`
+        : '') + '.'
     : '';
   const body = `
     <p class="page-kicker">Open data</p>
@@ -972,7 +959,7 @@ function dataPage(data) {
 
     <section>
       <h2>Coverage and freshness</h2>
-      <p>Coverage starts with the oldest report currently archived (${esc(longDate(earliest))}). The newest office publication is dated ${esc(longDate(asOf))}, but that is not a shared cutoff.${cutoffNote} The six offices publish on different schedules: New Delhi on business days, Abu Dhabi, Abuja and Ankara weekly, Dublin on Tuesdays and Beijing irregularly. A missing office report is a gap, not a zero. Read <a href="/data/data_manifest.json">the manifest</a> for every office's report and decisions-through date.</p>
+      <p>Coverage starts with the oldest report currently archived (${esc(longDate(earliest))}). The newest office publication is dated ${esc(longDate(asOf))}, but that is not a shared cutoff.${cutoffNote} The six offices publish on different schedules: New Delhi on business days, Abu Dhabi, Abuja and Ankara weekly, Dublin on Tuesdays and Beijing irregularly. A missing office report is a gap, not a zero. Read <a href="/data/data_manifest.json">the manifest</a> for every office's report date and <a href="/data/freshness.json">freshness.json</a> for its official data-through date and any trailing tracker observation.</p>
       <p>The data is refreshed by a scheduled scraper and committed to the public repository. GitHub Actions can run late; offices do not publish on weekends or public holidays. Read <code>lastRunAt</code> and <code>ok</code> in <a href="/data/visa_meta.json"><code>visa_meta.json</code></a> before describing the data as current.</p>
     </section>
 
@@ -1275,6 +1262,7 @@ function reportsIndexPage(data) {
           <td data-label="Approved">${num(approved)}</td>
           <td data-label="Refused">${num(refused)}</td>
           <td data-label="Approval rate">${pct(approved, decisions)}</td>
+          <td data-label="Tracker observed">${entry.fetched_at ? timeHTML(entry.fetched_at) : '—'}</td>
         </tr>`;
   }).join('\n        ');
 
@@ -1310,9 +1298,9 @@ function reportsIndexPage(data) {
       <div class="table-wrap" role="region" aria-label="All archived official reports" tabindex="0">
         <table class="office-table stack-table">
           <caption>Newest first; each date opens the report page</caption>
-          <thead><tr><th scope="col">Report date</th><th scope="col">Office</th><th scope="col">Decisions</th><th scope="col">Approved</th><th scope="col">Refused</th><th scope="col">Approval rate</th></tr></thead>
+          <thead><tr><th scope="col">Report date</th><th scope="col">Office</th><th scope="col">Decisions</th><th scope="col">Approved</th><th scope="col">Refused</th><th scope="col">Approval rate</th><th scope="col">Tracker observed</th></tr></thead>
           <tbody>
-        ${tableRows || '<tr><td colspan="6">No dated reports are archived yet.</td></tr>'}
+        ${tableRows || '<tr><td colspan="7">No dated reports are archived yet.</td></tr>'}
           </tbody>
         </table>
       </div>
@@ -1354,6 +1342,7 @@ function officeReportsPage(data, office) {
           <td data-label="Refused">${num(refused)}</td>
           <td data-label="Approval rate">${pct(approved, decisions)}</td>
           <td data-label="Change">${delta == null ? '—' : signed(delta)}</td>
+          <td data-label="Tracker observed">${entry.fetched_at ? timeHTML(entry.fetched_at) : '—'}</td>
         </tr>`;
   }).join('\n        ');
 
@@ -1373,9 +1362,9 @@ function officeReportsPage(data, office) {
       <div class="table-wrap" role="region" aria-label="${esc(office.name)} dated reports" tabindex="0">
         <table class="office-table stack-table">
           <caption>Newest first; change compares the prior distinct report</caption>
-          <thead><tr><th scope="col">Report date</th><th scope="col">Decisions</th><th scope="col">Approved</th><th scope="col">Refused</th><th scope="col">Approval rate</th><th scope="col">Change</th></tr></thead>
+          <thead><tr><th scope="col">Report date</th><th scope="col">Decisions</th><th scope="col">Approved</th><th scope="col">Refused</th><th scope="col">Approval rate</th><th scope="col">Change</th><th scope="col">Tracker observed</th></tr></thead>
           <tbody>
-        ${rows || `<tr><td colspan="6">No ${SNAPSHOT_OFFICES.has(office.slug) ? 'snapshot checks' : 'dated reports'} are archived for this office yet.</td></tr>`}
+        ${rows || `<tr><td colspan="7">No ${SNAPSHOT_OFFICES.has(office.slug) ? 'snapshot checks' : 'dated reports'} are archived for this office yet.</td></tr>`}
           </tbody>
         </table>
       </div>
@@ -1432,6 +1421,7 @@ function reportDetailPage(data, office, entry, prior) {
           <tbody>
             <tr><th>Office</th><td><a href="${office.route}">${esc(office.name)}</a></td></tr>
             <tr><th>Report date</th><td><time datetime="${date}">${esc(longDate(date))}</time></td></tr>
+            <tr><th>Observed by tracker</th><td>${entry.fetched_at ? timeHTML(entry.fetched_at) : 'Not recorded'}<br><span class="small-note">When the tracker fetched the file, not the publication time.</span></td></tr>
             <tr><th>Report basis</th><td>${esc(office.basis)}</td></tr>
             <tr><th>Checksum</th><td><code>${esc(entry.checksum || '—')}</code></td></tr>
             <tr><th>Source file</th><td>${sourceFile ? `<a href="${esc(sourceFile)}" target="_blank" rel="noopener noreferrer">Open the official file</a>` : 'No file URL recorded'}</td></tr>
@@ -1671,15 +1661,28 @@ export function buildInsightPages(options = {}) {
     'community-timelines.html': communityPage(data),
     'reports.html': reportsIndexPage(data),
   };
-  for (const [file, html] of Object.entries(pages)) writeFile(path.join(outDir, file), html);
+  const footer = freshnessFooterHTML(data.freshness);
+  const history = freshnessHistoryHTML(data.freshness);
+  const withFooter = (html, includeHistory = false) => {
+    const extra = includeHistory && history
+      ? `<section><h2>Observation history</h2>${history}</section>`
+      : '';
+    return html.replace('</main>', `${extra}${footer}</main>`);
+  };
+  for (const [file, html] of Object.entries(pages)) {
+    writeFile(path.join(outDir, file), withFooter(
+      html,
+      file === 'when-are-visa-decisions-published.html',
+    ));
+  }
 
   let reportPages = 0;
   for (const office of data.offices) {
     const history = reportHistory(officeEntries(data, office.slug));
-    writeFile(path.join(outDir, 'reports', `${office.slug}.html`), officeReportsPage(data, office));
+    writeFile(path.join(outDir, 'reports', `${office.slug}.html`), withFooter(officeReportsPage(data, office)));
     for (const { entry, prior } of history) {
       const date = String(entry.report_date).slice(0, 10);
-      writeFile(path.join(outDir, 'reports', office.slug, `${date}.html`), reportDetailPage(data, office, entry, prior));
+      writeFile(path.join(outDir, 'reports', office.slug, `${date}.html`), withFooter(reportDetailPage(data, office, entry, prior)));
       reportPages += 1;
     }
   }

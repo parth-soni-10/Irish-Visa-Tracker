@@ -9,6 +9,11 @@
  * report events alongside the expected windows for all six offices.
  */
 
+import {
+  PUBLICATION_SCHEDULES,
+  expectedDate,
+} from '../shared/publication-schedule.js';
+
 const IST_OFFSET_MINUTES = 330; // UTC+05:30, no daylight saving.
 const UPDATE_HOUR = 11;
 const UPDATE_MINUTE = 0;
@@ -113,65 +118,10 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 const HORIZON_DAYS = 56;
 const LOOKBACK_DAYS = 28;
 
-// Publication days come from embassy-config.json. Times are deliberately
-// described as expected windows: offices publish on local schedules, and the
-// tracker cannot guarantee a file will appear at a particular minute.
-const OFFICE_SCHEDULES = Object.freeze({
-  'new-delhi': {
-    name: 'New Delhi',
-    cadence: 'weekdays',
-    weekday: null,
-    hourUtc: 5,
-    minuteUtc: 30,
-    durationMinutes: 60,
-    scheduleLabel: 'weekdays around 11:00 IST (05:30 UTC)'
-  },
-  beijing: {
-    name: 'Beijing',
-    cadence: 'weekly',
-    weekday: 1,
-    hourUtc: 6,
-    minuteUtc: 0,
-    durationMinutes: 120,
-    scheduleLabel: 'Mondays (06:00 UTC)'
-  },
-  dublin: {
-    name: 'Dublin',
-    cadence: 'weekly',
-    weekday: 2,
-    hourUtc: 6,
-    minuteUtc: 0,
-    durationMinutes: 120,
-    scheduleLabel: 'Tuesdays (06:00 UTC)'
-  },
-  'abu-dhabi': {
-    name: 'Abu Dhabi',
-    cadence: 'weekly',
-    weekday: 5,
-    hourUtc: 6,
-    minuteUtc: 0,
-    durationMinutes: 120,
-    scheduleLabel: 'Fridays (06:00 UTC)'
-  },
-  abuja: {
-    name: 'Abuja',
-    cadence: 'weekly',
-    weekday: 0,
-    hourUtc: 6,
-    minuteUtc: 0,
-    durationMinutes: 120,
-    scheduleLabel: 'Sundays (06:00 UTC)'
-  },
-  ankara: {
-    name: 'Ankara',
-    cadence: 'weekly',
-    weekday: 0,
-    hourUtc: 6,
-    minuteUtc: 0,
-    durationMinutes: 120,
-    scheduleLabel: 'Sundays (06:00 UTC)'
-  }
-});
+// Times are deliberately described as expected windows: offices publish on
+// local schedules, and the tracker cannot guarantee a file will appear at a
+// particular minute. The dates themselves come from the shared schedule module.
+const OFFICE_SCHEDULES = PUBLICATION_SCHEDULES;
 
 const OFFICE_PAGES = {
   'new-delhi': 'https://www.ireland.ie/en/india/newdelhi/services/visas/processing-times-and-decisions/',
@@ -217,47 +167,54 @@ function atUtc(date, hour, minute) {
   return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), hour, minute, 0, 0));
 }
 
-function nextWeekdayWindow(now, schedule) {
-  let start = atUtc(now, schedule.hourUtc, schedule.minuteUtc);
-  while (!isWeekday(start.getUTCDay()) || start.getTime() <= now.getTime()) {
-    start = addUtcDays(start, 1);
+function windowForDate(dateKey, schedule) {
+  const start = atUtc(new Date(dateKey + 'T00:00:00Z'), schedule.hourUtc, schedule.minuteUtc);
+  return {
+    start,
+    end: new Date(start.getTime() + schedule.durationMinutes * 60 * 1000)
+  };
+}
+
+/** Find the next scheduled window after `now` when no report date is known. */
+function nextScheduledWindow(now, schedule) {
+  if (schedule.kind === 'irregular') return null;
+  const today = new Date(now.getTime());
+  for (let offset = 0; offset < 15; offset += 1) {
+    const candidateDate = addUtcDays(today, offset);
+    const day = candidateDate.getUTCDay();
+    if (schedule.kind === 'weekday' && schedule.weekday == null && (day === 0 || day === 6)) continue;
+    if (schedule.weekday != null && day !== schedule.weekday) continue;
+    const window = windowForDate(candidateDate.toISOString().slice(0, 10), schedule);
+    if (window.start.getTime() > now.getTime()) return window;
   }
-  return {
-    start,
-    end: new Date(start.getTime() + schedule.durationMinutes * 60 * 1000)
-  };
+  return null;
 }
 
-function nextWeeklyWindow(now, schedule) {
-  const today = atUtc(now, schedule.hourUtc, schedule.minuteUtc);
-  const delta = (schedule.weekday - today.getUTCDay() + 7) % 7;
-  let start = addUtcDays(today, delta);
-  if (start.getTime() <= now.getTime()) start = addUtcDays(start, 7);
-  return {
-    start,
-    end: new Date(start.getTime() + schedule.durationMinutes * 60 * 1000)
-  };
+/** First expected window at or after now, based on the latest report date. */
+function firstExpectedWindow(now, schedule, latestReportDate, slug) {
+  const latest = isoDate(latestReportDate);
+  if (schedule.kind === 'irregular') return null;
+  if (!latest) return nextScheduledWindow(now, schedule);
+  let date = expectedDate(latest, slug);
+  let window = date ? windowForDate(date, schedule) : null;
+  while (window && window.start.getTime() <= now.getTime()) {
+    date = expectedDate(date, slug);
+    window = date ? windowForDate(date, schedule) : null;
+  }
+  return window;
 }
 
-function firstExpectedWindow(now, schedule) {
-  return schedule.cadence === 'weekly'
-    ? nextWeeklyWindow(now, schedule)
-    : nextWeekdayWindow(now, schedule);
-}
-
-function expectedWindows(now, schedule) {
-  const first = firstExpectedWindow(now, schedule);
+function expectedWindows(now, schedule, latestReportDate = '', slug) {
+  const first = firstExpectedWindow(now, schedule, latestReportDate, slug);
+  if (!first) return [];
   const endLimit = new Date(now.getTime() + HORIZON_DAYS * DAY_MS);
   const windows = [];
-  let start = first.start;
-  while (start.getTime() <= endLimit.getTime()) {
-    windows.push({ start, end: new Date(start.getTime() + schedule.durationMinutes * 60 * 1000) });
-    if (schedule.cadence === 'weekly') {
-      start = addUtcDays(start, 7);
-    } else {
-      start = addUtcDays(start, 1);
-      while (!isWeekday(start.getUTCDay())) start = addUtcDays(start, 1);
-    }
+  let date = first.start.toISOString().slice(0, 10);
+  while (windowForDate(date, schedule).start.getTime() <= endLimit.getTime()) {
+    const window = windowForDate(date, schedule);
+    windows.push(window);
+    date = expectedDate(date, slug);
+    if (!date) break;
   }
   return windows;
 }
@@ -311,6 +268,7 @@ function publishedEvent(slug, name, sourcePage, report, now) {
     'Office: ' + name,
     'Report date: ' + reportDate,
     'Decisions: ' + decisions.toLocaleString('en-IE') + ' (approved ' + approved.toLocaleString('en-IE') + ', refused ' + refused.toLocaleString('en-IE') + ')',
+    report.fetched_at ? 'Tracker observed: ' + String(report.fetched_at) : '',
     source ? 'Official source: ' + source : 'Official source not recorded.',
     'This event confirms a published file; expected windows are separate events.'
   ].join('\n');
@@ -335,16 +293,28 @@ function publishedEvent(slug, name, sourcePage, report, now) {
   return { start, lines };
 }
 
-function expectedEvent(slug, name, sourcePage, window, schedule, now) {
+function expectedEvent(slug, name, sourcePage, window, schedule, now, dueDate, freshness) {
   const dateKey = isoDate(window.start.toISOString().slice(0, 10));
+  const dueIso = isoDate(dueDate);
+  const dueKey = dueIso ? dueIso.replace(/-/g, '') : '';
   const summary = 'Expected: ' + name + ' update window — ' + dateLabel(dateKey);
+  const fresh = freshness || {};
   const description = [
     'Expected update window for ' + name + ' official decisions:',
     'Expected schedule: ' + schedule.scheduleLabel + '.',
+    dueIso && dueIso !== dateKey
+      ? 'The earlier expected window was ' + dateLabel(dueIso) + '; this is the next expected window.'
+      : '',
+    fresh.status_label ? 'Office check status: ' + fresh.status_label + '.' : '',
+    fresh.last_success_at ? 'Last successful check: ' + String(fresh.last_success_at) + '.' : '',
+    fresh.last_attempt_at ? 'Last attempt: ' + String(fresh.last_attempt_at) + '.' : '',
+    fresh.overdue
+      ? 'The expected window has passed without a newer file; this is the next expected window.'
+      : '',
     'This is not a published report and is not a guarantee. Public holidays, late files and office changes can move it.',
     'When the office file is recorded, a separate “Published:” event appears and this window is omitted if it falls on the same report date.',
     sourcePage ? 'Office page: ' + sourcePage : 'Office page not recorded.'
-  ].join('\n');
+  ].filter(Boolean).join('\n');
   return {
     start: window.start,
     lines: [
@@ -360,6 +330,10 @@ function expectedEvent(slug, name, sourcePage, window, schedule, now) {
       'CATEGORIES:Expected update',
       'X-IRISH-VISA-EVENT:expected',
       'X-IRISH-VISA-OFFICE:' + slug,
+      dueKey ? 'X-IRISH-VISA-DUE-DATE:' + dueKey : '',
+      'X-IRISH-VISA-NEXT-DUE-DATE:' + dateKey.replace(/-/g, ''),
+      fresh.status ? 'X-IRISH-VISA-CHECK-STATUS:' + String(fresh.status) : '',
+      fresh.last_success_at ? 'X-IRISH-VISA-LAST-SUCCESS:' + String(fresh.last_success_at) : '',
       'TRANSP:TRANSPARENT',
       'END:VEVENT'
     ].filter(Boolean)
@@ -378,6 +352,11 @@ export function buildOfficeCalendar(now = new Date(), options = {}) {
   const manifest = options.manifest || {};
   const baseUrl = String(options.baseUrl || DEFAULT_BASE_URL).replace(/\/+$/, '');
   const reports = reportsDoc.offices && typeof reportsDoc.offices === 'object' ? reportsDoc.offices : {};
+  const freshness = options.freshness && options.freshness.bySlug
+    ? options.freshness.bySlug
+    : Object.fromEntries(((options.freshness && options.freshness.offices) || [])
+      .filter((office) => office && office.slug)
+      .map((office) => [office.slug, office]));
   const lookbackStart = new Date(current.getTime() - LOOKBACK_DAYS * DAY_MS).toISOString().slice(0, 10);
   const horizonEnd = new Date(current.getTime() + HORIZON_DAYS * DAY_MS).toISOString().slice(0, 10);
   const events = [];
@@ -410,10 +389,11 @@ export function buildOfficeCalendar(now = new Date(), options = {}) {
       if (event) events.push(event);
     }
 
-    for (const window of expectedWindows(current, schedule)) {
+    const due = expectedDate(latestReportDate, slug);
+    for (const window of expectedWindows(current, schedule, latestReportDate, slug)) {
       const dateKey = window.start.toISOString().slice(0, 10);
       if (publishedDates.has(dateKey)) continue;
-      events.push(expectedEvent(slug, name, sourcePage, window, schedule, current));
+      events.push(expectedEvent(slug, name, sourcePage, window, schedule, current, due, freshness[slug]));
     }
   }
 
@@ -455,12 +435,13 @@ async function loadJson(env, request, path) {
 }
 
 export async function officesCalendarResponse(env, request, now = new Date()) {
-  const [reports, manifest] = await Promise.all([
+  const [reports, manifest, freshness] = await Promise.all([
     loadJson(env, request, '/data/reports/index.json'),
-    loadJson(env, request, '/data/data_manifest.json')
+    loadJson(env, request, '/data/data_manifest.json'),
+    loadJson(env, request, '/data/freshness.json')
   ]);
   const baseUrl = env && env.APP_BASE_URL ? env.APP_BASE_URL : new URL(request.url).origin;
-  const body = buildOfficeCalendar(now, { reports, manifest, baseUrl });
+  const body = buildOfficeCalendar(now, { reports, manifest, freshness, baseUrl });
   return new Response(request.method === 'HEAD' ? null : body, {
     status: 200,
     headers: {

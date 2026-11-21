@@ -13,7 +13,8 @@ import { buildInsightPages } from './insight-pages.mjs';
 import { buildMonthlyPages } from './monthly-pages.mjs';
 import { buildSocialCards } from './social-cards.mjs';
 import { buildLastmodMap, updateSitemap } from './sitemap-lastmod.mjs';
-import { loadFreshness, writeFreshness, longDate, checkedStamp, SNAPSHOT_OFFICES } from './freshness.mjs';
+import { loadFreshness, writeFreshness, longDate, checkedStamp, timeHTML, SNAPSHOT_OFFICES } from './freshness.mjs';
+import { freshnessFooterHTML, freshnessHistoryHTML } from './freshness-ui.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -433,12 +434,13 @@ function injectLiveSummary() {
   if (!office || !office.report_date) return;
 
   const fileDate = longDate(office.report_date);
-  const checked = checkedStamp(office.checked_at) || fileDate;
+  const checked = office.checked_at ? timeHTML(office.checked_at) : fileDate;
   const count = office.decisions.toLocaleString('en-IE');
-  const through = longDate(office.latest_decision_date);
-  const summary = `${count} New Delhi decisions in the latest file (report ${fileDate}` +
-    (through && through !== fileDate ? `; decisions dated through ${through}` : '') +
-    `). Checked ${checked}.`;
+  const through = longDate(office.official_data_through);
+  const observation = office.observation_note ? ` ${office.observation_note}` : '';
+  const summary = `${count} New Delhi decisions in the latest official file (report ${fileDate}` +
+    (through && through !== fileDate ? `; official decisions dated through ${through}` : '') +
+    `). Checked ${checked}.${observation}`;
 
   for (const page of ['index.html', 'daily-summaries.html']) {
     const file = path.resolve(distDir, page);
@@ -544,9 +546,12 @@ export function injectOfficePages(options = {}) {
         ? `1 snapshot · ${archiveTotal.toLocaleString('en-IE')} decisions`
         : `${reportCount} weekly reports · ${archiveTotal.toLocaleString('en-IE')} decisions`;
 
+    const checkedHTML = canonical
+      ? timeHTML(canonical.last_success_at || canonical.checked_at)
+      : escapeHtml(checked);
     const fields = {
       'latest-date': latest,
-      'checked-date': checked,
+      'checked-date': checkedHTML,
       decisions: decisions.toLocaleString('en-IE'),
       approved: approved.toLocaleString('en-IE'),
       refused: refused.toLocaleString('en-IE'),
@@ -622,25 +627,27 @@ export function injectLatestReports(options = {}) {
     const statusLabel = office.status_label;
     const statusClass = office.status_tone ? ` is-${office.status_tone}` : '';
     const statusTitle = office.status === 'error'
-      ? office.warning
+      ? office.warning_at_build
       : office.snapshot ? 'This office publishes a live snapshot, not a dated report.'
-        : office.warning;
+        : office.warning_at_build;
     const reportDate = String(office.report_date || '').slice(0, 10);
-    const through = String(office.latest_decision_date || '').slice(0, 10);
+    const officialThrough = String(office.official_data_through || office.report_date || '').slice(0, 10);
+    const observedThrough = String(office.observed_data_through || '').slice(0, 10);
     const successAt = office.last_success_at || office.checked_at || '';
     const attemptAt = office.last_attempt_at || freshness.generated_at || successAt;
-    const successLabel = office.last_success_label || checkedStamp(successAt) || longDate(successAt);
-    const attemptLabel = office.last_attempt_label || checkedStamp(attemptAt) || longDate(attemptAt);
-    const ageNote = [office.age_label, office.due_short_label].filter(Boolean).join(' · ');
-    const timeCell = (value, label, shown) => value
-      ? `<td data-label="${label}"><time datetime="${escapeHtml(String(value))}">${escapeHtml(shown || '—')}</time></td>`
+    const ageNote = [office.age_label_at_build, office.due_short_label].filter(Boolean).join(' · ');
+    const observationNote = observedThrough && officialThrough && observedThrough > officialThrough
+      ? `<br><span class="small-note" data-observation="tracker">Tracker observed through ${escapeHtml(longDate(observedThrough))} — not in this official file</span>`
+      : '';
+    const timeCell = (value, label) => value
+      ? `<td data-label="${label}">${timeHTML(value)}</td>`
       : `<td data-label="${label}">—</td>`;
-    return `<tr><td>${escapeHtml(office.name)}</td>` +
-      `<td data-label="Report">${reportDate ? `<time datetime="${reportDate}">${escapeHtml(longDate(reportDate))}</time>` : '—'}${ageNote ? `<br><span class="small-note">${escapeHtml(ageNote)}</span>` : ''}</td>` +
-      `<td data-label="Data through">${through ? `<time datetime="${through}">${escapeHtml(longDate(through))}</time>` : '—'}</td>` +
-      timeCell(successAt, 'Last successful check', successLabel) +
-      timeCell(attemptAt, 'Last attempt', attemptLabel) +
-      `<td data-label="Status"><span class="status-pill${statusClass}"${statusTitle ? ` title="${escapeHtml(statusTitle)}"` : ''}>${statusLabel}</span></td>` +
+    return `<tr data-freshness-slug="${office.slug}" data-freshness-view="status"><td>${escapeHtml(office.name)}</td>` +
+      `<td data-label="Report">${reportDate ? `<time datetime="${reportDate}">${escapeHtml(longDate(reportDate))}</time>` : '—'}${ageNote ? `<br><span class="small-note" data-freshness-age>${escapeHtml(ageNote)}</span>` : ''}</td>` +
+      `<td data-label="Official data through">${officialThrough ? `<time datetime="${officialThrough}">${escapeHtml(longDate(officialThrough))}</time>${observationNote}` : '—'}</td>` +
+      timeCell(successAt, 'Last successful check') +
+      timeCell(attemptAt, 'Last attempt') +
+      `<td data-label="Status"><span class="status-pill${statusClass}" data-freshness-status${statusTitle ? ` title="${escapeHtml(statusTitle)}"` : ''}>${statusLabel}</span></td>` +
       `<td data-label="Decisions">${decisions.toLocaleString('en-IE')}</td><td data-label="Approved share">${rate}</td>` +
       `<td data-label="Office page"><a href="/${office.slug}-visa-decisions">${escapeHtml(office.name)} decisions</a></td></tr>`;
   }).join('\n            ');
@@ -654,15 +661,15 @@ export function injectLatestReports(options = {}) {
   if (generatedAt) {
     html = html.replace(
       /<time[^>]*id="latest-reports-generated"[^>]*>[\s\S]*?<\/time>/i,
-      `<time id="latest-reports-generated" datetime="${escapeHtml(generatedAt)}">${escapeHtml(checkedStamp(generatedAt))}</time>`,
+      `<time id="latest-reports-generated" datetime="${escapeHtml(generatedAt)}" data-iv-time="${escapeHtml(generatedAt)}" data-iv-time-format="full">${escapeHtml(checkedStamp(generatedAt))}</time>`,
     );
   }
   fs.writeFileSync(pagePath, html);
 }
 
-/** Write the one canonical report-date / decisions-through / checked line into
- *  each office page. The page's H1 and search box are static; only this block
- *  and the counts below it move when the offices publish. */
+/** Write the one canonical official report-date / data-through / checked line
+ *  into each office page. A tracker observation, when newer, is appended as a
+ *  separate labelled sentence so it is never paired with the official count. */
 export function injectOfficeFreshness(options = {}) {
   const assetsRoot = path.resolve(options.assetsRootDir || assetsRootDir);
   const dist = path.resolve(options.distDir || distDir);
@@ -671,16 +678,37 @@ export function injectOfficeFreshness(options = {}) {
     const pagePath = path.resolve(dist, `${office.slug}-visa-decisions.html`);
     if (!fs.existsSync(pagePath)) continue;
     const statusClass = office.status_tone ? ` is-${office.status_tone}` : '';
+    const summary = escapeHtml(office.summary_at_build).replace(
+      `checked ${escapeHtml(office.checked_label)}`,
+      office.checked_at ? `checked ${timeHTML(office.checked_at)}` : `checked ${escapeHtml(office.checked_label)}`,
+    );
     const block = `<p class="office-freshness" data-freshness="${office.slug}">` +
       `<span class="freshness-chip${statusClass}">${escapeHtml(office.status_label)}</span> ` +
-      `${escapeHtml(office.summary)}` +
-      (office.warning ? ` <span class="office-freshness-warning">${escapeHtml(office.warning)}</span>` : '') +
+      `${summary}` +
+      (office.observation_note ? ` <span class="office-freshness-observation">${escapeHtml(office.observation_note)}</span>` : '') +
+      (office.last_attempt_at ? ` <span class="office-freshness-attempt">Last attempt ${timeHTML(office.last_attempt_at)}</span>` : '') +
+      (office.warning_at_build ? ` <span class="office-freshness-warning">${escapeHtml(office.warning_at_build)}</span>` : '') +
       `</p>`;
     const html = fs.readFileSync(pagePath, 'utf8').replace(
       new RegExp(`(<p[^>]*class="office-freshness"[^>]*data-freshness="${office.slug}"[^>]*>)[\\s\\S]*?(<\\/p>)`, 'i'),
       block,
     );
     fs.writeFileSync(pagePath, html);
+  }
+  const statusPath = path.resolve(dist, 'status.html');
+  if (fs.existsSync(statusPath)) {
+    let html = fs.readFileSync(statusPath, 'utf8');
+    const history = freshnessHistoryHTML(freshness);
+    const footer = freshnessFooterHTML(freshness);
+    html = html.replace(
+      /(<!-- freshness-history:start -->)[\s\S]*?(<!-- freshness-history:end -->)/i,
+      `$1${history}$2`,
+    );
+    html = html.replace(
+      /(<!-- freshness-footer:start -->)[\s\S]*?(<!-- freshness-footer:end -->)/i,
+      `$1${footer}$2`,
+    );
+    fs.writeFileSync(statusPath, html);
   }
   console.log('Office pages: injected canonical freshness lines.');
 }

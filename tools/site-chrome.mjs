@@ -251,6 +251,7 @@ function footerLines() {
     '    <p>&copy; 2026 Parth Soni &middot; Dublin, Ireland</p>',
     '  </div>',
     '</footer>',
+    '<script src="/scripts/freshness.js" defer></script>',
     FOOTER_END,
   ];
 }

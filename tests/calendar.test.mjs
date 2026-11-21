@@ -1,5 +1,8 @@
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
+import path from 'node:path';
 import { test } from 'node:test';
+import { fileURLToPath } from 'node:url';
 
 import {
   buildNewDelhiCalendar,
@@ -38,6 +41,7 @@ test('calendar export is a valid one-event ICS with a caveat', () => {
   assert.match(ics, /\r\nEND:VCALENDAR\r\n$/);
 });
 
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const NOW = new Date('2026-11-16T04:00:00Z');
 const OFFICE_SLUGS = ['new-delhi', 'beijing', 'dublin', 'abu-dhabi', 'abuja', 'ankara'];
 const MANIFEST = {
@@ -94,12 +98,14 @@ test('all-office calendar uses stable expected and published UIDs for all six of
   assert.equal((ics.match(/BEGIN:VEVENT/g) || []).length, uids.length);
   assert.equal((ics.match(/END:VEVENT/g) || []).length, uids.length);
 
-  // Every office gets a rolling expected event, even where today's window was
-  // replaced by a published report.
-  for (const slug of OFFICE_SLUGS) {
+  // Every office with a fixed schedule gets a rolling expected event, even
+  // where today's window was replaced by a published report. Beijing is
+  // irregular, so the calendar deliberately invents no expected date for it.
+  for (const slug of OFFICE_SLUGS.filter((slug) => slug !== 'beijing')) {
     assert.ok(expected.some((uid) => uid.startsWith('expected-' + slug + '-')), 'missing expected UID for ' + slug);
     assert.match(ics, new RegExp('X-IRISH-VISA-OFFICE:' + slug));
   }
+  assert.ok(!expected.some((uid) => uid.startsWith('expected-beijing-')), 'Beijing has no fixed expected window');
   // A report published on an expected date replaces that day's expected event.
   assert.ok(published.includes('published-new-delhi-20261116@irishvisaupdatetracker.pages.dev'));
   assert.ok(published.includes('published-beijing-20261116@irishvisaupdatetracker.pages.dev'));
@@ -121,14 +127,29 @@ test('all-office calendar uses stable expected and published UIDs for all six of
   assert.deepEqual(uidLines(second), uids, 'the same calendar inputs must keep the same UIDs');
 });
 
-test('all-office calendar still has expected events for every office without report data', () => {
+test('Abuja calendar expected and due dates match the publication schedule page', async () => {
+  const reports = JSON.parse(await readFile(path.join(ROOT, 'data/reports/index.json'), 'utf8'));
+  const manifest = JSON.parse(await readFile(path.join(ROOT, 'data/data_manifest.json'), 'utf8'));
+  const schedulePage = await readFile(path.join(ROOT, 'when-are-visa-decisions-published.html'), 'utf8');
+  const ics = buildOfficeCalendar(new Date('2026-11-21T14:54:06Z'), { reports, manifest });
+
+  assert.match(schedulePage, /Due since Saturday 14 November 2026/);
+  assert.match(schedulePage, /Next expected Saturday 28 November 2026/);
+  assert.match(ics, /X-IRISH-VISA-DUE-DATE:20261114/);
+  assert.match(ics, /X-IRISH-VISA-NEXT-DUE-DATE:20261128/);
+  assert.match(ics, /UID:expected-abuja-20261128@irishvisaupdatetracker\.pages\.dev/);
+  assert.doesNotMatch(ics, /UID:expected-abuja-2026112[12]@/);
+});
+
+test('all-office calendar still has expected events for every fixed-schedule office without report data', () => {
   const ics = buildOfficeCalendar(NOW, { reports: { offices: {} }, manifest: MANIFEST });
   const uids = uidLines(ics);
   assert.ok(uids.every((uid) => uid.startsWith('expected-')));
   assert.equal((ics.match(/STATUS:CONFIRMED/g) || []).length, 0);
-  for (const slug of OFFICE_SLUGS) {
+  for (const slug of OFFICE_SLUGS.filter((slug) => slug !== 'beijing')) {
     assert.ok(uids.some((uid) => uid.startsWith('expected-' + slug + '-')), 'missing expected UID for ' + slug);
   }
+  assert.ok(!uids.some((uid) => uid.startsWith('expected-beijing-')));
 });
 
 test('the offices endpoint returns a folded webcal feed with stable subscriptions', async () => {

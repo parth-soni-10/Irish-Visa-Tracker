@@ -177,25 +177,24 @@
                     keepalive: true
                 }).catch(function() {});
             }
-            function openAlertForResult(number, office) {
+            async function openAlertForResult(number, office) {
                 if (!number) return;
                 var safeOffice = WATCH_OFFICES.indexOf(office) !== -1 ? office : 'new-delhi';
                 trackConversion('alert_telegram_click', 'lookup_result');
-                switchTab('alerts');
-                setTimeout(function() {
-                    var form = document.getElementById('alert-form');
-                    if (!form) return;
-                    var app = form.querySelector('input[name="application_number"]');
-                    var embassy = form.querySelector('select[name="embassy"]');
-                    if (app) app.value = number;
-                    if (embassy) {
-                        embassy.value = safeOffice;
-                        embassy.dispatchEvent(new Event('change', { bubbles: true }));
-                    }
-                    form.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    var focus = form.querySelector('#telegram-alert-btn');
-                    if (focus) focus.focus({ preventScroll: true });
-                }, 80);
+                await switchTab('alerts');
+                if (activeTab !== 'alerts') return;
+                var form = document.getElementById('alert-form');
+                if (!form) return;
+                var app = form.querySelector('input[name="application_number"]');
+                var embassy = form.querySelector('select[name="embassy"]');
+                if (app) app.value = number;
+                if (embassy) {
+                    embassy.value = safeOffice;
+                    embassy.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+                form.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                var focus = form.querySelector('#telegram-alert-btn');
+                if (focus) focus.focus({ preventScroll: true });
             }
 
             // ---------------- URL state (deep-linkable views) ----------------
@@ -975,7 +974,10 @@
             function homeFreshnessCopyHTML() {
                 var meta = officeLookupMeta && officeLookupMeta['new-delhi'];
                 var fresh = meta && meta.freshness;
-                if (fresh) return fresh.summary + ' · ' + fresh.status_label + '.';
+                if (fresh) {
+                    return fresh.summary + ' · ' + fresh.status_label + '.' +
+                        (fresh.observation_note ? ' ' + fresh.observation_note : '');
+                }
                 if (meta && meta.report_date) {
                     return 'New Delhi — report ' + lookupFormatDate(meta.report_date) + ' · ' +
                         (Number(meta.decisions) || 0).toLocaleString('en-IE') + ' decisions.';
@@ -1010,10 +1012,12 @@
                         return office.name + ': latest check failed; last successful ' +
                             (fresh.last_success_label || 'not recorded');
                     }
-                    return office.name + ': ' + (fresh.due_short_label || 'report overdue');
+                    var due = fresh.due_short_label || 'overdue';
+                    due = due.charAt(0).toLowerCase() + due.slice(1);
+                    return office.name + ': report ' + due;
                 });
                 return '<strong>Some office data is not current.</strong> ' + escapeHtml(parts.join(' · ')) +
-                    ' <a href="/status">Check office status</a>';
+                    ' · <a href="/status">Check office status</a>';
             }
 
             function paintSiteFreshnessBanner() {
@@ -2003,6 +2007,55 @@
                 });
             }
 
+            function searchResultSourceHTML(r, officeMeta) {
+                officeMeta = officeMeta || {};
+                var source = r.source_kind || r.source || 'unverified';
+                var isTracker = source === 'tracker' || r.source === 'tracker';
+                var label = r.source_label || (isTracker ? 'Tracker observation' :
+                    source === 'official' ? 'Official report' : 'Unverified report');
+                var url = r.source_url || officeMeta.source_url || OFFICE_SOURCE_URLS[r.embassy] || '';
+                var file = isTracker ? '' : (r.source_file || officeMeta.source_file || '');
+                var link = '';
+                if (file) {
+                    link = '<a href="' + escapeHtml(file) + '" target="_blank" rel="noopener noreferrer">Open report</a>';
+                } else if (url) {
+                    link = '<a href="' + escapeHtml(url) + '" target="_blank" rel="noopener noreferrer">' +
+                        (isTracker ? 'Office page' : 'Open report') + '</a>';
+                }
+                var officialDate = r.official_report_date || (isTracker ? r.report_date : '');
+                var note = '';
+                if (isTracker) {
+                    var observed = r.observed_date || r.date || '';
+                    note = (observed ? 'Observed ' + humanDate(observed) + ' · ' : '') +
+                        'not in the ' + (officialDate ? humanDate(officialDate) + ' ' : 'latest ') + 'official file';
+                } else if (r.source === 'unverified') {
+                    note = 'Not an official file';
+                }
+                return '<span class="search-source-label" data-source="' + escapeHtml(source) + '">' +
+                    escapeHtml(label) + '</span>' +
+                    (link ? ' ' + link : '') +
+                    (note ? '<span class="search-source-note">' + escapeHtml(note) + '</span>' : '');
+            }
+
+            function searchResultCheckHTML(r, officeMeta) {
+                officeMeta = officeMeta || {};
+                var last = r.last_success_at || officeMeta.last_success_at || '';
+                var checkedHTML = last
+                    ? timeNode(last, 'full')
+                    : r.last_success_label ? escapeHtml(r.last_success_label) : 'Not recorded';
+                var stale = r.stale === true || officeMeta.stale === true;
+                var attention = r.office_attention === true || officeMeta.attention === true;
+                var status = r.freshness_status || r.office_status || officeMeta.status || '';
+                var state = stale ? 'Stale' : status === 'error' ? 'Latest check failed' :
+                    attention ? 'Needs attention' : '';
+                if (!state) {
+                    return '<span class="search-check" data-office-stale="false">Checked ' + checkedHTML + '</span>';
+                }
+                return '<span class="search-check is-warning" data-office-stale="true">' +
+                    '<span class="status-pill is-warn">' + escapeHtml(state) + '</span><br>' +
+                    '<span class="search-source-note">Last successful check ' + checkedHTML + '</span></span>';
+            }
+
             function renderSearchResults(data, container) {
                 container.innerHTML = '';
                 if (!data.results || !data.results.length) {
@@ -2012,9 +2065,10 @@
                 var html = '<div class="search-results-header">' +
                     '<strong>' + data.results.length + '</strong> of <strong>' + data.pagination.total + '</strong> results' +
                     '</div>';
+                var offices = data.offices || {};
                 html += safetyNoticeHTML();
                 html += '<div class="search-results-table"><table class="results-table"><thead>' +
-                    '<tr><th>Decision date</th><th>Application No.</th><th>Decision</th><th>Office</th><th>Report date</th><th>Official source</th></tr></thead><tbody>';
+                    '<tr><th>Decision date</th><th>Application No.</th><th>Decision</th><th>Office</th><th>Report date</th><th>Source</th><th>Office check</th></tr></thead><tbody>';
                 var officeNames = {
                     'new-delhi': 'New Delhi',
                     'beijing': 'Beijing',
@@ -2026,19 +2080,23 @@
                 data.results.forEach(function(r) {
                     var pillClass = r.decision === 'Approved' ? 'green' : r.decision === 'Refused' ? 'red' : 'amber';
                     var office = officeNames[r.embassy] || r.embassy || '';
-                    html += '<tr>' +
+                    var officeMeta = offices[r.embassy] || {};
+                    var isTracker = r.source === 'tracker';
+                    var reportDate = isTracker ? '' : (r.report_date || '');
+                    html += '<tr data-source="' + escapeHtml(r.source || '') + '">' +
                         '<td class="mono"><time datetime="' + escapeHtml(r.date || '') + '">' + escapeHtml(humanDate(r.date)) + '</time></td>' +
                         '<td class="mono">' + escapeHtml(r.number || r.irl || '') + '</td>' +
                         '<td><span class="pill ' + pillClass + '">' + escapeHtml(r.decision || '') + '</span></td>' +
                         '<td>' + escapeHtml(office) + '</td>' +
-                        '<td class="mono">' + escapeHtml(r.report_date ? humanDate(r.report_date) : '—') + '</td>' +
-                        '<td>' + (OFFICE_SOURCE_URLS[r.embassy]
-                            ? '<a href="' + escapeHtml(OFFICE_SOURCE_URLS[r.embassy]) + '" target="_blank" rel="noopener noreferrer">Open report</a>'
+                        '<td class="mono">' + (reportDate
+                            ? '<time datetime="' + escapeHtml(reportDate) + '">' + escapeHtml(humanDate(reportDate)) + '</time>'
                             : '—') + '</td>' +
+                        '<td>' + searchResultSourceHTML(r, officeMeta) + '</td>' +
+                        '<td>' + searchResultCheckHTML(r, officeMeta) + '</td>' +
                         '</tr>';
                 });
                 html += '</tbody></table></div>' +
-                    '<p class="note2 search-report-note">Report date is the date of the office file that published the row; decision date is the date of the individual decision. The official source link opens the office report page.</p>';
+                    '<p class="note2 search-report-note">Report date is the date of the official file that published an official row. Tracker observations show no report date and are labelled separately. The source link opens the office page or the official report file; Office check shows the last successful office check, or a stale/error state.</p>';
                 if (data.pagination.has_more) {
                     html += '<div class="search-pagination"><button type="button" class="btn" id="search-load-more">Load more</button></div>';
                 }
@@ -2562,8 +2620,12 @@
                         var payload = payloads[0];
                         var freshPayload = payloads[1];
                         var freshBySlug = Object.create(null);
+                        var now = new Date();
                         ((freshPayload && freshPayload.offices) || []).forEach(function(office) {
-                            if (office && office.slug) freshBySlug[office.slug] = office;
+                            if (!office || !office.slug) return;
+                            freshBySlug[office.slug] = window.IVFreshness && window.IVFreshness.compute
+                                ? window.IVFreshness.compute(office, now)
+                                : office;
                         });
                         var map = Object.create(null);
                         ((payload && payload.offices) || []).forEach(function(office) {
@@ -2698,6 +2760,11 @@
 
             function lookupOfficeMeta(office, metas) {
                 var item = (metas && metas[office]) || {};
+                var rawFreshness = item.freshness ||
+                    (officeLookupMeta && officeLookupMeta[office] && officeLookupMeta[office].freshness) || null;
+                var freshness = rawFreshness && window.IVFreshness && window.IVFreshness.compute
+                    ? window.IVFreshness.compute(rawFreshness, new Date())
+                    : rawFreshness;
                 var sourceUrl = item.source_url;
                 if (!/^https?:\/\//i.test(String(sourceUrl || ''))) {
                     sourceUrl = OFFICE_SOURCE_URLS[office] || '';
@@ -2715,8 +2782,7 @@
                     as_of: item.as_of || '',
                     status: item.status || '',
                     note: item.note || '',
-                    freshness: item.freshness ||
-                        (officeLookupMeta && officeLookupMeta[office] && officeLookupMeta[office].freshness) || null
+                    freshness: freshness
                 };
             }
 
@@ -2726,6 +2792,7 @@
                 var out = '<div class="lookup-result-freshness' + (fresh.warning ? ' is-warning' : '') + '"' +
                     (fresh.warning ? ' role="note"' : '') + '>' +
                     '<strong>Data freshness:</strong> ' + escapeHtml(fresh.summary) + '. ';
+                if (fresh.observation_note) out += escapeHtml(fresh.observation_note) + ' ';
                 if (fresh.warning) out += escapeHtml(fresh.warning) + ' ';
                 if (fresh.note && fresh.note !== fresh.warning) {
                     out += '<span class="lookup-result-source-note">' + escapeHtml(fresh.note) + '</span>';
@@ -2796,31 +2863,79 @@
                     '<p class="lookup-result-disclaimer">General information, not legal advice. Check your decision letter and the official source.</p></div>';
             }
 
+            function lookupRowProvenance(row, meta) {
+                var fresh = meta && meta.freshness;
+                var source = row.source || 'unverified';
+                var isTracker = source === 'tracker';
+                var officialDate = row.official_report_date || (meta && meta.report_date) ||
+                    (isTracker ? row.report_date : '');
+                var lastSuccessAt = row.last_success_at || (fresh && fresh.last_success_at) ||
+                    (meta && (meta.fetched_at || meta.as_of)) || '';
+                var checked = lastSuccessAt
+                    ? lookupFormatChecked(lastSuccessAt)
+                    : row.last_success_label ? escapeHtml(row.last_success_label)
+                        : fresh && fresh.last_success_label ? escapeHtml(fresh.last_success_label)
+                            : 'Not recorded';
+                var stale = row.stale === true || Boolean(fresh && fresh.stale);
+                var status = row.office_status || (fresh && fresh.status) || (meta && meta.status) || '';
+                var attention = row.office_attention === true || Boolean(fresh && fresh.attention) ||
+                    status === 'error';
+                return {
+                    source: source,
+                    isTracker: isTracker,
+                    sourceLabel: row.source_label || (isTracker ? 'Tracker observation' :
+                        source === 'official' ? 'Official report' : 'Unverified report'),
+                    sourceURL: row.source_url || (meta && meta.source_url) || OFFICE_SOURCE_URLS[row.embassy] || '',
+                    sourceFile: isTracker ? '' : (row.source_file || (meta && meta.source_file) || ''),
+                    sourceName: row.source_name || (meta && meta.source_name) || '',
+                    officialDate: lookupFormatDate(officialDate),
+                    reportDate: isTracker ? '' : lookupFormatDate(row.report_date || (meta && meta.report_date)),
+                    lastSuccessAt: lastSuccessAt,
+                    checked: checked,
+                    stale: stale || attention,
+                    state: status === 'error' ? 'Latest check failed' :
+                        stale ? 'Stale' : attention ? 'Needs attention' : '',
+                    status: status
+                };
+            }
+
             function lookupResultCardHTML(row, metas) {
                 var office = row.embassy || 'new-delhi';
                 var number = normalizeIRL(row.irl || row.number) || String(row.irl || row.number || '');
                 var meta = lookupOfficeMeta(office, metas);
+                var provenance = lookupRowProvenance(row, meta);
                 var decision = row.decision || 'Decision not listed';
-                var reportDate = lookupFormatDate(meta.report_date);
+                var reportDate = provenance.reportDate;
                 var decisionDate = lookupFormatDate(row.date);
-                var checked = meta.fetched_at ? lookupFormatChecked(meta.fetched_at) :
-                    (meta.as_of ? lookupFormatChecked(meta.as_of) : 'Not recorded');
-                var sourceName = meta.source_name || ('Published report for ' + officeName(office));
-                var source = meta.source_url
-                    ? '<a href="' + escapeHtml(meta.source_url) + '" target="_blank" rel="noopener noreferrer">' +
-                        escapeHtml(sourceName) + ' <span aria-hidden="true">\u2197</span></a>' +
+                var checked = provenance.checked;
+                var sourceName = provenance.sourceName || ('Published report for ' + officeName(office));
+                var sourceURL = provenance.sourceURL;
+                var source = sourceURL
+                    ? '<a href="' + escapeHtml(sourceURL) + '" target="_blank" rel="noopener noreferrer">' +
+                        escapeHtml(provenance.isTracker ? 'Office page' : sourceName) +
+                        ' <span aria-hidden="true">\u2197</span></a>' +
                         '<span class="lookup-result-source-note">opens in a new tab</span>'
-                    : '<span class="lookup-result-source-missing">Official source link is unavailable right now.</span>';
+                    : '<span class="lookup-result-source-missing">' +
+                        (provenance.isTracker ? 'The office page link is unavailable right now.' : 'Official source link is unavailable right now.') +
+                        '</span>';
                 var privacyId = 'lookup-share-privacy-' + String(number).replace(/[^A-Za-z0-9_-]/g, '') + '-' + office;
-                var exactSource = meta.source_file && meta.source_file !== meta.source_url
+                var exactSource = provenance.sourceFile && provenance.sourceFile !== sourceURL
                     ? '<p class="lookup-result-source lookup-result-source-file">' +
                         '<span class="lookup-result-source-label">Report containing this row</span>' +
-                        '<a href="' + escapeHtml(meta.source_file) + '" target="_blank" rel="noopener noreferrer" data-lookup-source-file>' +
+                        '<a href="' + escapeHtml(provenance.sourceFile) + '" target="_blank" rel="noopener noreferrer" data-lookup-source-file>' +
                         'Open the official report file <span aria-hidden="true">\u2197</span></a>' +
                         '<span class="lookup-result-source-note">PDF or ODS from the office</span></p>'
                     : '';
-                return '<article class="lookup-result-card" data-lookup-result data-office="' +
-                    escapeHtml(office) + '" data-lookup-number="' + escapeHtml(number) + '">' +
+                var trackerNote = provenance.isTracker
+                    ? '<div class="lookup-result-fact"><dt>Official file</dt><dd>' +
+                        (provenance.officialDate ? 'Latest ' + provenance.officialDate + '; this row is a tracker observation, not part of that file' : 'No official file context available') +
+                        '</dd></div>'
+                    : '';
+                var checkState = provenance.state
+                    ? '<span class="status-pill is-warn">' + escapeHtml(provenance.state) + '</span> ' : '';
+                return '<article class="lookup-result-card" data-lookup-result data-source="' +
+                    escapeHtml(provenance.source) + '" data-office="' + escapeHtml(office) +
+                    '" data-lookup-number="' + escapeHtml(number) + '">' +
                     '<div class="lookup-result-head"><div>' +
                     '<p class="lookup-result-kicker">Published decision</p>' +
                     '<h3 class="lookup-result-title">Application <span class="mono">' + escapeHtml(number) + '</span></h3>' +
@@ -2831,11 +2946,17 @@
                     '<div class="lookup-result-fact"><dt>Coverage</dt><dd>' + escapeHtml(OFFICE_COVERAGE[office] || 'Published report') + '</dd></div>' +
                     '<div class="lookup-result-fact"><dt>Decision date</dt><dd>' +
                     (decisionDate ? '<time datetime="' + escapeHtml(row.date) + '">' + decisionDate + '</time>' : 'Not listed') + '</dd></div>' +
-                    '<div class="lookup-result-fact"><dt>Report date</dt><dd>' +
-                    (reportDate ? '<time datetime="' + escapeHtml(meta.report_date) + '">' + reportDate + '</time>' : 'Not listed') + '</dd></div>' +
-                    '<div class="lookup-result-fact"><dt>Last checked</dt><dd>' + checked + '</dd></div>' +
+                    (provenance.isTracker
+                        ? '<div class="lookup-result-fact"><dt>Source</dt><dd>' + escapeHtml(provenance.sourceLabel) + '</dd></div>' + trackerNote
+                        : '<div class="lookup-result-fact"><dt>Report date</dt><dd>' +
+                            (reportDate ? '<time datetime="' + escapeHtml(row.report_date || meta.report_date || '') + '">' + reportDate + '</time>' : 'Not listed') + '</dd></div>') +
+                    '<div class="lookup-result-fact"><dt>Last checked</dt><dd>' + checkState + checked + '</dd></div>' +
                     '</dl>' +
-                    '<p class="lookup-result-source"><span class="lookup-result-source-label">Official source</span>' + source + '</p>' +
+                    '<p class="lookup-result-source"><span class="lookup-result-source-label">' +
+                    (provenance.isTracker ? 'Tracker observation' : 'Official source') + '</span>' + source +
+                    (provenance.isTracker && provenance.officialDate
+                        ? '<span class="lookup-result-source-note">Not in the ' + escapeHtml(provenance.officialDate) + ' official file</span>'
+                        : '') + '</p>' +
                     exactSource +
                     lookupFreshnessHTML(meta) +
                     '<div class="lookup-result-actions">' +
@@ -3214,7 +3335,7 @@
                     '<a class="home-freshness-link" href="/feed.xml">Official file feed</a></div></div>' +
                     '<div id="meta-box" aria-live="polite"></div>' +
                     '<details class="home-freshness-details"><summary>How to read these dates</summary>' +
-                    '<p>Decision date is the date attached to an individual row. Report date is the date of the office file that published it. They can differ, especially for weekly reports.</p>' +
+                    '<p>Decision date is the date attached to an individual row. For official report rows, Report date is the date of the office file that published it; for tracker observations it is left blank because the row is not in that file. They can differ, especially for weekly reports.</p>' +
                     '<p>The New Delhi row count is the tracker’s searchable history; the latest-file count is what the current official file contains. A cumulative file can add or drop rows between publications, so the two totals are close but not identical.</p>' +
                     '<p>Next expected New Delhi update: weekdays around <strong>' +
                     scheduleTimeNode(NEW_DELHI_UPDATE_HOUR, NEW_DELHI_UPDATE_MINUTE) +

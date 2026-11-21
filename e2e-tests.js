@@ -30,6 +30,15 @@ async function openPreferences(page) {
   }
 }
 
+async function openVisaTab(page, tab) {
+  const mobileSelect = page.locator('#tracker-section');
+  if (await mobileSelect.isVisible()) {
+    await mobileSelect.selectOption(tab);
+  } else {
+    await page.locator(`.navpill[data-tab="${tab}"]`).click();
+  }
+}
+
 async function seriousA11yViolations(page, selector) {
   const results = await new AxeBuilder({ page })
     .include(selector)
@@ -139,14 +148,18 @@ test.describe('SPA shell', () => {
       localStorage.setItem('visa-watchlist', JSON.stringify([
         { number: '48850812', office: 'new-delhi' },
       ]));
-      localStorage.setItem('visa-watchlist-seen', JSON.stringify({
-        'new-delhi|48850812': {
-          signature: 'new-delhi|Refused|2026-01-02',
-          decision: 'Refused',
-          date: '2026-01-02',
-          seen_at: '2026-01-02T10:00:00.000Z',
-        },
-      }));
+      // Seed the previous visit once; the reload must keep the baseline the
+      // page just saved or the change badge will reappear forever.
+      if (!localStorage.getItem('visa-watchlist-seen')) {
+        localStorage.setItem('visa-watchlist-seen', JSON.stringify({
+          'new-delhi|48850812': {
+            signature: 'new-delhi|Refused|2026-01-02',
+            decision: 'Refused',
+            date: '2026-01-02',
+            seen_at: '2026-01-02T10:00:00.000Z',
+          },
+        }));
+      }
     });
 
     await openVisaTracker(page);
@@ -369,7 +382,7 @@ test.describe('Time zone toggle', () => {
 
     await gotoHome(page);
     await openPreferences(page);
-    const toggle = page.locator('[data-time-mode-toggle]');
+    const toggle = page.locator('details.sitebar-prefs [data-time-mode-toggle]');
     await expect(toggle).toBeVisible();
     await expect(toggle).toHaveAttribute('data-mode', 'utc');
     await expect(toggle).toHaveAttribute('aria-pressed', 'false');
@@ -426,7 +439,7 @@ test.describe('Status page clocks', () => {
     await expect(page.locator('#status-summary')).toContainText('17 Nov 2026, 16:50 UTC');
     await openPreferences(page);
 
-    const toggle = page.locator('[data-time-mode-toggle]');
+    const toggle = page.locator('details.sitebar-prefs [data-time-mode-toggle]');
     await toggle.click();
     await expect(page.locator('#status-summary')).toContainText('17 Nov 2026, 08:50');
     await expect(page.locator('#status-summary')).not.toContainText('UTC');
@@ -528,7 +541,7 @@ test.describe('Mobile responsiveness', () => {
     });
 
     await openVisaTracker(page);
-    await page.locator('.navpill[data-tab="saved"]').click();
+    await openVisaTab(page, 'saved');
     const row = page.locator('#watch-local-rows tr[data-office="new-delhi"][data-watch-number="48850812"]');
     await expect(row.locator('.watch-change-badge')).toHaveText('New since your last visit');
 
@@ -546,20 +559,19 @@ test.describe('Mobile responsiveness', () => {
   });
 });
 
-test.describe('Six-tab deep links', () => {
+test.describe('Five-tab deep links', () => {
   const tabs = [
     { tab: 'search', ready: '#home-search' },
     { tab: 'history', ready: '[data-history-view="daily"]' },
     { tab: 'alerts', ready: '#alert-form' },
     { tab: 'saved', ready: '#watch-add-form' },
     { tab: 'tools', ready: '#checklist-form' },
-    { tab: 'analytics', ready: '#chart-monthly' },
   ];
 
   test('loads each tab from its own URL', async ({ page }) => {
     for (const item of tabs) {
       await page.goto(`${BASE_URL}/?tracker=visa&tab=${item.tab}`, { waitUntil: 'domcontentloaded' });
-      await expect(page.locator('.navpill')).toHaveCount(6);
+      await expect(page.locator('.navpill')).toHaveCount(5);
       const active = page.locator(`.navpill[data-tab="${item.tab}"]`);
       await expect(active).toHaveClass(/active/);
       await expect(active).toHaveAttribute('aria-current', 'page');
@@ -567,17 +579,18 @@ test.describe('Six-tab deep links', () => {
     }
   });
 
-  test('keeps keyboard tab switches current and all six tabs inside the mobile viewport', async ({ page }) => {
+  test('keeps all five tabs current inside the mobile viewport', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 667 });
     await page.goto(`${BASE_URL}/?tracker=visa&tab=search`, { waitUntil: 'domcontentloaded' });
-    const tabs = ['search', 'history', 'alerts', 'saved', 'tools', 'analytics'];
+    const section = page.locator('#tracker-section');
+    await expect(section).toBeVisible();
+    const tabs = ['search', 'history', 'alerts', 'saved', 'tools'];
     for (const tab of tabs) {
+      await section.selectOption(tab);
       const button = page.locator(`.navpill[data-tab="${tab}"]`);
-      await button.scrollIntoViewIfNeeded();
-      await button.focus();
-      await page.keyboard.press('Enter');
       await expect(button).toHaveClass(/active/);
       await expect(button).toHaveAttribute('aria-current', 'page');
+      await expect(section).toHaveValue(tab);
       const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
       expect(overflow, `horizontal overflow on ${tab}`).toBeLessThanOrEqual(2);
     }
@@ -616,6 +629,24 @@ test.describe('All-office search result cards', () => {
           fetched_at: '2026-11-17T09:31:40.841Z',
           status: 'partial',
           note: 'Test manifest note',
+        }],
+      }),
+    }));
+    await page.route('**/data/freshness.json', (route) => route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        offices: [{
+          slug: 'beijing',
+          name: 'Beijing',
+          report_date: '2026-11-01',
+          status: 'partial',
+          status_label: 'Partial',
+          snapshot: true,
+          cadence_days: 35,
+          note: 'Test manifest note',
+          last_success_at: '2026-11-17T09:31:40.841Z',
+          last_success_label: '17 Nov 2026, 09:31 UTC',
         }],
       }),
     }));
@@ -661,10 +692,10 @@ test.describe('All-office search result cards', () => {
     const checked = card.locator('.lookup-result-fact').filter({ hasText: 'Last checked' });
     await expect(checked).toContainText('09:31 UTC');
     await openPreferences(page);
-    await page.locator('[data-time-mode-toggle]').click();
+    await page.locator('details.sitebar-prefs [data-time-mode-toggle]').click();
     await expect(checked).toContainText('01:31');
     await expect(checked).not.toContainText('UTC');
-    await page.locator('[data-time-mode-toggle]').click();
+    await page.locator('details.sitebar-prefs [data-time-mode-toggle]').click();
     await expect(checked).toContainText('09:31 UTC');
     await expect(card).toContainText('Official source');
     await expect(card.locator('.lookup-result-source a[href="https://www.ireland.ie/en/china/beijing/services/visas/visa-decisions/"]')).toBeVisible();
@@ -672,8 +703,9 @@ test.describe('All-office search result cards', () => {
       'href',
       'https://www.ireland.ie/5288/20261101_BVO_visa_decisions.ods'
     );
-    await expect(card).toContainText('Report freshness');
-    await expect(card).toContainText('marks its latest data as "partial"');
+    await expect(checked).toContainText('Needs attention');
+    await expect(card).toContainText('Data freshness');
+    await expect(card).toContainText('snapshot 1 November 2026');
     await expect(card).toContainText('Test manifest note');
     await expect(card).toContainText('What to do next');
     await expect(card).toContainText('not legal advice');
@@ -686,7 +718,7 @@ test.describe('All-office search result cards', () => {
     const watch = card.locator('[data-lookup-watch]');
     await watch.click();
     await expect(watch).toHaveAttribute('aria-pressed', 'true');
-    await expect(watch).toContainText('Watching');
+    await expect(watch).toContainText('Tracking');
     const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('visa-watchlist') || '[]'));
     expect(saved).toEqual(expect.arrayContaining([
       expect.objectContaining({ number: '44078322', office: 'beijing' }),
@@ -777,7 +809,7 @@ test.describe('All-office search result cards', () => {
     await page.selectOption('[data-home-noresult-office]', 'beijing');
     await watch.click();
     await expect(watch).toHaveAttribute('aria-pressed', 'true');
-    await expect(watch).toContainText('Watching');
+    await expect(watch).toContainText('Tracking');
     await expect(page.locator('[data-home-noresult-status]')).toContainText('Saved');
     const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('visa-watchlist') || '[]'));
     expect(saved).toEqual(expect.arrayContaining([

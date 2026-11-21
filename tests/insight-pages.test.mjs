@@ -72,6 +72,11 @@ test("build renders the study, schedule, press, embed and community pages from t
   assert.match(schedule, /Expected, not guaranteed/);
   assert.match(schedule, /Due since Saturday 14 November 2026 — not yet published/);
   assert.match(schedule, /Next expected Saturday 28 November 2026/);
+  assert.match(schedule, /Check health/);
+  assert.match(schedule, /Last successful/);
+  assert.match(schedule, /Observation history/);
+  assert.match(schedule, /Dates and provenance/);
+  assert.match(schedule, /What these dates mean/);
   assert.match(schedule, /api\/calendar\/offices\.ics/);
 
   const press = await readFile(path.join(dist, "press.html"), "utf8");
@@ -139,6 +144,8 @@ test("every archived report gets a source-linked permalink and no duplicate snap
   const reportsIndex = await readFile(path.join(dist, "reports.html"), "utf8");
   assert.match(reportsIndex, /Every official report in the archive/);
   assert.match(reportsIndex, new RegExp(`/reports/new-delhi/${latest.report_date}`));
+  assert.match(reportsIndex, /Tracker observed/);
+  assert.match(reportsIndex, /Dates and provenance/);
 
   // The wide report tables stack on phones, so every value cell needs its
   // column label in the markup and the permalink key/value tables are marked.
@@ -153,6 +160,8 @@ test("every archived report gets a source-linked permalink and no duplicate snap
     "every report archive value cell needs a data-label",
   );
   assert.match(page, /class="office-table meta-table"/);
+  assert.match(page, /Observed by tracker/);
+  assert.match(page, /not the publication time/);
 });
 
 test("badges, study exports, snapshots and sitemap entries are generated", async (t) => {

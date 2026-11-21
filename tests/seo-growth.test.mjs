@@ -33,7 +33,7 @@ test("status gets a build-time latest-report row for every office", async (t) =>
   assert.match(html, /<th scope="col">Last attempt<\/th>/);
   assert.match(html, /id="latest-reports-generated"[^>]*datetime="\d{4}-\d{2}-\d{2}T[^"]+Z"/);
   assert.match(html, /id="latest-reports-generated"[^>]*>[^<]*UTC<\/time>/);
-  assert.match(html, /14 days old · Due since 14 Nov 2026/);
+  assert.match(html, /14 days old at last build · Due since 14 Nov 2026/);
   assert.ok(beijing.last_success_label, "Beijing should have a last successful check label");
   assert.ok(html.includes(beijing.last_success_label), "status should show Beijing's last successful check");
   assert.ok(html.includes(beijing.last_attempt_label), "status should show Beijing's last attempt");

@@ -14,30 +14,74 @@
         if (!value) return 'Not recorded';
         var date = new Date(String(value).slice(0, 10) + 'T00:00:00Z');
         if (Number.isNaN(date.getTime())) return String(value);
-        return date.toLocaleDateString('en-IE', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
+        return date.toLocaleDateString('en-IE', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
+      }
+
+      function stampText(value) {
+        if (!value) return 'Not recorded';
+        var date = new Date(value);
+        if (Number.isNaN(date.getTime())) return String(value);
+        return date.toLocaleString('en-IE', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'UTC', hourCycle: 'h23' }) + ' UTC';
       }
 
       function fmtStamp(value) {
         if (!value) return 'Not recorded';
         if (window.IVTimeMode) return window.IVTimeMode.node(value, 'full');
-        var date = new Date(value);
-        if (Number.isNaN(date.getTime())) return esc(String(value));
-        return esc(date.toLocaleString('en-IE', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'UTC', hourCycle: 'h23' }) + ' UTC');
+        return esc(stampText(value));
       }
 
-      function isThin(office) {
-        return Number(office.decisions) < 500;
+      function timeCell(value, label) {
+        if (!value) return '<td data-label="' + esc(label) + '">—</td>';
+        var shown = window.IVTimeMode && window.IVTimeMode.node
+          ? window.IVTimeMode.node(value, 'full')
+          : '<time datetime="' + esc(String(value)) + '" data-iv-time="' + esc(String(value)) +
+            '" data-iv-time-format="full">' + esc(stampText(value)) + '</time>';
+        return '<td data-label="' + esc(label) + '">' + shown + '</td>';
       }
 
-      fetch('/data/data_manifest.json', { cache: 'no-store' })
-        .then(function (response) {
+      function reportCell(value, ageLabel) {
+        if (!value) return '<td data-label="Report">—</td>';
+        return '<td data-label="Report"><time datetime="' + esc(String(value).slice(0, 10)) + '">' +
+          esc(fmtDate(value)) + '</time>' +
+          (ageLabel ? '<br><span class="small-note">' + esc(ageLabel) + '</span>' : '') + '</td>';
+      }
+
+      function throughCell(official, observed) {
+        var officialDate = String(official || '').slice(0, 10);
+        var observedDate = String(observed || '').slice(0, 10);
+        if (!officialDate) return '<td data-label="Official data through">—</td>';
+        var note = observedDate && observedDate > officialDate
+          ? '<br><span class="small-note" data-observation="tracker">Tracker observed through ' +
+            esc(fmtDate(observedDate)) + ' — not in this official file</span>'
+          : '';
+        return '<td data-label="Official data through"><time datetime="' + esc(officialDate) + '">' +
+          esc(fmtDate(officialDate)) + '</time>' + note + '</td>';
+      }
+
+      function fetchJson(url) {
+        return fetch(url, { cache: 'no-store' }).then(function (response) {
           if (!response.ok) throw new Error('HTTP ' + response.status);
           return response.json();
-        })
-        .then(function (manifest) {
+        });
+      }
+
+      Promise.all([
+        fetchJson('/data/data_manifest.json'),
+        fetchJson('/data/freshness.json').catch(function () { return null; })
+      ])
+        .then(function (results) {
+          var manifest = results[0];
+          var freshness = results[1];
           var offices = Array.isArray(manifest.offices) ? manifest.offices : [];
           if (!offices.length) throw new Error('No offices in manifest');
+          var freshBySlug = {};
+          if (freshness && Array.isArray(freshness.offices)) {
+            freshness.offices.forEach(function (office) {
+              if (office && office.slug) freshBySlug[office.slug] = office;
+            });
+          }
 
+          var now = new Date();
           var withDates = offices.filter(function (office) { return office.report_date; });
           var newest = withDates.slice().sort(function (a, b) {
             return String(b.report_date).localeCompare(String(a.report_date));
@@ -56,28 +100,37 @@
             '<div class="status-metric"><span class="status-metric-label">Newest dated report</span><strong>' + esc(newestDated ? fmtDate(newestDated.report_date) : 'Not recorded') + '</strong><span>' + esc(newestDated ? newestDated.name + ' report' : 'No dated reports') + '</span></div>' +
             '<div class="status-metric"><span class="status-metric-label">Last ingest</span><strong>' + fmtStamp(latestFetch) + '</strong><span>When the data was fetched</span></div>';
 
-          function officeSource(office) {
-            var links = [];
-            if (office.source_url) links.push('<a href="' + esc(office.source_url) + '" target="_blank" rel="noopener noreferrer">Office page</a>');
-            if (office.source_file) links.push('<a href="' + esc(office.source_file) + '" target="_blank" rel="noopener noreferrer">Published file</a>');
-            return links.length ? links.join(' &middot; ') : 'Not recorded';
-          }
-
           document.getElementById('status-rows').innerHTML = offices.map(function (office) {
-            var isError = office.status === 'error';
-            var label = isError ? 'Error' : office.status === 'official' ? 'Official' : esc(office.status || 'Published');
-            var thin = isThin(office);
-            var datedHistory = { 'new-delhi': true, 'abu-dhabi': true, abuja: true, ankara: true };
-            var history = datedHistory[office.slug] ? 'Dated history' : 'Latest report only';
+            var fresh = freshBySlug[office.slug] || {};
+            if (window.IVFreshness && window.IVFreshness.compute && fresh.slug) {
+              fresh = window.IVFreshness.compute(fresh, now);
+            }
+            var isError = (fresh.status || office.status) === 'error';
+            var reportDate = String(fresh.report_date || office.report_date || '').slice(0, 10);
+            var through = String(fresh.official_data_through || fresh.report_date || office.report_date || '').slice(0, 10);
+            var observed = String(fresh.observed_data_through || '').slice(0, 10);
+            var successAt = fresh.last_success_at || office.fetched_at || '';
+            var attemptAt = fresh.last_attempt_at || manifest.generated_at || successAt;
+            var statusLabel = fresh.status_label || (isError ? 'Error' : office.status === 'official' ? 'Official' : office.status || 'Published');
+            var statusTone = fresh.status_tone ? ' is-' + fresh.status_tone : '';
+            var statusTitle = isError
+              ? (fresh.warning || office.note)
+              : fresh.snapshot ? 'This office publishes a live snapshot, not a dated report.' : fresh.warning;
+            var ageNote = [fresh.age_label, fresh.due_short_label].filter(Boolean).join(' · ');
+            var decisions = Number(fresh.decisions != null ? fresh.decisions : office.decisions) || 0;
+            var approved = Number(fresh.approved != null ? fresh.approved : office.approved) || 0;
+            var rate = decisions ? ((approved / decisions) * 100).toFixed(1) + '%' : '—';
+            var name = office.name || office.slug;
             return '<tr>' +
-              '<th scope="row">' + esc(office.name || office.slug) + '</th>' +
-              '<td data-label="Status"><span class="status-pill' + (isError ? ' is-error' : thin ? ' is-thin' : '') + '"' + (isError && office.note ? ' title="' + esc(office.note) + '"' : '') + '>' + label + (thin && !isError ? ' &middot; small office' : '') + '</span></td>' +
-              '<td data-label="Latest report">' + esc(fmtDate(office.report_date)) + '</td>' +
-              '<td data-label="Latest report rows">' + (Number(office.decisions) || 0).toLocaleString('en-IE') + '</td>' +
-              '<td data-label="Archive rows">' + (Number(office.archive_decisions) || Number(office.decisions) || 0).toLocaleString('en-IE') + '</td>' +
-              '<td data-label="History">' + history + '</td>' +
-              '<td data-label="Source">' + officeSource(office) + '</td>' +
-              '<td data-label="Fetched">' + (office.fetched_at ? fmtStamp(office.fetched_at) : 'Not recorded') + '</td>' +
+              '<td>' + esc(name) + '</td>' +
+              reportCell(reportDate, ageNote) +
+              throughCell(through, observed) +
+              timeCell(successAt, 'Last successful check') +
+              timeCell(attemptAt, 'Last attempt') +
+              '<td data-label="Status"><span class="status-pill' + statusTone + '"' + (statusTitle ? ' title="' + esc(statusTitle) + '"' : '') + '>' + esc(statusLabel) + '</span></td>' +
+              '<td data-label="Decisions">' + decisions.toLocaleString('en-IE') + '</td>' +
+              '<td data-label="Approved share">' + rate + '</td>' +
+              '<td data-label="Office page"><a href="/' + esc(office.slug) + '-visa-decisions">' + esc(name) + ' decisions</a></td>' +
             '</tr>';
           }).join('');
 
@@ -111,10 +164,38 @@
                 '</tr>';
               }).join('')
             : '<tr><td colspan="4" class="note2">No archived report dates are recorded in the manifest.</td></tr>';
+
+          var historyEl = document.querySelector
+            ? document.querySelector('[data-freshness-history]')
+            : null;
+          if (historyEl) {
+            var lagRows = offices.filter(function (office) {
+              return freshBySlug[office.slug] && freshBySlug[office.slug].observation_lag;
+            });
+            historyEl.innerHTML = lagRows.length
+              ? '<p class="small-note"><strong>How quickly does the tracker see a file?</strong> Lag is the time between a report date and the tracker\'s first archived observation of it. Backfilled history is excluded from the median.</p>' +
+                '<div class="table-wrap" role="region" aria-label="Observation lag by office" tabindex="0"><table class="office-table stack-table"><caption>Report date to first tracker observation</caption><thead><tr><th scope="col">Office</th><th scope="col">Observation lag</th><th scope="col">Recent report → first observation</th></tr></thead><tbody>' +
+                lagRows.map(function (office) {
+                  var lag = freshBySlug[office.slug].observation_lag || {};
+                  var sample = lag.sample_size
+                    ? 'Median ' + lag.median_days + ' day' + (lag.median_days === 1 ? '' : 's') +
+                      ' (range ' + lag.min_days + '–' + lag.max_days + '; ' + lag.sample_size + ' report' + (lag.sample_size === 1 ? '' : 's') + ')'
+                    : 'Not enough observations yet';
+                  var recent = (lag.history || []).slice(0, 3).map(function (entry) {
+                    return fmtDate(entry.report_date) + ' → ' + fmtStamp(entry.observed_at) +
+                      (entry.lag_days == null ? '' : ' (' + entry.lag_days + ' day' + (entry.lag_days === 1 ? '' : 's') + ')') +
+                      (entry.backfilled ? ' <span class="small-note">backfilled</span>' : '');
+                  }).join('<br>');
+                  return '<tr><th scope="row"><a href="/' + esc(office.slug) + '-visa-decisions">' + esc(office.name || office.slug) + '</a></th>' +
+                    '<td data-label="Observation lag">' + esc(sample) + '</td>' +
+                    '<td data-label="Recent report → first observation">' + (recent || '—') + '</td></tr>';
+                }).join('') + '</tbody></table></div>'
+              : '<p class="small-note">No observation history is available yet.</p>';
+          }
         })
         .catch(function (error) {
           document.getElementById('status-summary').innerHTML = '<p class="note2">The data manifest could not be loaded: ' + esc(error.message) + '. <a href="/data/data_manifest.json">Open the manifest directly</a>.</p>';
-          document.getElementById('status-rows').innerHTML = '<tr><td colspan="8" class="note2">Office coverage is unavailable right now. The manifest link above remains authoritative.</td></tr>';
+          document.getElementById('status-rows').innerHTML = '<tr><td colspan="9" class="note2">Office coverage is unavailable right now. The manifest link above remains authoritative.</td></tr>';
           document.getElementById('archive-history-rows').innerHTML = '<tr><td colspan="4" class="note2">Archived report dates are unavailable right now.</td></tr>';
         });
 

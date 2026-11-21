@@ -11,6 +11,20 @@ test('search fallback keeps valid, deduplicated office rows and metadata', () =>
   const dataDir = path.join(dir, 'data');
   fs.mkdirSync(dataDir, { recursive: true });
   const manifestPath = path.join(dataDir, 'data_manifest.json');
+  fs.writeFileSync(path.join(dataDir, 'freshness.json'), JSON.stringify({
+    offices: [
+      {
+        slug: 'beijing',
+        last_success_at: '2026-11-18T06:01:42.341Z',
+        last_success_label: '18 Nov 2026, 06:01 UTC',
+        stale: true,
+        attention: true,
+        status: 'official',
+        status_label: 'Official',
+        warning: 'Report is overdue',
+      },
+    ],
+  }));
   fs.writeFileSync(manifestPath, JSON.stringify({
     offices: [
       {
@@ -48,6 +62,9 @@ test('search fallback keeps valid, deduplicated office rows and metadata', () =>
   assert.equal(result.rows, 2);
   const payload = JSON.parse(fs.readFileSync(outFile, 'utf8'));
   assert.equal(payload.offices.beijing.source_file, 'https://example.test/beijing.ods');
+  assert.equal(payload.offices.beijing.last_success_label, '18 Nov 2026, 06:01 UTC');
+  assert.equal(payload.offices.beijing.stale, true);
+  assert.equal(payload.offices.beijing.attention, true);
   assert.deepEqual(payload.rows, [
     ['beijing', '44078322', '2026-11-01', 'Refused'],
     ['new-delhi', '48850812', '2026-11-16', 'Approved'],

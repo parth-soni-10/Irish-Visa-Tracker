@@ -8,11 +8,15 @@
  * dated report. This module derives one record per office from the manifest and
  * the published rows, and formats the single line every page can show:
  *
- *   New Delhi — report 19 November 2026 · 43,599 decisions · decisions dated
- *   through 20 November 2026 · checked 21 Nov 2026, 14:53 UTC · Official
+ *   New Delhi — report 19 November 2026 · 43,599 decisions · checked
+ *   21 Nov 2026, 14:53 UTC
+ *   Tracker observed decisions dated through 20 November 2026; these are not
+ *   in the 19 November 2026 official file.
  *
  * The generated JSON is also written to data/freshness.json so the SPA and
- * scripts can read the same values without re-deriving them.
+ * scripts can read the same values without re-deriving them. The official
+ * count is paired only with official_data_through; latest_decision_date and
+ * decisions_through remain the tracker-observed dates for older clients.
  *
  *   node tools/freshness.mjs --write
  */
@@ -20,31 +24,17 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import {
+  expectedAfter,
+  expectedDate,
+  expectedRule,
+  isWeekend,
+  scheduleFor,
+} from '../shared/publication-schedule.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 export const SNAPSHOT_OFFICES = new Set(['beijing', 'dublin']);
-const CADENCE_DAYS = {
-  'new-delhi': 3,
-  beijing: 35,
-  dublin: 7,
-  'abu-dhabi': 14,
-  abuja: 14,
-  ankara: 14,
-};
-
-// Staleness uses a deliberately generous cadence: a weekly office can skip a
-// week without its file being wrong. Due dates use the actual publication
-// rhythm instead, so a missed weekly window is visible rather than rolled
-// forward to the next one.
-const EXPECTED_INTERVAL_DAYS = {
-  'new-delhi': 1,
-  beijing: null,
-  dublin: 7,
-  'abu-dhabi': 7,
-  abuja: 7,
-  ankara: 7,
-};
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July',
   'August', 'September', 'October', 'November', 'December'];
@@ -81,15 +71,26 @@ function readJson(file) {
   }
 }
 
-function officeRows(assetsRoot, slug) {
-  const file = slug === 'new-delhi'
-    ? path.join(assetsRoot, 'data', 'visa_decisions.json')
-    : path.join(assetsRoot, 'data', `embassy-${slug}.json`);
+function readOfficeRows(file) {
   const payload = readJson(file);
   if (!payload) return [];
   if (Array.isArray(payload)) return payload;
   const rows = payload.rows || payload.decisions || payload.data;
   return Array.isArray(rows) ? rows : [];
+}
+
+// The latest official office file. Its rows are the source of the official
+// decision count and the official data-through date.
+function officialRows(assetsRoot, slug) {
+  return readOfficeRows(path.join(assetsRoot, 'data', `embassy-${slug}.json`));
+}
+
+// New Delhi's tracker file can contain partial observations dated after the
+// latest official file. Other offices keep their observations in the official
+// file, so the two sources are the same for them.
+function trackerRows(assetsRoot, slug) {
+  if (slug !== 'new-delhi') return officialRows(assetsRoot, slug);
+  return readOfficeRows(path.join(assetsRoot, 'data', 'visa_decisions.json'));
 }
 
 function rowDate(row) {
@@ -112,48 +113,27 @@ function daysBetween(from, to) {
   return Math.max(0, Math.round((end - start) / 86400000));
 }
 
-function addDays(value, days) {
-  const base = Date.parse(`${String(value || '').slice(0, 10)}T00:00:00Z`);
-  if (!Number.isFinite(base)) return '';
-  return new Date(base + days * 86400000).toISOString().slice(0, 10);
-}
-
-function weekday(value) {
-  const base = Date.parse(`${String(value || '').slice(0, 10)}T00:00:00Z`);
-  return Number.isFinite(base) ? new Date(base).getUTCDay() : -1;
-}
-
-function nextWeekday(value) {
-  let date = addDays(value, 1);
-  for (let i = 0; date && i < 8; i += 1) {
-    const day = weekday(date);
-    if (day !== 0 && day !== 6) return date;
-    date = addDays(date, 1);
-  }
-  return date;
-}
-
-function nextExpectedDate(reportDate, slug) {
-  const interval = EXPECTED_INTERVAL_DAYS[slug];
-  if (!reportDate || interval == null) return '';
-  return slug === 'new-delhi' ? nextWeekday(reportDate) : addDays(reportDate, interval);
-}
-
-function nextExpectedAfter(reportDate, slug, asOf) {
-  let date = nextExpectedDate(reportDate, slug);
-  for (let i = 0; date && asOf && date <= asOf && i < 60; i += 1) {
-    date = slug === 'new-delhi' ? nextWeekday(date) : addDays(date, EXPECTED_INTERVAL_DAYS[slug]);
-  }
-  return date;
-}
-
-function isWeekend(value) {
-  const day = weekday(value);
-  return day === 0 || day === 6;
-}
-
 function ageLabel(age) {
   return Number.isFinite(age) ? `${age} day${age === 1 ? '' : 's'} old` : '';
+}
+
+const HTML_ESCAPES = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' };
+
+function escapeHtml(value) {
+  return String(value == null ? '' : value).replace(/[&<>"]/g, (character) => HTML_ESCAPES[character]);
+}
+
+/** Render a timestamp with an honest UTC fallback that the time-mode helper can
+ *  switch in place. Date-only values stay date-only and are not treated as a
+ *  clock time. */
+export function timeHTML(value, preset = 'full') {
+  const raw = String(value || '');
+  if (!raw) return '<span class="not-recorded">Not recorded</span>';
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+    return `<time datetime="${escapeHtml(raw)}">${escapeHtml(shortDate(raw))}</time>`;
+  }
+  const label = checkedStamp(raw);
+  return `<time datetime="${escapeHtml(raw)}" data-iv-time="${escapeHtml(raw)}" data-iv-time-format="${escapeHtml(preset)}">${escapeHtml(label || raw)}</time>`;
 }
 
 function freshnessText(office) {
@@ -162,14 +142,23 @@ function freshnessText(office) {
     `${office.name} — ${kind} ${longDate(office.report_date)}`,
     `${office.decisions.toLocaleString('en-IE')} decisions`,
   ];
-  const through = longDate(office.latest_decision_date);
-  if (through && office.latest_decision_date !== office.report_date) {
-    parts.push(`decisions dated through ${through}`);
+  const through = longDate(office.official_data_through);
+  if (through && office.official_data_through !== office.report_date) {
+    parts.push(`official decisions dated through ${through}`);
   }
   if (office.age_label) parts.push(office.age_label);
   const checked = checkedStamp(office.checked_at);
   if (checked) parts.push(`checked ${checked}`);
   return parts.join(' · ');
+}
+
+// A separate sentence, never mixed into the official summary: tracker rows can
+// be newer than the latest official file, but they are not part of its count.
+function observationText(office) {
+  const observed = longDate(office.observed_data_through);
+  const official = longDate(office.report_date);
+  if (!observed || !official || office.observed_data_through <= office.official_data_through) return '';
+  return `Tracker observed decisions dated through ${observed}; these are not in the ${official} official file.`;
 }
 
 function freshnessWarning(office) {
@@ -181,9 +170,55 @@ function freshnessWarning(office) {
       (office.next_due_label ? ` ${office.next_due_label}.` : '');
   }
   if (office.stale) {
-    return `This office report is ${office.age_days} days old; a newer decision may not appear here yet.`;
+    return `This office report is ${office.age_label}; a newer decision may not appear here yet.`;
   }
   return '';
+}
+
+/**
+ * First observation of each archived report. The archive can contain repeated
+ * checks of one report date (Dublin especially); only the earliest check is the
+ * observation lag, and backfilled history is excluded from the lag sample
+ * because its fetch time is the backfill time, not a publication observation.
+ */
+function observationHistory(assetsRoot, slug) {
+  const reportDoc = readJson(path.join(assetsRoot, 'data', 'reports', 'index.json')) || {};
+  const entries = reportDoc.offices && Array.isArray(reportDoc.offices[slug])
+    ? reportDoc.offices[slug]
+    : [];
+  const firstByDate = new Map();
+  for (const entry of entries) {
+    const reportDate = String(entry && entry.report_date || '').slice(0, 10);
+    const observedAt = String(entry && entry.fetched_at || '');
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(reportDate) || !observedAt) continue;
+    const existing = firstByDate.get(reportDate);
+    if (!existing || observedAt < existing.observed_at) {
+      firstByDate.set(reportDate, {
+        report_date: reportDate,
+        observed_at: observedAt,
+        backfilled: Boolean(entry.backfilled),
+        lag_days: daysBetween(reportDate, observedAt),
+      });
+    }
+  }
+  const history = [...firstByDate.values()]
+    .sort((a, b) => b.report_date.localeCompare(a.report_date));
+  const lags = history
+    .filter((entry) => !entry.backfilled && entry.lag_days != null)
+    .map((entry) => entry.lag_days)
+    .sort((a, b) => a - b);
+  const median = lags.length
+    ? (lags.length % 2 ? lags[Math.floor(lags.length / 2)] : Math.round((lags[lags.length / 2 - 1] + lags[lags.length / 2]) / 2))
+    : null;
+  return {
+    sample_size: lags.length,
+    min_days: lags.length ? lags[0] : null,
+    max_days: lags.length ? lags[lags.length - 1] : null,
+    median_days: median,
+    latest_report_date: history[0] ? history[0].report_date : '',
+    latest_observed_at: history[0] ? history[0].observed_at : '',
+    history: history.slice(0, 6),
+  };
 }
 
 /** Build the canonical freshness record from the manifest + published rows. */
@@ -192,13 +227,19 @@ export function loadFreshness(assetsRoot = ROOT) {
   const asOf = String(manifest.generated_at || '').slice(0, 10);
   const offices = (Array.isArray(manifest.offices) ? manifest.offices : []).map((office) => {
     const slug = office.slug;
-    const rows = officeRows(assetsRoot, slug).filter(isDecisionRow);
-    const dates = rows.map(rowDate).filter(Boolean).sort();
-    const through = dates[dates.length - 1] || String(office.report_date || '').slice(0, 10);
-    const snapshot = SNAPSHOT_OFFICES.has(slug);
     const reportDate = String(office.report_date || '').slice(0, 10);
+    const officialDates = officialRows(assetsRoot, slug).filter(isDecisionRow).map(rowDate).filter(Boolean).sort();
+    const observedDates = trackerRows(assetsRoot, slug).filter(isDecisionRow).map(rowDate).filter(Boolean).sort();
+    const officialThrough = officialDates[officialDates.length - 1] || reportDate;
+    const observedThrough = observedDates[observedDates.length - 1] || officialThrough;
+    // Keep the historical decisions-through fields on the tracker-observed
+    // date for API compatibility. Official-facing tables use
+    // official_data_through instead.
+    const through = observedThrough;
+    const snapshot = SNAPSHOT_OFFICES.has(slug);
     const age = daysBetween(reportDate, asOf || reportDate);
-    const cadence = CADENCE_DAYS[slug] || 14;
+    const schedule = scheduleFor(slug);
+    const cadence = schedule ? schedule.cadenceDays : 14;
     const status = String(office.status || 'official');
     // fetched_at is the last successful read of this office's file; the
     // manifest's generated_at is the latest pipeline run, which may have
@@ -207,8 +248,9 @@ export function loadFreshness(assetsRoot = ROOT) {
     const successAt = office.fetched_at || office.as_of || '';
     const attemptAt = manifest.generated_at || office.as_of || successAt;
     const stale = age !== null && age > cadence;
-    const dueAt = nextExpectedDate(reportDate, slug);
-    const nextDueAt = nextExpectedAfter(reportDate, slug, asOf);
+    const ageLabelAtBuild = ageLabel(age) ? `${ageLabel(age)} at last build` : '';
+    const dueAt = expectedDate(reportDate, slug);
+    const nextDueAt = expectedAfter(reportDate, slug, asOf);
     // New Delhi publishes on weekdays. A Friday file is not overdue just
     // because the build ran on Saturday, so suppress that weekend-only gap.
     const overdue = Boolean(dueAt && asOf && dueAt < asOf && !(slug === 'new-delhi' && isWeekend(asOf)));
@@ -226,6 +268,10 @@ export function loadFreshness(assetsRoot = ROOT) {
       name: office.name || slug,
       published_at: reportDate,
       report_date: reportDate,
+      official_data_through: officialThrough,
+      observed_data_through: observedThrough,
+      observation_scope: observedThrough > officialThrough ? 'tracker' : 'official',
+      // Legacy tracker-observed fields retained for existing JSON clients.
       decisions_through: through,
       latest_decision_date: through,
       decisions: Number(office.decisions) || 0,
@@ -246,7 +292,9 @@ export function loadFreshness(assetsRoot = ROOT) {
       stale,
       age_days: age,
       age_label: ageLabel(age),
+      age_label_at_build: ageLabelAtBuild,
       cadence_days: cadence,
+      expected_rule: expectedRule(slug),
       due_at: dueAt,
       next_due_at: nextDueAt,
       overdue_days: overdue ? daysBetween(dueAt, asOf) : 0,
@@ -254,14 +302,22 @@ export function loadFreshness(assetsRoot = ROOT) {
       due_label: dueLabel,
       due_short_label: overdue ? `Due since ${shortDate(dueAt)}` : '',
       next_due_label: nextDueLabel,
+      observation_lag: observationHistory(assetsRoot, slug),
     };
   });
 
   // Every rendered surface reads these instead of rebuilding the sentence,
   // warning or status-chip class from the raw manifest fields.
   for (const office of offices) {
-    office.summary = freshnessText(office);
-    office.warning = freshnessWarning(office);
+    office.observation_note = observationText(office);
+    // The generated JSON is also a static fallback. Its human-readable labels
+    // must say they are build-time values; browser clients recompute them from
+    // the absolute report/due dates before rendering.
+    const atBuild = { ...office, age_label: office.age_label_at_build };
+    office.summary_at_build = freshnessText(atBuild);
+    office.warning_at_build = freshnessWarning(atBuild);
+    office.summary = office.summary_at_build;
+    office.warning = office.warning_at_build;
   }
 
   return {

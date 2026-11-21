@@ -33,6 +33,10 @@ test.describe('shared header semantics', () => {
 });
 
 test.describe('shared header interaction', () => {
+  // These exercise the desktop disclosures. The mobile project has its own
+  // menu button and its own sheet test below.
+  test.use({ viewport: { width: 1280, height: 800 } });
+
   test('Escape closes the panel and returns focus to its summary', async ({ page }) => {
     await page.goto('/');
     const more = page.locator('details.sitebar-more');
@@ -70,7 +74,7 @@ test.describe('shared header interaction', () => {
   test('theme choice persists and does not leak onto trust pages', async ({ page }) => {
     await page.goto('/');
     await page.locator('details.sitebar-prefs > summary').click();
-    await page.locator('[data-theme-toggle]').click();
+    await page.locator('details.sitebar-prefs [data-theme-toggle]').click();
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
 
     await page.reload();
@@ -95,8 +99,8 @@ test.describe('mobile sheet on a short viewport', () => {
 
   test('stays inside a landscape phone and scrolls its overflow', async ({ page }) => {
     await page.goto('/privacy');
-    await page.locator('details.sitebar-more > summary').click();
-    const panel = page.locator('details.sitebar-more .sitebar-more-panel');
+    await page.locator('details.sitebar-mobile > summary').click();
+    const panel = page.locator('details.sitebar-mobile .sitebar-mobile-panel');
     await expect(panel).toBeVisible();
 
     const box = await panel.boundingBox();

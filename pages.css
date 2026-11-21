@@ -270,6 +270,7 @@ a:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; border-rad
 }
 .freshness-chip.is-error { border-color: #fecaca; background: #fef2f2; color: #991b1b; }
 .freshness-chip.is-warn { border-color: #fde68a; background: #fffbeb; color: #92400e; }
+.office-freshness-observation { flex-basis: 100%; color: var(--ink-muted); }
 .office-freshness-warning { color: #92400e; }
 .page .office-table {
   width: 100%;
@@ -1120,6 +1121,10 @@ a:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; border-rad
     display: block;
     padding: 8px 0;
   }
+  /* The desktop line break becomes an empty grid item when the row stacks;
+     drop it and keep the following note in the value column. */
+  .page .office-table.stack-table tbody td br { display: none; }
+  .page .office-table.stack-table tbody td > .small-note { grid-column: 2; }
   .page .office-table.meta-table tbody,
   .page .office-table.meta-table tr,
   .page .office-table.meta-table th,
@@ -1664,4 +1669,6 @@ html[data-theme="dark"] .model-card .model-gate { color: #fbbf24; }
     text-transform: none;
   }
   .status-page .compare-table.status-table tbody td:first-child::before { display: none; }
+  .status-page .compare-table.status-table tbody td br { display: none; }
+  .status-page .compare-table.status-table tbody td > .small-note { grid-column: 2; }
 }

@@ -38,6 +38,15 @@ function readJson(file) {
 
 export function buildSearchFallback({ dataDir, manifestPath, outFile }) {
   const manifest = readJson(manifestPath);
+  let freshness = null;
+  try {
+    freshness = readJson(path.join(dataDir, 'freshness.json'));
+  } catch {
+    freshness = null;
+  }
+  const freshBySlug = new Map(
+    ((freshness && freshness.offices) || []).map((office) => [office.slug, office])
+  );
   const manifestOffices = new Map(
     ((manifest && manifest.offices) || []).map((office) => [office.slug, office])
   );
@@ -55,6 +64,7 @@ export function buildSearchFallback({ dataDir, manifestPath, outFile }) {
       continue;
     }
     const meta = { ...manifestOffice, ...payload };
+    const fresh = freshBySlug.get(slug) || null;
     offices[slug] = {
       source_url: meta.source_url || '',
       source_file: meta.source_file || '',
@@ -62,7 +72,14 @@ export function buildSearchFallback({ dataDir, manifestPath, outFile }) {
       report_date: meta.report_date || '',
       as_of: meta.as_of || '',
       fetched_at: meta.fetched_at || '',
-      status: meta.status || meta.data_status || '',
+      last_success_at: (fresh && fresh.last_success_at) || meta.fetched_at || meta.as_of || '',
+      last_success_label: (fresh && fresh.last_success_label) || '',
+      stale: Boolean(fresh && fresh.stale),
+      attention: Boolean(fresh && (fresh.stale || fresh.attention)),
+      status: (fresh && fresh.status) || meta.status || meta.data_status || '',
+      status_label: (fresh && fresh.status_label) || '',
+      warning: (fresh && fresh.warning) || '',
+      freshness: fresh,
       note: meta.note || ''
     };
 
