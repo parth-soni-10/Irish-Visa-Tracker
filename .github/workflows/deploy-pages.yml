@@ -37,10 +37,12 @@ jobs:
         run: npm ci
 
       - name: Build static assets
+        env:
+          SITE_ORIGIN: ${{ vars.SITE_ORIGIN || vars.APP_BASE_URL || '' }}
         run: npm run build
 
       - name: Verify build output
-        run: ls -la .pages-dist/ && test -d .pages-dist && test -f .pages-dist/index.html && test -f .pages-dist/404-internal.html && test -f .pages-dist/build-info.json && test -f .pages-dist/data/search_fallback.json
+        run: ls -la .pages-dist/ && test -d .pages-dist && test -f .pages-dist/index.html && test -f .pages-dist/404-internal.html && test -f .pages-dist/build-info.json && test -f .pages-dist/data/search_fallback.json && test -f .pages-dist/data.html && test -f .pages-dist/monthly-report/2026-01.html && test -f .pages-dist/assets/social/month-2026-01.png && test -f .pages-dist/5ba7cee4d0b7816bb7950443892c3b7d.txt
 
       - name: Upload built site
         uses: actions/upload-artifact@v4
@@ -98,3 +100,12 @@ jobs:
           OFFICIAL_FEED_BASE_URL: ${{ vars.APP_BASE_URL || 'https://irishvisaupdatetracker.pages.dev' }}
           BROADCAST_SECRET: ${{ secrets.ALERTS_CRON_SECRET || secrets.SCRAPER_CRON_SECRET }}
         run: node tools/broadcast-official-feed.mjs
+
+      # Bing/Copilot and Yandex consume IndexNow. Google does not; its sitemap
+      # and Search Console path is separate. The key file is public and copied
+      # into the build at /<key>.txt.
+      - name: Submit changed URLs to IndexNow
+        if: steps.verify.outputs.superseded != 'true'
+        env:
+          SITE_ORIGIN: ${{ vars.SITE_ORIGIN || vars.APP_BASE_URL || 'https://irishvisaupdatetracker.pages.dev' }}
+        run: node tools/indexnow.mjs --send

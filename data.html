@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Open data: Irish visa decisions | Irish Visa Decision Tracker</title>
+  <meta name="description" content="Download the public JSON and CSV files behind the Irish Visa Decision Tracker, with coverage, definitions, update cadence, reuse terms and citation details.">
+  <link rel="canonical" href="https://irishvisaupdatetracker.pages.dev/data">
+  <link rel="alternate" type="text/markdown" href="/data.md">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="describedby" href="/llms.txt" type="text/plain">
+  <meta name="theme-color" content="#ffffff">
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="Open data: Irish visa decisions | Irish Visa Decision Tracker">
+  <meta property="og:description" content="Download the public JSON and CSV files behind the Irish Visa Decision Tracker, with coverage, definitions, update cadence, reuse terms and citation details.">
+  <meta property="og:url" content="https://irishvisaupdatetracker.pages.dev/data">
+  <meta property="og:image" content="https://irishvisaupdatetracker.pages.dev/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" href="/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <link rel="stylesheet" href="/pages.css">
+  <link rel="stylesheet" href="/site-chrome.css">
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Dataset",
+  "@id": "https://irishvisaupdatetracker.pages.dev/data#dataset",
+  "name": "Irish visa decisions published by six Irish visa offices",
+  "description": "Decision counts and dated official reports published by the Irish visa offices in New Delhi, Beijing, Abu Dhabi, Abuja, Ankara and Dublin, compiled by an independent tracker.",
+  "url": "https://irishvisaupdatetracker.pages.dev/data",
+  "identifier": "https://irishvisaupdatetracker.pages.dev/data#dataset",
+  "creator": {
+    "@type": "Person",
+    "name": "Parth Soni",
+    "url": "https://irishvisaupdatetracker.pages.dev/about"
+  },
+  "license": "https://irishvisaupdatetracker.pages.dev/terms",
+  "isAccessibleForFree": true,
+  "dateModified": "2026-11-21",
+  "temporalCoverage": "2026-01-04/2026-11-21",
+  "spatialCoverage": "New Delhi, Beijing, Abu Dhabi, Abuja, Ankara and Dublin visa offices",
+  "keywords": [
+    "Irish visa decisions",
+    "Ireland visa",
+    "visa statistics",
+    "immigration data"
+  ],
+  "distribution": [
+    {
+      "@type": "DataDownload",
+      "name": "New Delhi decision rows",
+      "description": "JSON array of [date, application number, \"Approved\" | \"Refused\"]. The tracker’s dated New Delhi record; observation-dated, not official decision dates.",
+      "contentUrl": "https://irishvisaupdatetracker.pages.dev/data/visa_decisions.json",
+      "encodingFormat": "application/json"
+    },
+    {
+      "@type": "DataDownload",
+      "name": "New Delhi office file",
+      "description": "Latest official New Delhi snapshot with report metadata and decisions.",
+      "contentUrl": "https://irishvisaupdatetracker.pages.dev/data/embassy-new-delhi.json",
+      "encodingFormat": "application/json"
+    },
+    {
+      "@type": "DataDownload",
+      "name": "Beijing office file",
+      "description": "Latest Beijing snapshot with report metadata and decisions.",
+      "contentUrl": "https://irishvisaupdatetracker.pages.dev/data/embassy-beijing.json",
+      "encodingFormat": "application/json"
+    },
+    {
+      "@type": "DataDownload",
+      "name": "Abu Dhabi office file",
+      "description": "Latest Abu Dhabi weekly report with report-period dates.",
+      "contentUrl": "https://irishvisaupdatetracker.pages.dev/data/embassy-abu-dhabi.json",
+      "encodingFormat": "application/json"
+    },
+    {
+      "@type": "DataDownload",
+      "name": "Abuja office file",
+      "description": "Latest Abuja weekly report with report-period dates.",
+      "contentUrl": "https://irishvisaupdatetracker.pages.dev/data/embassy-abuja.json",
+      "encodingFormat": "application/json"
+    },
+    {
+      "@type": "DataDownload",
+      "name": "Ankara office file",
+      "description": "Latest Ankara weekly report; some rows are OCR-extracted.",
+      "contentUrl": "https://irishvisaupdatetracker.pages.dev/data/embassy-ankara.json",
+      "encodingFormat": "application/json"
+    },
+    {
+      "@type": "DataDownload",
+      "name": "Dublin office file",
+      "description": "Latest Dublin decision snapshot.",
+      "contentUrl": "https://irishvisaupdatetracker.pages.dev/data/embassy-dublin.json",
+      "encodingFormat": "application/json"
+    },
+    {
+      "@type": "DataDownload",
+      "name": "Coverage manifest",
+      "description": "One record per office: status, report date, counts, archive dates and source links.",
+      "contentUrl": "https://irishvisaupdatetracker.pages.dev/data/data_manifest.json",
+      "encodingFormat": "application/json"
+    },
+    {
+      "@type": "DataDownload",
+      "name": "Official report archive",
+      "description": "Dated official reports with counts, approval shares, checksums and source files.",
+      "contentUrl": "https://irishvisaupdatetracker.pages.dev/data/reports/index.json",
+      "encodingFormat": "application/json"
+    },
+    {
+      "@type": "DataDownload",
+      "name": "Official file feed",
+      "description": "JSON Feed of newly published official files. No applicant rows.",
+      "contentUrl": "https://irishvisaupdatetracker.pages.dev/official-file-feed.json",
+      "encodingFormat": "application/json"
+    }
+  ]
+}
+  </script>
+</head>
+<body>
+  <!-- site-chrome:start -->
+  <a class="skip-link" href="#main-content">Skip to content</a>
+  <header class="sitebar">
+    <div class="sitebar-inner">
+      <a class="brand" href="/" aria-label="Irish Visa Decision Tracker home">
+        <img src="/icon.svg" alt="" width="24" height="24">
+        <span>Irish Visa Decision Tracker</span>
+      </a>
+      <nav class="sitebar-nav" aria-label="Site">
+        <a href="/">Tracker</a>
+        <a href="/daily-summaries">Daily summaries</a>
+        <a href="/visa-processing-times">Processing times</a>
+        <a href="/about">About</a>
+        <details class="sitebar-more">
+          <summary>More</summary>
+          <div class="sitebar-more-panel">
+            <a href="/status">Data status</a>
+            <a href="/monthly-report">Monthly report</a>
+            <a href="/data-study">Data study</a>
+            <a href="/reports">Report archive</a>
+            <a href="/when-are-visa-decisions-published">Publication schedule</a>
+            <a href="/stamp-1g-processing-dates">Stamp 1G</a>
+            <a href="/employment-permit-processing-dates">Employment permits</a>
+            <a href="/help">Help</a>
+            <a href="/contact">Contact</a>
+            <a href="/privacy">Privacy</a>
+            <a href="/terms">Terms</a>
+          </div>
+        </details>
+        <details class="sitebar-prefs">
+          <summary>Preferences</summary>
+          <div class="sitebar-more-panel sitebar-prefs-panel">
+            <div class="sitebar-pref-row">
+              <span class="sitebar-pref-label">Time zone</span>
+              <button class="sitebar-pref-button" type="button" data-time-mode-toggle data-mode="utc" aria-pressed="false">
+                <span data-time-mode-label>UTC</span>
+              </button>
+            </div>
+            <div class="sitebar-pref-row">
+              <span class="sitebar-pref-label">Theme</span>
+              <button class="sitebar-pref-button" type="button" data-theme-toggle aria-pressed="false">
+                <span data-theme-label>Light</span>
+              </button>
+            </div>
+            <label class="sitebar-pref-row" data-language-row hidden>
+              <span class="sitebar-pref-label">Language</span>
+              <select class="sitebar-pref-select" data-language-select aria-label="Language"></select>
+            </label>
+          </div>
+        </details>
+      </nav>
+      <details class="sitebar-mobile">
+        <summary><span class="sitebar-mobile-bars" aria-hidden="true"></span>Menu</summary>
+        <div class="sitebar-more-panel sitebar-mobile-panel">
+          <p class="sitebar-mobile-title">Tracker</p>
+          <a href="/">Tracker</a>
+          <a href="/daily-summaries">Daily summaries</a>
+          <a href="/visa-processing-times">Processing times</a>
+          <a href="/about">About</a>
+          <p class="sitebar-mobile-title">More</p>
+          <a href="/status">Data status</a>
+          <a href="/monthly-report">Monthly report</a>
+          <a href="/data-study">Data study</a>
+          <a href="/reports">Report archive</a>
+          <a href="/when-are-visa-decisions-published">Publication schedule</a>
+          <a href="/stamp-1g-processing-dates">Stamp 1G</a>
+          <a href="/employment-permit-processing-dates">Employment permits</a>
+          <a href="/help">Help</a>
+          <a href="/contact">Contact</a>
+          <a href="/privacy">Privacy</a>
+          <a href="/terms">Terms</a>
+          <p class="sitebar-mobile-title">Preferences</p>
+          <div class="sitebar-pref-row">
+            <span class="sitebar-pref-label">Time zone</span>
+            <button class="sitebar-pref-button" type="button" data-time-mode-toggle data-mode="utc" aria-pressed="false">
+              <span data-time-mode-label>UTC</span>
+            </button>
+          </div>
+          <div class="sitebar-pref-row">
+            <span class="sitebar-pref-label">Theme</span>
+            <button class="sitebar-pref-button" type="button" data-theme-toggle aria-pressed="false">
+              <span data-theme-label>Light</span>
+            </button>
+          </div>
+        </div>
+      </details>
+    </div>
+  </header>
+  <!-- site-chrome:end -->
+  <main id="main-content" tabindex="-1" class="page">
+
+    <p class="page-kicker">Open data</p>
+    <h1>Irish visa decision data</h1>
+    <p class="page-meta">Independent and unofficial &bull; Six offices</p>
+    <p class="page-freshness small-note"><strong>Data freshness:</strong> six offices — latest publications dated 1 November 2026 to 21 November 2026 · offices last successfully checked 18 November 2026 to 21 November 2026 · New Delhi decisions through 20 November 2026 · 2 offices need attention: Beijing, Abuja. <a href="/status">All six offices</a>.</p>
+    <p class="page-lede">The tracker publishes the public files it uses: dated decision rows, the latest official snapshot for each office, the report archive and a coverage manifest. The files are plain JSON or CSV, need no key and are free to read.</p>
+
+    <div class="status-grid">
+      <div class="status-card"><span class="status-kicker">Offices</span><strong>6</strong><span>New Delhi, Beijing, Abu Dhabi, Abuja, Ankara, Dublin</span></div>
+      <div class="status-card"><span class="status-kicker">Latest-file decisions</span><strong>62,294</strong><span>Across the latest official files</span></div>
+      <div class="status-card"><span class="status-kicker">Dated reports</span><strong>53</strong><span>Source-linked official reports</span></div>
+      <div class="status-card"><span class="status-kicker">Newest office file</span><strong>21 Nov 2026</strong><span>Office dates differ; see the manifest</span></div>
+    </div>
+
+    <section>
+      <h2>Files and endpoints</h2>
+      <div class="table-wrap" role="region" aria-label="Open data files" tabindex="0">
+        <table class="office-table">
+          <caption>Public data files, what they contain and how often they change</caption>
+          <thead><tr><th scope="col">File</th><th scope="col">Contents</th><th scope="col">Update cadence</th></tr></thead>
+          <tbody><tr><th scope="row"><a href="/data/visa_decisions.json"><code>/data/visa_decisions.json</code></a><br><span class="small-note">New Delhi decision rows</span></th><td>JSON array of [date, application number, &quot;Approved&quot; | &quot;Refused&quot;]. The tracker’s dated New Delhi record; observation-dated, not official decision dates.</td><td>Daily when the embassy publishes</td></tr>
+          <tr><th scope="row"><a href="/data/embassy-new-delhi.json"><code>/data/embassy-new-delhi.json</code></a><br><span class="small-note">New Delhi office file</span></th><td>Latest official New Delhi snapshot with report metadata and decisions.</td><td>Each successful scrape</td></tr>
+          <tr><th scope="row"><a href="/data/embassy-beijing.json"><code>/data/embassy-beijing.json</code></a><br><span class="small-note">Beijing office file</span></th><td>Latest Beijing snapshot with report metadata and decisions.</td><td>When a newer file is found</td></tr>
+          <tr><th scope="row"><a href="/data/embassy-abu-dhabi.json"><code>/data/embassy-abu-dhabi.json</code></a><br><span class="small-note">Abu Dhabi office file</span></th><td>Latest Abu Dhabi weekly report with report-period dates.</td><td>Weekly</td></tr>
+          <tr><th scope="row"><a href="/data/embassy-abuja.json"><code>/data/embassy-abuja.json</code></a><br><span class="small-note">Abuja office file</span></th><td>Latest Abuja weekly report with report-period dates.</td><td>Weekly</td></tr>
+          <tr><th scope="row"><a href="/data/embassy-ankara.json"><code>/data/embassy-ankara.json</code></a><br><span class="small-note">Ankara office file</span></th><td>Latest Ankara weekly report; some rows are OCR-extracted.</td><td>Weekly</td></tr>
+          <tr><th scope="row"><a href="/data/embassy-dublin.json"><code>/data/embassy-dublin.json</code></a><br><span class="small-note">Dublin office file</span></th><td>Latest Dublin decision snapshot.</td><td>Tuesday publication</td></tr>
+          <tr><th scope="row"><a href="/data/data_manifest.json"><code>/data/data_manifest.json</code></a><br><span class="small-note">Coverage manifest</span></th><td>One record per office: status, report date, counts, archive dates and source links.</td><td>Each data refresh</td></tr>
+          <tr><th scope="row"><a href="/data/reports/index.json"><code>/data/reports/index.json</code></a><br><span class="small-note">Official report archive</span></th><td>Dated official reports with counts, approval shares, checksums and source files.</td><td>Each data refresh</td></tr>
+          <tr><th scope="row"><a href="/data/study/office-summary.csv"><code>/data/study/office-summary.csv</code></a><br><span class="small-note">Office summary CSV</span></th><td>Latest-file totals by office for the data study.</td><td>Each deploy</td></tr>
+          <tr><th scope="row"><a href="/data/study/monthly-volume.csv"><code>/data/study/monthly-volume.csv</code></a><br><span class="small-note">Monthly volume CSV</span></th><td>Dated publication volume by office and month.</td><td>Each deploy</td></tr>
+          <tr><th scope="row"><a href="/official-file-feed.json"><code>/official-file-feed.json</code></a><br><span class="small-note">Official file feed</span></th><td>JSON Feed of newly published official files. No applicant rows.</td><td>Each data refresh</td></tr></tbody>
+        </table>
+      </div>
+      <p class="small-note">Every file is served with <code>Cache-Control: no-store</code>. Read <a href="/status">Data status</a> for the latest successful check, and <a href="/data/data_manifest.json">the manifest</a> for machine-readable coverage.</p>
+    </section>
+
+    <section>
+      <h2>Definitions</h2>
+      <ul class="study-list">
+        <li><strong>Published decision.</strong> One application number and the outcome printed in an official file: Approved or Refused. It is not a prediction and not a legal status check.</li>
+        <li><strong>Report date.</strong> The date on the official file or the end of its reporting period. It is not necessarily the date an individual decision was made, and each office has its own report date.</li>
+        <li><strong>Approval share.</strong> Approved decisions divided by all decisions in the same file or period. It describes published rows, not the chance that a particular application is approved.</li>
+        <li><strong>Dated decision.</strong> A row whose office publishes an official decision or report-period date. New Delhi tracker rows are observation-dated and excluded from dated monthly totals; New Delhi, Beijing and Dublin latest files are reported separately.</li>
+        <li><strong>Missing row.</strong> A number absent from a file has not necessarily been refused. It may be unpublished, handled by another office, or affected by a file gap or OCR error.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Coverage and freshness</h2>
+      <p>Coverage starts with the oldest report currently archived (4 January 2026). The newest office publication is dated 21 November 2026, but that is not a shared cutoff. For example, New Delhi's latest file is dated 19 November 2026 and its decisions are dated through 20 November 2026. The six offices publish on different schedules: New Delhi on business days, Abu Dhabi, Abuja and Ankara weekly, Dublin on Tuesdays and Beijing irregularly. A missing office report is a gap, not a zero. Read <a href="/data/data_manifest.json">the manifest</a> for every office's report and decisions-through date.</p>
+      <p>The data is refreshed by a scheduled scraper and committed to the public repository. GitHub Actions can run late; offices do not publish on weekends or public holidays. Read <code>lastRunAt</code> and <code>ok</code> in <a href="/data/visa_meta.json"><code>visa_meta.json</code></a> before describing the data as current.</p>
+    </section>
+
+    <section>
+      <h2>Reuse and citation</h2>
+      <p>The underlying decisions are the publications of the Irish embassies and the Immigration Service Delivery and remain subject to their own re-use terms. The tracker’s compilation, charts and tables may be reused with attribution to the Irish Visa Decision Tracker and a link to this page. The source code is MIT licensed.</p>
+      <p><strong>Cite this data:</strong> Parth Soni, <em>Irish Visa Decision Tracker: published Irish visa decisions</em> (latest office publications dated 1 November 2026 to 21 November 2026; offices last successfully checked 18 November 2026 to 21 November 2026), https://irishvisaupdatetracker.pages.dev/data.</p>
+      <p>For the full method, limits and downloadable study tables, see <a href="/data-study">the data study</a> and <a href="/about#method">Method &amp; sources</a>. For press use, see the <a href="/press">press and citation kit</a>.</p>
+    </section>
+  
+  </main>
+  <!-- site-footer:start -->
+  <footer class="sitebar-footer">
+    <div class="sitebar-footer-inner">
+      <div class="sitebar-footer-brand">
+        <a class="brand" href="/" aria-label="Irish Visa Decision Tracker home">
+          <img src="/icon.svg" alt="" width="24" height="24">
+          <span>Irish Visa Decision Tracker</span>
+        </a>
+        <p>Independent and unofficial. Not immigration advice.</p>
+      </div>
+      <div class="sitebar-footer-col">
+        <p class="sitebar-footer-title">Data</p>
+        <ul>
+          <li><a href="/status">Data status</a></li>
+          <li><a href="/data">Open data</a></li>
+          <li><a href="/about#method">Method &amp; sources</a></li>
+          <li><a href="/monthly-report">Monthly report</a></li>
+          <li><a href="/data-study">Data study</a></li>
+          <li><a href="/reports">Report archive</a></li>
+          <li><a href="/when-are-visa-decisions-published">Publication schedule</a></li>
+          <li><a href="/press">Press &amp; citation</a></li>
+          <li><a href="/embed">Embed badge</a></li>
+        </ul>
+      </div>
+      <div class="sitebar-footer-col">
+        <p class="sitebar-footer-title">Trackers</p>
+        <ul>
+          <li><a href="/stamp-1g-processing-dates">Stamp 1G</a></li>
+          <li><a href="/employment-permit-processing-dates">Employment permits</a></li>
+          <li><a href="/new-delhi-visa-decisions">New Delhi decisions</a></li>
+          <li><a href="/beijing-visa-decisions">Beijing decisions</a></li>
+          <li><a href="/abu-dhabi-visa-decisions">Abu Dhabi decisions</a></li>
+          <li><a href="/abuja-visa-decisions">Abuja decisions</a></li>
+          <li><a href="/ankara-visa-decisions">Ankara decisions</a></li>
+          <li><a href="/dublin-visa-decisions">Dublin decisions</a></li>
+        </ul>
+      </div>
+      <div class="sitebar-footer-col">
+        <p class="sitebar-footer-title">Legal</p>
+        <ul>
+          <li><a href="/help">Help</a></li>
+          <li><a href="/contact">Contact</a></li>
+          <li><a href="/privacy">Privacy</a></li>
+          <li><a href="/terms">Terms</a></li>
+          <li><a href="https://github.com/parth-soni-10/Irish-Visa-Tracker" rel="noopener">GitHub</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="sitebar-footer-bottom">
+      <p>&copy; 2026 Parth Soni &middot; Dublin, Ireland</p>
+    </div>
+  </footer>
+  <!-- site-footer:end -->
+  <script src="/scripts/time-mode.js" defer></script>
+  <script src="/site-chrome.js" defer></script>
+</body>
+</html>

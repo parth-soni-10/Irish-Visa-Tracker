@@ -7,6 +7,7 @@
   var dailyRows = document.getElementById('daily-rows');
   var barsEl = document.getElementById('bars');
   var changesBody = document.getElementById('changes-body');
+  var dataThroughEl = document.getElementById('report-data-through');
   var downloadJson = document.getElementById('download-json');
   var currentMonth = '';
 
@@ -17,6 +18,32 @@
   }
   function num(value) { return Number(value || 0).toLocaleString('en-IE'); }
   function pct(value) { return Number(value || 0).toFixed(1) + '%'; }
+  var MONTHS = ['January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'];
+  function longDate(iso) {
+    var raw = String(iso || '').slice(0, 10);
+    var parts = raw.split('-');
+    if (parts.length !== 3 || !MONTHS[Number(parts[1]) - 1]) return raw || '—';
+    return Number(parts[2]) + ' ' + MONTHS[Number(parts[1]) - 1] + ' ' + parts[0];
+  }
+  function monthLabel(month) {
+    var parts = String(month || '').split('-');
+    return MONTHS[Number(parts[1]) - 1] ? MONTHS[Number(parts[1]) - 1] + ' ' + parts[0] : month;
+  }
+  function monthName(month) {
+    var parts = String(month || '').split('-');
+    return MONTHS[Number(parts[1]) - 1] || month;
+  }
+  function isPartialMonth(report) {
+    var latest = String(report.latest_date || '').slice(0, 10);
+    if (!latest || !report.month) return false;
+    // A completed month is complete even when its last decision was before
+    // the calendar end; only the newest month can be partial.
+    var newest = report.available_months && report.available_months[0];
+    if (newest && newest !== report.month) return false;
+    var end = new Date(Date.UTC(Number(report.month.slice(0, 4)), Number(report.month.slice(5, 7)), 0)).toISOString().slice(0, 10);
+    return latest < end;
+  }
   function statusClass(key) { return ['expired', 'critical', 'warning', 'notice', 'ok', 'missing'].indexOf(key) >= 0 ? key : 'missing'; }
 
   function showStatus(message, error) {
@@ -27,11 +54,13 @@
   function renderSummary(report) {
     var c = report.change;
     var sign = c.total > 0 ? '+' : '';
+    var comparison = (isPartialMonth(report) ? monthName(report.month) + ' to date' : monthLabel(report.month)) +
+      ' vs ' + monthLabel(report.previous_month);
     cardsEl.innerHTML =
-      '<div class="card"><div class="label">Dated decisions</div><div class="value">' + num(report.totals.total) + '</div><div class="hint">' + sign + num(c.total) + ' vs ' + esc(report.previous_month) + '</div></div>' +
+      '<div class="card"><div class="label">Dated decisions</div><div class="value">' + num(report.totals.total) + '</div><div class="hint">' + sign + num(c.total) + ' · ' + esc(comparison) + '</div></div>' +
       '<div class="card"><div class="label">Approved</div><div class="value">' + num(report.totals.approved) + '</div><div class="hint">' + pct(report.totals.approval_rate) + ' approved share · ' + num(report.totals.total) + ' dated decisions</div></div>' +
       '<div class="card"><div class="label">Refused</div><div class="value">' + num(report.totals.refused) + '</div><div class="hint">' + sign + num(c.refused) + ' vs previous month</div></div>' +
-      '<div class="card"><div class="label">Busiest day</div><div class="value" style="font-size:19px">' + (report.busiest_day ? esc(report.busiest_day.date) : 'No data') + '</div><div class="hint">' + (report.busiest_day ? num(report.busiest_day.total) + ' decisions' : '') + '</div></div>';
+      '<div class="card"><div class="label">Busiest day</div><div class="value small">' + (report.busiest_day ? esc(longDate(report.busiest_day.date)) : 'No data') + '</div><div class="hint">' + (report.busiest_day ? num(report.busiest_day.total) + ' decisions' : '') + '</div></div>';
   }
 
   function renderOffices(report) {
@@ -43,21 +72,21 @@
       var status = office.status === 'ocr_required' ? ' <span class="pill missing">OCR required</span>' : '';
       return '<tr><td data-label="Office"><strong>' + esc(office.name) + '</strong>' + status + '</td>' +
         '<td class="num" data-label="Dated">' + num(office.total) + '</td><td class="num" data-label="Dated approval">' + pct(office.approval_rate) + '</td>' +
-        '<td class="num" data-label="Latest report">' + num(office.reported_total) + '</td><td class="num" data-label="Report date">' + esc(office.report_date || '—') + '</td></tr>';
+        '<td class="num" data-label="Latest report">' + num(office.reported_total) + '</td><td class="num" data-label="Report date">' + esc(office.report_date ? longDate(office.report_date) : '—') + '</td></tr>';
     }).join('');
-    var asOf = report.offices.filter(function (o) { return o.report_date; }).map(function (o) { return o.name + ' ' + o.report_date; }).join('; ');
+    var asOf = report.offices.filter(function (o) { return o.report_date; }).map(function (o) { return o.name + ' ' + longDate(o.report_date); }).join('; ');
     officeNote.textContent = 'Dated approval uses the Dated count in the same row. Dated counts use official report-period dates for Abu Dhabi, Abuja and Ankara. New Delhi tracker additions are observation-dated and excluded from dated monthly totals. New Delhi, Beijing and Dublin are shown under "Latest report" only; that column is the size of each file, not a month count.' + (asOf ? ' Latest reports: ' + asOf + '.' : '');
   }
 
   function renderDaily(report) {
     var daily = report.daily || [];
     dailyRows.innerHTML = daily.length ? daily.slice().reverse().map(function (day) {
-      return '<tr><td data-label="Date">' + esc(day.date) + '</td><td class="num" data-label="Decisions">' + num(day.total) + '</td><td class="num" data-label="Approved">' + num(day.approved) + '</td><td class="num" data-label="Refused">' + num(day.refused) + '</td></tr>';
+      return '<tr><td data-label="Date"><time datetime="' + esc(day.date) + '">' + esc(longDate(day.date)) + '</time></td><td class="num" data-label="Decisions">' + num(day.total) + '</td><td class="num" data-label="Approved">' + num(day.approved) + '</td><td class="num" data-label="Refused">' + num(day.refused) + '</td></tr>';
     }).join('') : '<tr><td colspan="4" class="empty">No decisions in this month.</td></tr>';
     var max = daily.reduce(function (m, day) { return Math.max(m, day.total); }, 0) || 1;
     barsEl.innerHTML = daily.slice(-31).map(function (day) {
       var height = Math.max(4, Math.round((day.total / max) * 92));
-      return '<div class="bar" style="height:' + height + 'px" title="' + esc(day.date) + ': ' + day.total + '"><span>' + esc(day.date.slice(8)) + '</span></div>';
+      return '<div class="bar" style="height:' + height + 'px" title="' + esc(longDate(day.date)) + ': ' + day.total + '"><span>' + esc(day.date.slice(8)) + '</span></div>';
     }).join('');
   }
 
@@ -65,6 +94,14 @@
     currentMonth = report.month;
     monthInput.value = report.month;
     document.getElementById('download-json').href = '/api/reports/monthly?month=' + encodeURIComponent(report.month);
+    var latest = String(report.data_through || report.latest_date || '').slice(0, 10);
+    if (dataThroughEl) {
+      dataThroughEl.textContent = latest
+        ? 'Data to ' + longDate(latest) + (isPartialMonth(report)
+            ? '. ' + monthName(report.month) + ' is a partial month: totals cover dated decisions recorded so far.'
+            : '.')
+        : '';
+    }
     renderSummary(report);
     renderOffices(report);
     renderDaily(report);
@@ -89,17 +126,17 @@
     var recent = (changes.recent || []).slice(0, 8);
     changesBody.innerHTML =
       '<p><strong>' + esc(changes.headline) + '</strong></p>' +
-      '<p class="note">Window: ' + esc(changes.window.start) + ' to ' + esc(changes.window.end) + '. Previous: ' + esc(changes.previous_window.start) + ' to ' + esc(changes.previous_window.end) + '.</p>' +
+      '<p class="note">Window: ' + esc(longDate(changes.window.start)) + ' to ' + esc(longDate(changes.window.end)) + '. Previous: ' + esc(longDate(changes.previous_window.start)) + ' to ' + esc(longDate(changes.previous_window.end)) + '.</p>' +
       '<p class="note">Headline counts cover dated decisions; office totals are cumulative.</p>' +
       (updates.length ? '<h3>Office reports</h3><ul class="feed">' + updates.map(function (o) {
-        return '<li><strong>' + esc(o.name) + '</strong> ' + (o.is_this_week ? '<span class="pill ok">updated this week</span>' : '<span class="pill notice">latest</span>') +
-          '<div class="meta">Report date ' + esc(o.report_date) + (o.added != null ? ' · ' + num(o.added) + ' rows added' : '') + (o.corrections ? ' · ' + num(o.corrections) + ' corrections' : '') + '</div></li>';
+        return '<li><strong>' + esc(o.name) + '</strong> ' + (o.is_this_week ? '<span class="pill">updated this week</span>' : '<span class="pill">latest</span>') +
+          '<div class="meta">Report date ' + esc(longDate(o.report_date)) + (o.added != null ? ' · ' + num(o.added) + ' rows added' : '') + (o.corrections ? ' · ' + num(o.corrections) + ' corrections' : '') + '</div></li>';
       }).join('') + '</ul>' : '') +
       (recent.length ? '<h3>Latest decisions</h3><ul class="feed">' + recent.map(function (d) {
-        return '<li><strong>' + esc(d.number) + '</strong> <span class="pill ' + (d.decision === 'Approved' ? 'ok' : 'critical') + '">' + esc(d.decision) + '</span><div class="meta">' + esc(d.office) + ' · ' + esc(d.date) + '</div></li>';
+        return '<li><strong>' + esc(d.number) + '</strong> <span class="pill ' + (d.decision === 'Approved' ? 'ok' : 'critical') + '">' + esc(d.decision) + '</span><div class="meta">' + esc(d.office) + ' · ' + esc(longDate(d.date)) + '</div></li>';
       }).join('') + '</ul>' : '<p class="empty">No decisions were recorded in this window.</p>') +
       (changes.corrections && changes.corrections.length ? '<h3>Corrections</h3><ul class="feed">' + changes.corrections.map(function (c) {
-        return '<li>' + esc(c.application_number || c.number || 'Corrected row') + '<div class="meta">' + esc(c.office) + ' · report ' + esc(c.report_date) + '</div></li>';
+        return '<li>' + esc(c.application_number || c.number || 'Corrected row') + '<div class="meta">' + esc(c.office) + ' · report ' + esc(longDate(c.report_date)) + '</div></li>';
       }).join('') + '</ul>' : '');
   }
 

@@ -34,6 +34,11 @@ test('monthly report counts the month and compares with the previous month', () 
   assert.equal(report.daily.length, 3);
   assert.equal(report.offices.find((office) => office.slug === 'dublin').total, 2);
   assert.equal(report.busiest_day.date, '2026-11-10');
+  assert.equal(report.data_through, '2026-11-10');
+  assert.equal(report.partial_month, true, '10 November is not the end of the month');
+  const october = buildMonthlyReport(rows, '2026-10', offices);
+  assert.equal(october.data_through, '2026-10-29');
+  assert.equal(october.partial_month, false, 'a completed month is not partial just because its last decision was earlier');
 });
 
 test('weekly changes use a rolling window ending on the latest data date', () => {

@@ -9,7 +9,6 @@
 <meta name="description" content="Search published visa decisions from six Irish visa offices by application number, with daily summaries, Stamp 1G processing dates and employment-permit queues.">
 <link rel="canonical" href="https://irishvisaupdatetracker.pages.dev/">
 <link rel="manifest" href="/manifest.json">
-<meta name="theme-color" content="#059669">
 <link rel="apple-touch-icon" href="/icon-192.png">
 <link rel="alternate" type="text/markdown" href="/index.md" title="Markdown version">
 <link rel="alternate" type="application/rss+xml" title="Irish visa official file feed" href="/feed.xml">
@@ -93,7 +92,7 @@
       "encodingFormat": "application/json",
       "isAccessibleForFree": true,
       "publisher": { "@id": "https://irishvisaupdatetracker.pages.dev/#organization" },
-      "dateModified": "2026-11-07"
+      "dateModified": "2026-11-21"
     },
     {
       "@type": "Dataset",
@@ -104,7 +103,7 @@
       "encodingFormat": "application/json",
       "isAccessibleForFree": true,
       "publisher": { "@id": "https://irishvisaupdatetracker.pages.dev/#organization" },
-      "dateModified": "2026-11-07"
+      "dateModified": "2026-11-21"
     },
     {
       "@type": "Dataset",
@@ -115,7 +114,7 @@
       "encodingFormat": "application/json",
       "isAccessibleForFree": true,
       "publisher": { "@id": "https://irishvisaupdatetracker.pages.dev/#organization" },
-      "dateModified": "2026-11-07"
+      "dateModified": "2026-11-21"
     }
   ]
 }
@@ -128,7 +127,6 @@
     <link rel="stylesheet" href="analytics-chart.css" />
     <link rel="stylesheet" href="site-chrome.css" />
     <link rel="preload" href="/fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin>
-    <link rel="preload" href="/fonts/geist-sans.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="stylesheet" href="/styles/index.css">
 
 
@@ -156,11 +154,12 @@
           <summary>More</summary>
           <div class="sitebar-more-panel">
             <a href="/status">Data status</a>
-            <a href="/comparison">Method &amp; sources</a>
             <a href="/monthly-report">Monthly report</a>
+            <a href="/data-study">Data study</a>
+            <a href="/reports">Report archive</a>
+            <a href="/when-are-visa-decisions-published">Publication schedule</a>
             <a href="/stamp-1g-processing-dates">Stamp 1G</a>
             <a href="/employment-permit-processing-dates">Employment permits</a>
-            <a href="/vac-transit">VAC &amp; transit</a>
             <a href="/help">Help</a>
             <a href="/contact">Contact</a>
             <a href="/privacy">Privacy</a>
@@ -189,6 +188,41 @@
           </div>
         </details>
       </nav>
+      <details class="sitebar-mobile">
+        <summary><span class="sitebar-mobile-bars" aria-hidden="true"></span>Menu</summary>
+        <div class="sitebar-more-panel sitebar-mobile-panel">
+          <p class="sitebar-mobile-title">Tracker</p>
+          <a href="/" aria-current="page">Tracker</a>
+          <a href="/daily-summaries">Daily summaries</a>
+          <a href="/visa-processing-times">Processing times</a>
+          <a href="/about">About</a>
+          <p class="sitebar-mobile-title">More</p>
+          <a href="/status">Data status</a>
+          <a href="/monthly-report">Monthly report</a>
+          <a href="/data-study">Data study</a>
+          <a href="/reports">Report archive</a>
+          <a href="/when-are-visa-decisions-published">Publication schedule</a>
+          <a href="/stamp-1g-processing-dates">Stamp 1G</a>
+          <a href="/employment-permit-processing-dates">Employment permits</a>
+          <a href="/help">Help</a>
+          <a href="/contact">Contact</a>
+          <a href="/privacy">Privacy</a>
+          <a href="/terms">Terms</a>
+          <p class="sitebar-mobile-title">Preferences</p>
+          <div class="sitebar-pref-row">
+            <span class="sitebar-pref-label">Time zone</span>
+            <button class="sitebar-pref-button" type="button" data-time-mode-toggle data-mode="utc" aria-pressed="false">
+              <span data-time-mode-label>UTC</span>
+            </button>
+          </div>
+          <div class="sitebar-pref-row">
+            <span class="sitebar-pref-label">Theme</span>
+            <button class="sitebar-pref-button" type="button" data-theme-toggle aria-pressed="false">
+              <span data-theme-label>Light</span>
+            </button>
+          </div>
+        </div>
+      </details>
     </div>
   </header>
   <!-- site-chrome:end -->
@@ -210,7 +244,7 @@
         <h2>What this tracker covers</h2>
         <ul>
           <li><strong>Visa decisions</strong> &mdash; each application number in the published office reports, with its decision date, report date and approved/refused outcome.</li>
-          <li><strong>Daily summaries and trends</strong> &mdash; accepted and refused counts for every published day, with the applications behind those counts available on demand.</li>
+          <li><strong>Daily summaries and trends</strong> &mdash; approved and refused counts for every published day, with the applications behind those counts available on demand.</li>
           <li><strong>Stamp 1G and employment permits</strong> &mdash; the processing dates reached by ISD and DETE, the lag in days and weeks, and how it has moved.</li>
           <li><strong>Community timelines</strong> &mdash; waits shared by visitors and merged nightly. They are anecdotes, not a statistical sample.</li>
         </ul>
@@ -254,8 +288,14 @@
         <p class="sitebar-footer-title">Data</p>
         <ul>
           <li><a href="/status">Data status</a></li>
-          <li><a href="/comparison">Method &amp; sources</a></li>
+          <li><a href="/data">Open data</a></li>
+          <li><a href="/about#method">Method &amp; sources</a></li>
           <li><a href="/monthly-report">Monthly report</a></li>
+          <li><a href="/data-study">Data study</a></li>
+          <li><a href="/reports">Report archive</a></li>
+          <li><a href="/when-are-visa-decisions-published">Publication schedule</a></li>
+          <li><a href="/press">Press &amp; citation</a></li>
+          <li><a href="/embed">Embed badge</a></li>
         </ul>
       </div>
       <div class="sitebar-footer-col">
@@ -263,7 +303,6 @@
         <ul>
           <li><a href="/stamp-1g-processing-dates">Stamp 1G</a></li>
           <li><a href="/employment-permit-processing-dates">Employment permits</a></li>
-          <li><a href="/vac-transit">VAC &amp; transit</a></li>
           <li><a href="/new-delhi-visa-decisions">New Delhi decisions</a></li>
           <li><a href="/beijing-visa-decisions">Beijing decisions</a></li>
           <li><a href="/abu-dhabi-visa-decisions">Abu Dhabi decisions</a></li>
@@ -288,7 +327,6 @@
     </div>
   </footer>
   <!-- site-footer:end -->
-    <script src="lucide.min.js" defer></script>
     <script src="analytics-chart.js" defer></script>
     <!-- i18n translations are served as a static asset so the CSP can stay strict. -->
 <script src="/scripts/i18n.js" defer></script>

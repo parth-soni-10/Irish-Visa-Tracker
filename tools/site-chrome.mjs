@@ -36,11 +36,12 @@ const PRIMARY_LINKS = [
 
 const MORE_LINKS = [
   { href: '/status', label: 'Data status' },
-  { href: '/comparison', label: 'Method &amp; sources' },
   { href: '/monthly-report', label: 'Monthly report' },
+  { href: '/data-study', label: 'Data study' },
+  { href: '/reports', label: 'Report archive' },
+  { href: '/when-are-visa-decisions-published', label: 'Publication schedule' },
   { href: '/stamp-1g-processing-dates', label: 'Stamp 1G' },
   { href: '/employment-permit-processing-dates', label: 'Employment permits' },
-  { href: '/vac-transit', label: 'VAC &amp; transit' },
   { href: '/help', label: 'Help' },
   { href: '/contact', label: 'Contact' },
   { href: '/privacy', label: 'Privacy' },
@@ -53,15 +54,23 @@ const CORRECTIONS_LINK = { href: '/corrections', label: 'Correction ledger' };
 
 export const PAGES = [
   { file: 'index.html', route: '/', current: '/', skip: 'tracker' },
-  { file: 'new-delhi-visa-decisions.html', route: '/new-delhi-visa-decisions', current: null, skip: 'content' },
-  { file: 'beijing-visa-decisions.html', route: '/beijing-visa-decisions', current: null, skip: 'content' },
-  { file: 'abu-dhabi-visa-decisions.html', route: '/abu-dhabi-visa-decisions', current: null, skip: 'content' },
-  { file: 'abuja-visa-decisions.html', route: '/abuja-visa-decisions', current: null, skip: 'content' },
-  { file: 'ankara-visa-decisions.html', route: '/ankara-visa-decisions', current: null, skip: 'content' },
-  { file: 'dublin-visa-decisions.html', route: '/dublin-visa-decisions', current: null, skip: 'content' },
+  // Office pages are part of the tracker section, so the primary Tracker
+  // link stays current when a reader lands on one from search.
+  { file: 'new-delhi-visa-decisions.html', route: '/new-delhi-visa-decisions', current: '/', skip: 'content' },
+  { file: 'beijing-visa-decisions.html', route: '/beijing-visa-decisions', current: '/', skip: 'content' },
+  { file: 'abu-dhabi-visa-decisions.html', route: '/abu-dhabi-visa-decisions', current: '/', skip: 'content' },
+  { file: 'abuja-visa-decisions.html', route: '/abuja-visa-decisions', current: '/', skip: 'content' },
+  { file: 'ankara-visa-decisions.html', route: '/ankara-visa-decisions', current: '/', skip: 'content' },
+  { file: 'dublin-visa-decisions.html', route: '/dublin-visa-decisions', current: '/', skip: 'content' },
   { file: 'about.html', route: '/about', current: '/about', skip: 'content' },
   { file: 'admin.html', route: '/admin', current: null, skip: 'content' },
-  { file: 'comparison.html', route: '/comparison', current: '/comparison', skip: 'content' },
+  { file: 'community-timelines.html', route: '/community-timelines', current: null, skip: 'content' },
+  { file: 'data.html', route: '/data', current: null, skip: 'content' },
+  { file: 'data-study.html', route: '/data-study', current: '/data-study', skip: 'content' },
+  { file: 'embed.html', route: '/embed', current: null, skip: 'content' },
+  { file: 'press.html', route: '/press', current: null, skip: 'content' },
+  { file: 'reports.html', route: '/reports', current: '/reports', skip: 'content' },
+  { file: 'when-are-visa-decisions-published.html', route: '/when-are-visa-decisions-published', current: '/when-are-visa-decisions-published', skip: 'content' },
   { file: 'contact.html', route: '/contact', current: '/contact', skip: 'content', corrections: true },
   { file: 'corrections.html', route: '/corrections', current: '/corrections', skip: 'content', corrections: true },
   { file: 'daily-summaries.html', route: '/daily-summaries', current: '/daily-summaries', skip: 'content' },
@@ -82,7 +91,6 @@ export const PAGES = [
   },
   { file: 'status.html', route: '/status', current: '/status', skip: 'content' },
   { file: 'terms.html', route: '/terms', current: '/terms', skip: 'content' },
-  { file: 'vac-transit.html', route: '/vac-transit', current: '/vac-transit', skip: 'content' },
   { file: 'visa-processing-times.html', route: '/visa-processing-times', current: '/visa-processing-times', skip: 'content' },
   // `wrangler pages dev` answers unknown paths with its own not-found page and
   // ignores the checked-in 404.html, so this page is covered by --check rather
@@ -156,6 +164,32 @@ function headerLines(page) {
     '        </div>',
     '      </details>',
     '    </nav>',
+    // A real mobile menu. The old header was a nowrap flex row, so at 390px
+    // About, More and Preferences were clipped off-screen with no affordance.
+    // This mirrors the same links (and the two preferences) in a scrollable
+    // sheet, and the desktop nav is hidden below 980px.
+    '    <details class="sitebar-mobile">',
+    '      <summary><span class="sitebar-mobile-bars" aria-hidden="true"></span>Menu</summary>',
+    '      <div class="sitebar-more-panel sitebar-mobile-panel">',
+    '        <p class="sitebar-mobile-title">Tracker</p>',
+    ...PRIMARY_LINKS.map((link) => navLink(page, link, '        ')),
+    '        <p class="sitebar-mobile-title">More</p>',
+    ...moreLinks.map((link) => navLink(page, link, '        ')),
+    '        <p class="sitebar-mobile-title">Preferences</p>',
+    '        <div class="sitebar-pref-row">',
+    '          <span class="sitebar-pref-label">Time zone</span>',
+    '          <button class="sitebar-pref-button" type="button" data-time-mode-toggle data-mode="utc" aria-pressed="false">',
+    '            <span data-time-mode-label>UTC</span>',
+    '          </button>',
+    '        </div>',
+    '        <div class="sitebar-pref-row">',
+    '          <span class="sitebar-pref-label">Theme</span>',
+    '          <button class="sitebar-pref-button" type="button" data-theme-toggle aria-pressed="false">',
+    '            <span data-theme-label>Light</span>',
+    '          </button>',
+    '        </div>',
+    '      </div>',
+    '    </details>',
     '  </div>',
     '</header>',
     HEADER_END,
@@ -179,8 +213,14 @@ function footerLines() {
     '      <p class="sitebar-footer-title">Data</p>',
     '      <ul>',
     '        <li><a href="/status">Data status</a></li>',
-    '        <li><a href="/comparison">Method &amp; sources</a></li>',
+    '        <li><a href="/data">Open data</a></li>',
+    '        <li><a href="/about#method">Method &amp; sources</a></li>',
     '        <li><a href="/monthly-report">Monthly report</a></li>',
+    '        <li><a href="/data-study">Data study</a></li>',
+    '        <li><a href="/reports">Report archive</a></li>',
+    '        <li><a href="/when-are-visa-decisions-published">Publication schedule</a></li>',
+    '        <li><a href="/press">Press &amp; citation</a></li>',
+    '        <li><a href="/embed">Embed badge</a></li>',
     '      </ul>',
     '    </div>',
     '    <div class="sitebar-footer-col">',
@@ -188,7 +228,6 @@ function footerLines() {
     '      <ul>',
     '        <li><a href="/stamp-1g-processing-dates">Stamp 1G</a></li>',
     '        <li><a href="/employment-permit-processing-dates">Employment permits</a></li>',
-    '        <li><a href="/vac-transit">VAC &amp; transit</a></li>',
     '        <li><a href="/new-delhi-visa-decisions">New Delhi decisions</a></li>',
     '        <li><a href="/beijing-visa-decisions">Beijing decisions</a></li>',
     '        <li><a href="/abu-dhabi-visa-decisions">Abu Dhabi decisions</a></li>',
@@ -278,6 +317,11 @@ function validate(content, page) {
     problems.push(`skip link targets #${target}, which is missing from the page`);
   }
   return problems;
+}
+
+/** Splice the canonical header and footer into a page (used by build-time generators). */
+export function spliceChrome(content, page) {
+  return splice(content, page);
 }
 
 function main() {

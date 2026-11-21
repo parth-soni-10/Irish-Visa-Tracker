@@ -3,6 +3,7 @@
             // no secrets, no configuration. Same shape the Apps Script API
             // used to serve, so every render path below is untouched.
             const VISA_DATA_URL = 'data/visa_decisions.json';
+            const VISA_PREVIEW_URL = 'data/search_preview.json';
             const VISA_META_URL = 'data/visa_meta.json';
             const TRACKING_STARTED = '2026-07-13';
             const EXCLUDE_FROM_AVERAGES = '2026-07-12';
@@ -17,6 +18,7 @@
             const WATCH_LIMIT = 10;
             const OFFICE_ARCHIVE_PREFIX = 'data/embassy-';
             const DATA_MANIFEST_URL = 'data/data_manifest.json';
+            const FRESHNESS_URL = 'data/freshness.json';
             const OFFLINE_INDEX_URL = 'data/search_fallback.json';
             const OFFICE_SOURCE_URLS = {
                 'new-delhi': 'https://www.ireland.ie/en/india/newdelhi/services/visas/processing-times-and-decisions/',
@@ -34,18 +36,6 @@
                 abuja: 'Dated weekly reports',
                 ankara: 'Dated weekly reports'
             };
-            // How old a report can be before a result needs an explicit warning.
-            // Snapshot offices publish less often; weekly offices should not be
-            // more than a fortnight behind before we qualify a result.
-            const OFFICE_STALE_DAYS = {
-                'new-delhi': 3,
-                beijing: 35,
-                dublin: 7,
-                'abu-dhabi': 14,
-                abuja: 14,
-                ankara: 14
-            };
-
             // Boot-time device-capability detector. Runs once at the top of
             // the IIFE (the page is already parsing this script which lives
             // at the end of <body>, so document.body exists). Sets:
@@ -80,7 +70,7 @@
 
                 function loadScript(src, globalVar) {
                     // Always hand back a promise: cached loads store the resolved value,
-                    // and callers (paintAnalyticsCharts) chain .then on the result.
+                    // and callers can chain .then on the result.
                     if (loaded.has(src)) return Promise.resolve(loaded.get(src));
                     if (loading.has(src)) return loading.get(src);
 
@@ -122,9 +112,6 @@
                 }
 
                 return {
-                    // Chart.js v4
-                    chart: () => loadScript('https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js', 'Chart'),
-                    
                     // SheetJS (xlsx) for Excel export
                     xlsx: () => loadScript('https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js', 'XLSX'),
                     
@@ -147,14 +134,13 @@
 
             const root = document.getElementById('visa-dash');
             let cache = null;
+            let dataComplete = false;
+            let previewMeta = null;
+            let previewPromise = null;
             let dataVersion = 0;
             let datasetModel = null;
-            let analyticsModel = null;
-            let analyticsBuildScheduledVersion = 0;
             let pastLayoutCache = null;
             let pastRowsCache = null;
-            let analyticsChartInstances = [];
-            let analyticsChartObservers = [];
 
             // WCAG: scrollable regions must be keyboard-focusable (Safari).
             function ensureScrollableFocusable() {
@@ -223,7 +209,6 @@
                 { id: 'alerts', label: 'Alerts', icon: 'bell' },
                 { id: 'saved', label: 'Saved', icon: 'bookmark' },
                 { id: 'tools', label: 'Tools', icon: 'wrench' },
-                { id: 'analytics', label: 'Analytics', icon: 'bar-chart-2' },
             ];
             const KNOWN_TABS = TABS.map(function(tab) { return tab.id; });
             // Old bookmarks keep working after the eight-tab layout was
@@ -235,6 +220,7 @@
                 suggest: 'alerts',
                 suggestions: 'alerts',
                 watchlist: 'saved',
+                analytics: 'search',
                 checklist: 'tools'
             };
             const TAB_VIEWS = { history: ['daily', 'past'], tools: ['checklist', 'vfs'] };
@@ -436,6 +422,13 @@
 
             const _pctFmt = new Intl.NumberFormat('en-GB', { style: 'percent', maximumFractionDigits: 1 });
             function fmtPct(n) { return isFinite(n) ? _pctFmt.format(n) : '-'; }
+            // Dates follow the selected language, while English keeps the
+            // site's existing en-IE day-month-year order.
+            const DATE_LOCALES = { en: 'en-IE', hi: 'hi-IN', zh: 'zh-CN', ar: 'ar', tr: 'tr-TR', fr: 'fr-FR', es: 'es-ES', ur: 'ur-PK' };
+            function displayLocale() {
+                var lang = (window.getLanguage && window.getLanguage()) || document.documentElement.lang || 'en';
+                return DATE_LOCALES[lang] || 'en-IE';
+            }
             function humanDate(value) { return lookupFormatDate(value) || String(value || ''); }
             function sampleSizeText(n, suffix) {
                 var count = Number(n || 0).toLocaleString();
@@ -445,12 +438,11 @@
             }
             // Localised short month names for the hero date ranges (no hardcoded
             // month arrays - Intl.DateTimeFormat owns locale + format).
-            const _monthFmt = new Intl.DateTimeFormat('en-GB', { month: 'short' });
-            function shortMonth(d) { return _monthFmt.format(d); }
+            function shortMonth(d) { return new Intl.DateTimeFormat(displayLocale(), { month: 'short' }).format(d); }
 
             function weekdayLong(dateStr) {
                 const d = new Date(dateStr + 'T00:00:00');
-                return d.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+                return d.toLocaleDateString(displayLocale(), { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
             }
 
             // ---- Timezone display helpers ----
@@ -471,7 +463,7 @@
                 const format = preset === 'time'
                     ? { hour: '2-digit', minute: '2-digit', timeZone: 'UTC', hourCycle: 'h23' }
                     : { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'UTC', hourCycle: 'h23' };
-                return date.toLocaleString('en-GB', format) + ' UTC';
+                return date.toLocaleString(displayLocale(), format) + ' UTC';
             }
             function timeNode(value, preset) {
                 return window.IVTimeMode
@@ -507,9 +499,12 @@
                         scheduleTimeNode(NEW_DELHI_UPDATE_HOUR, NEW_DELHI_UPDATE_MINUTE) + '</strong>.</div>';
                 }
                 const todayReal = rows.filter(r => !r._placeholder && r.date === newDelhiDate);
-                if (todayReal.length) {
+                const todayCount = (!dataComplete && previewMeta && previewMeta.latest_day === newDelhiDate)
+                    ? Number(previewMeta.latest_day_total) || todayReal.length
+                    : todayReal.length;
+                if (todayCount) {
                     return '<div class="status-line pub-live">Today\u2019s file: <strong>published</strong>, ' +
-                        todayReal.length + ' decision' + (todayReal.length === 1 ? '' : 's') + ' recorded today.</div>';
+                        todayCount + ' decision' + (todayCount === 1 ? '' : 's') + ' recorded today.</div>';
                 }
                 const now = new Date();
                 const newDelhiMinutes = newDelhiNowValue.hour * 60 + newDelhiNowValue.minute;
@@ -534,17 +529,20 @@
                 return d.getFullYear() + '-' + m + '-' + day;
             }
             function sinceBannerHTML(rows) {
-                if (!lastVisitAt) return '';
+                // The first-paint preview cannot tell what is new since a visit;
+                // only the full history may make that claim.
+                if (!dataComplete || !lastVisitAt) return '';
                 const fresh = rows.filter(r => !r._placeholder && r.date > newDelhiDateStr(lastVisitAt));
                 if (!fresh.length) return '';
                 const refused = fresh.filter(r => classify(r.decision) === 'rejected').length;
                 const when = timeNode(lastVisitAt, 'weekday');
                 return '<div class="status-line pub-live">Since you last checked (' + when + '): <strong>' + fresh.length +
                     ' new decision' + (fresh.length === 1 ? '' : 's') + '</strong>' +
-                    (refused ? ' \u00b7 ' + refused + ' refused' : '') + '.</div>';
+                    (refused ? ' \u00b7 ' + refused + ' refused' : '') +
+                    '. <a href="?tracker=visa&amp;tab=history&amp;view=daily">See the latest day</a></div>';
             }
             function markVisited() {
-                if (visited || !cache || !cache.length) return;
+                if (!dataComplete || visited || !cache || !cache.length) return;
                 visited = true;
                 lastVisitAt = Date.now();
                 try { localStorage.setItem('visa-last-visit', String(lastVisitAt)); } catch (e) { /* private mode */ }
@@ -631,8 +629,8 @@
             }
             function fmtClosureDates(dates) {
                 const parse = iso => { const [y, m, d] = iso.split('-').map(Number); return { y, m, d, dt: new Date(Date.UTC(y, m - 1, d)) }; };
-                const dayNum = p => p.dt.toLocaleDateString('en-GB', { day: 'numeric', timeZone: 'UTC' });
-                const month = p => p.dt.toLocaleDateString('en-GB', { month: 'short', timeZone: 'UTC' });
+                const dayNum = p => p.dt.toLocaleDateString(displayLocale(), { day: 'numeric', timeZone: 'UTC' });
+                const month = p => p.dt.toLocaleDateString(displayLocale(), { month: 'short', timeZone: 'UTC' });
                 const parts = [];
                 let i = 0;
                 while (i < dates.length) {
@@ -680,7 +678,12 @@
                 const latestDataDate = (cache || []).reduce(function(latest, row) {
                     return row && !row._placeholder && row.date && row.date > latest ? row.date : latest;
                 }, '');
-                const dataRows = (cache || []).filter(function(row) { return row && !row._placeholder; }).length;
+                // Keep the count canonical while only the ten-row preview is
+                // loaded; otherwise the meta line says "10" next to a 43,599
+                // headline. The full history is for browsing, not the count.
+                const dataRows = previewMeta && previewMeta.total
+                    ? Number(previewMeta.total)
+                    : (cache || []).filter(function(row) { return row && !row._placeholder; }).length;
                 if (m.fileRows && m.sheetRows && (!latestDataDate || m.fileDate === latestDataDate)) {
                     const synced = m.sheetRows >= m.fileRows;
                     html.push('<div class="meta-line">Recorded <strong>' + m.sheetRows + '</strong> of <strong>' + m.fileRows +
@@ -690,7 +693,7 @@
                     // The scraper meta can lag the decisions file by a run. Show
                     // the actual newest row rather than pairing a stale file date
                     // with a newer sheet count.
-                    html.push('<div class="meta-line">Tracker contains <strong>' + dataRows +
+                    html.push('<div class="meta-line">Tracker contains <strong>' + Number(dataRows).toLocaleString('en-IE') +
                         '</strong> published decisions, latest dated <strong>' + humanDate(latestDataDate) + '</strong>.</div>');
                 }
                 if (m.closureDates && m.closureDates.length) {
@@ -832,15 +835,42 @@
 
             function invalidateDataModels() {
                 datasetModel = null;
-                analyticsModel = null;
                 pastLayoutCache = null;
                 pastRowsCache = null;
+            }
+
+            // First paint: ten rows and the manifest count instead of the whole
+            // 2.3MB history. History and Saved ask for loadData() explicitly.
+            async function loadPreview() {
+                if (cache !== null && cache.length) return cache;
+                if (previewPromise) return previewPromise;
+                previewPromise = (async () => {
+                    try {
+                        const res = await fetch(VISA_PREVIEW_URL);
+                        if (!res.ok) throw new Error('HTTP ' + res.status);
+                        const payload = await res.json();
+                        if (!payload || !Array.isArray(payload.rows)) throw new Error('bad payload');
+                        previewMeta = payload;
+                        cache = payload.rows.map(r => preloadRow(Array.isArray(r) ? { date: r[0], irl: r[1], decision: r[2] } : r));
+                        cache.sort((a, b) => b.date.localeCompare(a.date));
+                        cacheFetchedAt = Date.now();
+                        dataVersion += 1;
+                        invalidateDataModels();
+                    } catch (e) {
+                        console.warn('loadPreview failed, loading full data:', e);
+                        await loadData();
+                    } finally {
+                        previewPromise = null;
+                    }
+                    return cache;
+                })();
+                return previewPromise;
             }
 
             async function loadData(options) {
                 const force = options && options.force;
                 // Return cached data only if it's still fresh AND we're not forcing a refresh.
-                if (!force && cache !== null && cacheFetchedAt && (Date.now() - cacheFetchedAt < CACHE_FRESH_MS)) return cache;
+                if (!force && dataComplete && cache !== null && cacheFetchedAt && (Date.now() - cacheFetchedAt < CACHE_FRESH_MS)) return cache;
                 if (dataPromise) return dataPromise;
                 dataPromise = (async () => {
                     try {
@@ -855,10 +885,10 @@
                         // date desc so render paths are pure filter + string concat.
                         cache = raw.map(r => preloadRow(Array.isArray(r) ? { date: r[0], irl: r[1], decision: r[2] } : r));
                         cache.sort((a, b) => b.date.localeCompare(a.date));
+                        dataComplete = true;
                         cacheFetchedAt = Date.now();
                         dataVersion += 1;
                         invalidateDataModels();
-                        scheduleAnalyticsModel();
                     } catch (e) {
                         console.warn('loadData failed:', e);
                         dataLoadError = true;
@@ -866,11 +896,11 @@
                         if (snap) {
                             cache = snap.rows.map(r => preloadRow(Array.isArray(r) ? { date: r[0], irl: r[1], decision: r[2] } : r));
                             cache.sort((a, b) => b.date.localeCompare(a.date));
+                            dataComplete = true;
                             cacheFetchedAt = snap.fetchedAt;
                             staleAt = snap.fetchedAt;
                             dataVersion += 1;
                             invalidateDataModels();
-                            scheduleAnalyticsModel();
                         } else if (cache === null) cache = [];
                     } finally {
                         dataPromise = null;
@@ -916,10 +946,82 @@
                 return '<option value="all"' + (selected === 'all' ? ' selected' : '') +
                     '>All six offices</option>' +
                     WATCH_OFFICES.map(function(office) {
+                        var meta = officeLookupMeta && officeLookupMeta[office];
+                        var fresh = meta && meta.freshness;
+                        var reportDate = fresh ? fresh.report_date : (meta ? meta.report_date : '');
+                        var date = reportDate ? lookupFormatDate(reportDate) : '';
                         return '<option value="' + escapeHtml(office) + '"' +
                             (selected === office ? ' selected' : '') + '>' +
-                            escapeHtml(officeName(office)) + '</option>';
+                            escapeHtml(officeName(office)) + (date ? ' — ' + escapeHtml(date) : '') +
+                            (fresh && fresh.attention ? ' (stale)' : '') + '</option>';
                     }).join('');
+            }
+
+            // The manifest arrives after first paint. Refresh the office
+            // labels so the selector shows each office's report date before a
+            // search, not only after a miss.
+            function refreshOfficeSelects() {
+                ['home-office', 'landing-office'].forEach(function(id) {
+                    var select = document.getElementById(id);
+                    if (!select) return;
+                    var value = select.value || 'all';
+                    select.innerHTML = officeOptionsHTML(value);
+                });
+            }
+
+            // One sentence, same numbers everywhere. The generated freshness
+            // file already carries the report date, newest decision date,
+            // count and checked time, so this only adds the badge label.
+            function homeFreshnessCopyHTML() {
+                var meta = officeLookupMeta && officeLookupMeta['new-delhi'];
+                var fresh = meta && meta.freshness;
+                if (fresh) return fresh.summary + ' · ' + fresh.status_label + '.';
+                if (meta && meta.report_date) {
+                    return 'New Delhi — report ' + lookupFormatDate(meta.report_date) + ' · ' +
+                        (Number(meta.decisions) || 0).toLocaleString('en-IE') + ' decisions.';
+                }
+                return 'New Delhi decisions load with the tracker.';
+            }
+
+            function paintHomeFreshness() {
+                var el = document.getElementById('home-freshness-copy');
+                if (el) el.innerHTML = homeFreshnessCopyHTML();
+                paintSiteFreshnessBanner();
+            }
+
+            // A single banner for the six-office tracker when any office is in
+            // error or has passed a scheduled publication window. The details
+            // stay on /status; this only stops a search reading as uniformly
+            // current.
+            function siteFreshnessIssues() {
+                var meta = officeLookupMeta || {};
+                return Object.keys(meta).map(function(slug) { return meta[slug]; }).filter(function(office) {
+                    var fresh = office && office.freshness;
+                    return Boolean(fresh && (fresh.status === 'error' || fresh.overdue));
+                });
+            }
+
+            function siteFreshnessBannerHTML() {
+                var issues = siteFreshnessIssues();
+                if (!issues.length) return '';
+                var parts = issues.map(function(office) {
+                    var fresh = office.freshness;
+                    if (fresh.status === 'error') {
+                        return office.name + ': latest check failed; last successful ' +
+                            (fresh.last_success_label || 'not recorded');
+                    }
+                    return office.name + ': ' + (fresh.due_short_label || 'report overdue');
+                });
+                return '<strong>Some office data is not current.</strong> ' + escapeHtml(parts.join(' · ')) +
+                    ' <a href="/status">Check office status</a>';
+            }
+
+            function paintSiteFreshnessBanner() {
+                var el = document.getElementById('site-freshness-banner');
+                if (!el) return;
+                var html = siteFreshnessBannerHTML();
+                el.innerHTML = html;
+                el.hidden = !html;
             }
 
             // ===== hero builder (Mockup C) - per-tab hero with real data =====
@@ -937,6 +1039,10 @@
                 const latestPlaceholder = model.latestPlaceholder;
                 const latestCount = model.latestCount;
                 const dayDiff = model.latestRealDay ? latestCount - model.previousRealCount : 0;
+                const officialMeta = officeLookupMeta && officeLookupMeta['new-delhi'];
+                const officialDate = officialMeta && officialMeta.report_date
+                    ? lookupFormatDate(officialMeta.report_date)
+                    : '';
 
                 const states = {
                     search: {
@@ -945,9 +1051,9 @@
                         visual: '<div class="ring"></div><div class="ring"></div><div class="ring"></div><div class="ring-core"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></div>'
                     },
                     history: {
-                        title: 'Every published day, in one place.',
+                        title: 'Every tracker-observed day, in one place.',
                         sub: (function() {
-                            return byDate.length + ' days on record, ' + fmtPct(accPct) + ' accepted across ' + total.toLocaleString() + ' decisions.';
+                            return byDate.length + ' days on record, ' + fmtPct(accPct) + ' approved across ' + total.toLocaleString() + ' decisions.';
                         })(),
                         visual: '<div class="wave">' + byDate.slice(0, 7).reverse().map(function(d) {
                             var n = (model.realByDate.get(d[0]) || []).length;
@@ -964,18 +1070,15 @@
                         sub: 'Build a document checklist, print it, or open the official VFS handoff.',
                         visual: '<div class="paper"><div class="paper-title">Tools</div><div class="paper-text">Plan before you apply. This page cannot book a VFS slot.</div></div>'
                     },
-                    analytics: {
-                        title: 'Patterns, not predictions.',
-                        sub: 'Weekly volumes, approval shares with sample sizes, and experimental unusual-pattern checks.',
-                        visual: '<div class="paper"><div class="paper-title">Analytics</div><div class="paper-text">Published decisions only. Approval share is not your personal chance.</div></div>'
-                    },
                     home: {
                         title: latestPlaceholder
-                            ? 'No new outcomes yet.'
-                            : latestCount + ' new outcomes today.',
+                            ? 'No new rows recorded yet.'
+                            : latestCount + ' new rows recorded today.',
                         sub: latestPlaceholder
                             ? (latestPlaceholder.decision || 'No new file published yet.')
-                            : (dayDiff >= 0 ? '+' : '') + dayDiff + ' vs. yesterday, ' + fmtPct(accPct) + ' accepted.',
+                            : (dayDiff >= 0 ? '+' : '') + dayDiff + ' vs. yesterday, ' + fmtPct(accPct) +
+                              ' approved. Tracker rows, not official decision dates.' +
+                              (officialDate ? ' Official file dated ' + officialDate + '.' : ''),
                         visual: latestPlaceholder
                             ? '<div class="ring"></div><div class="ring"></div><div class="ring"></div><div class="ring-core">-</div>'
                             : '<div class="ring"></div><div class="ring"></div><div class="ring"></div><div class="ring-core' + (String(latestCount).length > 3 ? ' big' : '') + '">' + latestCount + '</div>'
@@ -989,7 +1092,7 @@
                             var _t = new Date();
                             var _ws = new Date(_t.getFullYear(), _t.getMonth(), _t.getDate() - _t.getDay());
                             var _we = new Date(_ws); _we.setDate(_ws.getDate() + 6);
-                            return 'Avg ' + avg.toFixed(1) + ' applications/day, ' + fmtPct(accPct) + ' accepted, week of ' +
+                            return 'Avg ' + avg.toFixed(1) + ' applications/day, ' + fmtPct(accPct) + ' approved, week of ' +
                                    shortMonth(_ws) + ' ' + _ws.getDate() + '-' + shortMonth(_we) + ' ' + _we.getDate() + '.';
                         })(),
                         visual: (function() {
@@ -1018,7 +1121,7 @@
                         })()
                     },
                     past: {
-                        title: 'Accepted and rejected, side by side.',
+                        title: 'Approved and refused, side by side.',
                         sub: (function() {
                             // Sub-text mirrors the chart's week range so the user
                             // sees both the totals AND the exact dates covered.
@@ -1027,7 +1130,7 @@
                             var _t = new Date();
                             var _ws = new Date(_t.getFullYear(), _t.getMonth(), _t.getDate() - _t.getDay());
                             var _we = new Date(_ws); _we.setDate(_ws.getDate() + 6);
-                            return fmtPct(accPct) + ' accepted, ' + fmtPct(rejPct) + ' rejected, ' + total.toLocaleString() + ' total, ' +
+                            return fmtPct(accPct) + ' approved, ' + fmtPct(rejPct) + ' refused, ' + total.toLocaleString() + ' total, ' +
                                    'week of ' + shortMonth(_ws) + ' ' + _ws.getDate() + '-' + shortMonth(_we) + ' ' + _we.getDate() + '.';
                         })(),
                         visual: (function() {
@@ -1062,7 +1165,7 @@
                                 var parts = d[0].split('-');
                                 var dateObj = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
                                 var dateLabel = days[dateObj.getDay()] + ' ' + (dateObj.getDate() < 10 ? '0' + dateObj.getDate() : dateObj.getDate());
-                                return '<div class="wf-col" style="--d:' + (i * 0.07).toFixed(2) + 's" title="' + d[0] + ', ' + acc + ' accepted, ' + rej + ' rejected, ' + accPct + '%">' +
+                                return '<div class="wf-col" style="--d:' + (i * 0.07).toFixed(2) + 's" title="' + d[0] + ', ' + acc + ' approved, ' + rej + ' refused, ' + accPct + '%">' +
                                     '<div class="wf-date">' + escapeHtml(dateLabel) + '</div>' +
                                     '<div class="wf-bars">' +
                                         '<div class="wf-seg a" style="height:' + Math.max(3, acc * scale) + 'px"></div>' +
@@ -1530,13 +1633,8 @@
             function paintTabBody(tabId, rows) {
                 var tabBody = document.getElementById('tab-body');
                 if (!tabBody) return;
-                // Chart.js instances belong to the canvases being replaced.
-                // Destroy them before the tab body is cleared so repeat visits
-                // cannot accumulate detached charts and their observers.
-                destroyAnalyticsCharts();
                 if (tabId === 'search') tabBody.innerHTML = renderHomeLayout(rows);
                 else if (tabId === 'history') tabBody.innerHTML = renderHistoryLayout(rows);
-                else if (tabId === 'analytics') tabBody.innerHTML = renderAnalyticsLayout(rows);
                 else if (tabId === 'saved') {
                     tabBody.innerHTML = renderWatchlistLayout(rows);
                     wireWatchAdd();
@@ -1544,9 +1642,12 @@
                 } else if (tabId === 'tools') tabBody.innerHTML = renderToolsLayout();
                 else if (tabId === 'alerts') tabBody.innerHTML = renderAlertsLayout();
                 wireTabListeners();
-                if (tabId === 'search') paintHomeRows();
+                if (tabId === 'search') {
+                    paintHomeRows();
+                    paintHomeFreshness();
+                    refreshOfficeSelects();
+                }
                 else if (tabId === 'history' && activeView === 'past') paintPastRows();
-                else if (tabId === 'analytics') paintAnalyticsCharts();
                 else if (tabId === 'saved') paintWatchlist();
                 else if (tabId === 'alerts') paintAlertsPush();
                 else if (tabId === 'tools' && activeView === 'checklist') wireChecklistForm();
@@ -1576,11 +1677,12 @@
                 });
             }
 
-            async function switchTab(tabId, opts) {
-                if (!document.getElementById('tab-body')) return;
-                activeTab = tabId;
-                if (tabId === 'history' || tabId === 'tools') activeView = resolveTabView(tabId, activeView);
-                if (!(opts && opts.noUrl)) syncUrl('push');
+            // Keep the desktop tab strip and the mobile section select on the
+            // same tab. Both controls are rendered from TABS, so there is no
+            // second list of visible sections to maintain.
+            function syncTabControls(tabId) {
+                var sectionSelect = document.getElementById('tracker-section');
+                if (sectionSelect) sectionSelect.value = tabId;
                 var pills = document.querySelectorAll('#visa-dash .navpill');
                 for (var i = 0; i < pills.length; i++) {
                     var isActive = pills[i].getAttribute('data-tab') === tabId;
@@ -1588,12 +1690,24 @@
                     if (isActive) pills[i].setAttribute('aria-current', 'page');
                     else pills[i].removeAttribute('aria-current');
                 }
+            }
+
+            async function switchTab(tabId, opts) {
+                if (!document.getElementById('tab-body')) return;
+                activeTab = tabId;
+                if (tabId === 'history' || tabId === 'tools') activeView = resolveTabView(tabId, activeView);
+                if (!(opts && opts.noUrl)) syncUrl('push');
+                syncTabControls(tabId);
                 var paintSeq = ++tabPaintSeq;
                 await afterNextPaint();
                 // A second click may have replaced this request while the first
                 // frame was painting; only the latest tab may write the body.
                 if (paintSeq !== tabPaintSeq || activeTab !== tabId) return;
-                var rows = cache && cache.length ? cache : await loadData();
+                // Search paints from the ten-row preview; every other tab needs
+                // the complete history, so fetch it only when that tab is chosen.
+                var rows;
+                if (tabId === 'search') rows = cache && cache.length ? cache : await loadPreview();
+                else rows = await loadData();
                 if (paintSeq !== tabPaintSeq || activeTab !== tabId) return;
                 paintTabBody(tabId, rows);
                 markVisited();
@@ -2435,15 +2549,27 @@
             function loadOfficeLookupMeta() {
                 if (officeLookupMeta) return Promise.resolve(officeLookupMeta);
                 if (officeLookupMetaPromise) return officeLookupMetaPromise;
-                officeLookupMetaPromise = fetch(DATA_MANIFEST_URL, { cache: 'no-store' })
-                    .then(function(res) {
+                officeLookupMetaPromise = Promise.all([
+                    fetch(DATA_MANIFEST_URL, { cache: 'no-store' }).then(function(res) {
                         if (!res.ok) throw new Error('HTTP ' + res.status);
                         return res.json();
-                    })
-                    .then(function(payload) {
+                    }),
+                    fetch(FRESHNESS_URL, { cache: 'no-store' }).then(function(res) {
+                        return res.ok ? res.json() : null;
+                    }).catch(function() { return null; })
+                ])
+                    .then(function(payloads) {
+                        var payload = payloads[0];
+                        var freshPayload = payloads[1];
+                        var freshBySlug = Object.create(null);
+                        ((freshPayload && freshPayload.offices) || []).forEach(function(office) {
+                            if (office && office.slug) freshBySlug[office.slug] = office;
+                        });
                         var map = Object.create(null);
                         ((payload && payload.offices) || []).forEach(function(office) {
-                            if (office && office.slug) map[office.slug] = office;
+                            if (!office || !office.slug) return;
+                            office.freshness = freshBySlug[office.slug] || null;
+                            map[office.slug] = office;
                         });
                         if (!Object.keys(map).length) throw new Error('no offices in manifest');
                         officeLookupMeta = map;
@@ -2556,7 +2682,7 @@
                 if (!match) return '';
                 var date = new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3])));
                 if (isNaN(date.getTime())) return '';
-                return date.toLocaleDateString('en-GB', {
+                return date.toLocaleDateString(displayLocale(), {
                     day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC'
                 });
             }
@@ -2584,49 +2710,26 @@
                     source_file: sourceFile,
                     source_name: item.source_name || '',
                     report_date: item.report_date || '',
+                    decisions: item.decisions || '',
                     fetched_at: item.fetched_at || '',
                     as_of: item.as_of || '',
                     status: item.status || '',
-                    note: item.note || ''
+                    note: item.note || '',
+                    freshness: item.freshness ||
+                        (officeLookupMeta && officeLookupMeta[office] && officeLookupMeta[office].freshness) || null
                 };
             }
 
-            function lookupReportAgeDays(value) {
-                var match = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(value || ''));
-                if (!match) return null;
-                var report = Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
-                var now = new Date();
-                var today = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
-                if (!isFinite(report)) return null;
-                return Math.max(0, Math.floor((today - report) / 86400000));
-            }
-
-            function lookupFreshness(office, meta) {
-                var age = lookupReportAgeDays(meta.report_date);
-                var status = String(meta.status || '').toLowerCase();
-                var date = lookupFormatDate(meta.report_date);
-                var label = age === null
-                    ? 'Report date not recorded'
-                    : (age === 0 ? 'Updated today' : age === 1 ? 'Updated yesterday'
-                        : (date || 'Report dated') + ' (' + age + ' days ago)');
-                var warning = '';
-                if (status && status !== 'official') {
-                    warning = 'This office marks its latest data as "' + meta.status + '". Results may be incomplete; check the official report.';
-                } else if (age === null) {
-                    warning = 'The report date is unavailable. Check this row against the official report before relying on it.';
-                } else if (age > (OFFICE_STALE_DAYS[office] || 14)) {
-                    warning = 'This office report is ' + age + ' days old. A newer decision may not appear here yet.';
+            function lookupFreshnessHTML(meta) {
+                var fresh = meta && meta.freshness;
+                if (!fresh) return '';
+                var out = '<div class="lookup-result-freshness' + (fresh.warning ? ' is-warning' : '') + '"' +
+                    (fresh.warning ? ' role="note"' : '') + '>' +
+                    '<strong>Data freshness:</strong> ' + escapeHtml(fresh.summary) + '. ';
+                if (fresh.warning) out += escapeHtml(fresh.warning) + ' ';
+                if (fresh.note && fresh.note !== fresh.warning) {
+                    out += '<span class="lookup-result-source-note">' + escapeHtml(fresh.note) + '</span>';
                 }
-                return { age: age, label: label, warning: warning, note: meta.note || '', status: status };
-            }
-
-            function lookupFreshnessHTML(office, meta) {
-                var freshness = lookupFreshness(office, meta);
-                var out = '<div class="lookup-result-freshness' + (freshness.warning ? ' is-warning' : '') + '"' +
-                    (freshness.warning ? ' role="note"' : '') + '>' +
-                    '<strong>Report freshness:</strong> ' + escapeHtml(freshness.label) + '. ';
-                if (freshness.warning) out += escapeHtml(freshness.warning) + ' ';
-                if (freshness.note) out += '<span class="lookup-result-source-note">' + escapeHtml(freshness.note) + '</span>';
                 return out + '</div>';
             }
 
@@ -2642,7 +2745,7 @@
                 if (!office) return;
                 var saved = lookupWatchSaved(number, office);
                 btn.setAttribute('aria-pressed', saved ? 'true' : 'false');
-                btn.textContent = saved ? 'Watching' : 'Watch this number';
+                btn.textContent = saved ? 'Tracking' : 'Track this number';
                 btn.classList.toggle('is-saved', saved);
             }
 
@@ -2652,10 +2755,10 @@
                     (saved ? ' is-saved' : '') + '" data-lookup-watch data-lookup-number="' +
                     escapeHtml(number) + '" data-lookup-office="' + escapeHtml(office) +
                     '" aria-pressed="' + (saved ? 'true' : 'false') + '" aria-label="' +
-                    (saved ? 'Watching application ' + escapeHtml(number) + '. Remove from your watchlist'
-                        : 'Watch this application: ' + escapeHtml(number)) + '" title="' +
+                    (saved ? 'Tracking application ' + escapeHtml(number) + '. Remove from your watchlist'
+                        : 'Track this application: ' + escapeHtml(number)) + '" title="' +
                     (saved ? 'Remove from your watchlist' : 'Save to your watchlist') + '">' +
-                    (saved ? 'Watching' : 'Watch this application') + '</button>';
+                    (saved ? 'Tracking' : 'Track this application') + '</button>';
             }
 
             function lookupNextStepsHTML(row) {
@@ -2734,7 +2837,7 @@
                     '</dl>' +
                     '<p class="lookup-result-source"><span class="lookup-result-source-label">Official source</span>' + source + '</p>' +
                     exactSource +
-                    lookupFreshnessHTML(office, meta) +
+                    lookupFreshnessHTML(meta) +
                     '<div class="lookup-result-actions">' +
                     lookupWatchButtonHTML(number, office) +
                     '<button type="button" class="btn lookup-result-btn lookup-result-alert" data-lookup-alert="' +
@@ -2786,7 +2889,7 @@
                     '<p>Choose the office that processed the application. You can save it in this browser or set a Telegram alert.</p>' +
                     '<div class="home-noresult-controls">' + officePicker +
                     '<button type="button" class="btn lookup-result-btn" data-home-noresult-watch="' + escapeHtml(number) +
-                    '" aria-pressed="false">Watch this number</button>' +
+                    '" aria-pressed="false">Track this number</button>' +
                     '<button type="button" class="btn lookup-result-btn lookup-result-alert" data-home-noresult-alert="' +
                     escapeHtml(number) + '">Get decision alerts</button>' +
                     '</div><div class="home-noresult-status" data-home-noresult-status role="status" aria-live="polite"></div>' +
@@ -2839,7 +2942,7 @@
                     }
                     if (removal.item) disableWatchPush(removal.item);
                     btn.setAttribute('aria-pressed', 'false');
-                    btn.textContent = 'Watch this number';
+                    btn.textContent = 'Track this number';
                     btn.classList.remove('is-saved');
                     if (status) { status.textContent = 'Removed from your watchlist.'; status.classList.remove('is-error'); }
                     return;
@@ -2847,7 +2950,7 @@
                 var added = addWatchItem({ number: number, office: office });
                 if (added === 'added' || added === 'duplicate') {
                     btn.setAttribute('aria-pressed', 'true');
-                    btn.textContent = 'Watching';
+                    btn.textContent = 'Tracking';
                     btn.classList.add('is-saved');
                     if (status) {
                         status.textContent = added === 'duplicate'
@@ -2894,10 +2997,15 @@
                 var status = document.getElementById('home-lookup-status');
                 if (!box) return;
                 var fallbackNote = lookupFallbackNoteHTML(fallback);
+                var freshnessNote = homeSearchOffice !== 'all'
+                    ? lookupFreshnessHTML(lookupOfficeMeta(homeSearchOffice, metas))
+                    : '';
                 if (!rows.length) {
-                    if (status) status.textContent = 'No published decision found for ' + (term || homeSearchTerm.trim()) +
-                        (fallback ? ' in the fallback index.' : '.');
-                    box.innerHTML = fallbackNote + homeLookupNoResultHTML(term, metas);
+                    // The card below already carries the heading; keep the live
+                    // status as a count so screen readers do not hear it twice.
+                    if (status) status.textContent = '0 results for ' + (term || homeSearchTerm.trim()) +
+                        (fallback ? ' in the fallback index.' : ' in the latest reports.');
+                    box.innerHTML = fallbackNote + freshnessNote + homeLookupNoResultHTML(term, metas);
                     var noResultWatch = box.querySelector('[data-home-noresult-watch]');
                     if (noResultWatch) noResultWatchButtonState(noResultWatch, noResultWatch.getAttribute('data-home-noresult-watch'));
                     return;
@@ -2906,7 +3014,7 @@
                 var countText = total + ' published match' + (total === 1 ? '' : 'es') +
                     ' across ' + scope + (rows.length < total ? ' \u00b7 showing first ' + rows.length : '');
                 if (status) status.textContent = countText + (fallback ? ' \u00b7 fallback index' : '');
-                box.innerHTML = fallbackNote + safetyNoticeHTML() + '<div class="home-lookup-result-list">' +
+                box.innerHTML = fallbackNote + freshnessNote + safetyNoticeHTML() + '<div class="home-lookup-result-list">' +
                     rows.map(function(row) { return lookupResultCardHTML(row, metas); }).join('') + '</div>' +
                     '<p class="home-lookup-foot">Decision and report dates come from the office\'s published report. Always confirm details with the official source and your decision letter.</p>';
             }
@@ -2916,11 +3024,11 @@
                 var number = btn.getAttribute('data-lookup-number') || '';
                 btn.setAttribute('aria-pressed', saved ? 'true' : 'false');
                 btn.setAttribute('aria-label', saved
-                    ? 'Watching application ' + number + '. Remove from your watchlist'
-                    : 'Watch this application: ' + number);
+                    ? 'Tracking application ' + number + '. Remove from your watchlist'
+                    : 'Track this application: ' + number);
                 btn.title = saved ? 'Remove from your watchlist' : 'Save to your watchlist';
                 btn.classList.toggle('is-saved', saved);
-                btn.textContent = saved ? 'Watching' : 'Watch this application';
+                btn.textContent = saved ? 'Tracking' : 'Track this application';
             }
 
             function shareLookupResult(btn) {
@@ -3015,7 +3123,10 @@
                         '<p>Enter the number on your receipt or decision email. Do not use a VFS reference or passport number. An <strong>IRL</strong> prefix, spaces and dashes are optional.</p></div>';
                     return;
                 }
-                if (term.length < 4) {
+                // Count the digits the visitor typed, not the normalized value:
+                // "00000000" normalizes to one zero, but it is still a complete
+                // search that should reach the no-result state.
+                if (raw.replace(/\D/g, '').length < 4) {
                     homeLookupSeq += 1;
                     if (status) status.textContent = 'Keep typing \u2014 enter at least 4 digits to search.';
                     box.innerHTML = '<div class="home-lookup-empty home-lookup-empty-small"><h3>Add a few more digits</h3>' +
@@ -3091,18 +3202,20 @@
                 const latestCount = model.latestCount;
 
                 return staleBannerHTML() +
+                    sinceBannerHTML(rows) +
                     homeLookupHTML() +
                     renderAdvancedSearchPanel() +
                     '<section class="home-freshness" aria-labelledby="home-freshness-title">' +
                     '<div class="home-freshness-head"><div>' +
                     '<h2 class="landing-h3" id="home-freshness-title">Data freshness</h2>' +
-                    '<p class="note2">Latest New Delhi file: <strong>' + escapeHtml(humanDate(latestDate)) +
-                    '</strong> (' + latestCount.toLocaleString() + ' decisions). Other offices publish on their own schedules.</p>' +
+                    '<p class="note2" id="home-freshness-copy">' + homeFreshnessCopyHTML() +
+                    ' Other offices publish on their own schedules.</p>' +
                     '</div><div class="home-freshness-links"><a class="home-freshness-link" href="/status">Data status</a>' +
                     '<a class="home-freshness-link" href="/feed.xml">Official file feed</a></div></div>' +
                     '<div id="meta-box" aria-live="polite"></div>' +
                     '<details class="home-freshness-details"><summary>How to read these dates</summary>' +
                     '<p>Decision date is the date attached to an individual row. Report date is the date of the office file that published it. They can differ, especially for weekly reports.</p>' +
+                    '<p>The New Delhi row count is the tracker’s searchable history; the latest-file count is what the current official file contains. A cumulative file can add or drop rows between publications, so the two totals are close but not identical.</p>' +
                     '<p>Next expected New Delhi update: weekdays around <strong>' +
                     scheduleTimeNode(NEW_DELHI_UPDATE_HOUR, NEW_DELHI_UPDATE_MINUTE) +
                     '</strong>. The embassy does not publish on weekends or public holidays. ' +
@@ -3118,7 +3231,6 @@
                     '<button type="button" class="export-btn" id="home-export-pdf" title="Download the latest New Delhi decisions as PDF">PDF</button>' +
                     '</div></details></div>' +
                     publishStatusHTML(rows) +
-                    sinceBannerHTML(rows) +
                     (latestPlaceholder ? '<div class="ph-banner">' + placeholderNote(latestPlaceholder.decision) + '</div>' : '') +
                     '<div class="note" id="home-results-count" aria-live="polite" style="margin-bottom:8px;margin-top:0;"></div>' +
                     '<div class="table-wrap"><table class="results-table home-results-table"><thead><tr><th>Date</th><th>Application No.</th><th>Decision</th></tr></thead>' +
@@ -3147,9 +3259,16 @@
                     if (latestPlaceholder) {
                         countNote.textContent = 'No decisions file published for ' + humanDate(latestPlaceholder.date) + ' yet.';
                     } else if (latest) {
-                        var countHtml = 'Latest New Delhi file: ' + escapeHtml(humanDate(latest[0])) + ' (' + visible.length + ' rows)';
-                        if (visible.length > preview.length) {
-                            countHtml += ' \u00b7 showing ' + preview.length +
+                        var countHtml = 'Latest New Delhi decision date: ' + escapeHtml(humanDate(latest[0]));
+                        if (dataComplete) {
+                            countHtml += ' (' + visible.length + ' rows)';
+                            if (visible.length > preview.length) {
+                                countHtml += ' \u00b7 showing ' + preview.length +
+                                    ' \u00b7 <a href="?tracker=visa&amp;tab=history&amp;view=past&date=' +
+                                    encodeURIComponent(latest[0]) + '">View all</a>';
+                            }
+                        } else {
+                            countHtml += ' \u00b7 showing ' + preview.length + ' most recent' +
                                 ' \u00b7 <a href="?tracker=visa&amp;tab=history&amp;view=past&date=' +
                                 encodeURIComponent(latest[0]) + '">View all</a>';
                         }
@@ -3308,7 +3427,11 @@
             // Matching ignores formatting: dashes, spaces and leading zeros are
             // stripped, so "8540-8562" and "085408562" both find "85408562".
             function normalizeIRL(s) {
-                return String(s == null ? '' : s).replace(/\D/g, '').replace(/^0+/, '');
+                // Keep an all-zero number intact. Stripping every leading zero
+                // turned "00000000" into an empty value, which the form reported
+                // as invalid instead of searching and finding no decision.
+                var digits = String(s == null ? '' : s).replace(/\D/g, '');
+                return /^0+$/.test(digits) ? digits : digits.replace(/^0+/, '');
             }
             function getRecentSearches() {
                 try {
@@ -3388,7 +3511,7 @@
                     if (r._status === 'accepted') byMonth[m].approved++;
                     else if (r._status === 'rejected') byMonth[m].rejected++;
                 });
-                const monthData = [['Month', 'Total', 'Approved', 'Rejected', 'Rate %']];
+                const monthData = [['Month', 'Total', 'Approved', 'Refused', 'Rate %']];
                 Object.keys(byMonth).sort().forEach(m => {
                     const d = byMonth[m];
                     monthData.push([m, d.total, d.approved, d.rejected, d.total ? (d.approved / d.total * 100).toFixed(1) : 0]);
@@ -3491,9 +3614,9 @@
                         }).join('') + '</div></td></tr>';
                 }).join('');
                 return heatmapHTML(byDate, model.realByDate) +
-                    '<div class="table-wrap"><table class="daily-table"><thead><tr><th>Date</th><th>Applications Processed</th><th>Day-on-Day</th><th>Accepted Share</th><th>Refused Share</th></tr></thead>' +
+                    '<div class="table-wrap"><table class="daily-table"><thead><tr><th>Date</th><th>Applications Processed</th><th>Day-on-Day</th><th>Approved Share</th><th>Refused Share</th></tr></thead>' +
                     '<tbody>' + trs + '</tbody></table></div>' +
-                    '<p class="note2 rate-sample-note">Accepted and refused shares are calculated from <strong>Applications Processed</strong> in the same row. That count is the sample size; days with few decisions can swing widely.</p>' +
+                    '<p class="note2 rate-sample-note">Approved and refused shares are calculated from <strong>Applications Processed</strong> in the same row. That count is the sample size; days with few decisions can swing widely.</p>' +
                     (byDate.length > dailyVisibleLimit
                         ? '<div class="show-more-wrap"><button type="button" class="btn secondary" data-daily-show-more>Show older days (' +
                             Math.min(DAILY_PAGE_SIZE, byDate.length - dailyVisibleLimit) + ' of ' + (byDate.length - dailyVisibleLimit) + ')</button></div>'
@@ -3522,21 +3645,14 @@
                 const acc7 = last7 ? model.last7Accepted / last7 : null;
                 const acc30 = last30 ? model.last30Accepted / last30 : null;
 
-                const html = '<div class="cards">' +
-                    '<div class="card"><div class="label"><i data-lucide="check-circle"></i>Accepted share</div><div class="value green">' + fmtPct(accepted / total) + '</div><div class="hint">' + sampleSizeText(total) + '</div></div>' +
-                    '<div class="card"><div class="label"><i data-lucide="calendar-check"></i>7-day accepted share</div><div class="value ' + (acc7 === null ? '' : 'green') + '">' + (acc7 === null ? '-' : fmtPct(acc7)) + '</div><div class="hint">' + sampleSizeText(last7, 'in the last 7 days') + '</div></div>' +
-                    '<div class="card"><div class="label"><i data-lucide="calendar-days"></i>30-day accepted share</div><div class="value ' + (acc30 === null ? '' : 'green') + '">' + (acc30 === null ? '-' : fmtPct(acc30)) + '</div><div class="hint">' + sampleSizeText(last30, 'in the last 30 days') + '</div></div>' +
-                    '<div class="card"><div class="label"><i data-lucide="x-circle"></i>Refused share</div><div class="value red">' + fmtPct(rejected / total) + '</div><div class="hint">' + sampleSizeText(total) + '</div></div>' +
-                    '<div class="card"><div class="label"><i data-lucide="calendar-check"></i>Avg applications/day</div><div class="value">' + avg.toFixed(1) + '</div></div>' +
-                    '<div class="card"><div class="label"><i data-lucide="percent"></i>Week-on-week</div><div class="value ' + (wow === null ? '' : (wow >= 0 ? 'green' : 'red')) + '">' + (wow === null ? '-' : ((wow >= 0 ? '+' : '') + fmtPct(wow))) + '</div></div>' +
-                    '</div>' +
+                const html = '<p class="note" style="margin-top:0;">This view is the interactive record. For provenance and checksums, see the <a href="/reports">report archive</a>; for analysis and caveats, see the <a href="/data-study">data study</a>.</p>' +
                     '<div class="filter-row">' +
                     '<div class="note" style="margin-top:0;">Use <a href="?tracker=visa&amp;tab=search">Search</a> for one application number. This view is the full published history.</div>' +
                     '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">' +
                     '<label class="status-filter">Decision <select id="past-status-filter">' +
                     '<option value="all"' + (pastStatusFilter === 'all' ? ' selected' : '') + '>All</option>' +
-                    '<option value="accepted"' + (pastStatusFilter === 'accepted' ? ' selected' : '') + '>Accepted</option>' +
-                    '<option value="rejected"' + (pastStatusFilter === 'rejected' ? ' selected' : '') + '>Rejected</option>' +
+                    '<option value="accepted"' + (pastStatusFilter === 'accepted' ? ' selected' : '') + '>Approved</option>' +
+                    '<option value="rejected"' + (pastStatusFilter === 'rejected' ? ' selected' : '') + '>Refused</option>' +
                     '</select></label>' +
                     '<div class="datefilter' + (pastDateFilter ? ' has-filter' : '') + '"><label class="visually-hidden" for="past-date-filter">Filter by date</label><input type="date" id="past-date-filter" name="date" autocomplete="off" aria-label="Filter by date" value="' + escapeHtml(pastDateFilter) + '">' +
                     '<button type="button" class="clear-btn" id="past-date-clear" aria-label="Clear date filter" title="Clear date filter">\u00d7</button>' +
@@ -3666,623 +3782,6 @@
                     '<p class="note2 alerts-help">Need to report a correction, send feedback or share your timeline? Those forms now live on <a href="/contact#feedback">Contact &amp; feedback</a>.</p>';
             }
 
-
-            // ====== ANOMALY DETECTION ======
-            function detectAnomalies(rows) {
-                const real = realRows(rows);
-                if (real.length < 50) return [];
-                
-                // Group by day
-                const byDay = {};
-                real.forEach(r => {
-                    if (!r.date) return;
-                    if (!byDay[r.date]) byDay[r.date] = { total: 0, accepted: 0, rejected: 0 };
-                    byDay[r.date].total++;
-                    if (r._status === 'accepted') byDay[r.date].accepted++;
-                    else if (r._status === 'rejected') byDay[r.date].rejected++;
-                });
-                
-                const days = Object.keys(byDay).sort();
-                if (days.length < 14) return [];
-                
-                // Calculate rolling averages
-                const window = 7;
-                const anomalies = [];
-                
-                for (let i = window; i < days.length; i++) {
-                    const day = days[i];
-                    const prevDays = days.slice(i - window, i);
-                    const avgTotal = prevDays.reduce((s, d) => s + byDay[d].total, 0) / window;
-                    const avgRate = prevDays.reduce((s, d) => s + (byDay[d].total ? byDay[d].accepted / byDay[d].total : 0), 0) / window;
-                    
-                    const today = byDay[day];
-                    const todayRate = today.total ? today.accepted / today.total : 0;
-                    
-                    // Volume anomaly (>2 std devs)
-                    const volumes = prevDays.map(d => byDay[d].total);
-                    const volMean = volumes.reduce((a,b) => a+b, 0) / window;
-                    const volStd = Math.sqrt(volumes.reduce((s,v) => s + Math.pow(v - volMean, 2), 0) / window);
-                    if (today.total > volMean + 2 * volStd) {
-                        anomalies.push({ type: 'volume_spike', date: day, value: today.total, expected: Math.round(volMean), severity: 'high' });
-                    }
-                    
-                    // Rate anomaly
-                    const rates = prevDays.map(d => d.total ? byDay[d].accepted / byDay[d].total : 0);
-                    const rateMean = rates.reduce((a,b) => a+b, 0) / window;
-                    const rateStd = Math.sqrt(rates.reduce((s,v) => s + Math.pow(v - rateMean, 2), 0) / window);
-                    if (rateStd > 0 && Math.abs(todayRate - rateMean) > 2 * rateStd) {
-                        anomalies.push({ type: 'rate_shift', date: day, value: (todayRate * 100).toFixed(1) + '%', expected: (rateMean * 100).toFixed(1) + '%', severity: 'medium' });
-                    }
-                }
-                
-                return anomalies;
-            }
-
-            function renderAnomalyEmptyHTML() {
-                return '<div class="anomaly-alerts" role="status">' +
-                    '<h3><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 9v4M12 17h.01"/></svg> Unusual patterns (experimental)</h3>' +
-                    '<p class="note2">Analyst-style checks on volume and approved share. This is not an official warning and does not describe your application.</p>' +
-                    '<p class="note2">No unusual patterns were detected in the last 14 days.</p></div>';
-            }
-
-            function renderAnomalyAlerts(model) {
-                const anomalies = model.anomalies;
-                if (!anomalies.length) return renderAnomalyEmptyHTML();
-                
-                const recent = anomalies.filter(a => {
-                    const d = new Date(a.date + 'T00:00:00');
-                    const diff = (Date.now() - d) / 86400000;
-                    return diff <= 14; // Last 2 weeks
-                });
-                
-                if (!recent.length) return renderAnomalyEmptyHTML();
-                
-                let html = '<div class="anomaly-alerts" role="status">';
-                html += '<h3><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 9v4M12 17h.01"/></svg> Unusual patterns (experimental)</h3>' +
-                    '<p class="note2">Analyst-style checks on volume and approval share. This is not an official warning and does not describe your application.</p>';
-                html += '<ul>';
-                recent.forEach(a => {
-                    const icon = a.type === 'volume_spike' ? 'trending-up' : 'alert-triangle';
-                    const color = a.severity === 'high' ? 'var(--red)' : 'var(--amber)';
-                    html += '<li style="border-left: 3px solid ' + color + '; padding: 8px 12px; margin: 8px 0; background: var(--surface-raised);">' +
-                        '<strong>' + escapeHtml(humanDate(a.date)) + '</strong>: ' +
-                        (a.type === 'volume_spike' ? 
-                            'Unusual volume spike: ' + a.value + ' decisions (expected ~' + a.expected + ')' :
-                            'Approved share shift: ' + a.value + ' (expected ~' + a.expected + ')') +
-                        '<span class="badge" style="background:' + color + '; margin-left:8px;">' + a.severity + '</span>' +
-                        '</li>';
-                });
-                html += '</ul></div>';
-                return html;
-            }
-
-            // ====== DECISION BREAKDOWN BY VISA TYPE ======
-            function computeVisaTypes(real) {
-                const byType = new Map();
-                real.forEach(r => {
-                    const type = r._visaType || 'Unknown';
-                    if (!byType.has(type)) byType.set(type, { type, total: 0, accepted: 0, rejected: 0, other: 0 });
-                    const row = byType.get(type);
-                    row.total++;
-                    if (r._status === 'accepted') row.accepted++;
-                    else if (r._status === 'rejected') row.rejected++;
-                    else row.other++;
-                });
-                return [...byType.values()].sort((a, b) => a.type.localeCompare(b.type));
-            }
-
-            function renderVisaTypeBreakdown(model) {
-                const byType = model.visaTypes;
-                if (!byType.length) return '';
-
-                let html = '<h3>Decisions by Visa Type</h3>';
-                html += '<div class="table-wrap visa-type-breakdown"><table class="results-table"><thead>' +
-                    '<tr><th>Visa Type</th><th>Total</th><th>Approved</th><th>Refused</th><th>Other</th><th>Approved Share</th></tr></thead><tbody>';
-
-                byType.forEach(d => {
-                    const rate = d.total ? ((d.accepted / d.total) * 100).toFixed(1) : 0;
-                    html += '<tr>' +
-                        '<td><strong>' + escapeHtml(d.type) + '</strong></td>' +
-                        '<td>' + d.total.toLocaleString() + '</td>' +
-                        '<td class="green">' + d.accepted.toLocaleString() + '</td>' +
-                        '<td class="red">' + d.rejected.toLocaleString() + '</td>' +
-                        '<td>' + d.other.toLocaleString() + '</td>' +
-                        '<td title="Based on ' + d.total.toLocaleString() + ' published decisions"><strong>' + rate + '%</strong></td>' +
-                        '</tr>';
-                });
-
-                html += '</tbody></table></div>' +
-                    '<p class="note2 rate-sample-note">Approved share uses the <strong>Total</strong> column for each visa type; that total is the sample size. Small groups can swing widely.</p>';
-                return html;
-            }
-
-            // ====== DECISION TRENDS VISUALIZATION ======
-            function computeWeekly(real) {
-                const byWeek = new Map();
-                real.forEach(r => {
-                    if (!r.date) return;
-                    const dt = new Date(r.date + 'T00:00:00');
-                    const weekStart = new Date(dt);
-                    weekStart.setDate(dt.getDate() - dt.getDay()); // Sunday
-                    const key = weekStart.toISOString().slice(0, 10);
-                    if (!byWeek.has(key)) byWeek.set(key, { accepted: 0, rejected: 0, total: 0 });
-                    const week = byWeek.get(key);
-                    week.total++;
-                    if (r._status === 'accepted') week.accepted++;
-                    else if (r._status === 'rejected') week.rejected++;
-                });
-
-                const weeks = [...byWeek.keys()].sort().slice(-12); // Last 12 weeks
-                return {
-                    weeks,
-                    byWeek,
-                    labels: weeks.map(w => new Date(w + 'T00:00:00').toLocaleDateString('en-GB', { month: 'short', day: 'numeric' })),
-                    accepted: weeks.map(w => byWeek.get(w).accepted),
-                    rejected: weeks.map(w => byWeek.get(w).rejected),
-                    rate: weeks.map(w => byWeek.get(w).total
-                        ? Number(((byWeek.get(w).accepted / byWeek.get(w).total) * 100).toFixed(1))
-                        : 0)
-                };
-            }
-
-            function renderDecisionTrendsChart(model) {
-                if (!model.real.length) return '<p class="note2">No data for trends</p>';
-                if (!model.weekly.weeks.length) return '<p class="note2">No data for trends</p>';
-                return '<div class="chart-container decision-trends-chart">' +
-                    '<div class="decision-trends-head">' +
-                    '<h3>Weekly decisions and approved share</h3>' +
-                    '<p class="decision-trends-note">Counts and approved share have separate scales. Approved share is approved decisions divided by all published decisions in the week; each point uses that week\'s sample, so small weeks can swing widely.</p>' +
-                    '</div>' +
-                    '<div class="decision-trends-panel">' +
-                    '<div class="decision-trends-panel-title"><span>Decisions per week</span><span>applications</span></div>' +
-                    '<canvas id="trends-count-chart" class="decision-trends-count-canvas" role="img" aria-label="Weekly approved and refused decisions"></canvas>' +
-                    '</div>' +
-                    '<div class="decision-trends-panel">' +
-                    '<div class="decision-trends-panel-title"><span>Approved share</span><span>percent</span></div>' +
-                    '<canvas id="trends-rate-chart" class="decision-trends-rate-canvas" role="img" aria-label="Weekly approved share of published decisions"></canvas>' +
-                    '</div>' +
-                    '</div>';
-            }
-
-            // ====== ANALYTICS TAB ======
-            function buildAnalyticsModel(rows, version) {
-                const dataset = getDatasetModel(rows);
-                const real = dataset.real;
-                return {
-                    version,
-                    rows,
-                    real,
-                    visaTypes: computeVisaTypes(real),
-                    weekly: computeWeekly(real),
-                    anomalies: detectAnomalies(real),
-                    monthly: computeMonthly(real),
-                    rolling30: computeRolling30(real),
-                    dailyDelta: computeDailyDelta(real),
-                    queueDensity: computeQueueDensity(real)
-                };
-            }
-
-            function getAnalyticsModel(rows) {
-                if (analyticsModel && analyticsModel.version === dataVersion && analyticsModel.rows === rows) {
-                    return analyticsModel;
-                }
-                analyticsModel = buildAnalyticsModel(rows, dataVersion);
-                return analyticsModel;
-            }
-
-            function scheduleAnalyticsModel() {
-                if (!cache || !cache.length) return;
-                const version = dataVersion;
-                if ((analyticsModel && analyticsModel.version === version) ||
-                    analyticsBuildScheduledVersion === version) return;
-                analyticsBuildScheduledVersion = version;
-                const build = function() {
-                    if (version !== dataVersion) return;
-                    analyticsBuildScheduledVersion = 0;
-                    getAnalyticsModel(cache);
-                };
-                if (window.requestIdleCallback) window.requestIdleCallback(build, { timeout: 1200 });
-                else setTimeout(build, 200);
-            }
-
-            function renderAnalyticsLayout(rows) {
-                if (!rows.length) return '<div class="empty">No decisions recorded yet.</div>';
-                const model = getAnalyticsModel(rows);
-
-                return renderVisaTypeBreakdown(model) +
-                    renderDecisionTrendsChart(model) +
-                    renderAnomalyAlerts(model) +
-                    '<div class="analytics-grid">' +
-                        '<div class="chart-container">' +
-                            '<h3>Month-by-Month Approved Share</h3>' +
-                            '<canvas id="chart-monthly" aria-label="Monthly approved share of published decisions chart"></canvas>' +
-                            '<p class="note2 rate-sample-note">Monthly approved shares use that month\'s approved and total published decision counts. Hover a month for the sample size.</p>' +
-                        '</div>' +
-                        '<div class="chart-container">' +
-                            '<h3>30-Day Rolling Approved Share</h3>' +
-                            '<canvas id="chart-rolling30" aria-label="30-day rolling approved share of published decisions chart"></canvas>' +
-                            '<p class="note2 rate-sample-note">Each point uses decisions from the trailing 30 days; hover for the sample size.</p>' +
-                        '</div>' +
-                        '<div class="chart-container">' +
-                            '<h3>Daily Volume Delta</h3>' +
-                            '<canvas id="chart-daily-delta" aria-label="Daily volume delta chart"></canvas>' +
-                        '</div>' +
-                        '<div class="chart-container">' +
-                            '<h3>Queue Density (Application Number Distribution)</h3>' +
-                            '<canvas id="chart-queue-density" aria-label="Queue density histogram"></canvas>' +
-                        '</div>' +
-                    '</div>';
-            }
-
-            function destroyAnalyticsCharts() {
-                analyticsChartObservers.forEach(function(observer) { observer.disconnect(); });
-                analyticsChartObservers = [];
-                analyticsChartInstances.forEach(function(chart) {
-                    try { chart.destroy(); } catch (error) { /* already detached */ }
-                });
-                analyticsChartInstances = [];
-                document.querySelectorAll('#tab-body canvas').forEach(function(canvas) {
-                    canvas._chart = null;
-                });
-            }
-
-            function registerAnalyticsChart(canvas, config) {
-                if (!canvas || canvas._chart) return canvas && canvas._chart;
-                var chart = new Chart(canvas, config);
-                canvas._chart = chart;
-                analyticsChartInstances.push(chart);
-                return chart;
-            }
-
-            function drawChartWhenNear(canvas, draw) {
-                if (!canvas || canvas._chart) return;
-                if (!('IntersectionObserver' in window)) {
-                    draw(canvas);
-                    return;
-                }
-                var observer = new IntersectionObserver(function(entries) {
-                    if (!entries[0] || !entries[0].isIntersecting) return;
-                    observer.disconnect();
-                    analyticsChartObservers = analyticsChartObservers.filter(function(item) { return item !== observer; });
-                    if (canvas.isConnected && activeTab === 'analytics') draw(canvas);
-                }, { rootMargin: '300px' });
-                analyticsChartObservers.push(observer);
-                observer.observe(canvas);
-            }
-
-            function paintAnalyticsCharts() {
-                var rows = cache || [];
-                if (!rows.length) return;
-                var model = getAnalyticsModel(rows);
-
-                // Render the tab shell immediately; Chart.js and chart creation
-                // happen after the next frame, and each canvas initialises only
-                // when it approaches the viewport.
-                LazyLoader.chart().then(function() {
-                    requestAnimationFrame(function() {
-                        if (activeTab === 'analytics') drawCharts(model);
-                    });
-                }).catch(function(err) {
-                    console.error('Failed to load Chart.js:', err);
-                });
-            }
-            
-            function drawCharts(model) {
-                var monthly = model.monthly;
-                var rolling30 = model.rolling30;
-                var dailyDelta = model.dailyDelta;
-                var queueDensity = model.queueDensity;
-                var ctx;
-                
-                // Monthly chart (bar + line)
-                ctx = document.getElementById('chart-monthly');
-                if (ctx) {
-                    drawChartWhenNear(ctx, function(canvas) { registerAnalyticsChart(canvas, {
-                        type: 'bar',
-                        data: {
-                            labels: monthly.map(m => m.month),
-                            datasets: [{
-                                label: 'Total Applications',
-                                data: monthly.map(m => m.total),
-                                backgroundColor: 'rgba(5, 150, 105, 0.3)',
-                                borderColor: '#059669',
-                                borderWidth: 1,
-                                yAxisID: 'y'
-                            }, {
-                                label: 'Approved',
-                                data: monthly.map(m => m.approved),
-                                backgroundColor: 'rgba(5, 150, 105, 0.6)',
-                                borderColor: '#047857',
-                                borderWidth: 1,
-                                yAxisID: 'y'
-                            }, {
-                                label: 'Approved Share (%)',
-                                data: monthly.map(m => m.rate),
-                                type: 'line',
-                                borderColor: '#dc2626',
-                                backgroundColor: 'rgba(220, 38, 38, 0.1)',
-                                borderWidth: 2,
-                                fill: false,
-                                tension: 0.3,
-                                yAxisID: 'y1',
-                                pointRadius: 4,
-                                pointHoverRadius: 6
-                            }]
-                        },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            interaction: { mode: 'index', intersect: false },
-                            scales: {
-                                y: { type: 'linear', display: true, position: 'left', title: { display: true, text: 'Applications' } },
-                                y1: { type: 'linear', display: true, position: 'right', title: { display: true, text: 'Rate (%)' }, min: 0, max: 100, grid: { drawOnChartArea: false } }
-                            },
-                            plugins: {
-                                legend: { display: true, position: 'top' },
-                                tooltip: { callbacks: { afterBody: function(items) {
-                                    var point = items && items.length ? monthly[items[0].dataIndex] : null;
-                                    return point ? 'Approved share: ' + point.rate + '% of ' + point.total.toLocaleString() + ' published decisions' : '';
-                                } } }
-                            }
-                        }
-                    }); });
-                }
-                
-                // Rolling 30-day chart
-                ctx = document.getElementById('chart-rolling30');
-                if (ctx) {
-                    drawChartWhenNear(ctx, function(canvas) { registerAnalyticsChart(canvas, {
-                        type: 'line',
-                        data: {
-                            labels: rolling30.map(r => r.date),
-                            datasets: [{
-                                label: '30-Day Rolling Approved Share (%)',
-                                data: rolling30.map(r => r.rate),
-                                borderColor: '#059669',
-                                backgroundColor: 'rgba(5, 150, 105, 0.1)',
-                                borderWidth: 2,
-                                fill: true,
-                                tension: 0.3,
-                                pointRadius: 2,
-                                pointHoverRadius: 4
-                            }]
-                        },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            scales: {
-                                y: { min: 0, max: 100, title: { display: true, text: 'Approved Share (%)' } },
-                                x: { ticks: { maxTicksLimit: 10 } }
-                            },
-                            plugins: {
-                                legend: { display: false },
-                                tooltip: { callbacks: { label: function(ctx) {
-                                    var point = rolling30[ctx.dataIndex];
-                                    return ['Approved share: ' + ctx.parsed.y + '%', 'Sample: ' + (point ? point.total.toLocaleString() : '0') + ' published decisions in 30 days'];
-                                } } }
-                            }
-                        }
-                    }); });
-                }
-                
-                // Daily delta chart
-                ctx = document.getElementById('chart-daily-delta');
-                if (ctx) {
-                    drawChartWhenNear(ctx, function(canvas) { registerAnalyticsChart(canvas, {
-                        type: 'bar',
-                        data: {
-                            labels: dailyDelta.map(d => d.date),
-                            datasets: [{
-                                label: 'Volume',
-                                data: dailyDelta.map(d => d.volume),
-                                backgroundColor: dailyDelta.map(d => d.volume >= 0 ? 'rgba(5, 150, 105, 0.6)' : 'rgba(220, 38, 38, 0.6)'),
-                                borderColor: dailyDelta.map(d => d.volume >= 0 ? '#059669' : '#dc2626'),
-                                borderWidth: 1
-                            }]
-                        },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            scales: {
-                                y: { title: { display: true, text: 'Applications' } },
-                                x: { ticks: { maxTicksLimit: 10 } }
-                            },
-                            plugins: { legend: { display: false } }
-                        }
-                    }); });
-                }
-                
-                // Queue density chart
-                ctx = document.getElementById('chart-queue-density');
-                if (ctx) {
-                    drawChartWhenNear(ctx, function(canvas) { registerAnalyticsChart(canvas, {
-                        type: 'bar',
-                        data: {
-                            labels: queueDensity.bins.map(b => b.label),
-                            datasets: [{
-                                label: 'Applications in Range',
-                                data: queueDensity.bins.map(b => b.count),
-                                backgroundColor: 'rgba(5, 150, 105, 0.5)',
-                                borderColor: '#059669',
-                                borderWidth: 1
-                            }]
-                        },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            indexAxis: 'y',
-                            scales: {
-                                x: { title: { display: true, text: 'Count' } },
-                                y: { title: { display: true, text: 'Application Number Range' } }
-                            },
-                            plugins: { legend: { display: false } }
-                        }
-                    }); });
-                }
-
-                var weekly = model.weekly;
-                var countCanvas = document.getElementById('trends-count-chart');
-                if (countCanvas) {
-                    drawChartWhenNear(countCanvas, function(canvas) {
-                        registerAnalyticsChart(canvas, {
-                            type: 'bar',
-                            data: {
-                                labels: weekly.labels,
-                                datasets: [
-                                    { label: 'Approved', data: weekly.accepted, backgroundColor: '#059669', borderColor: '#047857', borderWidth: 0, borderRadius: 3, maxBarThickness: 28 },
-                                    { label: 'Refused', data: weekly.rejected, backgroundColor: '#dc2626', borderColor: '#b91c1c', borderWidth: 0, borderRadius: 3, maxBarThickness: 28 }
-                                ]
-                            },
-                            options: {
-                                responsive: true,
-                                maintainAspectRatio: false,
-                                interaction: { mode: 'index', intersect: false },
-                                scales: {
-                                    y: { beginAtZero: true, ticks: { precision: 0 }, title: { display: true, text: 'Applications' }, grid: { color: 'rgba(148,163,184,0.18)' } },
-                                    x: { grid: { display: false }, ticks: { maxTicksLimit: 8, maxRotation: 0, autoSkip: true } }
-                                },
-                                plugins: {
-                                    legend: { position: 'top', labels: { usePointStyle: true, boxWidth: 8, boxHeight: 8, padding: 14 } },
-                                    tooltip: { callbacks: { label: function(ctx) { return ctx.dataset.label + ': ' + ctx.parsed.y.toLocaleString() + ' decisions'; } } }
-                                }
-                            }
-                        });
-                    });
-                }
-
-                var rateCanvas = document.getElementById('trends-rate-chart');
-                if (rateCanvas) {
-                    drawChartWhenNear(rateCanvas, function(canvas) {
-                        registerAnalyticsChart(canvas, {
-                            type: 'line',
-                            data: {
-                                labels: weekly.labels,
-                                datasets: [{
-                                    label: 'Approved share',
-                                    data: weekly.rate,
-                                    borderColor: '#2563eb',
-                                    backgroundColor: 'rgba(37,99,235,0.08)',
-                                    borderWidth: 2,
-                                    fill: false,
-                                    tension: 0,
-                                    pointRadius: 3,
-                                    pointHoverRadius: 5,
-                                    pointBackgroundColor: '#ffffff',
-                                    pointBorderColor: '#2563eb',
-                                    pointBorderWidth: 2
-                                }]
-                            },
-                            options: {
-                                responsive: true,
-                                maintainAspectRatio: false,
-                                interaction: { mode: 'index', intersect: false },
-                                scales: {
-                                    y: { min: 0, max: 100, ticks: { stepSize: 25, callback: function(v) { return v + '%'; } }, title: { display: true, text: 'Approved share' }, grid: { color: 'rgba(148,163,184,0.18)' } },
-                                    x: { grid: { display: false }, ticks: { maxTicksLimit: 8, maxRotation: 0, autoSkip: true } }
-                                },
-                                plugins: {
-                                    legend: { display: false },
-                                    tooltip: { callbacks: { label: function(ctx) {
-                                        var week = weekly.weeks[ctx.dataIndex];
-                                        var total = week && weekly.byWeek.has(week) ? weekly.byWeek.get(week).total : 0;
-                                        return 'Approved share: ' + ctx.parsed.y + '% of ' + total.toLocaleString() + ' published decisions';
-                                    } } }
-                                }
-                            }
-                        });
-                    });
-                }
-            }
-            
-            // Analytics computation functions
-            function computeMonthly(rows) {
-                var byMonth = {};
-                rows.forEach(function(r) {
-                    if (r._placeholder || !r.date) return;
-                    var month = String(r.date).slice(0, 7);
-                    if (!byMonth[month]) byMonth[month] = { total: 0, approved: 0, rejected: 0 };
-                    byMonth[month].total++;
-                    if (r._status === 'accepted') byMonth[month].approved++;
-                    else if (r._status === 'rejected') byMonth[month].rejected++;
-                });
-                return Object.keys(byMonth).sort().map(function(m) {
-                    var d = byMonth[m];
-                    return { month: m, total: d.total, approved: d.approved, rejected: d.rejected, rate: d.total ? (d.approved / d.total * 100).toFixed(1) : 0 };
-                });
-            }
-            
-            function computeRolling30(rows) {
-                var real = rows.filter(function(r) { return !r._placeholder; });
-                var byDate = {};
-                real.forEach(function(r) {
-                    if (!byDate[r.date]) byDate[r.date] = { total: 0, approved: 0 };
-                    byDate[r.date].total++;
-                    if (r._status === 'accepted') byDate[r.date].approved++;
-                });
-                var dates = Object.keys(byDate).sort();
-                var result = [];
-                var total = 0;
-                var approved = 0;
-                for (var i = 0; i < dates.length; i++) {
-                    total += byDate[dates[i]].total;
-                    approved += byDate[dates[i]].approved;
-                    if (i >= 30) {
-                        total -= byDate[dates[i - 30]].total;
-                        approved -= byDate[dates[i - 30]].approved;
-                    }
-                    result.push({ date: dates[i], rate: total ? (approved / total * 100).toFixed(1) : 0, total: total });
-                }
-                return result;
-            }
-            
-            function computeDailyDelta(rows) {
-                var real = rows.filter(function(r) { return !r._placeholder; });
-                var byDate = {};
-                real.forEach(function(r) {
-                    if (!byDate[r.date]) byDate[r.date] = { total: 0, approved: 0 };
-                    byDate[r.date].total++;
-                    if (r._status === 'accepted') byDate[r.date].approved++;
-                });
-                var dates = Object.keys(byDate).sort();
-                var result = [];
-                for (var i = 1; i < dates.length; i++) {
-                    var today = byDate[dates[i]];
-                    var yesterday = byDate[dates[i - 1]];
-                    if (yesterday) {
-                        result.push({
-                            date: dates[i],
-                            volume: today.total - yesterday.total,
-                            approved: today.approved - (yesterday.approved || 0)
-                        });
-                    }
-                }
-                return result;
-            }
-            
-            function computeQueueDensity(rows) {
-                var real = rows.filter(function(r) { return !r._placeholder; });
-                var nums = real.map(function(r) { return parseInt(r.number || r.irl, 10); }).filter(function(n) { return Number.isFinite(n); }).sort(function(a, b) { return a - b; });
-                if (!nums.length) return { bins: [] };
-                
-                var min = nums[0], max = nums[nums.length - 1];
-                var binCount = 10;
-                var binSize = Math.ceil((max - min + 1) / binCount);
-                var bins = [];
-                
-                for (var i = 0; i < binCount; i++) {
-                    var binMin = min + i * binSize;
-                    var binMax = Math.min(min + (i + 1) * binSize - 1, max);
-                    var count = nums.filter(function(n) { return n >= binMin && n <= binMax; }).length;
-                    bins.push({
-                        label: binMin.toLocaleString() + ' - ' + binMax.toLocaleString(),
-                        count: count,
-                        min: binMin,
-                        max: binMax
-                    });
-                }
-                return { bins: bins };
-            }
-
             // 1G page timeline form (separate from the embassy-visa one).
             function renderG1TimelineForm() {
                 return '<form class="card" id="time-form-1g" name="timelines-1g" novalidate style="max-width:100%;">' +
@@ -4317,7 +3816,7 @@
                     '<option value="abuja">🇳🇬 Abuja (Nigeria, Ghana, Côte d\'Ivoire, Senegal)</option>' +
                     '<option value="ankara">🇹🇷 Ankara (Türkiye, Azerbaijan, Saudi Arabia residents)</option>' +
                 '</select></label></p>' +
-                '<button class="btn" type="submit" id="telegram-alert-btn" style="background:#229ED9;border-color:#229ED9;color:#fff;">Get alerts on Telegram</button>' +
+                '<button class="btn" type="submit" id="telegram-alert-btn">Get alerts on Telegram</button>' +
                 '<p class="note2" style="margin-top:6px;">Free and no email needed. Opens the Telegram bot with your application ready to link.</p>' +
                 '<div class="note" id="alert-status" aria-live="polite"></div>';
 
@@ -4800,7 +4299,7 @@
                     return '12-week window is <strong>OPEN</strong> - apply now (' + left + ' days left).';
                 }
                 var opens = new Date(Date.parse(expiryISO + 'T00:00:00') - 84 * 86400000);
-                var label = opens.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+                var label = opens.toLocaleDateString(displayLocale(), { day: 'numeric', month: 'short', year: 'numeric' });
                 return '12-week window opens <strong>' + label + '</strong> (' + left + ' days left).';
             }
 
@@ -4900,7 +4399,7 @@
             function fmtG1Date(iso) {
                 var p = String(iso).split('-');
                 var d = new Date(Date.UTC(+p[0], +p[1] - 1, +p[2]));
-                return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
+                return d.toLocaleDateString(displayLocale(), { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
             }
             // Mean Gregorian month - good enough for a "how long" readout.
             function fmtLagMonths(days) { return (days / 30.44).toFixed(1); }
@@ -5422,7 +4921,7 @@
                 // page stays instant, then repaint just those sections.
                 if (!_landingDataRequested && (!cache || !cache.length)) {
                     _landingDataRequested = true;
-                    loadData().then(function() {
+                    loadPreview().then(function() {
                         if (activeTracker !== 'home') return;
                         try { updateLandingStats(); } catch (e) { /* noop */ }
                         try { renderRecentDecisionsFeed(); } catch (e) { /* noop */ }
@@ -5486,8 +4985,41 @@
 
                 var visaEl = document.getElementById('visa-meta');
                 if (visaEl && cache && cache.length) {
-                    visaEl.textContent = real.length.toLocaleString() + ' decisions on record';
+                    var nd = (_embassyManifest || []).filter(function(office) { return office.slug === 'new-delhi'; })[0];
+                    // The preview holds ten rows, not the file total. Prefer the
+                    // manifest count, then the preview's own total, and only use
+                    // the loaded rows when this is the complete history.
+                    var count = nd ? Number(nd.decisions) || 0 : (previewMeta && Number(previewMeta.total)) || real.length;
+                    visaEl.textContent = count.toLocaleString('en-IE') + ' decisions' +
+                        (nd && nd.report_date ? ' · report ' + lookupFormatDate(nd.report_date) : ' on record');
                 }
+            }
+
+            // A returning visitor should see why today is different without
+            // opening the tracker. Counts come from the manifest, so this is
+            // stable even when the full 2.3MB history is not loaded.
+            function paintLandingVisitDelta(offices) {
+                var el = document.getElementById('landing-visit');
+                var nd = (offices || []).filter(function(office) { return office.slug === 'new-delhi'; })[0];
+                if (!el || !nd) return;
+                var current = Number(nd.decisions) || 0;
+                if (!current) return;
+                var lastRows = 0, lastSeen = 0;
+                try {
+                    lastRows = Number(localStorage.getItem('visa-landing-rows') || '0') || 0;
+                    lastSeen = Number(localStorage.getItem('visa-landing-seen') || '0') || 0;
+                } catch (error) { /* private mode */ }
+                if (lastRows && lastSeen && current > lastRows) {
+                    var added = current - lastRows;
+                    el.hidden = false;
+                    el.innerHTML = '<strong>' + added.toLocaleString('en-IE') + ' new New Delhi decision' +
+                        (added === 1 ? '' : 's') + '</strong> since your last visit. ' +
+                        '<a href="?tracker=visa&amp;tab=history&amp;view=daily">See the latest day</a>';
+                }
+                try {
+                    localStorage.setItem('visa-landing-rows', String(current));
+                    localStorage.setItem('visa-landing-seen', String(Date.now()));
+                } catch (error) { /* private mode */ }
             }
 
             // Embassy status cards. Each embassy data file is
@@ -5505,13 +5037,19 @@
                     '<tbody id="embassy-coverage-body"><tr><td colspan="5" class="coverage-empty">Loading publications…</td></tr></tbody>' +
                     '</table></div>';
 
-                fetch('data/data_manifest.json', { cache: 'no-store' })
-                    .then(function(r) { return r.ok ? r.json() : null; })
-                    .then(function(manifest) {
-                        var offices = (manifest && manifest.offices) || [];
+                loadOfficeLookupMeta()
+                    .then(function(map) {
+                        var offices = Object.keys(map).map(function(slug) { return map[slug]; });
                         if (!offices.length) throw new Error('no manifest');
                         _embassyManifest = offices;
+                        var nd = map['new-delhi'];
+                        var visaCard = document.getElementById('visa-meta');
+                        if (nd && visaCard) {
+                            visaCard.textContent = (Number(nd.decisions) || 0).toLocaleString('en-IE') +
+                                ' decisions · report ' + lookupFormatDate(nd.report_date);
+                        }
                         renderEmbassyCoverageTable();
+                        paintLandingVisitDelta(offices);
                     })
                     .catch(function() {
                         _embassyManifest = null;
@@ -5702,6 +5240,8 @@ async function renderLandingPage() {
                     '<h1>Check your Irish visa decision</h1>' +
                     '<p class="page-task">Search six offices by application number, or open a processing-date tracker.</p>' +
                     '<div class="landing-status" id="landing-status" aria-live="polite"><span class="note2">Checking today’s updates…</span></div>' +
+                    '<div id="site-freshness-banner" class="site-freshness" role="status" hidden></div>' +
+                    '<p class="landing-visit" id="landing-visit" hidden></p>' +
                     '<form class="landing-search" id="landing-search" role="search" novalidate>' +
                     '<div class="searchbar landing-search-number">' + searchIcon() +
                     '<input type="text" id="landing-q" name="q" autocomplete="off" maxlength="200" aria-label="Search by application number" placeholder="Application number" required></div>' +
@@ -5727,7 +5267,10 @@ async function renderLandingPage() {
                     '<p class="note2">Report dates vary by office. New Delhi, Abu Dhabi, Abuja and Ankara keep dated history; Beijing and Dublin publish a latest snapshot. <a href="/visa-processing-times">Dublin queue dates</a>.</p>' +
                     '</section>' +
                     '<div class="landing-foot">Source: official Irish visa office reports. Updated when the offices publish.</div></div>';
-                wireChrome();                wireChrome();
+                wireChrome();
+                loadOfficeLookupMeta().then(function() {
+                    if (activeTracker === 'home') paintSiteFreshnessBanner();
+                }).catch(function() { /* the office detail stays on /status */ });
                 var cards = root.querySelectorAll('.tracker-card');
                 for (var i = 0; i < cards.length; i++) {
                     cards[i].addEventListener('click', function() {
@@ -5764,7 +5307,10 @@ async function renderLandingPage() {
                     var n = res[0], grows = res[1] || [], prows = res[2] || [], meta = res[3];
                     var el = document.getElementById('visa-meta');
                     if (el) el.textContent = n
-                        ? n.toLocaleString() + ' decisions on record'
+                        ? n.toLocaleString() + ' decisions' +
+                          ((_embassyManifest || []).filter(function(office) { return office.slug === 'new-delhi'; })[0]
+                            ? ' · report ' + lookupFormatDate((_embassyManifest || []).filter(function(office) { return office.slug === 'new-delhi'; })[0].report_date)
+                            : '')
                         : 'Awaiting data';
                     var g1 = document.getElementById('g1-meta');
                     var g1row = null;
@@ -5830,23 +5376,36 @@ async function renderLandingPage() {
                         '<div class="skel skel-row" style="width:65%"></div>' +
                         '</div>';
                 }
-                await loadData();
+                await loadPreview();
+                if (!dataComplete && (activeTab === 'history' || activeTab === 'saved')) await loadData();
                 loadMeta(); // health card / reconciliation / closures (non-blocking)
+                loadOfficeLookupMeta().then(function() {
+                    paintHomeFreshness();
+                    paintSiteFreshnessBanner();
+                    refreshOfficeSelects();
+                }).catch(function() { /* the coverage line falls back to raw rows */ });
 
-                destroyAnalyticsCharts();
                 root.innerHTML =
                     BACK_BTN_HTML +
                     '<div class="page-title-block">' +
                     '<h1>Visa decisions</h1>' +
                     '<p class="page-task">Search published decisions from six Irish offices by application number.</p>' +
-                    '<p class="page-meta">' + (cache && cache.length ? cache.length.toLocaleString() + ' decisions on record' : 'Awaiting data') +
-                    ' · Compare each result with the official report date</p>' +
+                    '<p class="page-meta">' + (previewMeta && previewMeta.total
+                        ? previewMeta.total.toLocaleString() + ' New Delhi decisions in the latest file'
+                        : (cache && cache.length ? cache.length.toLocaleString() + ' New Delhi rows on record' : 'Awaiting data')) +
+                    ' · The six-office search below uses each office’s latest file</p>' +
                     '</div>' +
+                    '<div id="site-freshness-banner" class="site-freshness" role="status" hidden></div>' +
                     '<nav class="navpills" aria-label="Visa tracker sections">' + TABS.map(function(tab) {
-                        return '<button type="button" class="navpill ' + (activeTab === tab.id ? 'active' : '') +
-                            '" data-tab="' + tab.id + '"' + (activeTab === tab.id ? ' aria-current="page"' : '') +
-                            '>' + tab.label + '</button>';
+                        return '<button type="button" class="navpill" data-tab="' + tab.id + '">' +
+                            tab.label + '</button>';
                     }).join('') + '</nav>' +
+                    '<div class="navpills-mobile">' +
+                    '<label for="tracker-section">Section</label>' +
+                    '<select id="tracker-section" aria-label="Visa tracker section">' +
+                    TABS.map(function(tab) {
+                        return '<option value="' + tab.id + '">' + tab.label + '</option>';
+                    }).join('') + '</select></div>' +
                     '<div id="tab-body"></div>' +
                     '<button class="scroll-top-btn" id="scroll-top-btn" title="Back to top" aria-label="Back to top">↑</button>';
 
@@ -5859,7 +5418,16 @@ async function renderLandingPage() {
                         switchTab(tab.id);
                     });
                 });
+                var sectionSelect = root.querySelector('#tracker-section');
+                if (sectionSelect) {
+                    sectionSelect.addEventListener('change', function() {
+                        if (this.value === activeTab) return;
+                        switchTab(this.value);
+                    });
+                }
                 wireChrome();
+                paintSiteFreshnessBanner();
+                syncTabControls(activeTab);
                 paintTabBody(activeTab, cache || []);
                 markVisited();
             }

@@ -28,6 +28,12 @@ import router from "../functions/_router.js";
 import { PAGES } from "../tools/site-chrome.mjs";
 
 const ROOT = new URL("../", import.meta.url);
+const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July',
+  'August', 'September', 'October', 'November', 'December'];
+function longDate(value) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(value || ''));
+  return match ? `${Number(match[3])} ${MONTHS[Number(match[2]) - 1]} ${match[1]}` : '';
+}
 
 async function read(name) {
   return readFile(new URL(name, ROOT), "utf8");
@@ -101,6 +107,13 @@ test("negotiate: a refusal of both formats is 406, not Markdown", () => {
 
 test("negotiate: Markdown with HTML refused is still Markdown", () => {
   assert.equal(negotiate("text/markdown, text/html;q=0"), "markdown");
+});
+
+test("agent Markdown follows the editorial dates used by the HTML", async () => {
+  const dates = JSON.parse(await readFile(new URL("data/content-dates.json", ROOT), "utf8"));
+  assert.match(ABOUT_MARKDOWN, new RegExp(`Last updated:\\*\\* ${longDate(dates.pages["/about"])}`));
+  assert.match(PRIVACY_MARKDOWN, new RegExp(`Last updated:\\*\\* ${longDate(dates.pages["/privacy"])}`));
+  assert.doesNotMatch(ABOUT_MARKDOWN, /21 October 2026/);
 });
 
 test("documents are substantial and start with a single H1", () => {
@@ -354,12 +367,16 @@ test("sitemap, robots and llms.txt point at the published pages", async () => {
   }
   for (const page of PAGES) {
     if (page.file === "admin.html" || page.file === "404.html") continue;
+    // Community timelines stays available but is not promoted until its
+    // aggregate clears the minimum sample size.
+    if (page.route === "/community-timelines") continue;
     assert.match(
       sitemap,
       new RegExp(`<loc>https://irishvisaupdatetracker\\.pages\\.dev${page.route}</loc>`),
       `${page.file} is missing from sitemap.xml`,
     );
   }
+  assert.doesNotMatch(sitemap, /<loc>https:\/\/irishvisaupdatetracker\.pages\.dev\/community-timelines<\/loc>/);
   for (const [, block] of sitemap.matchAll(/<url>([\s\S]*?)<\/url>/g)) {
     assert.match(block, /<lastmod>\d{4}-\d{2}-\d{2}<\/lastmod>/, "every sitemap entry needs a lastmod");
   }

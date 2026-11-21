@@ -2,7 +2,7 @@
  * Post-deploy smoke check.
  *
  * Verifies the deployed origin serves the Functions API, manifest, service
- * worker and comparison page - the four things a stale or failed Pages upload
+ * worker and the legacy redirects - the things a stale or failed Pages upload
  * silently drops. Exits non-zero so a broken deploy fails its workflow.
  *
  *   node tools/smoke-deploy.mjs
@@ -46,11 +46,11 @@ check('homepage serves', home.status === 200 && /Irish Visa/i.test(home.text), '
 check('homepage is HTML', home.type.includes('text/html'), home.type);
 check('homepage is never cached', /no-store/i.test(home.cacheControl), home.cacheControl);
 
-const comparisonRoute = await get('/comparison');
-check('comparison route serves', comparisonRoute.status === 200 && /comparison/i.test(comparisonRoute.text), 'HTTP ' + comparisonRoute.status);
+const comparisonRoute = await get('/comparison', { redirect: 'manual' });
+check('comparison route redirects to method section', comparisonRoute.status === 301 && /\/about#method/.test(comparisonRoute.location), 'HTTP ' + comparisonRoute.status);
 
-const comparisonFile = await get('/comparison.html');
-check('comparison asset serves', comparisonFile.status === 200 && /comparison/i.test(comparisonFile.text), 'HTTP ' + comparisonFile.status);
+const vacRoute = await get('/vac-transit', { redirect: 'manual' });
+check('vac-transit route redirects to help', vacRoute.status === 301 && /\/help#vac/.test(vacRoute.location), 'HTTP ' + vacRoute.status);
 
 const statusPage = await get('/status');
 check('data status page serves', statusPage.status === 200 && /Data status/i.test(statusPage.text), 'HTTP ' + statusPage.status);
@@ -102,6 +102,15 @@ check('digest preview API serves', preview.status === 200 && preview.json && pre
 const data = await get('/data/data_manifest.json');
 check('data manifest serves', data.status === 200 && data.json && Array.isArray(data.json.offices), 'HTTP ' + data.status);
 check('data manifest is never cached', /no-store/i.test(data.cacheControl), data.cacheControl);
+
+const openData = await get('/data');
+check('open data landing page serves', openData.status === 200 && /Reuse and citation/i.test(openData.text) && /"@type": "Dataset"/.test(openData.text), 'HTTP ' + openData.status);
+
+const monthly = await get('/monthly-report');
+check('monthly report serves static figures', monthly.status === 200 && /id="summary-cards"/.test(monthly.text) && !/Loading the official files/.test(monthly.text), 'HTTP ' + monthly.status);
+
+const archive = await get('/monthly-report/2026-10');
+check('monthly archive serves', archive.status === 200 && /Monthly report archive/i.test(archive.text), 'HTTP ' + archive.status);
 
 console.log('\n' + (failures === 0 ? 'Post-deploy smoke check passed.' : failures + ' post-deploy check(s) failed.'));
 process.exitCode = failures === 0 ? 0 : 1;

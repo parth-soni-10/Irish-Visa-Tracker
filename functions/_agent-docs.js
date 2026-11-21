@@ -12,6 +12,8 @@
  * what the numbers do not mean.
  * ------------------------------------------------------------------------- */
 
+import { CONTENT_DATES } from "./_content-dates.js";
+
 const lines = (...parts) => parts.join("\n").trim() + "\n";
 
 export const HOME_MARKDOWN = lines(
@@ -32,15 +34,15 @@ export const HOME_MARKDOWN = lines(
   "",
   "### Embassy visa decisions",
   "",
-  "Every business day the Embassy of Ireland in New Delhi publishes a spreadsheet of visa",
-  "decisions. The tracker records each application number, the date it was published and whether",
+  "On most weekdays the Embassy of Ireland in New Delhi publishes a spreadsheet of visa",
+  "decisions. The tracker records each application number, the tracker-observed date and whether",
   "it was approved or refused. On the site you can search by application number, see the latest",
   "decisions, browse daily summaries and look at trends. The same rows are in",
   "`/data/visa_decisions.json` as `[date, application number, decision]` arrays.",
   "",
   "### Daily summaries",
   "",
-  "For each published day the dashboard shows how many applications were approved and refused,",
+  "For each tracker-observed day the dashboard shows how many applications were approved and refused,",
   "and can expand a day to list the applications behind those counts. A day with no embassy file",
   "is shown as a closure or placeholder rather than counted as a decision.",
   "",
@@ -104,7 +106,7 @@ export const HOME_MARKDOWN = lines(
   "- [Contact](https://irishvisaupdatetracker.pages.dev/contact) - corrections, bugs and scope.",
   "- [Correction ledger](https://irishvisaupdatetracker.pages.dev/corrections) - source-linked file diffs and changed rows.",
   "- [Privacy](https://irishvisaupdatetracker.pages.dev/privacy) - browser storage and form data.",
-  "- [Daily summaries](https://irishvisaupdatetracker.pages.dev/daily-summaries) - approved and refused counts by published day.",
+  "- [Daily summaries](https://irishvisaupdatetracker.pages.dev/daily-summaries) - approved and refused counts by tracker-observed day.",
   "- [Stamp 1G processing dates](https://irishvisaupdatetracker.pages.dev/stamp-1g-processing-dates) - the queue date ISD has reached and the lag.",
   "- [Sitemap](https://irishvisaupdatetracker.pages.dev/sitemap.xml)",
   "- [Agent guide](https://irishvisaupdatetracker.pages.dev/llms.txt)",
@@ -114,7 +116,7 @@ export const HOME_MARKDOWN = lines(
 export const ABOUT_MARKDOWN = lines(
   "# About the Irish Visa Decision Tracker",
   "",
-  "**Last updated:** 21 October 2026",
+  `**Last updated:** ${CONTENT_DATES["/about"] || "Not recorded"}`,
   "",
   "Six Irish visa offices - New Delhi, Beijing, Abu Dhabi, Abuja, Ankara and Dublin - publish",
   "visa decision files and totals: flat lists with no history, no search and no trends. This",
@@ -125,7 +127,7 @@ export const ABOUT_MARKDOWN = lines(
   "",
   "- Embassy visa decisions: application number, decision date and approved/refused outcome,",
   "  searchable by application number.",
-  "- Daily summaries: approved and refused counts for each published day, with the applications",
+  "- Daily summaries: approved and refused counts for each tracker-observed day, with the applications",
   "  behind those counts available on demand.",
   "- Stamp 1G processing: the application date ISD is currently processing, the lag, and how it",
   "  has moved.",
@@ -206,7 +208,7 @@ export const CONTACT_MARKDOWN = lines(
 export const PRIVACY_MARKDOWN = lines(
   "# Privacy notice - Irish Visa Decision Tracker",
   "",
-  "**Last updated:** 21 October 2026",
+  `**Last updated:** ${CONTENT_DATES["/privacy"] || "Not recorded"}`,
   "",
   "The tracker has no accounts, no sign-in, no advertising and no analytics product. This page",
   "explains the small amount of data it handles: preferences in your browser, the two kinds of",
@@ -381,8 +383,12 @@ export const DAILY_SUMMARIES_MARKDOWN = lines(
   "## How to read the counts",
   "",
   "- **Approved** / **Refused** - the outcome the embassy published for that application number.",
-  "- **Published day** - the date the embassy published the file, which is not necessarily the",
+  "- **Official file day** - the report date printed on the office's file; not necessarily the",
   "  date the decision was made on a case.",
+  "- **Tracker-observed day** - the date the tracker first recorded a row. The newest observed",
+  "  day can be partial and may not yet be in the official file.",
+  "- **Decision date** - the date attached to an individual application, which can differ from",
+  "  the report date for weekly files.",
   "- **Closures** - a day with no embassy file is a closure or placeholder, not a day with zero",
   "  decisions.",
   "",
@@ -394,7 +400,7 @@ export const DAILY_SUMMARIES_MARKDOWN = lines(
   "",
   "The embassy's file is a single flat list with no history and no totals, so one day's file shows",
   "what was published that day but not how volume has moved or which days were closures. Keeping",
-  "every published day in one record is what makes those comparisons possible.",
+  "every tracker-observed day in one record is what makes those comparisons possible.",
   "",
   "A missing application number means the decision has not been published yet, the application",
   "sits with a different visa office, or that day's file was not published - not that the",
@@ -556,6 +562,137 @@ export const PROCESSING_TIMES_MARKDOWN = lines(
   ""
 );
 
+function officeMarkdown({ title, route, latest, decisions, approved, refused, countries, source, data, note }) {
+  return lines(
+    `# ${title}`,
+    "",
+    "An independent, unofficial page in the Irish Visa Decision Tracker. It records what the",
+    "office has already published; it is not immigration advice and cannot see a private case.",
+    "",
+    `- **Canonical HTML:** https://irishvisaupdatetracker.pages.dev${route}`,
+    `- **Latest official file:** ${latest}`,
+    `- **Decisions in that file:** ${decisions} (${approved} approved, ${refused} refused)`,
+    `- **Countries / scope:** ${countries}`,
+    `- **Official source:** ${source}`,
+    `- **Machine-readable data:** https://irishvisaupdatetracker.pages.dev${data}`,
+    "",
+    "## Read the counts correctly",
+    "",
+    note,
+    "",
+    "A missing application number is not a refusal. It may be unpublished, handled by another",
+    "office, absent from a snapshot, or misread by OCR where the office publishes scanned files.",
+    "Confirm every row against the official source before relying on it.",
+    "",
+    "## Related pages",
+    "",
+    "- [Tracker](https://irishvisaupdatetracker.pages.dev/) - search an application number.",
+    "- [All six offices](https://irishvisaupdatetracker.pages.dev/about#method) - method, coverage and limits.",
+    "- [Data status](https://irishvisaupdatetracker.pages.dev/status) - freshness and known gaps.",
+    "- [Report archive](https://irishvisaupdatetracker.pages.dev/reports) - dated source-linked reports.",
+    "- [Open data](https://irishvisaupdatetracker.pages.dev/data) - JSON files and definitions.",
+    "",
+  );
+}
+
+export const NEW_DELHI_MARKDOWN = officeMarkdown({
+  title: "New Delhi visa decisions for India, Bangladesh, Nepal and Sri Lanka",
+  route: "/new-delhi-visa-decisions",
+  latest: "19 November 2026",
+  decisions: "43,599",
+  approved: "36,769",
+  refused: "6,830",
+  countries: "India, Bangladesh, Nepal and Sri Lanka",
+  source: "https://www.ireland.ie/en/india/newdelhi/services/visas/processing-times-and-decisions/",
+  data: "/data/visa_decisions.json",
+  note: "New Delhi publishes a cumulative file each business morning. The count is the total in that file, not the number added that day. Read `/data/visa_meta.json` for the current `fileDate`, `sheetRows` and `lastRunAt`. The tracker’s dated rows are observation-dated, so they are excluded from official dated monthly totals.",
+});
+
+export const BEIJING_MARKDOWN = officeMarkdown({
+  title: "Beijing visa decisions for China, Hong Kong, Macau and Mongolia",
+  route: "/beijing-visa-decisions",
+  latest: "1 November 2026",
+  decisions: "13,724",
+  approved: "11,373",
+  refused: "2,351",
+  countries: "China, Hong Kong, Macau and Mongolia",
+  source: "https://www.ireland.ie/en/china/beijing/services/visas/visa-decisions/",
+  data: "/data/embassy-beijing.json",
+  note: "Beijing publishes a cumulative decision file rather than a dated daily history. The tracker holds the latest snapshot it could find; a newer official file may exist. Read `/data/data_manifest.json` before describing this snapshot as current.",
+});
+
+export const ABU_DHABI_MARKDOWN = officeMarkdown({
+  title: "Abu Dhabi visa decisions for the UAE, Gulf and North Africa",
+  route: "/abu-dhabi-visa-decisions",
+  latest: "20 November 2026 (week ending)",
+  decisions: "232",
+  approved: "161",
+  refused: "71",
+  countries: "United Arab Emirates, Afghanistan, Algeria, Bahrain, Jordan, Kuwait, Lebanon, Libya, Morocco, Oman, Qatar, Sudan, Syria and Tunisia",
+  source: "https://www.ireland.ie/en/uae/abudhabi/services/visas/weekly-decision-reports/",
+  data: "/data/embassy-abu-dhabi.json",
+  note: "Abu Dhabi publishes weekly PDF reports. The report date is the end of the reporting period, not the date of an individual decision. The tracker keeps each dated report it has ingested; read the report archive for earlier periods.",
+});
+
+export const ABUJA_MARKDOWN = officeMarkdown({
+  title: "Abuja visa decisions for Nigeria, Ghana, Côte d’Ivoire and Senegal",
+  route: "/abuja-visa-decisions",
+  latest: "7 November 2026 (week ending)",
+  decisions: "99",
+  approved: "34",
+  refused: "65",
+  countries: "Nigeria, Côte d’Ivoire, Ghana and Senegal",
+  source: "https://www.ireland.ie/en/nigeria/abuja/services/visas/weekly-decision-reports/",
+  data: "/data/embassy-abuja.json",
+  note: "Abuja publishes weekly PDF reports. The report date is the end of the reporting period, not the date of an individual decision. A number may appear in an earlier or later report, so search the office history before treating a missing row as unpublished.",
+});
+
+export const ANKARA_MARKDOWN = officeMarkdown({
+  title: "Ankara visa decisions for Türkiye, Azerbaijan and Saudi residents",
+  route: "/ankara-visa-decisions",
+  latest: "15 November 2026 (week ending)",
+  decisions: "165",
+  approved: "128",
+  refused: "37",
+  countries: "Türkiye, Azerbaijan and visa-required nationals resident in Saudi Arabia",
+  source: "https://www.ireland.ie/en/turkiye/ankara/services/visas/weekly-decision-report/",
+  data: "/data/embassy-ankara.json",
+  note: "Ankara publishes weekly PDF reports; some are scanned. Rows are OCR-extracted at 300 DPI, so a character can be missed or misread. The official PDF remains the authority. The report date is the end of the reporting period.",
+});
+
+export const DUBLIN_MARKDOWN = officeMarkdown({
+  title: "Dublin visa decisions for transferred applications",
+  route: "/dublin-visa-decisions",
+  latest: "20 November 2026",
+  decisions: "4,475",
+  approved: "2,624",
+  refused: "1,851",
+  countries: "Applications transferred from overseas offices and specified categories, including EU Free Movement family, certain Join Family categories, Minister of Religion and Volunteer",
+  source: "https://www.irishimmigration.ie/visa-decisions/",
+  data: "/data/embassy-dublin.json",
+  note: "The Dublin Visa Office publishes decisions every Tuesday and a separate processing queue by category. The tracker holds the latest decision snapshot; the queue is shown on the processing-times page and is not an individual decision list.",
+});
+
+export const OPEN_DATA_MARKDOWN = lines(
+  "# Irish visa decision open data",
+  "",
+  "The tracker publishes the public JSON and CSV files behind its pages. Read",
+  "`/data/visa_meta.json` for freshness and `/data/data_manifest.json` for coverage.",
+  "",
+  "- **Canonical HTML:** https://irishvisaupdatetracker.pages.dev/data",
+  "- **New Delhi rows:** `/data/visa_decisions.json` - `[date, application number, \"Approved\" | \"Refused\"]`",
+  "- **Office snapshots:** `/data/embassy-<office>.json` for new-delhi, beijing, abu-dhabi, abuja, ankara and dublin",
+  "- **Coverage:** `/data/data_manifest.json`",
+  "- **Report archive:** `/data/reports/index.json`",
+  "- **Study tables:** `/data/study/office-summary.csv`, `/data/study/monthly-volume.csv` and `/data/study/new-delhi-file-growth.csv`",
+  "- **Feeds:** `/official-file-feed.json` and `/feed.xml`",
+  "",
+  "Underlying decisions remain the publications of the Irish embassies and the Immigration",
+  "Service Delivery. The tracker’s compilation, charts and tables may be reused with",
+  "attribution and a link to `/data`. The source code is MIT licensed. Not immigration advice.",
+  "",
+);
+
 export const DOCUMENTS = new Map([
   ["/", { markdown: HOME_MARKDOWN, alternate: "/index.md", file: "/index.html" }],
   ["/about", { markdown: ABOUT_MARKDOWN, alternate: "/about.md", file: "/about.html" }],
@@ -593,6 +730,13 @@ export const DOCUMENTS = new Map([
       file: "/visa-processing-times.html",
     },
   ],
+  ["/new-delhi-visa-decisions", { markdown: NEW_DELHI_MARKDOWN, alternate: "/new-delhi-visa-decisions.md", file: "/new-delhi-visa-decisions.html" }],
+  ["/beijing-visa-decisions", { markdown: BEIJING_MARKDOWN, alternate: "/beijing-visa-decisions.md", file: "/beijing-visa-decisions.html" }],
+  ["/abu-dhabi-visa-decisions", { markdown: ABU_DHABI_MARKDOWN, alternate: "/abu-dhabi-visa-decisions.md", file: "/abu-dhabi-visa-decisions.html" }],
+  ["/abuja-visa-decisions", { markdown: ABUJA_MARKDOWN, alternate: "/abuja-visa-decisions.md", file: "/abuja-visa-decisions.html" }],
+  ["/ankara-visa-decisions", { markdown: ANKARA_MARKDOWN, alternate: "/ankara-visa-decisions.md", file: "/ankara-visa-decisions.html" }],
+  ["/dublin-visa-decisions", { markdown: DUBLIN_MARKDOWN, alternate: "/dublin-visa-decisions.md", file: "/dublin-visa-decisions.html" }],
+  ["/data", { markdown: OPEN_DATA_MARKDOWN, alternate: "/data.md", file: "/data.html" }],
 ]);
 
 export const MARKDOWN_ALIASES = new Map([
@@ -604,6 +748,13 @@ export const MARKDOWN_ALIASES = new Map([
   ["/stamp-1g-processing-dates.md", STAMP_1G_MARKDOWN],
   ["/employment-permit-processing-dates.md", EMPLOYMENT_PERMITS_MARKDOWN],
   ["/visa-processing-times.md", PROCESSING_TIMES_MARKDOWN],
+  ["/new-delhi-visa-decisions.md", NEW_DELHI_MARKDOWN],
+  ["/beijing-visa-decisions.md", BEIJING_MARKDOWN],
+  ["/abu-dhabi-visa-decisions.md", ABU_DHABI_MARKDOWN],
+  ["/abuja-visa-decisions.md", ABUJA_MARKDOWN],
+  ["/ankara-visa-decisions.md", ANKARA_MARKDOWN],
+  ["/dublin-visa-decisions.md", DUBLIN_MARKDOWN],
+  ["/data.md", OPEN_DATA_MARKDOWN],
 ]);
 
 /** Add Accept to a Vary header without dropping what is already there. */
@@ -619,7 +770,11 @@ export function mergeVary(headers) {
   return headers;
 }
 
-export function markdownResponse(body, status = 200, method = "GET") {
+export function markdownResponse(body, status = 200, method = "GET", origin = "") {
+  const publicOrigin = String(origin || "").replace(/\/+$/, "");
+  const text = publicOrigin
+    ? String(body).split("https://irishvisaupdatetracker.pages.dev").join(publicOrigin)
+    : body;
   const headers = new Headers({
     "Content-Type": "text/markdown; charset=utf-8",
     Vary: "Accept",
@@ -627,5 +782,5 @@ export function markdownResponse(body, status = 200, method = "GET") {
     "X-Content-Type-Options": "nosniff",
     "Referrer-Policy": "strict-origin-when-cross-origin",
   });
-  return new Response(method === "HEAD" ? null : body, { status, headers });
+  return new Response(method === "HEAD" ? null : text, { status, headers });
 }

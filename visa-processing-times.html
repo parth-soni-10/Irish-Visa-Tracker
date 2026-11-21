@@ -76,11 +76,12 @@
           <summary>More</summary>
           <div class="sitebar-more-panel">
             <a href="/status">Data status</a>
-            <a href="/comparison">Method &amp; sources</a>
             <a href="/monthly-report">Monthly report</a>
+            <a href="/data-study">Data study</a>
+            <a href="/reports">Report archive</a>
+            <a href="/when-are-visa-decisions-published">Publication schedule</a>
             <a href="/stamp-1g-processing-dates">Stamp 1G</a>
             <a href="/employment-permit-processing-dates">Employment permits</a>
-            <a href="/vac-transit">VAC &amp; transit</a>
             <a href="/help">Help</a>
             <a href="/contact">Contact</a>
             <a href="/privacy">Privacy</a>
@@ -109,13 +110,48 @@
           </div>
         </details>
       </nav>
+      <details class="sitebar-mobile">
+        <summary><span class="sitebar-mobile-bars" aria-hidden="true"></span>Menu</summary>
+        <div class="sitebar-more-panel sitebar-mobile-panel">
+          <p class="sitebar-mobile-title">Tracker</p>
+          <a href="/">Tracker</a>
+          <a href="/daily-summaries">Daily summaries</a>
+          <a href="/visa-processing-times" aria-current="page">Processing times</a>
+          <a href="/about">About</a>
+          <p class="sitebar-mobile-title">More</p>
+          <a href="/status">Data status</a>
+          <a href="/monthly-report">Monthly report</a>
+          <a href="/data-study">Data study</a>
+          <a href="/reports">Report archive</a>
+          <a href="/when-are-visa-decisions-published">Publication schedule</a>
+          <a href="/stamp-1g-processing-dates">Stamp 1G</a>
+          <a href="/employment-permit-processing-dates">Employment permits</a>
+          <a href="/help">Help</a>
+          <a href="/contact">Contact</a>
+          <a href="/privacy">Privacy</a>
+          <a href="/terms">Terms</a>
+          <p class="sitebar-mobile-title">Preferences</p>
+          <div class="sitebar-pref-row">
+            <span class="sitebar-pref-label">Time zone</span>
+            <button class="sitebar-pref-button" type="button" data-time-mode-toggle data-mode="utc" aria-pressed="false">
+              <span data-time-mode-label>UTC</span>
+            </button>
+          </div>
+          <div class="sitebar-pref-row">
+            <span class="sitebar-pref-label">Theme</span>
+            <button class="sitebar-pref-button" type="button" data-theme-toggle aria-pressed="false">
+              <span data-theme-label>Light</span>
+            </button>
+          </div>
+        </div>
+      </details>
     </div>
   </header>
   <!-- site-chrome:end -->
 
   <main id="main-content" tabindex="-1" class="page">
     <h1>Irish Visa Processing Times - What the Published Data Shows</h1>
-    <p class="page-meta">Irish Visa Decision Tracker &bull; Updated 7 November 2026 &bull; Unofficial, not immigration advice</p>
+    <p class="page-meta">Irish Visa Decision Tracker &bull; Latest queue observation <span id="processing-observations-as-of">21 November 2026</span> &bull; Unofficial, not immigration advice</p>
 
     <p class="page-lede">
       There is no single processing time for an Irish visa, and no honest way to promise one. What
@@ -149,15 +185,15 @@
       <ul>
         <li><strong>Stamp 1G</strong> - ISD is processing applications received on
           <span id="t-g1-date">25 September 2026</span>, a lag of
-          <span id="t-g1-lag">56 days</span>. See
+          <span id="t-g1-lag">57 days</span>. See
           <a href="/stamp-1g-processing-dates">Stamp 1G processing dates</a>.</li>
         <li><strong>Employment permits</strong> - across the seven published categories, the
-          shortest queue is <span id="t-perm-min">6 days</span> and the longest is
-          <span id="t-perm-max">192 days</span>. See
+          shortest queue is <span id="t-perm-min">29 days</span> and the longest is
+          <span id="t-perm-max">199 days</span>. See
           <a href="/employment-permit-processing-dates">employment permit processing dates</a>.</li>
         <li><strong>Embassy decisions, New Delhi</strong> - the record holds
           <span id="t-decisions">43,599</span> published decisions across
-          <span id="t-days">128</span> published days, of which
+          <span id="t-days">77</span> published days, of which
           <span id="t-approved-share">84.3%</span> were approvals. See
           <a href="/daily-summaries">daily decision summaries</a>.</li>
       </ul>
@@ -228,22 +264,22 @@
 
     <h2>What the data shows right now</h2>
       <p>
-        A queue date on its own says little, so this is the same figures measured thirty days
-        apart. These are the tracker's own observations, as of 7 November 2026, and each one
-        describes a direction rather than a prediction.
+        A queue date on its own says little, so the observations below compare the same figures thirty days
+        apart. They are the tracker's own observations; the latest are dated
+        <span id="trend-as-of">21 November 2026</span>, and each one describes a direction rather than a prediction.
       </p>
       <p id="trend-g1">
-        <strong>Stamp 1G.</strong> The overall queue moved from 30 days behind on 8 October 2026
-        to 40 days behind on 7 November 2026 - it fell 10 days further behind in a month.
+        <strong>Stamp 1G.</strong> The overall queue moved from 24 days behind on 22 October 2026
+        to 43 days behind on 21 November 2026 - it fell 19 days further behind over that period.
       </p>
       <p id="trend-permits">
-        <strong>Employment permits.</strong> Reviews moved from 163 days behind on 8 October 2026
-        to 192 days on 7 November 2026, while Renewals improved from 83 days behind to 65. Queues
+        <strong>Employment permits.</strong> ICT (New) moved from 2 days behind on 22 October 2026
+        to 30 days on 21 November 2026, while ICT (Renewal) improved from 78 days behind to 36. Queues
         inside the same scheme are moving in opposite directions.
       </p>
       <p id="trend-volume">
-        <strong>Decision volume.</strong> The last six published days carried 1,174 decisions,
-        against 1,283 across the six published days before them. Fewer decisions being published
+        <strong>Decision volume.</strong> The last 6 published days carried 978 decisions,
+        below the 1,172 across the 6 published days before them. Fewer decisions being published
         is not the same as more refusals.
       </p>
       <p class="small-note">
@@ -321,8 +357,14 @@
         <p class="sitebar-footer-title">Data</p>
         <ul>
           <li><a href="/status">Data status</a></li>
-          <li><a href="/comparison">Method &amp; sources</a></li>
+          <li><a href="/data">Open data</a></li>
+          <li><a href="/about#method">Method &amp; sources</a></li>
           <li><a href="/monthly-report">Monthly report</a></li>
+          <li><a href="/data-study">Data study</a></li>
+          <li><a href="/reports">Report archive</a></li>
+          <li><a href="/when-are-visa-decisions-published">Publication schedule</a></li>
+          <li><a href="/press">Press &amp; citation</a></li>
+          <li><a href="/embed">Embed badge</a></li>
         </ul>
       </div>
       <div class="sitebar-footer-col">
@@ -330,7 +372,6 @@
         <ul>
           <li><a href="/stamp-1g-processing-dates">Stamp 1G</a></li>
           <li><a href="/employment-permit-processing-dates">Employment permits</a></li>
-          <li><a href="/vac-transit">VAC &amp; transit</a></li>
           <li><a href="/new-delhi-visa-decisions">New Delhi decisions</a></li>
           <li><a href="/beijing-visa-decisions">Beijing decisions</a></li>
           <li><a href="/abu-dhabi-visa-decisions">Abu Dhabi decisions</a></li>

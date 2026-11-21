@@ -38,15 +38,22 @@
           var offices = Array.isArray(manifest.offices) ? manifest.offices : [];
           if (!offices.length) throw new Error('No offices in manifest');
 
-          var latestReport = offices.reduce(function (latest, office) {
-            return office.report_date && (!latest || office.report_date > latest) ? office.report_date : latest;
-          }, null);
+          var withDates = offices.filter(function (office) { return office.report_date; });
+          var newest = withDates.slice().sort(function (a, b) {
+            return String(b.report_date).localeCompare(String(a.report_date));
+          })[0] || null;
+          var newestDated = withDates.filter(function (office) {
+            return office.slug !== 'beijing' && office.slug !== 'dublin';
+          }).sort(function (a, b) {
+            return String(b.report_date).localeCompare(String(a.report_date));
+          })[0] || null;
           var latestFetch = offices.reduce(function (latest, office) {
             return office.fetched_at && (!latest || office.fetched_at > latest) ? office.fetched_at : latest;
           }, null);
           document.getElementById('status-summary').innerHTML =
             '<div class="status-metric"><span class="status-metric-label">Offices covered</span><strong>' + offices.length + '</strong><span>Named official sources</span></div>' +
-            '<div class="status-metric"><span class="status-metric-label">Latest report</span><strong>' + esc(fmtDate(latestReport)) + '</strong><span>Most recent office report</span></div>' +
+            '<div class="status-metric"><span class="status-metric-label">Newest office update</span><strong>' + esc(newest ? fmtDate(newest.report_date) : 'Not recorded') + '</strong><span>' + esc(newest ? (newest.slug === 'dublin' || newest.slug === 'beijing' ? newest.name + ' snapshot' : newest.name + ' report') : 'No office dates') + '</span></div>' +
+            '<div class="status-metric"><span class="status-metric-label">Newest dated report</span><strong>' + esc(newestDated ? fmtDate(newestDated.report_date) : 'Not recorded') + '</strong><span>' + esc(newestDated ? newestDated.name + ' report' : 'No dated reports') + '</span></div>' +
             '<div class="status-metric"><span class="status-metric-label">Last ingest</span><strong>' + fmtStamp(latestFetch) + '</strong><span>When the data was fetched</span></div>';
 
           function officeSource(office) {
@@ -57,13 +64,14 @@
           }
 
           document.getElementById('status-rows').innerHTML = offices.map(function (office) {
-            var label = office.status === 'official' ? 'Official' : esc(office.status || 'Published');
+            var isError = office.status === 'error';
+            var label = isError ? 'Error' : office.status === 'official' ? 'Official' : esc(office.status || 'Published');
             var thin = isThin(office);
             var datedHistory = { 'new-delhi': true, 'abu-dhabi': true, abuja: true, ankara: true };
             var history = datedHistory[office.slug] ? 'Dated history' : 'Latest report only';
             return '<tr>' +
               '<th scope="row">' + esc(office.name || office.slug) + '</th>' +
-              '<td data-label="Status"><span class="status-pill' + (thin ? ' is-thin' : '') + '">' + label + (thin ? ' &middot; small office' : '') + '</span></td>' +
+              '<td data-label="Status"><span class="status-pill' + (isError ? ' is-error' : thin ? ' is-thin' : '') + '"' + (isError && office.note ? ' title="' + esc(office.note) + '"' : '') + '>' + label + (thin && !isError ? ' &middot; small office' : '') + '</span></td>' +
               '<td data-label="Latest report">' + esc(fmtDate(office.report_date)) + '</td>' +
               '<td data-label="Latest report rows">' + (Number(office.decisions) || 0).toLocaleString('en-IE') + '</td>' +
               '<td data-label="Archive rows">' + (Number(office.archive_decisions) || Number(office.decisions) || 0).toLocaleString('en-IE') + '</td>' +

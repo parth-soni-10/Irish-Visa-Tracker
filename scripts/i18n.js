@@ -39,7 +39,7 @@ const TRANSLATIONS = {
     'home.no_exact_match': 'No exact match for',
     'home.day_on_day': 'Day-on-day change',
     'home.avg_per_day': 'Avg applications/day',
-    'home.acceptance_rate': 'Accepted share',
+    'home.acceptance_rate': 'Approved share',
     'home.rejection_rate': 'Refused share',
     'home.latest_file': 'The latest Excel file from the embassy contains decisions up to',
     'home.embassy_uploads': 'The Irish Embassy typically uploads the Excel file at',
@@ -49,7 +49,7 @@ const TRANSLATIONS = {
     'daily.date': 'Date',
     'daily.applications': 'Applications Processed',
     'daily.day_on_day': 'Day-on-Day',
-    'daily.acceptance': 'Acceptance Rate',
+    'daily.acceptance': 'Approval rate',
     'daily.rejection': 'Rejection Rate',
     'daily.heatmap': 'Decisions per day, last 14 weeks',
     'daily.more': 'more',
@@ -58,8 +58,8 @@ const TRANSLATIONS = {
     'past.filter_date': 'Filter by date',
     'past.filter_status': 'Filter by status',
     'past.all': 'All',
-    'past.accepted': 'Accepted',
-    'past.rejected': 'Rejected',
+    'past.accepted': 'Approved',
+    'past.rejected': 'Refused',
     'past.other': 'Other',
     'past.results_count': 'results',
     'past.for_date': 'for',
@@ -424,7 +424,7 @@ window.setLanguage = setLanguage;
 window.getLanguage = getLanguage;
 window.getAvailableLanguages = getAvailableLanguages;
 window.initLanguage = initLanguage;
-window.translatePage = translatePage;
+window.translatePage = translatePage;
 
 // Initialize language immediately
 initLanguage();

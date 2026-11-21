@@ -8,6 +8,12 @@ import path from 'path';
 import { execSync } from 'child_process';
 import { fileURLToPath } from 'url';
 import { buildSearchFallback } from './build-search-fallback.mjs';
+import { buildSearchPreview } from './build-search-preview.mjs';
+import { buildInsightPages } from './insight-pages.mjs';
+import { buildMonthlyPages } from './monthly-pages.mjs';
+import { buildSocialCards } from './social-cards.mjs';
+import { buildLastmodMap, updateSitemap } from './sitemap-lastmod.mjs';
+import { loadFreshness, writeFreshness, longDate, checkedStamp, SNAPSHOT_OFFICES } from './freshness.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -37,7 +43,6 @@ const assetsToCopy = [
   '404.html',
   'about.html',
   'help.html',
-  'comparison.html',
   'status.html',
   'contact.html',
   'corrections.html',
@@ -51,13 +56,12 @@ const assetsToCopy = [
   'employment-permit-processing-dates.html',
   'privacy.html',
   'terms.html',
-  'admin.html',
   'monthly-report.html',
 
   'stamp-1g-processing-dates.html',
-  'vac-transit.html',
   'visa-processing-times.html',
   '_headers',
+  '_redirects',
   'manifest.json',
   'sw.js',
   'icon-72.png',
@@ -71,12 +75,12 @@ const assetsToCopy = [
   'icon.svg',
   'apple-touch-icon.png',
   'og-image.png',
+  '5ba7cee4d0b7816bb7950443892c3b7d.txt',
   'robots.txt',
   'sitemap.xml',
   'llms.txt',
   // JS modules
   'analytics-chart.js',
-  'lucide.min.js',
   'site-chrome.js',
   // CSS files
   'analytics-chart.css',
@@ -99,6 +103,7 @@ const assetsToCopy = [
 
 // Directories to copy recursively
 const dirsToCopy = [
+  'assets',
   'data',
   'fonts',
   'scripts',
@@ -139,6 +144,37 @@ async function copyDir(src, dest) {
       }
     }
   }
+}
+
+import { SITE_ORIGIN, DEFAULT_SITE_ORIGIN } from './site-config.mjs';
+
+/** Rewrite every generated public URL when a custom origin is configured. */
+function rewriteSiteOrigin() {
+  if (SITE_ORIGIN === DEFAULT_SITE_ORIGIN) return;
+  const extensions = new Set(['.html', '.xml', '.txt', '.js', '.css', '.md']);
+  let changed = 0;
+  const walk = (dir) => {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const file = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        walk(file);
+        continue;
+      }
+      if (!extensions.has(path.extname(entry.name).toLowerCase())) continue;
+      const before = fs.readFileSync(file, 'utf8');
+      const defaultHost = new URL(DEFAULT_SITE_ORIGIN).host;
+      const nextHost = new URL(SITE_ORIGIN).host;
+      const after = before
+        .split(DEFAULT_SITE_ORIGIN).join(SITE_ORIGIN)
+        .split(`webcal://${defaultHost}`).join(`webcal://${nextHost}`);
+      if (after !== before) {
+        fs.writeFileSync(file, after);
+        changed += 1;
+      }
+    }
+  };
+  walk(distDir);
+  console.log(`Site origin: rewrote ${changed} generated file(s) to ${SITE_ORIGIN}.`);
 }
 
 function buildCommit() {
@@ -192,16 +228,6 @@ function bundleIndexAssets() {
   }
   fs.writeFileSync(indexPath, html);
   console.log(`Bundled ${cssFiles.length} stylesheets and ${scriptFiles.length} scripts for index.html`);
-}
-
-const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July',
-  'August', 'September', 'October', 'November', 'December'];
-
-function formatLongDate(iso) {
-  const parts = String(iso || '').slice(0, 10).split('-');
-  const month = MONTHS[Number(parts[1]) - 1];
-  if (parts.length !== 3 || !month) return '';
-  return `${Number(parts[2])} ${month} ${parts[0]}`;
 }
 
 function summarizeByDate(rows) {
@@ -378,8 +404,8 @@ function reportHistoryHtml(office, reports, decisionSummary = new Map()) {
       ? `<a href="${escapeHtml(href)}" target="_blank" rel="noopener noreferrer">Official source</a>`
       : '—';
     const dateCell = row.hasReportPage
-      ? `<a href="/reports/${office.slug}/${row.reportDate}"><time datetime="${row.reportDate}">${escapeHtml(formatLongDate(row.reportDate))}</time></a>`
-      : `<time datetime="${row.reportDate}">${escapeHtml(formatLongDate(row.reportDate))}</time>`;
+      ? `<a href="/reports/${office.slug}/${row.reportDate}"><time datetime="${row.reportDate}">${escapeHtml(longDate(row.reportDate))}</time></a>`
+      : `<time datetime="${row.reportDate}">${escapeHtml(longDate(row.reportDate))}</time>`;
     return `<tr><td>${dateCell}</td>` +
       `<td>${row.decisions.toLocaleString('en-IE')}</td>` +
       `<td>${row.approved.toLocaleString('en-IE')}</td>` +
@@ -397,22 +423,22 @@ function reportHistoryHtml(office, reports, decisionSummary = new Map()) {
  * a fallback for local development.
  */
 function injectLiveSummary() {
-  const metaPath = path.resolve(assetsRootDir, 'data', 'visa_meta.json');
-  if (!fs.existsSync(metaPath)) return;
-  let meta;
-  try {
-    meta = JSON.parse(fs.readFileSync(metaPath, 'utf8'));
-  } catch {
-    console.warn('Warning: visa_meta.json is not valid JSON; keeping static summary text');
-    return;
-  }
-  if (!meta || typeof meta.sheetRows !== 'number' || !meta.fileDate) return;
+  // visa_meta.fileDate is null on a weekend/holiday run (the scraper
+  // deliberately preserves the last file date), which used to leave the
+  // checked-in "19 November / checked 20 November" sentence frozen in the
+  // build. Read the manifest instead: it carries the report date, the count
+  // and the actual fetch time for every office.
+  const freshness = loadFreshness(assetsRootDir);
+  const office = freshness.bySlug['new-delhi'];
+  if (!office || !office.report_date) return;
 
-  const fileDate = formatLongDate(meta.fileDate);
-  if (!fileDate) return;
-  const checked = formatLongDate(meta.lastRunAt) || fileDate;
-  const count = meta.sheetRows.toLocaleString('en-IE');
-  const summary = `${count} New Delhi decisions on record. Latest list: ${fileDate}. Checked ${checked}.`;
+  const fileDate = longDate(office.report_date);
+  const checked = checkedStamp(office.checked_at) || fileDate;
+  const count = office.decisions.toLocaleString('en-IE');
+  const through = longDate(office.latest_decision_date);
+  const summary = `${count} New Delhi decisions in the latest file (report ${fileDate}` +
+    (through && through !== fileDate ? `; decisions dated through ${through}` : '') +
+    `). Checked ${checked}.`;
 
   for (const page of ['index.html', 'daily-summaries.html']) {
     const file = path.resolve(distDir, page);
@@ -427,7 +453,7 @@ function injectLiveSummary() {
   // Keep the daily summaries freshness line fresh for no-JavaScript readers too.
   const dailyPath = path.resolve(distDir, 'daily-summaries.html');
   if (fs.existsSync(dailyPath)) {
-    const iso = String(meta.lastRunAt || meta.fileDate).slice(0, 10);
+    const iso = String(office.checked_at || office.report_date).slice(0, 10);
     const daily = fs.readFileSync(dailyPath, 'utf8')
       .replace(/(<time id="visa-as-of" datetime=")[^"]*(">)[\s\S]*?(<\/time>)/, `$1${iso}$2${checked}$3`)
       .replace(/(<span id="visa-rows">)[\s\S]*?(<\/span>)/, `$1${count}$2`);
@@ -452,13 +478,19 @@ export function injectOfficePages(options = {}) {
   if (!Array.isArray(manifest.offices)) return;
 
   const reports = loadReportArchive(assetsRoot);
+  const freshness = loadFreshness(assetsRoot);
 
   const decisionsPath = path.resolve(assetsRoot, 'data', 'visa_decisions.json');
   let visaRows = [];
   if (fs.existsSync(decisionsPath)) {
     try {
       const parsed = JSON.parse(fs.readFileSync(decisionsPath, 'utf8'));
-      if (Array.isArray(parsed)) visaRows = parsed;
+      // Notice rows such as "NO_FILE_2026-11-21 — Visa Office is closed" are
+      // not decisions. Counting one as a published day made the office page
+      // claim 129 days of history and a 21 Nov decision date.
+      if (Array.isArray(parsed)) {
+        visaRows = parsed.filter((row) => Array.isArray(row) && /^(approved|refused)$/i.test(String(row[2] || '').trim()));
+      }
     } catch {
       console.warn('Warning: visa_decisions.json is not valid JSON; using manifest counts');
     }
@@ -472,25 +504,42 @@ export function injectOfficePages(options = {}) {
     const pagePath = path.resolve(dist, file);
     if (!fs.existsSync(pagePath)) continue;
     const decisionSummary = loadOfficeDecisionSummary(assetsRoot, office.slug);
+    const canonical = freshness.bySlug[office.slug];
 
-    const decisions = Number(office.decisions) || 0;
-    const approved = Number(office.approved) || 0;
-    const refused = Number(office.refused) || 0;
+    const decisions = canonical ? canonical.decisions : Number(office.decisions) || 0;
+    const approved = canonical ? canonical.approved : Number(office.approved) || 0;
+    const refused = canonical ? canonical.refused : Number(office.refused) || 0;
     const approvalShare = decisions ? `${((approved / decisions) * 100).toFixed(1)}%` : '0.0%';
     const refusedShare = decisions ? `${((refused / decisions) * 100).toFixed(1)}%` : '0.0%';
-    const latest = formatLongDate(office.report_date);
-    const checked = formatLongDate(office.as_of || office.fetched_at);
+    const latest = longDate(canonical ? canonical.report_date : office.report_date);
+    const checked = canonical
+      ? checkedStamp(canonical.checked_at) || latest
+      : longDate(office.as_of || office.fetched_at);
+    const successLabel = canonical
+      ? canonical.last_success_label || checkedStamp(canonical.checked_at) || latest
+      : checked;
+    const attemptLabel = canonical
+      ? canonical.last_attempt_label || checkedStamp(canonical.last_attempt_at) || successLabel
+      : successLabel;
+    const attemptIsLater = Boolean(canonical && canonical.last_attempt_at && canonical.last_success_at &&
+      Date.parse(canonical.last_attempt_at) > Date.parse(canonical.last_success_at));
+    const checkFailure = canonical && canonical.warning ? ` (${escapeHtml(canonical.warning)})` : '';
+    const checkCopy = canonical && canonical.status === 'error'
+      ? (attemptIsLater
+        ? `The last successful check on ${escapeHtml(successLabel)} found no newer decision-file link than the ${escapeHtml(latest)} snapshot. The tracker's latest check on ${escapeHtml(attemptLabel)} failed${checkFailure}, so this snapshot may be older than the office's current file. That does not mean no decisions have been made since; it means the tracker has not yet found a newer published file.`
+        : `The last successful check on ${escapeHtml(successLabel)} found no newer decision-file link than the ${escapeHtml(latest)} snapshot. The tracker's latest check failed${checkFailure}, so this snapshot may be older than the office's current file. That does not mean no decisions have been made since; it means the tracker has not yet found a newer published file.`)
+      : `The last check on ${escapeHtml(successLabel)} found no newer decision-file link than the ${escapeHtml(latest)} snapshot. That does not mean no decisions have been made since; it means the tracker has not found a newer published file.`;
     const reportCount = Array.isArray(office.archive_reports) && office.archive_reports.length
       ? office.archive_reports.length
       : 1;
-    const isSnapshot = office.slug === 'beijing' || office.slug === 'dublin';
+    const isSnapshot = canonical ? canonical.snapshot : SNAPSHOT_OFFICES.has(office.slug);
     const history = office.slug === 'new-delhi'
-      ? `${allDates.length} published days`
+      ? `${allDates.length} days with published decisions`
       : isSnapshot ? 'the latest snapshot' : `${reportCount} weekly reports`;
     const archiveTotal = Number(office.archive_decisions) || decisions;
-    const firstHistoryDate = allDates.length ? formatLongDate(allDates[0]) : '';
+    const firstHistoryDate = allDates.length ? longDate(allDates[0]) : '';
     const archive = office.slug === 'new-delhi'
-      ? `${allDates.length} published days${firstHistoryDate ? ` from ${firstHistoryDate}` : ''}`
+      ? `${allDates.length} days with published decisions${firstHistoryDate ? `, from ${firstHistoryDate}` : ''}`
       : isSnapshot
         ? `1 snapshot · ${archiveTotal.toLocaleString('en-IE')} decisions`
         : `${reportCount} weekly reports · ${archiveTotal.toLocaleString('en-IE')} decisions`;
@@ -503,6 +552,7 @@ export function injectOfficePages(options = {}) {
       refused: refused.toLocaleString('en-IE'),
       'approval-share': approvalShare,
       'refused-share': refusedShare,
+      'check-copy': checkCopy,
       history,
       archive,
     };
@@ -512,7 +562,7 @@ export function injectOfficePages(options = {}) {
       const latestDay = eligible[eligible.length - 1];
       if (latestDay) {
         const bucket = byDate.get(latestDay);
-        fields['latest-day'] = `${formatLongDate(latestDay)}: ${bucket.total.toLocaleString('en-IE')} decisions ` +
+        fields['latest-day'] = `${longDate(latestDay)}: ${bucket.total.toLocaleString('en-IE')} decisions ` +
           `(${bucket.approved.toLocaleString('en-IE')} approved, ${bucket.refused.toLocaleString('en-IE')} refused)`;
 
         // The official file date is the cutoff for the latest published file.
@@ -523,9 +573,9 @@ export function injectOfficePages(options = {}) {
         const trackerBucket = trackerLatestDay ? byDate.get(trackerLatestDay) : null;
         const officialDate = String(latestDay).slice(0, 10);
         fields['tracker-latest'] = trackerLatestDay && trackerLatestDay > officialDate && trackerBucket
-          ? `${formatLongDate(trackerLatestDay)}: ${trackerBucket.total.toLocaleString('en-IE')} decisions ` +
+          ? `${longDate(trackerLatestDay)}: ${trackerBucket.total.toLocaleString('en-IE')} decisions ` +
             `(${trackerBucket.approved.toLocaleString('en-IE')} approved, ${trackerBucket.refused.toLocaleString('en-IE')} refused; ` +
-            `partial day, not in the ${formatLongDate(latestDay)} official file)`
+            `partial day, not in the ${longDate(latestDay)} official file)`
           : 'No later tracker rows beyond the latest official file.';
       }
     }
@@ -541,17 +591,124 @@ export function injectOfficePages(options = {}) {
         (match, open, close) => open + String(office.source_file).replace(/"/g, '&quot;') + close,
       );
     }
-    if (office.as_of) {
-      html = html.replace(/"dateModified":\s*"\d{4}-\d{2}-\d{2}"/g, `"dateModified": "${String(office.as_of).slice(0, 10)}"`);
+    // The page changes when its own file is successfully read, not when the
+    // shared pipeline last ran. Using the manifest's build date let Beijing
+    // claim 21 Nov on a page whose visible last check was 18 Nov.
+    const modifiedAt = canonical
+      ? String(canonical.last_success_at || canonical.checked_at || canonical.report_date || '').slice(0, 10)
+      : String(office.as_of || office.fetched_at || office.report_date || '').slice(0, 10);
+    if (modifiedAt) {
+      html = html.replace(/"dateModified":\s*"\d{4}-\d{2}-\d{2}"/g, `"dateModified": "${modifiedAt}"`);
     }
     fs.writeFileSync(pagePath, html);
   }
   console.log('Office pages: injected latest manifest data.');
 }
 
+/** The status page's static latest-report table. Kept separate from the
+ *  JavaScript coverage table so a no-JS reader still gets the six offices and
+ *  one internal link to each office page. */
+export function injectLatestReports(options = {}) {
+  const assetsRoot = path.resolve(options.assetsRootDir || assetsRootDir);
+  const dist = path.resolve(options.distDir || distDir);
+  const pagePath = path.resolve(dist, 'status.html');
+  if (!fs.existsSync(pagePath)) return;
+  const freshness = loadFreshness(assetsRoot);
+  if (!freshness.offices.length) return;
+  const rows = freshness.offices.map((office) => {
+    const decisions = Number(office.decisions) || 0;
+    const approved = Number(office.approved) || 0;
+    const rate = decisions ? `${((approved / decisions) * 100).toFixed(1)}%` : '—';
+    const statusLabel = office.status_label;
+    const statusClass = office.status_tone ? ` is-${office.status_tone}` : '';
+    const statusTitle = office.status === 'error'
+      ? office.warning
+      : office.snapshot ? 'This office publishes a live snapshot, not a dated report.'
+        : office.warning;
+    const reportDate = String(office.report_date || '').slice(0, 10);
+    const through = String(office.latest_decision_date || '').slice(0, 10);
+    const successAt = office.last_success_at || office.checked_at || '';
+    const attemptAt = office.last_attempt_at || freshness.generated_at || successAt;
+    const successLabel = office.last_success_label || checkedStamp(successAt) || longDate(successAt);
+    const attemptLabel = office.last_attempt_label || checkedStamp(attemptAt) || longDate(attemptAt);
+    const ageNote = [office.age_label, office.due_short_label].filter(Boolean).join(' · ');
+    const timeCell = (value, label, shown) => value
+      ? `<td data-label="${label}"><time datetime="${escapeHtml(String(value))}">${escapeHtml(shown || '—')}</time></td>`
+      : `<td data-label="${label}">—</td>`;
+    return `<tr><td>${escapeHtml(office.name)}</td>` +
+      `<td data-label="Report">${reportDate ? `<time datetime="${reportDate}">${escapeHtml(longDate(reportDate))}</time>` : '—'}${ageNote ? `<br><span class="small-note">${escapeHtml(ageNote)}</span>` : ''}</td>` +
+      `<td data-label="Data through">${through ? `<time datetime="${through}">${escapeHtml(longDate(through))}</time>` : '—'}</td>` +
+      timeCell(successAt, 'Last successful check', successLabel) +
+      timeCell(attemptAt, 'Last attempt', attemptLabel) +
+      `<td data-label="Status"><span class="status-pill${statusClass}"${statusTitle ? ` title="${escapeHtml(statusTitle)}"` : ''}>${statusLabel}</span></td>` +
+      `<td data-label="Decisions">${decisions.toLocaleString('en-IE')}</td><td data-label="Approved share">${rate}</td>` +
+      `<td data-label="Office page"><a href="/${office.slug}-visa-decisions">${escapeHtml(office.name)} decisions</a></td></tr>`;
+  }).join('\n            ');
+  let html = fs.readFileSync(pagePath, 'utf8').replace(
+    /(<tbody[^>]*data-latest-reports[^>]*>)[\s\S]*?(<\/tbody>)/i,
+    `$1${rows}$2`,
+  );
+  // The table is assembled now, not when the scraper last ran. Keep the build
+  // time distinct from the manifest/pipeline timestamp.
+  const generatedAt = new Date().toISOString();
+  if (generatedAt) {
+    html = html.replace(
+      /<time[^>]*id="latest-reports-generated"[^>]*>[\s\S]*?<\/time>/i,
+      `<time id="latest-reports-generated" datetime="${escapeHtml(generatedAt)}">${escapeHtml(checkedStamp(generatedAt))}</time>`,
+    );
+  }
+  fs.writeFileSync(pagePath, html);
+}
+
+/** Write the one canonical report-date / decisions-through / checked line into
+ *  each office page. The page's H1 and search box are static; only this block
+ *  and the counts below it move when the offices publish. */
+export function injectOfficeFreshness(options = {}) {
+  const assetsRoot = path.resolve(options.assetsRootDir || assetsRootDir);
+  const dist = path.resolve(options.distDir || distDir);
+  const freshness = loadFreshness(assetsRoot);
+  for (const office of freshness.offices) {
+    const pagePath = path.resolve(dist, `${office.slug}-visa-decisions.html`);
+    if (!fs.existsSync(pagePath)) continue;
+    const statusClass = office.status_tone ? ` is-${office.status_tone}` : '';
+    const block = `<p class="office-freshness" data-freshness="${office.slug}">` +
+      `<span class="freshness-chip${statusClass}">${escapeHtml(office.status_label)}</span> ` +
+      `${escapeHtml(office.summary)}` +
+      (office.warning ? ` <span class="office-freshness-warning">${escapeHtml(office.warning)}</span>` : '') +
+      `</p>`;
+    const html = fs.readFileSync(pagePath, 'utf8').replace(
+      new RegExp(`(<p[^>]*class="office-freshness"[^>]*data-freshness="${office.slug}"[^>]*>)[\\s\\S]*?(<\\/p>)`, 'i'),
+      block,
+    );
+    fs.writeFileSync(pagePath, html);
+  }
+  console.log('Office pages: injected canonical freshness lines.');
+}
+
+function writeContentDatesModule() {
+  const source = path.resolve(assetsRootDir, 'data', 'content-dates.json');
+  const target = path.resolve(rootDir, 'functions', '_content-dates.js');
+  if (!fs.existsSync(source)) return;
+  let payload;
+  try {
+    payload = JSON.parse(fs.readFileSync(source, 'utf8'));
+  } catch {
+    console.warn('Warning: content-dates.json is not valid JSON; keeping the agent-doc dates');
+    return;
+  }
+  const labels = {};
+  for (const [route, date] of Object.entries(payload.pages || {})) {
+    const label = longDate(date);
+    if (label) labels[route] = label;
+  }
+  const body = '// Generated by tools/deploy-pages.mjs from data/content-dates.json.\n' +
+    '// Do not edit by hand; edit the JSON and rebuild.\n' +
+    `export const CONTENT_DATES = ${JSON.stringify(labels, null, 2)};\n`;
+  fs.writeFileSync(target, body);
+}
+
 function injectDailyToday() {
   const decisionsPath = path.resolve(assetsRootDir, 'data', 'visa_decisions.json');
-  const metaPath = path.resolve(assetsRootDir, 'data', 'visa_meta.json');
   const pagePath = path.resolve(distDir, 'daily-summaries.html');
   if (!fs.existsSync(decisionsPath) || !fs.existsSync(pagePath)) return;
   let rows;
@@ -561,28 +718,94 @@ function injectDailyToday() {
     return;
   }
   if (!Array.isArray(rows) || !rows.length) return;
-  const byDate = summarizeByDate(rows);
+  // Notice rows such as "NO_FILE_2026-11-21" are closures, not tracker
+  // observations. Counting one as the latest observed day made the page claim
+  // rows on a day the embassy was closed.
+  const decisionRows = rows.filter((row) => Array.isArray(row) &&
+    /^(approved|refused)$/i.test(String(row[2] || '').trim()));
+  const byDate = summarizeByDate(decisionRows);
   if (!byDate.size) return;
-  let cutoff = '';
-  if (fs.existsSync(metaPath)) {
-    try {
-      cutoff = String(JSON.parse(fs.readFileSync(metaPath, 'utf8')).fileDate || '').slice(0, 10);
-    } catch {
-      cutoff = '';
-    }
-  }
+  // The latest published New Delhi day is the official report date, not the
+  // newest tracker row: the 20 Nov rows are a partial day that is not in the
+  // 19 Nov file, and calling them "latest published" contradicted every other
+  // surface on the site.
+  const freshness = loadFreshness(assetsRootDir);
+  const newDelhi = freshness.bySlug['new-delhi'];
+  const cutoff = String(newDelhi?.report_date || '').slice(0, 10);
   const eligibleDates = [...byDate.keys()].filter((date) => !cutoff || date <= cutoff).sort();
   const latest = eligibleDates[eligibleDates.length - 1];
   if (!latest) return;
-  const bucket = byDate.get(latest);
-  const html = replaceFields(fs.readFileSync(pagePath, 'utf8'), 'data-today', {
-    date: formatLongDate(latest),
-    total: bucket.total.toLocaleString('en-IE'),
-    approved: bucket.approved.toLocaleString('en-IE'),
-    refused: bucket.refused.toLocaleString('en-IE'),
-  });
+  const allDates = [...byDate.keys()].sort();
+  const observed = allDates[allDates.length - 1] || latest;
+  const official = cutoff || latest;
+  const observedCopy = observed > official
+    ? `${longDate(observed)} (partial observation; not in the official file)`
+    : longDate(observed);
+  const checkedAt = String(newDelhi?.last_success_at || freshness.generated_at || '');
+  const checkedLabel = newDelhi?.last_success_label || checkedStamp(checkedAt) || longDate(checkedAt);
+  let html = fs.readFileSync(pagePath, 'utf8');
+  html = html.replace(
+    /(<time[^>]*id="visa-as-of"[^>]*datetime=")[^"]*(">)[\s\S]*?(<\/time>)/i,
+    `$1${official}$2${longDate(official)}$3`,
+  );
+  html = html.replace(
+    /(<span[^>]*id="visa-observed"[^>]*>)[\s\S]*?(<\/span>)/i,
+    `$1${observedCopy}$2`,
+  );
+  if (checkedAt) {
+    html = html.replace(
+      /(<time[^>]*id="visa-checked"[^>]*datetime=")[^"]*(">)[\s\S]*?(<\/time>)/i,
+      `$1${checkedAt}$2${checkedLabel}$3`,
+    );
+  }
+  html = html.replace(
+    /(<span[^>]*id="visa-status"[^>]*>)[\s\S]*?(<\/span>)/i,
+    `$1${escapeHtml(newDelhi?.status_label || 'OK')}$2`,
+  );
   fs.writeFileSync(pagePath, html);
-  console.log(`Daily summary: latest day ${latest} (${bucket.total} decisions).`);
+  console.log(`Daily summary: official file ${official}; latest observation ${observed}.`);
+}
+
+function latestDataDate(assetsRoot, fileName, key = 'run_date') {
+  const file = path.resolve(assetsRoot, 'data', fileName);
+  if (!fs.existsSync(file)) return '';
+  try {
+    const payload = JSON.parse(fs.readFileSync(file, 'utf8'));
+    const rows = Array.isArray(payload) ? payload : payload.rows || payload.data || [];
+    return rows
+      .map((row) => String((row && row[key]) || '').slice(0, 10))
+      .filter((date) => /^\d{4}-\d{2}-\d{2}$/.test(date))
+      .sort()
+      .pop() || '';
+  } catch {
+    return '';
+  }
+}
+
+function setDatasetDateModified(html, id, date) {
+  if (!date) return html;
+  const pattern = new RegExp(`("@id":\\s*"[^"]*#${id}"[\\s\\S]*?"dateModified":\\s*")[^"]*(")`);
+  return html.replace(pattern, `$1${date}$2`);
+}
+
+/** Keep the homepage's three Dataset dateModified values tied to their own
+ *  data files instead of a hand-written date that drifts behind the build. */
+export function injectHomepageDates(options = {}) {
+  const assetsRoot = path.resolve(options.assetsRootDir || assetsRootDir);
+  const dist = path.resolve(options.distDir || distDir);
+  const pagePath = path.resolve(dist, 'index.html');
+  if (!fs.existsSync(pagePath)) return;
+  const freshness = loadFreshness(assetsRoot);
+  const visaDate = String(
+    freshness.bySlug['new-delhi']?.last_success_at || freshness.as_of || '',
+  ).slice(0, 10);
+  const stampDate = latestDataDate(assetsRoot, 'stamp_1g.json');
+  const permitDate = latestDataDate(assetsRoot, 'work_permits.json');
+  let html = fs.readFileSync(pagePath, 'utf8');
+  html = setDatasetDateModified(html, 'dataset-visa-decisions', visaDate);
+  html = setDatasetDateModified(html, 'dataset-stamp-1g', stampDate);
+  html = setDatasetDateModified(html, 'dataset-work-permits', permitDate);
+  fs.writeFileSync(pagePath, html);
 }
 
 function localDistPath(href) {
@@ -593,6 +816,19 @@ function localDistPath(href) {
 
 async function main() {
   console.log('Building for Cloudflare Pages...');
+
+  // One canonical per-office freshness record, written before data/ is copied
+  // so the SPA and the static pages read exactly the same dates and counts.
+  writeFreshness(assetsRootDir);
+  // The agent-facing Markdown is served from functions/, not copied into the
+  // static tree, so keep its editorial dates generated from the same JSON the
+  // HTML sitemap uses.
+  writeContentDatesModule();
+  const preview = buildSearchPreview({
+    dataDir: path.resolve(assetsRootDir, 'data'),
+    outFile: path.resolve(assetsRootDir, 'data', 'search_preview.json'),
+  });
+  console.log(`Search preview: ${preview.rows} rows (${(preview.bytes / 1024).toFixed(1)} KiB)`);
   
   // Clean and create .pages-dist directory
   if (fs.existsSync(distDir)) {
@@ -638,10 +874,19 @@ async function main() {
     }
   }
 
+  // /admin is deliberately not deployed. Remove its client assets too so the
+  // public bundle contains no token form or scraper controls to discover.
+  for (const file of ['scripts/admin-1.js', 'styles/admin.css']) {
+    fs.rmSync(path.resolve(distDir, file), { force: true });
+  }
+
   injectLiveSummary();
   injectOfficePages();
+  injectOfficeFreshness();
+  injectLatestReports();
   injectDailyToday();
   bundleIndexAssets();
+  injectHomepageDates();
   
   const fallback = buildSearchFallback({
     dataDir: path.resolve(assetsRootDir, 'data'),
@@ -649,6 +894,27 @@ async function main() {
     outFile: path.resolve(distDir, 'data', 'search_fallback.json')
   });
   console.log(`Search fallback: ${fallback.rows} rows (${(fallback.bytes / 1024 / 1024).toFixed(2)} MiB)`);
+
+  const insights = buildInsightPages({ assetsRootDir, distDir });
+  console.log(`Insight pages: ${insights.pages.length} pages, ${insights.reportPages} report permalinks, ${insights.badges} badges` +
+    (insights.sitemapAdded ? `, ${insights.sitemapAdded} sitemap entries` : '') + '.');
+
+  const monthly = await buildMonthlyPages({ assetsRootDir, distDir });
+  console.log(`Monthly report: ${monthly.pages} pages, latest ${monthly.latestMonth}, ${monthly.months.length} archived month(s).`);
+
+  const cards = await buildSocialCards({
+    assetsRootDir,
+    outDir: path.resolve(distDir, 'assets', 'social'),
+  });
+  console.log(`Social cards: ${cards.count} PNG(s).`);
+
+  const lastmod = updateSitemap(
+    path.resolve(distDir, 'sitemap.xml'),
+    buildLastmodMap(assetsRootDir),
+  );
+  console.log(`Sitemap lastmod: ${lastmod.updated} URL(s), ${lastmod.removed} static URL(s) without lastmod.`);
+
+  rewriteSiteOrigin();
 
   console.log(`Build complete! Copied ${copied} files to ${outDir}`);
   console.log(`Output directory: ${distDir}`);

@@ -51,11 +51,12 @@
           <summary>More</summary>
           <div class="sitebar-more-panel">
             <a href="/status">Data status</a>
-            <a href="/comparison">Method &amp; sources</a>
             <a href="/monthly-report">Monthly report</a>
+            <a href="/data-study">Data study</a>
+            <a href="/reports">Report archive</a>
+            <a href="/when-are-visa-decisions-published">Publication schedule</a>
             <a href="/stamp-1g-processing-dates">Stamp 1G</a>
             <a href="/employment-permit-processing-dates">Employment permits</a>
-            <a href="/vac-transit">VAC &amp; transit</a>
             <a href="/help">Help</a>
             <a href="/contact">Contact</a>
             <a href="/privacy">Privacy</a>
@@ -84,13 +85,48 @@
           </div>
         </details>
       </nav>
+      <details class="sitebar-mobile">
+        <summary><span class="sitebar-mobile-bars" aria-hidden="true"></span>Menu</summary>
+        <div class="sitebar-more-panel sitebar-mobile-panel">
+          <p class="sitebar-mobile-title">Tracker</p>
+          <a href="/">Tracker</a>
+          <a href="/daily-summaries">Daily summaries</a>
+          <a href="/visa-processing-times">Processing times</a>
+          <a href="/about" aria-current="page">About</a>
+          <p class="sitebar-mobile-title">More</p>
+          <a href="/status">Data status</a>
+          <a href="/monthly-report">Monthly report</a>
+          <a href="/data-study">Data study</a>
+          <a href="/reports">Report archive</a>
+          <a href="/when-are-visa-decisions-published">Publication schedule</a>
+          <a href="/stamp-1g-processing-dates">Stamp 1G</a>
+          <a href="/employment-permit-processing-dates">Employment permits</a>
+          <a href="/help">Help</a>
+          <a href="/contact">Contact</a>
+          <a href="/privacy">Privacy</a>
+          <a href="/terms">Terms</a>
+          <p class="sitebar-mobile-title">Preferences</p>
+          <div class="sitebar-pref-row">
+            <span class="sitebar-pref-label">Time zone</span>
+            <button class="sitebar-pref-button" type="button" data-time-mode-toggle data-mode="utc" aria-pressed="false">
+              <span data-time-mode-label>UTC</span>
+            </button>
+          </div>
+          <div class="sitebar-pref-row">
+            <span class="sitebar-pref-label">Theme</span>
+            <button class="sitebar-pref-button" type="button" data-theme-toggle aria-pressed="false">
+              <span data-theme-label>Light</span>
+            </button>
+          </div>
+        </div>
+      </details>
     </div>
   </header>
   <!-- site-chrome:end -->
 
   <main id="main-content" tabindex="-1" class="page">
     <h1>About the Irish Visa Decision Tracker</h1>
-    <p class="page-meta">Independent project by Parth Soni &bull; Dublin, Ireland &bull; Last updated 21 October 2026</p>
+    <p class="page-meta">Independent project by Parth Soni &bull; Dublin, Ireland &bull; Last updated 21 November 2026</p>
 
     <p class="page-lede">
       Six Irish visa offices – New Delhi, Beijing, Abu Dhabi, Abuja, Ankara and Dublin – publish
@@ -103,7 +139,7 @@
       <h2>What it tracks</h2>
       <ul>
         <li><strong>Embassy visa decisions</strong> – each published application number, its decision date and whether it was approved or refused, searchable by application number.</li>
-        <li><strong>Daily summaries</strong> – accepted and refused counts for each published day, with the applications behind those counts available on demand.</li>
+        <li><strong>Daily summaries</strong> – approved and refused counts for each published day, with the applications behind those counts available on demand.</li>
         <li><strong>Stamp 1G processing</strong> – the application date ISD is currently processing, how many days behind that is, and how the lag has moved over time.</li>
         <li><strong>Employment permits</strong> – the processing date reached for each permit category, with trends and projections.</li>
         <li><strong>Community timelines</strong> – waits shared by visitors, merged into the public data file each night. They are anecdotes, not a statistical sample.</li>
@@ -130,6 +166,87 @@
         <a href="/data/community_timelines.json">community timelines</a>.
       </p>
 
+    </section>
+
+    <section id="method">
+      <h2>How the data is sourced and checked</h2>
+      <p>
+        Every record comes from a published Irish visa office file or processing-date page. This
+        section lists those sources, the checks applied to each row, and the limits of the data.
+      </p>
+
+      <div class="compare-table-wrap" role="region" aria-label="Official sources by office" tabindex="0">
+        <table class="compare-table source-table">
+          <caption>Official pages and files used by the tracker</caption>
+          <thead>
+            <tr><th scope="col">Office</th><th scope="col">Official source</th><th scope="col">What is published</th><th scope="col">What the tracker records</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th scope="row">New Delhi</th>
+              <td><a href="https://www.ireland.ie/en/india/newdelhi/services/visas/processing-times-and-decisions/" target="_blank" rel="noopener noreferrer">Embassy of Ireland, New Delhi</a></td>
+              <td>Business-day decision spreadsheet</td>
+              <td>Application number, decision and decision date; daily summaries and history.</td>
+            </tr>
+            <tr>
+              <th scope="row">Beijing</th>
+              <td><a href="https://www.ireland.ie/en/china/beijing/services/visas/visa-decisions/" target="_blank" rel="noopener noreferrer">Embassy of Ireland, Beijing</a></td>
+              <td>Latest published decision list</td>
+              <td>Latest snapshot only; no dated history.</td>
+            </tr>
+            <tr>
+              <th scope="row">Dublin</th>
+              <td><a href="https://www.irishimmigration.ie/visa-decisions/" target="_blank" rel="noopener noreferrer">Immigration Service Delivery</a></td>
+              <td>Latest decision totals</td>
+              <td>Latest published totals; no dated history.</td>
+            </tr>
+            <tr>
+              <th scope="row">Abu Dhabi</th>
+              <td><a href="https://www.ireland.ie/en/uae/abudhabi/services/visas/weekly-decision-reports/" target="_blank" rel="noopener noreferrer">Embassy of Ireland, Abu Dhabi</a></td>
+              <td>Weekly decision report</td>
+              <td>Dated report rows and archived report dates.</td>
+            </tr>
+            <tr>
+              <th scope="row">Abuja</th>
+              <td><a href="https://www.ireland.ie/en/nigeria/abuja/services/visas/weekly-decision-reports/" target="_blank" rel="noopener noreferrer">Embassy of Ireland, Abuja</a></td>
+              <td>Weekly decision report</td>
+              <td>Dated report rows and archived report dates.</td>
+            </tr>
+            <tr>
+              <th scope="row">Ankara</th>
+              <td><a href="https://www.ireland.ie/en/turkiye/ankara/services/visas/weekly-decision-report/" target="_blank" rel="noopener noreferrer">Embassy of Ireland, Ankara</a></td>
+              <td>Weekly decision report</td>
+              <td>Dated report rows and archived report dates.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>How a record is checked</h3>
+      <ol class="method-steps">
+        <li><strong>Fetch the published source.</strong> The scheduled job downloads the office page or file and keeps its source URL.</li>
+        <li><strong>Preserve the report date.</strong> Each file keeps the date the office published it, separately from the decision date on a row.</li>
+        <li><strong>Normalize without inventing rows.</strong> Decision rows are stored as <code>[date, applicationNumber, decision]</code>. A missing office file stays a gap.</li>
+        <li><strong>Deduplicate per office.</strong> A repeated application number is counted once, at its most recent report date. Corrections are counted rather than hidden.</li>
+        <li><strong>Publish the evidence.</strong> The JSON files, manifest and fetch times are public, so a figure can be checked against the office that published it.</li>
+      </ol>
+
+      <h3>What the data cannot tell you</h3>
+      <ul>
+        <li><strong>It is not an official decision.</strong> The office handling your application remains the only authority.</li>
+        <li><strong>A report date is not every decision date.</strong> Weekly reports use a report-period end date, not the date of each individual decision.</li>
+        <li><strong>It does not predict an outcome.</strong> Any processing-date estimate is a transparent baseline, not a promise or a queue position.</li>
+        <li><strong>It cannot speed up an application.</strong> No third-party tracker can change a visa decision or processing time.</li>
+        <li><strong>Coverage can have gaps.</strong> Offices publish on different schedules, and older archive files may be unavailable.</li>
+      </ul>
+
+      <p>
+        Inspect the <a href="/data/visa_decisions.json">decision data</a>,
+        the <a href="/data/data_manifest.json">data manifest</a> and the
+        <a href="/status">live data status</a>. The code is in the
+        <a href="https://github.com/parth-soni-10/Irish-Visa-Tracker" rel="noopener">public repository</a>.
+        Corrections are logged in the <a href="/corrections">correction ledger</a>.
+      </p>
     </section>
 
     <section>
@@ -188,8 +305,14 @@
         <p class="sitebar-footer-title">Data</p>
         <ul>
           <li><a href="/status">Data status</a></li>
-          <li><a href="/comparison">Method &amp; sources</a></li>
+          <li><a href="/data">Open data</a></li>
+          <li><a href="/about#method">Method &amp; sources</a></li>
           <li><a href="/monthly-report">Monthly report</a></li>
+          <li><a href="/data-study">Data study</a></li>
+          <li><a href="/reports">Report archive</a></li>
+          <li><a href="/when-are-visa-decisions-published">Publication schedule</a></li>
+          <li><a href="/press">Press &amp; citation</a></li>
+          <li><a href="/embed">Embed badge</a></li>
         </ul>
       </div>
       <div class="sitebar-footer-col">
@@ -197,7 +320,6 @@
         <ul>
           <li><a href="/stamp-1g-processing-dates">Stamp 1G</a></li>
           <li><a href="/employment-permit-processing-dates">Employment permits</a></li>
-          <li><a href="/vac-transit">VAC &amp; transit</a></li>
           <li><a href="/new-delhi-visa-decisions">New Delhi decisions</a></li>
           <li><a href="/beijing-visa-decisions">Beijing decisions</a></li>
           <li><a href="/abu-dhabi-visa-decisions">Abu Dhabi decisions</a></li>

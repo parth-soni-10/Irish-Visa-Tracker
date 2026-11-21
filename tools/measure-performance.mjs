@@ -11,8 +11,7 @@ const base = process.argv[2] || 'http://127.0.0.1:8788';
 const baselineFile = 'perf-baseline.html';
 let html = fs.readFileSync('index.html', 'utf8');
 html = html
-  .replace(/\s*<link rel="preload" href="\/fonts\/[^"]+"[^>]*>/g, '')
-  .replace('<script src="lucide.min.js" defer></script>', '<script src="lucide.min.js"></script>');
+  .replace(/\s*<link rel="preload" href="\/fonts\/[^"]+"[^>]*>/g, '');
 fs.writeFileSync(baselineFile, html);
 
 const browser = await chromium.launch({ headless: true });

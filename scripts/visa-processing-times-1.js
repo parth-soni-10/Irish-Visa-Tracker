@@ -52,6 +52,7 @@
       get('/data/visa_decisions.json')
     ]).then(function (res) {
       var g1 = res[0], pm = res[1], dec = res[2];
+      var queueObservations = [];
 
       /* ---- snapshot ---- */
       if (Array.isArray(g1) && g1.length) {
@@ -71,6 +72,7 @@
       }
       if (Array.isArray(pm) && pm.length) {
         var latestP = pm.reduce(function (a, r) { return r.run_date > a ? r.run_date : a; }, '');
+        if (latestP) queueObservations.push(latestP);
         var lags = pm.filter(function (r) {
           return r.run_date === latestP && typeof r.lag_days === 'number';
         }).map(function (r) { return r.lag_days; });
@@ -103,6 +105,7 @@
       if (Array.isArray(g1) && g1.length) {
         var g1pts = series(g1, 'Other');
         var g1last = lastOf(g1pts);
+        if (g1last) queueObservations.push(g1last[0]);
         var g1then = g1last ? atOrBefore(g1pts, isoMinusDays(g1last[0], 30)) : null;
         if (g1last && g1then && g1then[0] !== g1last[0]) {
           var dg = g1last[1] - g1then[1];
@@ -156,6 +159,17 @@
           recent.toLocaleString('en-IE') + ' decisions, ' + dir + ' the ' +
           prior.toLocaleString('en-IE') + ' across the ' + n + ' published days before them.';
         setText('trend-volume', volText);
+      }
+
+      if (queueObservations.length) {
+        var latestQueue = queueObservations.slice().sort().pop();
+        setText('processing-observations-as-of', longDate(latestQueue));
+      }
+      var allObservations = queueObservations.slice();
+      if (published.length) allObservations.push(published[published.length - 1][0]);
+      if (allObservations.length) {
+        var latestObservation = allObservations.sort().pop();
+        setText('trend-as-of', longDate(latestObservation));
       }
     });
   })();

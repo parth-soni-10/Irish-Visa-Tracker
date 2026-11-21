@@ -67,6 +67,14 @@ const REPORT_PATHS = new Set([
 
 const MAX_BODY = 16 * 1024;
 const NOT_FOUND_PATHS = new Set(["/404", "/404/", "/404.html"]);
+// Pages that moved or were retired. The Pages Function owns these paths, so
+// the redirect must live here rather than only in a static _redirects file.
+const LEGACY_REDIRECTS = new Map([
+  ["/comparison", "/about#method"],
+  ["/comparison.html", "/about#method"],
+  ["/vac-transit", "/help#vac"],
+  ["/vac-transit.html", "/help#vac"],
+]);
 
 // The dashboard's data files are written by the GitHub Actions job
 // to the repository root. We serve them from the Pages asset bucket
@@ -272,22 +280,23 @@ async function notFoundPage(env, request) {
 
 async function notFoundResponse(request, env, pathname) {
   const choice = negotiate(request.headers.get("Accept"));
+  const requestOrigin = String(env.APP_BASE_URL || new URL(request.url).origin).replace(/\/+$/, "");
   if (choice === "markdown") {
-    return markdownResponse(notFoundMarkdown(pathname), 404, request.method);
+    return markdownResponse(notFoundMarkdown(pathname), 404, request.method, requestOrigin);
   }
   if (choice === "not-acceptable") {
-    return markdownResponse(NOT_ACCEPTABLE_MARKDOWN, 406, request.method);
+    return markdownResponse(NOT_ACCEPTABLE_MARKDOWN, 406, request.method, requestOrigin);
   }
   return notFoundPage(env, request);
 }
 
-async function agentDocumentResponse(request, env, document) {
+async function agentDocumentResponse(request, env, document, origin = "") {
   const choice = negotiate(request.headers.get("Accept"));
   if (choice === "not-acceptable") {
-    return markdownResponse(NOT_ACCEPTABLE_MARKDOWN, 406, request.method);
+    return markdownResponse(NOT_ACCEPTABLE_MARKDOWN, 406, request.method, origin);
   }
   if (choice === "markdown") {
-    return markdownResponse(document.markdown, 200, request.method);
+    return markdownResponse(document.markdown, 200, request.method, origin);
   }
   return fetchDocument(env, request, { file: document.file, alternate: document.alternate });
 }
@@ -295,6 +304,14 @@ async function agentDocumentResponse(request, env, document) {
 // Main request handler
 async function handleRequest(request, env) {
   const { pathname } = new URL(request.url);
+
+  if ((request.method === "GET" || request.method === "HEAD") && LEGACY_REDIRECTS.has(pathname)) {
+    const target = new URL(LEGACY_REDIRECTS.get(pathname), request.url);
+    return addSecurityHeaders(new Response(null, {
+      status: 301,
+      headers: { Location: target.href },
+    }));
+  }
 
   // Health check endpoint (no rate limiting)
   if (pathname === '/api/health' || pathname === '/health') {
@@ -584,8 +601,9 @@ async function handleRequest(request, env) {
   // Agent-facing representations: explicit Markdown, negotiated documents,
   // and the status-carrying 404 page.
   if (request.method === "GET" || request.method === "HEAD") {
+    const requestOrigin = String(env.APP_BASE_URL || new URL(request.url).origin).replace(/\/+$/, "");
     const alias = MARKDOWN_ALIASES.get(pathname);
-    if (alias) return markdownResponse(alias, 200, request.method);
+    if (alias) return markdownResponse(alias, 200, request.method, requestOrigin);
 
     if (NOT_FOUND_PATHS.has(pathname)) {
       return notFoundResponse(request, env, pathname);
@@ -593,7 +611,7 @@ async function handleRequest(request, env) {
 
     const agentDocument = DOCUMENTS.get(pathname);
     if (agentDocument) {
-      return agentDocumentResponse(request, env, agentDocument);
+      return agentDocumentResponse(request, env, agentDocument, requestOrigin);
     }
   }
 
@@ -602,12 +620,10 @@ async function handleRequest(request, env) {
     { path: "/", file: "index.html" },
     { path: "/about", file: "about.html" },
     { path: "/help", file: "help.html" },
-    { path: "/comparison", file: "comparison.html" },
     { path: "/contact", file: "contact.html" },
     { path: "/corrections", file: "corrections.html" },
     { path: "/privacy", file: "privacy.html" },
     { path: "/terms", file: "terms.html" },
-    { path: "/admin", file: "admin.html" },
     { path: "/daily-summaries", file: "daily-summaries.html" },
     { path: "/new-delhi-visa-decisions", file: "new-delhi-visa-decisions.html" },
     { path: "/beijing-visa-decisions", file: "beijing-visa-decisions.html" },
@@ -620,9 +636,32 @@ async function handleRequest(request, env) {
     { path: "/visa-processing-times", file: "visa-processing-times.html" },
     { path: "/monthly-report", file: "monthly-report.html" },
     { path: "/status", file: "status.html" },
+    { path: "/data", file: "data.html" },
+    { path: "/data-study", file: "data-study.html" },
+    { path: "/when-are-visa-decisions-published", file: "when-are-visa-decisions-published.html" },
+    { path: "/press", file: "press.html" },
+    { path: "/embed", file: "embed.html" },
+    { path: "/community-timelines", file: "community-timelines.html" },
+    { path: "/reports", file: "reports.html" },
 
-    { path: "/vac-transit", file: "vac-transit.html" },
   ];
+
+  // Report permalinks live in reports/<office>/<date>.html and office report
+  // indexes in reports/<office>.html. A generic asset fetch cannot be relied on
+  // to resolve both clean-URL shapes, so try the exact HTML file too.
+  const reportMatch = pathname.match(/^\/reports\/([a-z0-9-]+)(?:\/(\d{4}-\d{2}-\d{2}))?$/);
+  if (reportMatch) {
+    const file = `reports/${reportMatch[1]}${reportMatch[2] ? `/${reportMatch[2]}` : ''}.html`;
+    return fetchDocument(env, request, { file });
+  }
+
+  // Monthly archive pages live in monthly-report/<YYYY-MM>.html and are
+  // self-canonical. The latest report keeps the interactive /monthly-report
+  // shell.
+  const monthlyMatch = pathname.match(/^\/monthly-report\/(\d{4}-\d{2})$/);
+  if (monthlyMatch) {
+    return fetchDocument(env, request, { file: `monthly-report/${monthlyMatch[1]}.html` });
+  }
 
   // Serve data files (embassy JSON files) - with cache headers
   if (pathname.startsWith("/data/")) {
@@ -631,7 +670,9 @@ async function handleRequest(request, env) {
     const response = await env.ASSETS.fetch(new Request(url, request));
     if (response.ok) {
       const headers = new Headers(response.headers);
-      headers.set("Content-Type", "application/json; charset=utf-8");
+      // Data is mostly JSON, but generated study CSVs and chart SVGs also live
+      // under /data/ and must keep the content type the assets layer assigned.
+      if (pathname.endsWith(".json")) headers.set("Content-Type", "application/json; charset=utf-8");
       // Data changes with a deploy or scrape; always read the current files.
       setNoStore(headers);
       mergeVary(headers);

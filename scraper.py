@@ -550,12 +550,37 @@ def update_meta(meta):
         print(f"Update meta failed ({e}) - continuing (non-fatal).")
 
 
+def saved_closure_dates(year):
+    """Closure dates (month, day) already stored for ``year`` in the meta file.
+
+    Weekend and holiday runs never fetch the closure-dates page, so they must
+    carry the last recorded list forward instead of overwriting it with an
+    empty one. Also used as a fallback when the page cannot be fetched.
+    """
+    try:
+        meta = json.loads(_meta_path().read_text(encoding="utf-8"))
+    except (OSError, ValueError, TypeError):
+        return set()
+    dates = set()
+    for value in meta.get("closureDates") or []:
+        if not isinstance(value, str) or len(value) < 10:
+            continue
+        try:
+            if int(value[:4]) == year:
+                dates.add((int(value[5:7]), int(value[8:10])))
+        except ValueError:
+            continue
+    return dates
+
+
 def _run_meta(today_dt, existing_irl, new_rows=(), fetch_date=None, file_rows=None,
               ok=True, closure_dates=None):
     """The run-status object stored via ?action=meta for the dashboard's health
     card, reconciliation line and closure calendar. Pure data - no I/O."""
     return {
-        "lastRunAt": today_dt.strftime("%Y-%m-%dT%H:%M:%S"),
+        # Explicit offset for machine readers: today_dt is New Delhi wall time,
+        # and a naive timestamp made UTC consumers guess.
+        "lastRunAt": today_dt.strftime("%Y-%m-%dT%H:%M:%S") + "+05:30",
         "sheetRows": len(existing_irl),
         "newRows": len(new_rows),
         "fileDate": fetch_date,
@@ -750,7 +775,8 @@ def _run(existing_rows):
             _backfill_missing_days(existing_rows, today_dt, skip_date=today_ist)
         else:
             print("ENABLE_NO_UPLOAD_PLACEHOLDER is false - skipping placeholder.")
-        update_meta(_run_meta(today_dt, existing_irl))
+        update_meta(_run_meta(today_dt, existing_irl,
+                              closure_dates=saved_closure_dates(today_dt.year)))
         return
 
     # --- Priority 2: public holiday per embassy closure-dates page ---
@@ -766,7 +792,8 @@ def _run(existing_rows):
             _backfill_missing_days(existing_rows, today_dt, skip_date=today_ist)
         else:
             print("ENABLE_NO_UPLOAD_PLACEHOLDER is false - skipping placeholder.")
-        update_meta(_run_meta(today_dt, existing_irl))
+        update_meta(_run_meta(today_dt, existing_irl,
+                              closure_dates=saved_closure_dates(today_dt.year)))
         return
 
     # --- Priority 3: normal business day, attempt the real scrape ---
@@ -862,8 +889,9 @@ def _run(existing_rows):
         print("ENABLE_NO_UPLOAD_PLACEHOLDER is false - skipping placeholder.")
 
     # The closure page feeds both the gap alert below and the dashboard's
-    # closure calendar, so fetch it once per run.
-    closure_dates = _closure_dates(today_dt.year)
+    # closure calendar, so fetch it once per run. If the page is unreachable,
+    # keep the dates already recorded rather than erasing them.
+    closure_dates = _closure_dates(today_dt.year) or saved_closure_dates(today_dt.year)
 
     # --- Gap alert: a site change or publication outage can make the scraper
     # quietly write "no file yet" every day while the run still reports

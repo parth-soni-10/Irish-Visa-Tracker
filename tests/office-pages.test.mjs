@@ -5,6 +5,15 @@ import { test } from "node:test";
 const ROOT = new URL("../", import.meta.url);
 const SITE = "https://irishvisaupdatetracker.pages.dev";
 
+const COUNTRY_INTENT = {
+  "new-delhi": /India, Bangladesh, Nepal and Sri Lanka/,
+  beijing: /China, Hong Kong, Macau and Mongolia/,
+  "abu-dhabi": /UAE, Afghanistan, Algeria/,
+  abuja: /Nigeria, Côte d’Ivoire, Ghana and Senegal/,
+  ankara: /Türkiye, Azerbaijan and visa-required nationals resident in Saudi Arabia/,
+  dublin: /transferred from overseas offices/,
+};
+
 const PAGES = [
   { file: "new-delhi-visa-decisions.html", route: "/new-delhi-visa-decisions", slug: "new-delhi", name: "New Delhi" },
   { file: "beijing-visa-decisions.html", route: "/beijing-visa-decisions", slug: "beijing", name: "Beijing" },
@@ -29,6 +38,10 @@ test("office pages carry unique crawl metadata and working schema", async () => 
     assert.match(html, /"@type": "Dataset"/);
     assert.match(html, /"@type": "FAQPage"/);
     assert.match(html, /"@type": "BreadcrumbList"/);
+    assert.match(html, COUNTRY_INTENT[page.slug], `${page.file}: country intent missing from visible copy`);
+    assert.match(html, new RegExp(`<link rel="alternate" type="text/markdown" href="${page.route}\\.md"`), page.file);
+    assert.match(html, new RegExp(`og:image" content="${SITE}/assets/social/office-${page.slug}\\.png"`), page.file);
+    assert.match(html, /Get the monthly report by email/, page.file);
     assert.match(html, /data-office="decisions"/);
     assert.match(html, /data-office="latest-date"/);
     assert.match(html, /data-office="source-file"/);
@@ -49,7 +62,7 @@ test("New Delhi separates the official-file day from later tracker rows", async 
   assert.match(html, /19 November 2026: 183 decisions \(143 approved, 40 refused\)/);
   assert.match(html, /Tracker’s latest day/);
   assert.match(html, /20 November 2026: 65 decisions/);
-  assert.match(html, /partial day, not in the latest official file/);
+  assert.match(html, /partial day, not in the .* official file/);
 });
 
 test("each office page links the tracker, all other offices and its CTA", async () => {

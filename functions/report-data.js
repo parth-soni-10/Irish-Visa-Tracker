@@ -267,13 +267,24 @@ export function buildMonthlyReport(rows, month, officeList = []) {
     : 0;
   const reportedLatestDate = officeList.reduce((latest, office) =>
     office.report_date && (!latest || office.report_date > latest) ? office.report_date : latest, null);
+  // "Data to" belongs to the selected month, not the whole dataset: an
+  // October archive must not claim the November data date. The files are not
+  // guaranteed to be sorted, so take the newest row in the month.
+  const latestDate = monthRows.reduce((latest, row) =>
+    row.date && (!latest || row.date > latest) ? row.date : latest, null);
+  const daysInMonth = new Date(Date.UTC(Number(month.slice(0, 4)), Number(month.slice(5, 7)), 0)).getUTCDate();
+  const partialMonth = Boolean(latestDate && latestDate.startsWith(month) &&
+    Number(latestDate.slice(8, 10)) < daysInMonth &&
+    (!availableMonths.length || availableMonths[0] === month));
 
   return {
     month,
     label: monthLabel(month),
     previous_month: previousMonth,
     generated_at: new Date().toISOString(),
-    latest_date: datedRows.length ? datedRows[0].date : null,
+    latest_date: latestDate,
+    data_through: latestDate,
+    partial_month: partialMonth,
     totals: current,
     previous_totals: previous,
     reported_totals: reportedTotals,

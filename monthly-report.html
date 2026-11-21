@@ -3,13 +3,24 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Monthly Irish Visa Report &amp; Weekly Changes | Irish Visa Tracker</title>
-<meta name="description" content="Monthly Irish visa decision report from the public embassy files, plus a feed of what changed this week. Independent and unofficial.">
+<title>Irish visa decisions — November 2026 | Monthly report</title>
+<meta name="description" content="Irish visa decisions published in November 2026: 1,201 dated decisions, 926 approved and 275 refused. Independent and unofficial.">
 <link rel="canonical" href="https://irishvisaupdatetracker.pages.dev/monthly-report">
 <meta name="theme-color" content="#ffffff">
 <link rel="icon" href="/icon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="/styles/monthly-report.css">
-  <link rel="stylesheet" href="/site-chrome.css">
+  <link rel="stylesheet" href="/site-chrome.css">
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="Irish visa decisions — November 2026 | Monthly report">
+  <meta property="og:description" content="Irish visa decisions published in November 2026: 1,201 dated decisions, 926 approved and 275 refused. Independent and unofficial.">
+  <meta property="og:url" content="https://irishvisaupdatetracker.pages.dev/monthly-report">
+  <meta property="og:image" content="https://irishvisaupdatetracker.pages.dev/assets/social/month-2026-11.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Irish visa decisions — November 2026 | Monthly report">
+  <meta name="twitter:description" content="Irish visa decisions published in November 2026: 1,201 dated decisions, 926 approved and 275 refused. Independent and unofficial.">
+  <meta name="twitter:image" content="https://irishvisaupdatetracker.pages.dev/assets/social/month-2026-11.png">
 </head>
 <body>
   <!-- site-chrome:start -->
@@ -29,11 +40,12 @@
           <summary>More</summary>
           <div class="sitebar-more-panel">
             <a href="/status">Data status</a>
-            <a href="/comparison">Method &amp; sources</a>
             <a href="/monthly-report" aria-current="page">Monthly report</a>
+            <a href="/data-study">Data study</a>
+            <a href="/reports">Report archive</a>
+            <a href="/when-are-visa-decisions-published">Publication schedule</a>
             <a href="/stamp-1g-processing-dates">Stamp 1G</a>
             <a href="/employment-permit-processing-dates">Employment permits</a>
-            <a href="/vac-transit">VAC &amp; transit</a>
             <a href="/help">Help</a>
             <a href="/corrections">Correction ledger</a>
             <a href="/contact">Contact</a>
@@ -63,37 +75,123 @@
           </div>
         </details>
       </nav>
+      <details class="sitebar-mobile">
+        <summary><span class="sitebar-mobile-bars" aria-hidden="true"></span>Menu</summary>
+        <div class="sitebar-more-panel sitebar-mobile-panel">
+          <p class="sitebar-mobile-title">Tracker</p>
+          <a href="/">Tracker</a>
+          <a href="/daily-summaries">Daily summaries</a>
+          <a href="/visa-processing-times">Processing times</a>
+          <a href="/about">About</a>
+          <p class="sitebar-mobile-title">More</p>
+          <a href="/status">Data status</a>
+          <a href="/monthly-report" aria-current="page">Monthly report</a>
+          <a href="/data-study">Data study</a>
+          <a href="/reports">Report archive</a>
+          <a href="/when-are-visa-decisions-published">Publication schedule</a>
+          <a href="/stamp-1g-processing-dates">Stamp 1G</a>
+          <a href="/employment-permit-processing-dates">Employment permits</a>
+          <a href="/help">Help</a>
+          <a href="/corrections">Correction ledger</a>
+          <a href="/contact">Contact</a>
+          <a href="/privacy">Privacy</a>
+          <a href="/terms">Terms</a>
+          <p class="sitebar-mobile-title">Preferences</p>
+          <div class="sitebar-pref-row">
+            <span class="sitebar-pref-label">Time zone</span>
+            <button class="sitebar-pref-button" type="button" data-time-mode-toggle data-mode="utc" aria-pressed="false">
+              <span data-time-mode-label>UTC</span>
+            </button>
+          </div>
+          <div class="sitebar-pref-row">
+            <span class="sitebar-pref-label">Theme</span>
+            <button class="sitebar-pref-button" type="button" data-theme-toggle aria-pressed="false">
+              <span data-theme-label>Light</span>
+            </button>
+          </div>
+        </div>
+      </details>
     </div>
   </header>
   <!-- site-chrome:end -->
 <main id="main-content" tabindex="-1" class="wrap">
   <h1>What the visa offices decided this month</h1>
   <p class="lede">Dated decisions from the public files, the latest cumulative report from each visa office, and a feed of what changed this week. Every number is derived from the published lists; corrections are shown rather than hidden.</p>
+  <p class="note" id="report-data-through">Data to 20 November 2026. November 2026 is a partial month: totals cover dated decisions recorded so far.</p>
 
   <div class="controls">
     <label class="control" for="report-month">Report month
-      <input id="report-month" type="month" aria-label="Report month">
+      <input id="report-month" type="month" aria-label="Report month" value="2026-11">
     </label>
     <button id="load-month" type="button">View report</button>
-    <a class="button secondary" id="download-json" href="/api/reports/monthly" download>Download JSON</a>
+    <a class="button secondary" id="download-json" href="/api/reports/monthly?month=2026-11" download>Download JSON</a>
     <span class="status" id="report-status" role="status" aria-live="polite"></span>
   </div>
 
-  <div class="cards" id="summary-cards" aria-live="polite"></div>
+  <nav class="month-nav" aria-label="Monthly report archive">
+      <a href="/monthly-report" aria-current="page">Latest report</a>
+      <a href="/monthly-report/2026-10">October 2026</a>
+      <a href="/monthly-report/2026-09">September 2026</a>
+      <a href="/monthly-report/2026-08">August 2026</a>
+      <a href="/monthly-report/2026-07">July 2026</a>
+      <a href="/monthly-report/2026-06">June 2026</a>
+      <a href="/monthly-report/2026-05">May 2026</a>
+      <a href="/monthly-report/2026-04">April 2026</a>
+      <a href="/monthly-report/2026-03">March 2026</a>
+      <a href="/monthly-report/2026-02">February 2026</a>
+      <a href="/monthly-report/2026-01">January 2026</a>
+    </nav>
+
+  <div class="cards" id="summary-cards" aria-live="polite"><div class="card"><div class="label">Dated decisions</div><div class="value">1,201</div><div class="hint">-613 · November to date vs October 2026</div></div>
+      <div class="card"><div class="label">Approved</div><div class="value">926</div><div class="hint">77.1% approved share · 1,201 dated decisions</div></div>
+      <div class="card"><div class="label">Refused</div><div class="value">275</div><div class="hint">-142 vs previous month</div></div>
+      <div class="card"><div class="label">Busiest day</div><div class="value small">13 November 2026</div><div class="hint">283 decisions</div></div></div>
 
   <div class="grid">
     <section class="panel" aria-labelledby="office-heading">
       <h2 id="office-heading">By visa office</h2>
       <div class="table-wrap" role="region" aria-label="Visa office report table" tabindex="0"><table>
         <thead><tr><th>Office</th><th class="num">Dated</th><th class="num">Dated approval</th><th class="num">Latest report</th><th class="num">Report date</th></tr></thead>
-        <tbody id="office-rows"><tr><td colspan="5" class="empty">Loading the official files…</td></tr></tbody>
+        <tbody id="office-rows"><tr><td data-label="Office"><strong>New Delhi</strong></td>
+          <td class="num" data-label="Dated">0</td>
+          <td class="num" data-label="Dated approval">0.0%</td>
+          <td class="num" data-label="Latest report">43,599</td>
+          <td class="num" data-label="Report date">19 November 2026</td></tr>
+        <tr><td data-label="Office"><strong>Beijing</strong></td>
+          <td class="num" data-label="Dated">0</td>
+          <td class="num" data-label="Dated approval">0.0%</td>
+          <td class="num" data-label="Latest report">13,724</td>
+          <td class="num" data-label="Report date">1 November 2026</td></tr>
+        <tr><td data-label="Office"><strong>Abu Dhabi</strong></td>
+          <td class="num" data-label="Dated">765</td>
+          <td class="num" data-label="Dated approval">78.3%</td>
+          <td class="num" data-label="Latest report">232</td>
+          <td class="num" data-label="Report date">20 November 2026</td></tr>
+        <tr><td data-label="Office"><strong>Abuja</strong></td>
+          <td class="num" data-label="Dated">99</td>
+          <td class="num" data-label="Dated approval">34.3%</td>
+          <td class="num" data-label="Latest report">99</td>
+          <td class="num" data-label="Report date">7 November 2026</td></tr>
+        <tr><td data-label="Office"><strong>Ankara</strong></td>
+          <td class="num" data-label="Dated">337</td>
+          <td class="num" data-label="Dated approval">86.9%</td>
+          <td class="num" data-label="Latest report">165</td>
+          <td class="num" data-label="Report date">15 November 2026</td></tr>
+        <tr><td data-label="Office"><strong>Dublin</strong></td>
+          <td class="num" data-label="Dated">0</td>
+          <td class="num" data-label="Dated approval">0.0%</td>
+          <td class="num" data-label="Latest report">4,475</td>
+          <td class="num" data-label="Report date">21 November 2026</td></tr></tbody>
       </table></div>
       <p class="note" id="office-note"></p>
     </section>
 
     <section class="panel" aria-labelledby="changes-heading">
       <h2 id="changes-heading">What changed this week</h2>
-      <div id="changes-body"><p class="empty">Loading this week's changes…</p></div>
+      <div id="changes-body"><p><strong>397 dated decisions this week, up 114 vs the previous week</strong></p>
+      <p class="note">Window: 15 November 2026 to 21 November 2026.</p>
+      <p class="note">Headline counts cover dated decisions; office totals are cumulative.</p>
+      <h3>Office reports</h3><ul class="feed"><li><strong>New Delhi</strong> <span class="pill">latest</span><span class="meta">Report date 19 November 2026</span></li><li><strong>Beijing</strong> <span class="pill">latest</span><span class="meta">Report date 1 November 2026</span></li><li><strong>Abu Dhabi</strong> <span class="pill">latest</span><span class="meta">Report date 20 November 2026</span></li><li><strong>Abuja</strong> <span class="pill">latest</span><span class="meta">Report date 7 November 2026</span></li><li><strong>Ankara</strong> <span class="pill">latest</span><span class="meta">Report date 15 November 2026</span></li><li><strong>Dublin</strong> <span class="pill">latest</span><span class="meta">Report date 21 November 2026</span></li></ul></div>
     </section>
   </div>
 
@@ -103,7 +201,12 @@
     <div class="bars-wrap"><div class="bars" id="bars" aria-hidden="true"></div></div>
     <div class="table-wrap" role="region" aria-label="Daily dated decisions table" tabindex="0"><table>
       <thead><tr><th>Date</th><th class="num">Decisions</th><th class="num">Approved</th><th class="num">Refused</th></tr></thead>
-      <tbody id="daily-rows"><tr><td colspan="4" class="empty">Loading…</td></tr></tbody>
+      <tbody id="daily-rows"><tr><td data-label="Date"><time datetime="2026-11-20">20 November 2026</time></td><td class="num" data-label="Decisions">232</td><td class="num" data-label="Approved">161</td><td class="num" data-label="Refused">71</td></tr>
+        <tr><td data-label="Date"><time datetime="2026-11-15">15 November 2026</time></td><td class="num" data-label="Decisions">165</td><td class="num" data-label="Approved">128</td><td class="num" data-label="Refused">37</td></tr>
+        <tr><td data-label="Date"><time datetime="2026-11-13">13 November 2026</time></td><td class="num" data-label="Decisions">283</td><td class="num" data-label="Approved">219</td><td class="num" data-label="Refused">64</td></tr>
+        <tr><td data-label="Date"><time datetime="2026-11-07">7 November 2026</time></td><td class="num" data-label="Decisions">99</td><td class="num" data-label="Approved">34</td><td class="num" data-label="Refused">65</td></tr>
+        <tr><td data-label="Date"><time datetime="2026-11-06">6 November 2026</time></td><td class="num" data-label="Decisions">250</td><td class="num" data-label="Approved">219</td><td class="num" data-label="Refused">31</td></tr>
+        <tr><td data-label="Date"><time datetime="2026-11-01">1 November 2026</time></td><td class="num" data-label="Decisions">172</td><td class="num" data-label="Approved">165</td><td class="num" data-label="Refused">7</td></tr></tbody>
     </table></div>
   </section>
 
@@ -137,8 +240,14 @@
         <p class="sitebar-footer-title">Data</p>
         <ul>
           <li><a href="/status">Data status</a></li>
-          <li><a href="/comparison">Method &amp; sources</a></li>
+          <li><a href="/data">Open data</a></li>
+          <li><a href="/about#method">Method &amp; sources</a></li>
           <li><a href="/monthly-report">Monthly report</a></li>
+          <li><a href="/data-study">Data study</a></li>
+          <li><a href="/reports">Report archive</a></li>
+          <li><a href="/when-are-visa-decisions-published">Publication schedule</a></li>
+          <li><a href="/press">Press &amp; citation</a></li>
+          <li><a href="/embed">Embed badge</a></li>
         </ul>
       </div>
       <div class="sitebar-footer-col">
@@ -146,7 +255,6 @@
         <ul>
           <li><a href="/stamp-1g-processing-dates">Stamp 1G</a></li>
           <li><a href="/employment-permit-processing-dates">Employment permits</a></li>
-          <li><a href="/vac-transit">VAC &amp; transit</a></li>
           <li><a href="/new-delhi-visa-decisions">New Delhi decisions</a></li>
           <li><a href="/beijing-visa-decisions">Beijing decisions</a></li>
           <li><a href="/abu-dhabi-visa-decisions">Abu Dhabi decisions</a></li>
@@ -171,7 +279,8 @@
     </div>
   </footer>
   <!-- site-footer:end -->
-<script src="/scripts/monthly-report-1.js" defer></script>
+<script src="/scripts/public-channel.js" defer></script>
+  <script src="/scripts/monthly-report-1.js" defer></script>
   <script src="/scripts/time-mode.js" defer></script>
   <script src="/site-chrome.js" defer></script>
 </body>

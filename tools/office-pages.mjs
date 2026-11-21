@@ -16,15 +16,11 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const SITE = 'https://irishvisaupdatetracker.pages.dev';
-const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July',
-  'August', 'September', 'October', 'November', 'December'];
+import { SITE_ORIGIN } from './site-config.mjs';
+import { longDate } from './freshness.mjs';
 
-const longDate = (iso) => {
-  const [year, month, day] = String(iso).slice(0, 10).split('-');
-  return `${Number(day)} ${MONTHS[Number(month) - 1]} ${year}`;
-};
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const SITE = SITE_ORIGIN;
 const pct = (part, total) => `${total ? ((part / total) * 100).toFixed(1) : '0.0'}%`;
 const HTML_ESCAPES = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' };
 const esc = (value) => String(value).replace(/[&<>"]/g, (char) => HTML_ESCAPES[char]);
@@ -35,16 +31,17 @@ const OFFICES = [
     name: 'New Delhi',
     file: 'new-delhi-visa-decisions.html',
     route: '/new-delhi-visa-decisions',
-    title: 'Ireland Visa Decision List – New Delhi | Check Your Status',
-    description: 'Search the latest New Delhi Irish visa decision list by application number, with approved and refused counts, official processing times and data limits.',
-    h1: 'Ireland visa decision list – New Delhi',
+    title: 'Ireland Visa Decisions for India, Bangladesh, Nepal & Sri Lanka – New Delhi',
+    description: 'Search Irish visa decisions for applicants from India, Bangladesh, Nepal and Sri Lanka in the latest New Delhi file, with approved and refused counts, processing times and data limits.',
+    h1: 'New Delhi visa decisions',
+    subhead: 'Ireland visa decisions for India, Bangladesh, Nepal and Sri Lanka',
     kicker: 'New Delhi visa office',
     latestLabel: 'Latest official file',
     latestNote: 'Report date',
     fallback: {
-      latest: '2026-11-19', checked: '2026-11-20',
+      latest: '2026-11-19', checked: '2026-11-21',
       decisions: 43599, approved: 36769, refused: 6830,
-      archive: '128 published days from 12 July 2026',
+      archive: '77 days with published decisions, from 12 July 2026',
     },
     sourceUrl: 'https://www.ireland.ie/en/india/newdelhi/services/visas/processing-times-and-decisions/',
     sourceName: 'Embassy of Ireland, New Delhi — processing times and decisions',
@@ -53,8 +50,9 @@ const OFFICES = [
     dataUrl: '/data/visa_decisions.json',
     aboutName: 'Embassy of Ireland, New Delhi',
     coverage: ['India', 'Bangladesh', 'Nepal', 'Sri Lanka'],
-    lede: 'The Embassy of Ireland in New Delhi — the New Delhi Visa Office, or NDVO — publishes a cumulative list of Irish visa decisions each morning. This page tracks the latest file, the office’s published processing times and what the list can and cannot tell you about an application.',
-    historyHtml: 'The tracker’s searchable history covers <strong data-office="history">128 published days</strong> from 12 July 2026.',
+    lede: 'The Embassy of Ireland in New Delhi — the New Delhi Visa Office, or NDVO — publishes a cumulative list of Irish visa decisions each morning. It covers applicants from India, Bangladesh, Nepal and Sri Lanka. This page tracks the latest file, the office’s published processing times and what the list can and cannot tell you about an application.',
+    historyHtml: 'The tracker’s searchable history covers <strong data-office="history">77 days with published decisions</strong>, from 12 July 2026.',
+    historyNote: 'New Delhi publishes one cumulative file each morning. A row’s count is the total in that day’s file, not the number added that day; the newest row is the latest official file.',
     extraTableRow: '<tr><th>Latest official-file day</th><td><span data-office="latest-day">19 November 2026: 183 decisions (143 approved, 40 refused)</span></td></tr>\n            <tr><th>Tracker’s latest day</th><td><span data-office="tracker-latest">20 November 2026: 65 decisions (58 approved, 7 refused; partial day, not in the latest official file)</span></td></tr>',
     whatHtml: `
       <p>Each morning, by about 11:00 Indian Standard Time, the Embassy publishes a cumulative spreadsheet of visa decisions made in 2026 up to the previous day. Each row is an application number and one outcome: <strong>Approved</strong> or <strong>Refused</strong>.</p>
@@ -84,7 +82,7 @@ const OFFICES = [
       <p class="small-note">Official usual timeframes published on 17 September 2026. They are <strong>not guarantees</strong>. They count working days from receipt at the embassy and exclude VFS appointment waits, document transit and return delivery. The embassy advises applying up to 90 days before travel.</p>
       <p class="small-note">From 1 June 2026, short-stay refusal appeals are no longer available except for EU Free Movement cases. Read your decision letter for the route that applies.</p>`,
     missingExtra: '<li><strong>Another office may have the file.</strong> Some categories are decided in Dublin; search all six offices rather than assuming New Delhi refused or lost the application.</li>',
-    dataNoteHtml: '<p>Latest official file: <span data-office="latest-date">19 November 2026</span>. Tracker checked: <span data-office="checked-date">20 November 2026</span>. History: <span data-office="archive">128 published days from 12 July 2026</span>. The tracker keeps the New Delhi history as <code>[date, application number, decision]</code> rows. The latest official cumulative file is the authority for the counts above; the history adds the dated days the embassy has published.</p>',
+    dataNoteHtml: '<p>Latest official file: <span data-office="latest-date">19 November 2026</span>. Tracker checked: <span data-office="checked-date">21 November 2026</span>. History: <span data-office="archive">77 days with published decisions, from 12 July 2026</span>. The tracker keeps the New Delhi history as <code>[date, application number, decision]</code> rows. The latest official cumulative file is the authority for the counts above; the history adds the dated days the embassy has published.</p>',
     faq: (f) => [
       ['How often does New Delhi publish visa decisions?', 'Each morning, by about 11:00 Indian Standard Time, the embassy publishes a cumulative list of decisions made in 2026 up to the previous day.'],
       ['Where do I find my New Delhi application number?', 'Use the 8-digit application number on your receipt, acknowledgement email or decision email. An IRL prefix, spaces and dashes are optional. Do not use a VFS reference, passport number or courier tracking number.'],
@@ -98,16 +96,18 @@ const OFFICES = [
   {
     slug: 'beijing',
     name: 'Beijing',
+    snapshot: true,
     file: 'beijing-visa-decisions.html',
     route: '/beijing-visa-decisions',
-    title: 'Ireland Visa Decision List – Beijing | Check Your Status',
-    description: 'Search the latest Beijing Irish visa decision list by application number, with approved and refused counts, office scope and snapshot limits.',
-    h1: 'Ireland visa decision list – Beijing',
+    title: 'Ireland Visa Decisions for China, Hong Kong, Macau & Mongolia – Beijing',
+    description: 'Search Irish visa decisions for applicants from China, Hong Kong, Macau and Mongolia in the latest Beijing snapshot, with approved and refused counts and data limits.',
+    h1: 'Beijing visa decisions',
+    subhead: 'Ireland visa decisions for China, Hong Kong, Macau and Mongolia',
     kicker: 'Beijing visa office',
     latestLabel: 'Latest snapshot',
     latestNote: 'Snapshot date',
     fallback: {
-      latest: '2026-11-01', checked: '2026-11-20',
+      latest: '2026-11-01', checked: '2026-11-21',
       decisions: 13724, approved: 11373, refused: 2351,
       archive: '1 snapshot · 13,724 decisions',
     },
@@ -118,11 +118,12 @@ const OFFICES = [
     dataUrl: '/data/embassy-beijing.json',
     aboutName: 'Embassy of Ireland, Beijing',
     coverage: ['China', 'Hong Kong', 'Macau', 'Mongolia'],
-    lede: 'The Embassy of Ireland in Beijing publishes a cumulative decision file for the applications it handles. This page tracks the latest snapshot, the office’s scope and what the published file does and does not show.',
+    lede: 'The Embassy of Ireland in Beijing publishes a cumulative decision file for the applications it handles, covering China, Hong Kong, Macau and Mongolia. This page tracks the latest snapshot, the office’s scope and what the published file does and does not show.',
     historyHtml: 'The tracker holds <strong data-office="history">the latest snapshot</strong>, not a full dated history.',
+    historyNote: 'Beijing publishes a cumulative decision file rather than dated daily reports. The tracker holds the latest snapshot, so this table has a single row.',
     whatHtml: `
       <p>Beijing publishes a cumulative decision file for its visa office. The tracker records the latest published snapshot rather than a dated daily archive.</p>
-      <p>The last check on <span data-office="checked-date">20 November 2026</span> found no newer decision-file link than the <span data-office="latest-date">1 November 2026</span> snapshot. That does not mean no decisions have been made since; it means the tracker has not found a newer published file.</p>
+      <p data-office="check-copy">The last successful check on <span data-office="checked-date">20 November 2026</span> found no newer decision-file link than the <span data-office="latest-date">1 November 2026</span> snapshot. That does not mean no decisions have been made since; it means the tracker has not found a newer published file.</p>
       <p>Check the official Beijing page for a newer file, and use the search above to check the snapshot the tracker holds.</p>`,
     scopeHtml: `
       <p>Beijing accepts visa applications from <strong>China, Hong Kong, Macau and Mongolia</strong>.</p>
@@ -133,10 +134,10 @@ const OFFICES = [
       <p>Beijing’s file is a snapshot, not a daily list. The tracker does not hold a separate dated history for Beijing, so the counts on this page describe the latest snapshot only.</p>
       <p>The snapshot date is the date of the published file, not the date of an individual decision. A recent decision may not appear until the office publishes a newer file.</p>
       <p>If the official page shows a file newer than the one linked here, the official file is the authority.</p>`,
-    missingExtra: '<li><strong>The snapshot may not have been refreshed.</strong> The tracker’s last check found no newer decision-file link than the snapshot shown above.</li>',
+    missingExtra: '<li><strong>The snapshot may not have been refreshed.</strong> The tracker’s last successful check found no newer decision-file link than the snapshot shown above.</li>',
     dataNoteHtml: '<p>The tracker stores the latest Beijing snapshot. It is searchable by application number, but it is not a complete dated archive.</p>',
     faq: () => [
-      ['How often does Beijing publish visa decisions?', 'The office publishes a cumulative decision file on its official page. The tracker keeps the latest snapshot; its last check found no newer file link than the snapshot shown on this page.'],
+      ['How often does Beijing publish visa decisions?', 'The office publishes a cumulative decision file on its official page. The tracker keeps the latest snapshot; its last successful check found no newer file link than the snapshot shown on this page.'],
       ['Which countries does the Beijing visa office handle?', 'China, Hong Kong, Macau and Mongolia.'],
       ['Why is my application number not in the Beijing list?', 'The decision may not be published yet, the snapshot may not include it, your file may be with another office, or the number may be in a different format. A missing number is not a refusal.'],
       ['Is the Beijing data live?', 'No. It is the latest published snapshot the tracker has found, not a live feed or a daily archive.'],
@@ -148,14 +149,15 @@ const OFFICES = [
     name: 'Abu Dhabi',
     file: 'abu-dhabi-visa-decisions.html',
     route: '/abu-dhabi-visa-decisions',
-    title: 'Ireland Visa Decision List – Abu Dhabi | Check Your Status',
-    description: 'Search the latest Abu Dhabi Irish visa decision list by application number, with weekly approved and refused counts, country scope and report dates.',
-    h1: 'Ireland visa decision list – Abu Dhabi',
+    title: 'Ireland Visa Decisions for the UAE, Gulf & North Africa – Abu Dhabi',
+    description: 'Search Irish visa decisions for applicants from the UAE, Afghanistan, Algeria, Bahrain, Jordan, Kuwait, Lebanon, Libya, Morocco, Oman, Qatar, Sudan, Syria and Tunisia in the latest Abu Dhabi report.',
+    h1: 'Abu Dhabi visa decisions',
+    subhead: 'Ireland visa decisions for the UAE, Gulf and North Africa',
     kicker: 'Abu Dhabi visa office',
     latestLabel: 'Latest weekly report',
     latestNote: 'Week ending',
     fallback: {
-      latest: '2026-11-20', checked: '2026-11-20',
+      latest: '2026-11-20', checked: '2026-11-21',
       decisions: 232, approved: 161, refused: 71,
       archive: '11 weekly reports · 2,900 decisions',
     },
@@ -166,8 +168,9 @@ const OFFICES = [
     dataUrl: '/data/embassy-abu-dhabi.json',
     aboutName: 'Embassy of Ireland, Abu Dhabi',
     coverage: ['United Arab Emirates', 'Afghanistan', 'Algeria', 'Bahrain', 'Jordan', 'Kuwait', 'Lebanon', 'Libya', 'Morocco', 'Oman', 'Qatar', 'Sudan', 'Syria', 'Tunisia'],
-    lede: 'The Embassy of Ireland in Abu Dhabi publishes visa decisions in weekly PDF reports. This page tracks the latest report, the office’s country scope and how to read a weekly decision period.',
+    lede: 'The Embassy of Ireland in Abu Dhabi publishes visa decisions in weekly PDF reports for the UAE, Afghanistan, Algeria, Bahrain, Jordan, Kuwait, Lebanon, Libya, Morocco, Oman, Qatar, Sudan, Syria and Tunisia. This page tracks the latest report and how to read a weekly decision period.',
     historyHtml: 'The tracker’s archive holds <strong data-office="history">11 weekly reports</strong>.',
+    historyNote: 'Each row is one weekly report. The count is the number of decisions listed in that report, and the report date is the end of its reporting period.',
     whatHtml: `
       <p>Abu Dhabi publishes a weekly PDF decision report. Each report covers a period and lists the applications decided in that period, with an approved or refused outcome.</p>
       <p>The report date is the end of the period, not the date of an individual decision. A number may appear in one weekly report and not another, so search the office history rather than only the latest file.</p>
@@ -196,14 +199,15 @@ const OFFICES = [
     name: 'Abuja',
     file: 'abuja-visa-decisions.html',
     route: '/abuja-visa-decisions',
-    title: 'Ireland Visa Decision List – Abuja | Check Your Status',
-    description: 'Search the latest Abuja Irish visa decision list by application number, with weekly approved and refused counts, country scope and report dates.',
-    h1: 'Ireland visa decision list – Abuja',
+    title: 'Ireland Visa Decisions for Nigeria, Ghana, Côte d’Ivoire & Senegal – Abuja',
+    description: 'Search Irish visa decisions for applicants from Nigeria, Côte d’Ivoire, Ghana and Senegal in the latest Abuja report, with weekly approved and refused counts.',
+    h1: 'Abuja visa decisions',
+    subhead: 'Ireland visa decisions for Nigeria, Ghana, Côte d’Ivoire and Senegal',
     kicker: 'Abuja visa office',
     latestLabel: 'Latest weekly report',
     latestNote: 'Week ending',
     fallback: {
-      latest: '2026-11-07', checked: '2026-11-20',
+      latest: '2026-11-07', checked: '2026-11-21',
       decisions: 99, approved: 34, refused: 65,
       archive: '28 weekly reports · 2,375 decisions',
     },
@@ -214,8 +218,9 @@ const OFFICES = [
     dataUrl: '/data/embassy-abuja.json',
     aboutName: 'Embassy of Ireland, Abuja',
     coverage: ['Nigeria', 'Côte d’Ivoire', 'Ghana', 'Senegal'],
-    lede: 'The Embassy of Ireland in Abuja publishes visa decisions in weekly PDF reports. This page tracks the latest report, the office’s country scope and how to read a weekly decision period.',
+    lede: 'The Embassy of Ireland in Abuja publishes visa decisions in weekly PDF reports for Nigeria, Côte d’Ivoire, Ghana and Senegal. This page tracks the latest report and how to read a weekly decision period.',
     historyHtml: 'The tracker’s archive holds <strong data-office="history">28 weekly reports</strong>.',
+    historyNote: 'Each row is one weekly report. The count is the number of decisions listed in that report, and the report date is the end of its reporting period.',
     whatHtml: `
       <p>Abuja publishes a weekly PDF decision report. Each report covers a period and lists the applications decided in that period, with an approved or refused outcome.</p>
       <p>The report date is the end of the period, not the date of an individual decision. A number may appear in one weekly report and not another, so search the office history rather than only the latest file.</p>
@@ -244,14 +249,15 @@ const OFFICES = [
     name: 'Ankara',
     file: 'ankara-visa-decisions.html',
     route: '/ankara-visa-decisions',
-    title: 'Ireland Visa Decision List – Ankara | Check Your Status',
-    description: 'Search the latest Ankara Irish visa decision list by application number, with weekly approved and refused counts, country scope and OCR notes.',
-    h1: 'Ireland visa decision list – Ankara',
+    title: 'Ireland Visa Decisions for Türkiye, Azerbaijan & Saudi Residents – Ankara',
+    description: 'Search Irish visa decisions for applicants from Türkiye, Azerbaijan and visa-required nationals resident in Saudi Arabia in the latest Ankara report, with OCR notes.',
+    h1: 'Ankara visa decisions',
+    subhead: 'Ireland visa decisions for Türkiye, Azerbaijan and Saudi residents',
     kicker: 'Ankara visa office',
     latestLabel: 'Latest weekly report',
     latestNote: 'Week ending',
     fallback: {
-      latest: '2026-11-15', checked: '2026-11-20',
+      latest: '2026-11-15', checked: '2026-11-21',
       decisions: 165, approved: 128, refused: 37,
       archive: '5 weekly reports · 792 decisions',
     },
@@ -262,8 +268,9 @@ const OFFICES = [
     dataUrl: '/data/embassy-ankara.json',
     aboutName: 'Embassy of Ireland, Ankara',
     coverage: ['Türkiye', 'Azerbaijan', 'Visa-required nationals resident in Saudi Arabia'],
-    lede: 'The Embassy of Ireland in Ankara publishes visa decisions in weekly PDF reports, including scanned reports. This page tracks the latest report, the office’s scope and the OCR caveat that applies to its data.',
+    lede: 'The Embassy of Ireland in Ankara publishes visa decisions in weekly PDF reports, including scanned reports, for Türkiye, Azerbaijan and visa-required nationals resident in Saudi Arabia. This page tracks the latest report and the OCR caveat that applies to its data.',
     historyHtml: 'The tracker’s archive holds <strong data-office="history">5 weekly reports</strong>.',
+    historyNote: 'Each row is one weekly report. Ankara reports can be scanned documents, so counts come from OCR-extracted rows; verify any row against the official PDF.',
     whatHtml: `
       <p>Ankara publishes a weekly PDF decision report. Each report covers a period and lists the applications decided in that period, with an approved or refused outcome.</p>
       <p>Some Ankara reports are image-based PDFs. The tracker extracts their text with OCR at 300 DPI and stores the result as a searchable report, so a name or number can be misread at the source.</p>
@@ -290,16 +297,18 @@ const OFFICES = [
   {
     slug: 'dublin',
     name: 'Dublin',
+    snapshot: true,
     file: 'dublin-visa-decisions.html',
     route: '/dublin-visa-decisions',
-    title: 'Ireland Visa Decision List – Dublin | Check Your Status',
-    description: 'Search the latest Dublin Irish visa decision list by application number, with Tuesday updates, approved and refused counts and transferred-application scope.',
-    h1: 'Ireland visa decision list – Dublin',
+    title: 'Ireland Visa Decisions for Transferred Applications – Dublin',
+    description: 'Search Irish visa decisions for applications transferred from overseas offices, with Tuesday updates, approved and refused counts and Dublin scope.',
+    h1: 'Dublin visa decisions',
+    subhead: 'Ireland visa decisions for transferred applications',
     kicker: 'Dublin visa office',
     latestLabel: 'Latest snapshot',
     latestNote: 'Report date',
     fallback: {
-      latest: '2026-11-20', checked: '2026-11-20',
+      latest: '2026-11-21', checked: '2026-11-21',
       decisions: 4475, approved: 2624, refused: 1851,
       archive: '1 snapshot · 4,475 decisions',
     },
@@ -310,8 +319,9 @@ const OFFICES = [
     dataUrl: '/data/embassy-dublin.json',
     aboutName: 'Immigration Service Delivery, Dublin Visa Office',
     coverage: ['Ireland'],
-    lede: 'The Dublin Visa Office publishes decisions every Tuesday and a queue of processing dates by category. This page tracks the latest decision snapshot, the applications Dublin handles and how the Tuesday publication works.',
+    lede: 'The Dublin Visa Office publishes decisions every Tuesday and a queue of processing dates by category. It handles applications transferred from overseas offices for certain categories. This page tracks the latest decision snapshot and how the Tuesday publication works.',
     historyHtml: 'The tracker holds <strong data-office="history">the latest snapshot</strong>; the Dublin Visa Office publishes decisions every Tuesday.',
+    historyNote: 'Dublin publishes a snapshot of its decision list. Repeated checks of an unchanged snapshot are collapsed into one row, so each row is a distinct published list.',
     whatHtml: `
       <p>Dublin publishes a decision list every Tuesday and a separate queue of processing dates by visa category. The decision list is a snapshot of the latest published table, not a full dated archive on this site.</p>
       <p>The Dublin queue is not a decision list. It shows the application date the office has reached in each category; it does not say whether an individual application has been decided.</p>
@@ -450,6 +460,21 @@ function related(office) {
   return `<p class="page-nav">${links} · <a href="/visa-processing-times">Processing times</a> · <a href="/daily-summaries">Daily summaries</a> · <a href="/help">Help</a></p>`;
 }
 
+function officeSearch(office) {
+  const id = `office-search-${office.slug}`;
+  return `<form class="office-search" action="/" method="get" role="search">
+      <input type="hidden" name="tracker" value="visa">
+      <input type="hidden" name="tab" value="search">
+      <input type="hidden" name="office" value="${office.slug}">
+      <label for="${id}">Check your application number</label>
+      <div class="office-search-row">
+        <input id="${id}" name="q" type="text" inputmode="numeric" autocomplete="off" maxlength="200" placeholder="e.g. 48850812" aria-describedby="${id}-note" required>
+        <button class="btn primary" type="submit">Check ${office.name}</button>
+      </div>
+      <p class="small-note" id="${id}-note">The 8-digit number on your receipt or decision email. An IRL prefix, spaces and dashes are optional. <a href="/?tracker=visa&amp;tab=search">Search all six offices</a>.</p>
+    </form>`;
+}
+
 function render(office) {
   const f = office.fallback;
   return `<!DOCTYPE html>
@@ -460,6 +485,7 @@ function render(office) {
   <title>${esc(office.title)}</title>
   <meta name="description" content="${esc(office.description)}">
   <link rel="canonical" href="${SITE}${office.route}">
+  <link rel="alternate" type="text/markdown" href="${office.route}.md">
   <link rel="manifest" href="/manifest.json">
   <link rel="describedby" href="/llms.txt" type="text/plain">
   <meta name="theme-color" content="#ffffff">
@@ -467,12 +493,15 @@ function render(office) {
   <meta property="og:title" content="${esc(office.title)}">
   <meta property="og:description" content="${esc(office.description)}">
   <meta property="og:url" content="${SITE}${office.route}">
-  <meta property="og:image" content="${SITE}/og-image.png">
+  <meta property="og:image" content="${SITE}/assets/social/office-${office.slug}.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="${esc(office.name)} latest official Irish visa file">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="${esc(office.title)}">
   <meta name="twitter:description" content="${esc(office.description)}">
+  <meta name="twitter:image" content="${SITE}/assets/social/office-${office.slug}.png">
+  <meta name="twitter:image:alt" content="${esc(office.name)} latest official Irish visa file">
   <link rel="icon" href="/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
   <link rel="stylesheet" href="/pages.css">
@@ -487,17 +516,21 @@ ${schemaFor(office)}
   <main id="main-content" tabindex="-1" class="page">
     <p class="page-kicker">${office.kicker}</p>
     <h1>${office.h1}</h1>
-    <p class="page-meta">Independent and unofficial &bull; <span data-office="latest-label">${office.latestLabel}</span> <span data-office="latest-date">${longDate(f.latest)}</span> &bull; Checked <span data-office="checked-date">${longDate(f.checked)}</span> &bull; Not immigration advice</p>
+    <p class="page-subhead">${office.subhead}</p>
+    <p class="page-meta">Independent and unofficial &bull; Not immigration advice</p>
+
+    ${officeSearch(office)}
+    <p class="office-freshness" data-freshness="${office.slug}">${office.name} — ${office.snapshot ? 'snapshot' : 'report'} ${longDate(f.latest)} &middot; ${f.decisions.toLocaleString('en-IE')} decisions &middot; checked ${longDate(f.checked)} &middot; ${office.snapshot ? 'Snapshot' : 'Official'}</p>
 
     <p class="page-lede">${office.lede}</p>
 
     ${stats(office)}
     <p class="small-note">${office.historyHtml}</p>
 
-    <p class="callout"><strong>Check your application number.</strong> Search the ${office.name} list with the 8-digit number from your receipt. An IRL prefix, spaces and dashes are optional.</p>
     <p class="office-actions">
-      <a class="btn primary" href="/?tracker=visa&amp;tab=search&amp;office=${office.slug}">Search ${office.name} decisions</a>
       <a class="btn" href="${office.sourceUrl}" target="_blank" rel="noopener noreferrer">Official ${office.name} page</a>
+      <a class="btn" href="/monthly-report?utm_source=office_page&amp;utm_medium=referral&amp;utm_campaign=monthly_email#digest-heading">Get the monthly report by email</a>
+      <a class="btn" data-public-channel href="#" hidden>Follow the public Telegram channel</a>
     </p>
 
     <section>
@@ -567,6 +600,7 @@ ${schemaFor(office)}
   </main>
   <!-- site-footer:start -->
   <!-- site-footer:end -->
+  <script src="/scripts/public-channel.js" defer></script>
   <script src="/site-chrome.js" defer></script>
   <script src="/scripts/time-mode.js" defer></script>
 </body>

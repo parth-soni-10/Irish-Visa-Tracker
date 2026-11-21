@@ -10,6 +10,11 @@
 
   var STORAGE_KEY = 'visa-time-mode';
   var NEW_DELHI_TIME_ZONE = 'Asia/Kolkata';
+  var DATE_LOCALES = { en: 'en-IE', hi: 'hi-IN', zh: 'zh-CN', ar: 'ar', tr: 'tr-TR', fr: 'fr-FR', es: 'es-ES', ur: 'ur-PK' };
+  function displayLocale() {
+    var lang = (window.getLanguage && window.getLanguage()) || document.documentElement.lang || 'en';
+    return DATE_LOCALES[lang] || 'en-IE';
+  }
   var PRESETS = {
     full: { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' },
     short: { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' },
@@ -18,7 +23,6 @@
   };
   var WEEKDAYS = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
   var mode = readMode();
-  var zoneFormatter = null;
   var zoneFormatters = {};
 
   function readMode() {
@@ -53,9 +57,10 @@
   // conversions correct across offset changes instead of baking in an offset.
   function partsInZone(date, timeZone) {
     try {
-      var formatter = zoneFormatters[timeZone];
+      var cacheKey = displayLocale() + '|' + timeZone;
+      var formatter = zoneFormatters[cacheKey];
       if (!formatter) {
-        formatter = new Intl.DateTimeFormat('en-GB', {
+        formatter = new Intl.DateTimeFormat(displayLocale(), {
           timeZone: timeZone,
           year: 'numeric',
           month: '2-digit',
@@ -66,7 +71,7 @@
           weekday: 'short',
           hourCycle: 'h23'
         });
-        zoneFormatters[timeZone] = formatter;
+        zoneFormatters[cacheKey] = formatter;
       }
       var parts = formatter.formatToParts(date);
       var fields = {};
@@ -128,14 +133,15 @@
   function localZoneLabel(date) {
     if (mode === 'utc') return 'UTC';
     try {
-      if (!zoneFormatter) {
-        zoneFormatter = new Intl.DateTimeFormat('en-GB', {
+      var labelKey = 'label|' + displayLocale();
+      if (!zoneFormatters[labelKey]) {
+        zoneFormatters[labelKey] = new Intl.DateTimeFormat(displayLocale(), {
           timeZoneName: 'short',
           hour: '2-digit',
           minute: '2-digit'
         });
       }
-      var parts = zoneFormatter.formatToParts(date);
+      var parts = zoneFormatters[labelKey].formatToParts(date);
       for (var i = 0; i < parts.length; i++) {
         if (parts[i].type === 'timeZoneName' && parts[i].value) return parts[i].value;
       }
@@ -149,7 +155,7 @@
     Object.keys(options).forEach(function (key) { format[key] = options[key]; });
     format.hourCycle = 'h23';
     if (mode === 'utc') format.timeZone = 'UTC';
-    return date.toLocaleString('en-GB', format) + ' ' + localZoneLabel(date);
+    return date.toLocaleString(displayLocale(), format) + ' ' + localZoneLabel(date);
   }
 
   function node(value, preset) {

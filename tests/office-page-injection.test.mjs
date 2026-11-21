@@ -73,6 +73,7 @@ test("deploy office-page injection writes current manifest data into a temporary
     "archive",
     "latest-day",
     "tracker-latest",
+    "check-copy",
   ];
 
   for (const office of manifest.offices) {
@@ -100,6 +101,11 @@ test("deploy office-page injection writes current manifest data into a temporary
     const html = await readFile(path.join(dist, file), "utf8");
 
     assert.doesNotMatch(html, /STALE-/, `${file}: injector left a stale field`);
+    if (office.slug === "beijing" && office.status === "error") {
+      assert.match(html, /The last successful check on [^<]+ found no newer decision-file link than the 1 November 2026 snapshot\./);
+      assert.match(html, /The tracker's latest check on [^<]+ failed \(No decision file link found\)/);
+      assert.doesNotMatch(html, /The last check on [^<]+ found no newer/);
+    }
     assertOfficeField(html, "decisions", Number(office.decisions).toLocaleString("en-IE"), file);
     assertOfficeField(html, "approved", Number(office.approved).toLocaleString("en-IE"), file);
     assertOfficeField(html, "refused", Number(office.refused).toLocaleString("en-IE"), file);

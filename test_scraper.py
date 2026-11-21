@@ -197,7 +197,8 @@ class MainPlaceholderTests(unittest.TestCase):
 
     @staticmethod
     def run_main(now, existing_rows, filename="20260811_NDVO_Visa_Decisions.ods",
-                 new_irls=(), fail_scrape=False, holiday=None, closure_dates=None):
+                 new_irls=(), fail_scrape=False, holiday=None, closure_dates=None,
+                 saved_closures=None):
         """Run main() with everything mocked except the decision logic.
         Returns (push, set_ph, clear_ph, exit_code, meta, save)."""
         # The real ODS is cumulative, so include the rows already on record in
@@ -216,6 +217,8 @@ class MainPlaceholderTests(unittest.TestCase):
              patch("scraper.load_history", return_value=existing_rows), \
              patch("scraper.check_holiday", return_value=holiday), \
              patch("scraper._closure_dates", return_value=set(closure_dates or ())), \
+             patch("scraper.saved_closure_dates",
+                   return_value=set(saved_closures or ())), \
              patch("scraper.find_decisions_link",
                    side_effect=RuntimeError("site down") if fail_scrape
                    else lambda: "https://example.org/decisions.ods"), \
@@ -697,7 +700,7 @@ class RunMetaTests(unittest.TestCase):
         meta = scraper._run_meta(now, {"A", "B"}, new_rows=[{"irl": "C"}],
                                  fetch_date="2026-08-13", file_rows=3,
                                  closure_dates={(8, 13), (8, 14)})
-        self.assertEqual(meta["lastRunAt"], now.strftime("%Y-%m-%dT%H:%M:%S"))
+        self.assertEqual(meta["lastRunAt"], now.strftime("%Y-%m-%dT%H:%M:%S") + "+05:30")
         self.assertEqual(meta["sheetRows"], 2)
         self.assertEqual(meta["newRows"], 1)
         self.assertEqual(meta["fileDate"], "2026-08-13")
@@ -729,6 +732,42 @@ class RunMetaTests(unittest.TestCase):
         self.assertEqual(meta["sheetRows"], 2)
         self.assertEqual(meta["fileDate"], "2026-08-11")
         self.assertEqual(meta["closureDates"], ["2026-08-13", "2026-08-14"])
+
+    def test_saved_closure_dates_reads_only_the_requested_year(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            Path(tmp, "visa_meta.json").write_text(json.dumps({
+                "closureDates": ["2026-01-01", "2026-12-25", "2025-12-25", "nonsense", 7],
+            }), encoding="utf-8")
+            with patch("scraper.DATA_DIR", Path(tmp)):
+                self.assertEqual(scraper.saved_closure_dates(2026), {(1, 1), (12, 25)})
+                self.assertEqual(scraper.saved_closure_dates(2027), set())
+
+    def test_weekend_run_keeps_recorded_closure_dates(self):
+        # 2026-11-21 was a Saturday: the weekend path used to overwrite the
+        # stored holiday list with an empty one because it never fetched it.
+        now = ist("2026-08-15")
+        existing = [["2026-08-11", "IRL100", "Granted"]]
+        push, set_ph, clear_ph, exited, upd_meta, save = MainPlaceholderTests.run_main(
+            now, existing, saved_closures={(12, 25)})
+        self.assertIsNone(exited)
+        self.assertEqual(upd_meta.call_args.args[0]["closureDates"], ["2026-12-25"])
+
+    def test_holiday_run_keeps_recorded_closure_dates(self):
+        now = ist("2026-08-13")
+        existing = [["2026-08-11", "IRL100", "Granted"]]
+        push, set_ph, clear_ph, exited, upd_meta, save = MainPlaceholderTests.run_main(
+            now, existing, holiday="Embassy Closed", saved_closures={(8, 13)})
+        self.assertIsNone(exited)
+        self.assertEqual(upd_meta.call_args.args[0]["closureDates"], ["2026-08-13"])
+
+    def test_failed_closure_fetch_falls_back_to_recorded_dates(self):
+        now = ist("2026-08-12")
+        existing = [["2026-08-10", "IRL100", "Granted"]]
+        push, set_ph, clear_ph, exited, upd_meta, save = MainPlaceholderTests.run_main(
+            now, existing, new_irls=("101",), closure_dates=set(),
+            saved_closures={(1, 1)})
+        self.assertIsNone(exited)
+        self.assertEqual(upd_meta.call_args.args[0]["closureDates"], ["2026-01-01"])
 
     def test_main_records_failed_meta_when_scrape_fails(self):
         now = ist("2026-08-12")

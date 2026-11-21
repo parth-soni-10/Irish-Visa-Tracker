@@ -1,0 +1,7 @@
+# Permanent moves for pages merged or retired in the navigation cleanup.
+# The Pages Function also handles these paths; this file keeps the redirect
+# explicit for static serving and for anyone reading the deployment config.
+/comparison /about#method 301
+/comparison.html /about#method 301
+/vac-transit /help#vac 301
+/vac-transit.html /help#vac 301

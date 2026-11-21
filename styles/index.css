@@ -1,7 +1,5 @@
 /* Both faces are self-hosted variable fonts, so nothing in this file
            reaches a third party at runtime and the CSP needs no font origin. */
-        @font-face { font-family: 'Geist'; src: url('/fonts/geist-sans.woff2') format('woff2'); font-weight: 100 900; font-display: swap; font-style: normal; }
-        @font-face { font-family: 'Geist Mono'; src: url('/fonts/geist-mono.woff2') format('woff2'); font-weight: 100 900; font-display: swap; font-style: normal; }
         /* Inter, self-hosted. One variable file covers 400-800; it is split
            into the two subsets this site can use, and the unicode-range values
            are the ones Google served - keeping them means a glyph outside them
@@ -39,7 +37,7 @@
             --r-container: 14px;
             --r-control: 6px;
             --r-inner-radius: 4px;
-            font-family: "Inter", "Geist", -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+            font-family: "Inter", -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
             background: var(--surface);
             color: var(--ink);
             min-height: 100vh;
@@ -50,7 +48,7 @@
             color-scheme: light;
             -webkit-font-smoothing: antialiased;
         }
-        #visa-dash .mono { font-family: "Geist Mono", "SF Mono", Consolas, Menlo, monospace; font-variant-numeric: tabular-nums; }
+        #visa-dash .mono { font-family: ui-monospace, "SF Mono", Consolas, Menlo, monospace; font-variant-numeric: tabular-nums; }
         /* Pre-hydration summary (see .static-fallback above). The dashboard
            replaces it on first render, so these rules only matter to a reader
            without JavaScript and in the raw HTML an agent fetches. */
@@ -434,6 +432,18 @@
             font-weight: 500;
             margin-bottom: 16px;
         }
+        #visa-dash .site-freshness {
+            margin: 0 0 16px;
+            padding: 10px 14px;
+            border: 1px solid #fcd34d;
+            border-left: 3px solid var(--amber);
+            border-radius: 8px;
+            background: var(--amber-soft);
+            color: var(--amber-text);
+            font-size: 13px;
+            line-height: 1.5;
+        }
+        #visa-dash .site-freshness a { color: inherit; font-weight: 600; }
         #visa-dash .stale-retry {
             flex-shrink: 0;
             padding: 4px 12px;
@@ -1842,7 +1852,7 @@
         }
         #visa-dash .paper-text {
             font-size: 13px; line-height: 1.5;
-            font-family: "Geist Mono", "SF Mono", Consolas, monospace;
+            font-family: ui-monospace, "SF Mono", Consolas, monospace;
             white-space: nowrap; overflow: hidden;
             border-right: 2px solid var(--green-light);
             width: 100%;
@@ -3119,7 +3129,7 @@
     .sitebar, .sitebar-footer, #visa-dash .navpills, #visa-dash .hero, #visa-dash .view-switch,
     #visa-dash .checklist-form, #visa-dash .checklist-sub, #visa-dash .checklist-title,
     #visa-dash .scroll-top-btn, #visa-dash .checklist-result-actions, #visa-dash .tabs,
-    #visa-dash .stale-banner { display: none !important; }
+    #visa-dash .stale-banner, #visa-dash .site-freshness { display: none !important; }
     #visa-dash { padding: 0 !important; }
     #tab-body > * { display: none !important; }
     #tab-body > .checklist-layout { display: block !important; }
@@ -3762,4 +3772,1032 @@
   #visa-dash .tracker-row-meta { width: 46%; min-height: 94px; }
   #visa-dash .tracker-meta { min-height: 5.6em; }
   #visa-dash .tracker-card { min-height: 128px; }
+}
+
+/* Returning-visitor delta on the landing screen. */
+#visa-dash .landing-visit {
+  max-width: 880px;
+  margin: 0 auto 14px;
+  padding: 10px 14px;
+  border: 1px solid #bbf7d0;
+  border-radius: 8px;
+  background: #f0fdf4;
+  color: var(--green-text, var(--green-deep));
+  font-size: 13px;
+  line-height: 1.5;
+  text-align: center;
+}
+#visa-dash .landing-visit a { color: inherit; font-weight: 650; }
+#visa-dash[data-theme="dark"] .landing-visit {
+  border-color: rgba(52, 211, 153, .35);
+  background: rgba(6, 78, 59, .35);
+  color: #bbf7d0;
+}
+
+/* ===== Vercel interface pass, 2026-11 =================================
+   The dashboard already had its decorative chrome removed. This pass makes
+   the remaining surfaces use one quiet system: graphite type, hairlines,
+   sentence-case labels, black actions, and semantic colour only where a
+   decision or a warning is being reported. */
+#visa-dash {
+  --ink: #171717;
+  --ink-soft: #525252;
+  --ink-muted: #737373;
+  --surface: #ffffff;
+  --surface-raised: #fafafa;
+  --surface-hover: #f5f5f5;
+  --border: #e5e5e5;
+  --border-strong: #d4d4d4;
+  --green: #0f7a43;
+  --green-deep: #0b6336;
+  --green-deeper: #0a5c32;
+  --green-light: #27a35c;
+  --green-soft: #eef8f1;
+  --green-text: #0b6336;
+  --amber: #b45309;
+  --amber-soft: #fffaeb;
+  --amber-text: #92400e;
+  --red: #b42318;
+  --red-soft: #fef3f2;
+  --red-text: #b42318;
+  --r-container: 8px;
+  --r-control: 6px;
+  padding: 32px 24px 64px;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  letter-spacing: -.005em;
+}
+#visa-dash[data-theme="dark"] {
+  --ink: #ededed;
+  --ink-soft: #a3a3a3;
+  --ink-muted: #8f8f8f;
+  --surface: #0a0a0a;
+  --surface-raised: #141414;
+  --surface-hover: #1c1c1c;
+  --border: #2a2a2a;
+  --border-strong: #404040;
+  --green: #4ade80;
+  --green-deep: #86efac;
+  --green-deeper: #bbf7d0;
+  --green-light: #4ade80;
+  --green-soft: rgba(74, 222, 128, .12);
+  --green-text: #4ade80;
+  --amber: #fbbf24;
+  --amber-soft: rgba(251, 191, 36, .12);
+  --amber-text: #fbbf24;
+  --red: #f87171;
+  --red-soft: rgba(248, 113, 113, .12);
+  --red-text: #f87171;
+}
+
+/* Type: one sans family, three text roles, no tracked capital labels. */
+#visa-dash h1,
+#visa-dash .page-title-block h1 {
+  margin: 0 0 8px;
+  font-size: clamp(30px, 4vw, 40px);
+  font-weight: 600;
+  line-height: 1.14;
+  letter-spacing: -.035em;
+  color: var(--ink);
+}
+#visa-dash .page-task {
+  max-width: 66ch;
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 16px;
+  line-height: 1.55;
+}
+#visa-dash .page-meta {
+  margin: 7px 0 0;
+  color: var(--ink-muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+#visa-dash .landing-h3,
+#visa-dash .home-lookup h2,
+#visa-dash .landing-publications-head h2 {
+  margin: 0 0 6px;
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: -.02em;
+}
+#visa-dash .back-btn {
+  margin: 0 0 16px;
+  color: var(--ink-muted);
+  font-size: 13px;
+  font-weight: 500;
+}
+#visa-dash .back-btn:hover { color: var(--ink); }
+#visa-dash .note,
+#visa-dash .note2,
+#visa-dash .small-note,
+#visa-dash .page-meta {
+  color: var(--ink-muted);
+}
+
+/* Links are ink with a quiet underline; green is not a generic accent. */
+#visa-dash a:not(.btn):not(.navpill):not(.tracker-card),
+#visa-dash .home-latest-head .note2 a,
+#visa-dash #home-results-count a,
+#visa-dash .home-lookup-link,
+#visa-dash .lookup-result-source a,
+#visa-dash .lookup-steps a,
+#visa-dash .home-lookup-report-dates a {
+  color: var(--ink);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-decoration-color: #a3a3a3;
+  text-underline-offset: 3px;
+  font-weight: 500;
+}
+#visa-dash a:not(.btn):not(.navpill):not(.tracker-card):hover,
+#visa-dash .home-latest-head .note2 a:hover,
+#visa-dash #home-results-count a:hover,
+#visa-dash .home-lookup-link:hover,
+#visa-dash .lookup-result-source a:hover,
+#visa-dash .lookup-steps a:hover,
+#visa-dash .home-lookup-report-dates a:hover {
+  color: #000;
+  text-decoration-color: currentColor;
+}
+#visa-dash[data-theme="dark"] a:not(.btn):not(.navpill):not(.tracker-card):hover { color: #fff; }
+
+/* Actions: black, 6px radius, no lift or glow. */
+#visa-dash .btn,
+#visa-dash button.btn {
+  min-height: 40px;
+  padding: 9px 14px;
+  border: 1px solid var(--ink);
+  border-radius: 6px;
+  background: var(--ink);
+  color: var(--surface);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.2;
+  box-shadow: none;
+  transform: none;
+}
+#visa-dash .btn:hover,
+#visa-dash button.btn:hover {
+  border-color: #333;
+  background: #333;
+  color: #fff;
+  box-shadow: none;
+  transform: none;
+}
+#visa-dash .btn.secondary {
+  border-color: var(--border);
+  background: var(--surface);
+  color: var(--ink);
+}
+#visa-dash .btn.secondary:hover {
+  border-color: var(--border-strong);
+  background: var(--surface-hover);
+  color: var(--ink);
+}
+#visa-dash .btn.ghost {
+  border-color: transparent;
+  background: transparent;
+  color: var(--ink);
+  padding-left: 4px;
+  padding-right: 4px;
+}
+#visa-dash .btn.ghost:hover { background: transparent; text-decoration: underline; text-underline-offset: 3px; }
+#visa-dash .btn:active { transform: none; }
+#visa-dash[data-theme="dark"] .btn:not(.secondary):not(.ghost) {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: #0a0a0a;
+}
+#visa-dash[data-theme="dark"] .btn:not(.secondary):not(.ghost):hover {
+  border-color: #fff;
+  background: #fff;
+  color: #0a0a0a;
+}
+
+/* Form fields: one border, one focus treatment, 44px on touch. */
+#visa-dash .searchbar,
+#visa-dash .datefilter {
+  height: 44px;
+  max-width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  box-shadow: none;
+  transition: border-color .15s ease;
+}
+#visa-dash .searchbar:focus-within,
+#visa-dash .datefilter:focus-within {
+  border-color: var(--ink);
+  outline: 2px solid var(--ink);
+  outline-offset: 1px;
+  box-shadow: none;
+}
+#visa-dash .searchbar svg { opacity: .55; }
+#visa-dash .searchbar input[type=text],
+#visa-dash .datefilter input[type=date] {
+  font-size: 14px;
+  font-weight: 400;
+}
+#visa-dash input[type=text],
+#visa-dash input[type=email],
+#visa-dash input[type=date],
+#visa-dash select,
+#visa-dash textarea {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: none;
+}
+#visa-dash input[type=text] { max-width: 100%; }
+#visa-dash input[type=text]:focus,
+#visa-dash input[type=email]:focus,
+#visa-dash input[type=date]:focus,
+#visa-dash select:focus,
+#visa-dash textarea:focus {
+  border-color: var(--ink);
+  outline: 2px solid var(--ink);
+  outline-offset: 1px;
+  box-shadow: none;
+}
+#visa-dash input[type=text]:focus-visible,
+#visa-dash input[type=email]:focus-visible,
+#visa-dash select:focus-visible,
+#visa-dash textarea:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 1px;
+  box-shadow: none;
+}
+#visa-dash .landing-search {
+  max-width: 1080px;
+  grid-template-columns: minmax(0, 1fr) 200px auto;
+  gap: 8px;
+  margin: 0 auto;
+}
+#visa-dash .landing-search .searchbar {
+  max-width: none;
+  min-height: 44px;
+  margin-bottom: 0;
+}
+#visa-dash .landing-office-select,
+#visa-dash .home-lookup-office select {
+  min-height: 44px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 14px;
+}
+#visa-dash .landing-search .btn { min-height: 44px; }
+#visa-dash .landing-status {
+  margin: 10px auto 14px;
+  color: var(--ink-muted);
+  font-size: 13px;
+  line-height: 1.55;
+  text-align: left;
+}
+#visa-dash .landing-search-hint {
+  margin: 8px auto 0;
+  color: var(--ink-muted);
+  font-size: 12.5px;
+  line-height: 1.5;
+  text-align: left;
+}
+#visa-dash .home-lookup-field label,
+#visa-dash .home-noresult-label {
+  margin-bottom: 5px;
+  color: var(--ink-muted);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+}
+#visa-dash .home-lookup-kicker,
+#visa-dash .lookup-result-kicker,
+#visa-dash .lookup-result-fact dt,
+#visa-dash .lookup-result-source-label { display: none; }
+#visa-dash .home-lookup-copy { margin: 4px 0 14px; color: var(--ink-muted); font-size: 13px; }
+#visa-dash .home-lookup-coverage { margin: 10px 0 0; font-size: 12px; }
+#visa-dash .recent-chip {
+  min-height: 28px;
+  padding: 3px 8px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--ink-soft);
+  font-size: 12px;
+  font-weight: 500;
+}
+#visa-dash .recent-chip:hover { border-color: var(--border-strong); background: var(--surface-hover); color: var(--ink); }
+
+#visa-dash .navpills {
+  max-width: 1080px;
+  margin: 0 auto 20px;
+  gap: 4px;
+  border-bottom: 1px solid var(--border);
+}
+#visa-dash .navpill {
+  min-height: 40px;
+  padding: 9px 12px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  background: transparent;
+  color: var(--ink-muted);
+  font-size: 13.5px;
+  font-weight: 500;
+  transition: color .15s ease, border-color .15s ease;
+}
+#visa-dash .navpill:hover { color: var(--ink); background: transparent; }
+#visa-dash .navpill.active,
+#visa-dash .navpill[aria-current="page"] {
+  color: var(--ink);
+  border-bottom-color: var(--ink);
+  background: transparent;
+  box-shadow: none;
+}
+#visa-dash .navpill:focus-visible { outline: 2px solid var(--ink); outline-offset: -2px; }
+#visa-dash .navpills-mobile {
+  display: none;
+  margin: 0 0 16px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+#visa-dash .navpills-mobile label {
+  color: var(--ink-muted);
+  font-size: 12.5px;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+}
+#visa-dash .navpills-mobile select {
+  min-height: 44px;
+  padding: 8px 34px 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  font-size: 15px;
+  font-weight: 500;
+}
+#visa-dash .view-switch {
+  gap: 18px;
+  margin: 0 0 18px;
+  padding: 0;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+  background: transparent;
+}
+#visa-dash .view-switch button {
+  min-height: 38px;
+  padding: 8px 0;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  background: transparent;
+  color: var(--ink-muted);
+  font-size: 13px;
+  font-weight: 500;
+}
+#visa-dash .view-switch button.active {
+  background: transparent;
+  color: var(--ink);
+  border-bottom-color: var(--ink);
+  box-shadow: none;
+}
+
+/* Landing rows and publication table. */
+#visa-dash .landing-wrap { max-width: 1080px; margin: 0 auto; }
+#visa-dash .tracker-grid {
+  max-width: 1080px;
+  margin: 16px auto 24px;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+#visa-dash .tracker-card {
+  min-height: 0;
+  padding: 16px 12px;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  transition: background-color .15s ease;
+}
+#visa-dash .tracker-card:last-child { border-bottom: 0; }
+#visa-dash .tracker-card:hover,
+#visa-dash .tracker-card:focus-visible { background: var(--surface-raised); }
+#visa-dash .tracker-title { font-size: 15px; font-weight: 600; }
+#visa-dash .tracker-desc { color: var(--ink-muted); font-size: 13px; }
+#visa-dash .tracker-meta,
+#visa-dash .tracker-card.g1 .tracker-meta,
+#visa-dash .tracker-card.permits .tracker-meta { color: var(--ink-muted); font-size: 12px; }
+#visa-dash .tracker-cta,
+#visa-dash .tracker-card.g1 .tracker-cta,
+#visa-dash .tracker-card.permits .tracker-cta { color: var(--ink-muted); font-size: 12px; font-weight: 500; }
+#visa-dash .tracker-card:hover .tracker-title,
+#visa-dash .tracker-card:focus-visible .tracker-title { color: var(--ink); }
+#visa-dash .landing-alert-line {
+  max-width: 1080px;
+  margin: 0 auto 24px;
+  padding: 12px 0;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  color: var(--ink-muted);
+  font-size: 13px;
+}
+#visa-dash .landing-alert-line strong { color: var(--ink); font-weight: 600; }
+#visa-dash .landing-publications { max-width: 1080px; }
+#visa-dash .landing-publications-head { margin-bottom: 10px; }
+#visa-dash .coverage-table { font-size: 13px; }
+#visa-dash .coverage-table th,
+#visa-dash .coverage-table td { padding: 10px 12px; }
+#visa-dash .coverage-table thead th {
+  background: transparent;
+  color: var(--ink-muted);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+}
+#visa-dash .coverage-table tbody tr:hover td { background: var(--surface-raised); }
+#visa-dash .landing-foot { max-width: 1080px; color: var(--ink-muted); font-size: 12px; }
+
+/* Secondary panels become sections, not floating cards. */
+#visa-dash .home-freshness,
+#visa-dash .home-latest,
+#visa-dash .advanced-search,
+#visa-dash .g1-chart,
+#visa-dash .readme,
+#visa-dash .chart-container,
+#visa-dash .watch-card,
+#visa-dash .checklist-result,
+#visa-dash .alerts-card,
+#visa-dash .community-wait-section,
+#visa-dash .recent-decisions-section {
+  max-width: 1080px;
+  margin: 24px auto 0;
+  padding: 20px 0 0;
+  border: 0;
+  border-top: 1px solid var(--border);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+#visa-dash .advanced-search { margin-top: 16px; }
+#visa-dash .advanced-search > summary { padding: 10px 0; color: var(--ink-muted); font-size: 13px; font-weight: 500; }
+#visa-dash .home-freshness-link { font-size: 13px; font-weight: 500; }
+#visa-dash .home-freshness-details { color: var(--ink-muted); font-size: 13px; }
+#visa-dash .home-freshness-details summary { color: var(--ink-soft); }
+#visa-dash .download-menu summary {
+  min-height: 34px;
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--ink-soft);
+  font-size: 12px;
+  font-weight: 500;
+}
+#visa-dash .download-menu-panel {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .08);
+}
+#visa-dash .home-lookup {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 0 0 24px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+#visa-dash .home-lookup-head h2 { font-size: 20px; }
+#visa-dash .home-lookup-form { gap: 8px; }
+#visa-dash .home-lookup-submit { min-height: 44px; }
+
+/* Tables: full-width data, not cards. */
+#visa-dash .table-wrap,
+#visa-dash .recent-decisions-section .table-wrap,
+#visa-dash .watchlist-table-wrap {
+  border: 0;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+#visa-dash table { background: transparent; }
+#visa-dash th {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--ink-muted);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+}
+#visa-dash .coverage-table thead th,
+#visa-dash .wait-times-table .results-table th,
+#visa-dash .watch-card th,
+#visa-dash .search-results-table th,
+#visa-dash .visa-type-breakdown th {
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 500;
+}
+#visa-dash td {
+  padding: 11px 12px;
+  border-bottom: 1px solid var(--border);
+  color: var(--ink-soft);
+  font-size: 13.5px;
+}
+#visa-dash tbody tr { transition: background-color .12s ease; }
+#visa-dash tbody tr:hover { background: var(--surface-raised); }
+#visa-dash tbody tr:hover td:first-child::before { opacity: 0; }
+#visa-dash tbody tr td:first-child::before { display: none; }
+#visa-dash .home-results-table th,
+#visa-dash .home-results-table td,
+#visa-dash .past-results-table th,
+#visa-dash .past-results-table td { padding: 10px 12px; font-size: 13.5px; }
+#visa-dash .home-results-table .pill { white-space: nowrap; }
+#visa-dash .coverage-table tbody td:first-of-type { color: var(--ink); font-weight: 500; }
+#visa-dash .coverage-table tbody th,
+#visa-dash .coverage-table tbody td { color: var(--ink-soft); }
+#visa-dash .table-wrap caption,
+#visa-dash .coverage-table caption { padding: 10px 0; color: var(--ink-muted); font-size: 12px; }
+
+/* Status: a dot and a word, not a coloured capsule. */
+#visa-dash .pill,
+#visa-dash .pill.green,
+#visa-dash .pill.red,
+#visa-dash .pill.amber,
+#visa-dash .pill.blue,
+#visa-dash .pill:not(.green):not(.red):not(.amber):not(.blue) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 6px;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--ink-soft);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.5;
+  letter-spacing: 0;
+}
+#visa-dash .pill::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: currentColor;
+}
+#visa-dash .pill.green { color: var(--green-text); }
+#visa-dash .pill.red { color: var(--red-text); }
+#visa-dash .pill.amber { color: var(--amber-text); }
+#visa-dash .pill.blue { color: var(--ink-soft); }
+#visa-dash .pill:not(.green):not(.red):not(.amber):not(.blue) { color: var(--ink-soft); }
+#visa-dash .ph-row td { background: var(--amber-soft); color: var(--amber-text); }
+
+/* Notices stay legible without becoming alert boxes. */
+#visa-dash .status-line {
+  margin: 0 0 16px;
+  padding: 10px 0;
+  border: 0;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+  background: transparent;
+  color: var(--ink-muted);
+  font-size: 13px;
+}
+#visa-dash .status-line.pub-live { background: transparent; border-color: var(--border); color: var(--ink-soft); }
+#visa-dash .status-line.pub-late { background: transparent; border-color: var(--border); color: var(--amber-text); }
+#visa-dash .stale-banner,
+#visa-dash .ph-banner,
+#visa-dash .meta-card {
+  padding: 10px 0 10px 12px;
+  border: 0;
+  border-left: 2px solid var(--amber);
+  border-radius: 0;
+  background: transparent;
+  color: var(--ink-soft);
+}
+#visa-dash .stale-banner { margin-bottom: 16px; }
+#visa-dash .meta-card { margin-bottom: 16px; }
+#visa-dash .safety-notice {
+  margin: 0 0 18px;
+  padding: 12px 0 12px 14px;
+  border: 0;
+  border-left: 2px solid var(--amber);
+  border-radius: 0;
+  background: transparent;
+  color: var(--ink-soft);
+  font-size: 13px;
+}
+#visa-dash .safety-lead strong { color: var(--ink); }
+#visa-dash .safety-sources a { color: var(--ink); font-weight: 500; }
+#visa-dash[data-theme="dark"] .safety-notice { border-color: var(--amber); background: transparent; color: var(--ink-soft); }
+#visa-dash[data-theme="dark"] .safety-lead strong { color: var(--ink); }
+#visa-dash[data-theme="dark"] .safety-sources a { color: var(--ink); }
+
+/* Lookup results read as records separated by hairlines. */
+#visa-dash .home-lookup-result-list { gap: 0; margin-top: 16px; }
+#visa-dash .lookup-result-card {
+  padding: 18px 0;
+  border: 0;
+  border-top: 1px solid var(--border);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+#visa-dash .home-lookup-result-list > .lookup-result-card:last-child { border-bottom: 1px solid var(--border); }
+#visa-dash .lookup-result-title { font-size: 17px; font-weight: 600; }
+#visa-dash .lookup-result-facts { margin: 12px 0; padding: 12px 0; }
+#visa-dash .lookup-result-fact dd { color: var(--ink); font-size: 13px; }
+#visa-dash .lookup-result-source,
+#visa-dash .lookup-result-freshness,
+#visa-dash .lookup-result-source-file {
+  margin: 8px 0 0;
+  padding: 2px 0 2px 10px;
+  border: 0;
+  border-left: 2px solid var(--border-strong);
+  border-radius: 0;
+  background: transparent;
+  font-size: 12.5px;
+}
+#visa-dash .lookup-result-freshness.is-warning { border-left-color: var(--amber); background: transparent; color: var(--ink-soft); }
+#visa-dash .lookup-result-alert { border-color: var(--ink); background: var(--ink); color: var(--surface); }
+#visa-dash .lookup-result-alert:hover,
+#visa-dash .lookup-result-alert:focus-visible { border-color: #333; background: #333; color: #fff; }
+#visa-dash .lookup-result-watch.is-saved { border-color: var(--green-soft); background: var(--green-soft); color: var(--green-text); }
+#visa-dash .home-lookup-empty {
+  margin-top: 16px;
+  padding: 16px 0;
+  border: 0;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+  background: transparent;
+}
+#visa-dash .home-lookup-empty h3 { font-size: 16px; font-weight: 600; }
+#visa-dash .home-noresult-notify {
+  margin: 14px 0;
+  padding: 12px 0;
+  border: 0;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+  background: transparent;
+}
+
+/* Metric strips: aligned columns, no shadowed cards. */
+#visa-dash .cards {
+  max-width: 1080px;
+  margin: 24px auto;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+#visa-dash .cards .card {
+  padding: 16px 20px 16px 0;
+  border-right: 1px solid var(--border);
+  background: transparent;
+  box-shadow: none;
+  transform: none;
+  animation: none;
+}
+#visa-dash .cards .card + .card { padding-left: 20px; }
+#visa-dash .cards .card:last-child { border-right: 0; }
+#visa-dash .cards .card .label {
+  color: var(--ink-muted);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+}
+#visa-dash .cards .card .value { margin-top: 4px; font-size: 22px; font-weight: 600; letter-spacing: -.02em; }
+#visa-dash .cards .card .hint { color: var(--ink-muted); font-size: 12px; }
+#visa-dash .card:hover { transform: none; border-color: var(--border); box-shadow: none; }
+#visa-dash .card:hover .value { transform: none; }
+#visa-dash .stats-bar,
+#visa-dash .embassy-status-card,
+#visa-dash .quick-actions,
+#visa-dash .landing-alert-cta { box-shadow: none; }
+
+/* Charts and reading panels follow the same hairlines. */
+#visa-dash .chart-container { padding-top: 20px; }
+#visa-dash .chart-container h3 { font-size: 14px; font-weight: 600; }
+#visa-dash .ac-tip { border-radius: 6px; box-shadow: 0 8px 24px rgba(0, 0, 0, .10); }
+#visa-dash .ac-tip-label { font-size: 11px; letter-spacing: 0; text-transform: none; }
+#visa-dash .ac-axis { font-size: 11px; letter-spacing: 0; opacity: .65; }
+
+/* Footer-of-page controls. */
+#visa-dash .scroll-top-btn {
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--ink-soft);
+  box-shadow: none;
+  transform: none;
+}
+#visa-dash .scroll-top-btn:hover {
+  border-color: var(--border-strong);
+  background: var(--surface-hover);
+  color: var(--ink);
+  box-shadow: none;
+  transform: none;
+}
+#visa-dash .scroll-top-btn.visible { transform: none; }
+#visa-dash .export-btn {
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--ink-soft);
+  font-size: 12px;
+  font-weight: 500;
+}
+#visa-dash .export-btn:hover { background: var(--surface-hover); color: var(--ink); }
+
+/* One consistent keyboard focus ring. */
+#visa-dash a:focus-visible,
+#visa-dash button:focus-visible,
+#visa-dash summary:focus-visible,
+#visa-dash [tabindex]:focus-visible,
+#visa-dash .tracker-card:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+#visa-dash .btn:focus-visible { outline-color: var(--ink); }
+
+/* Ornamental motion is off; loading indicators remain. */
+#visa-dash .card,
+#visa-dash .tracker-card,
+#visa-dash .navpill,
+#visa-dash .btn,
+#visa-dash .scroll-top-btn { animation: none !important; }
+#visa-dash .sugg-success .burst { display: none; }
+#visa-dash .ring,
+#visa-dash .wave,
+#visa-dash .wf,
+#visa-dash .paper { display: none !important; }
+
+@media (max-width: 760px) {
+  #visa-dash { padding: 24px 16px 40px; }
+  #visa-dash h1,
+  #visa-dash .page-title-block h1 { font-size: 30px; }
+  #visa-dash .page-task { font-size: 15px; }
+  #visa-dash .navpills { display: none; }
+  #visa-dash .navpills-mobile {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0 0 16px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+  }
+  #visa-dash .navpills-mobile select { flex: 1 1 auto; }
+  #visa-dash .navpills .navpill.active {
+    background: transparent !important;
+    color: var(--ink) !important;
+    border-color: transparent !important;
+    box-shadow: none !important;
+  }
+  #visa-dash .landing-search { grid-template-columns: 1fr; }
+  #visa-dash .landing-search .btn { width: 100%; }
+  #visa-dash .tracker-card { padding: 14px 2px; }
+  #visa-dash .tracker-cta { font-size: 12px; }
+  #visa-dash .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  #visa-dash .cards .card,
+  #visa-dash .cards .card + .card {
+    padding: 14px 12px 14px 0;
+    border-right: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+  }
+  #visa-dash .cards .card:nth-child(2n) { padding-left: 14px; border-right: 0; }
+  #visa-dash .cards .card:nth-last-child(-n + 2) { border-bottom: 0; }
+  #visa-dash .table-wrap { border-radius: 0; }
+  #visa-dash .home-results-table th,
+  #visa-dash .home-results-table td,
+  #visa-dash .past-results-table th,
+  #visa-dash .past-results-table td { padding: 9px 8px; font-size: 12px; }
+  #visa-dash .coverage-table thead th { font-size: 11px; }
+  #visa-dash .coverage-table th,
+  #visa-dash .coverage-table td { padding: 9px 7px; }
+  #visa-dash .scroll-top-btn { width: 44px; height: 44px; }
+  #visa-dash input[type=text],
+  #visa-dash input[type=email],
+  #visa-dash input[type=date],
+  #visa-dash select,
+  #visa-dash textarea { font-size: 16px; }
+}
+@media (max-width: 420px) {
+  #visa-dash { padding-left: 14px; padding-right: 14px; }
+  #visa-dash h1,
+  #visa-dash .page-title-block h1 { font-size: 28px; }
+  #visa-dash .cards { grid-template-columns: 1fr; }
+  #visa-dash .cards .card,
+  #visa-dash .cards .card + .card,
+  #visa-dash .cards .card:nth-child(2n) {
+    padding: 12px 0;
+    border-right: 0;
+    border-bottom: 1px solid var(--border);
+  }
+  #visa-dash .cards .card:last-child { border-bottom: 0; }
+}
+
+/* Remaining small labels and chips from the older UI are sentence case. */
+#visa-dash .static-fallback .static-kicker {
+  color: var(--ink-muted);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+}
+#visa-dash .lookup-result-kicker {
+  color: var(--ink-muted);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+}
+#visa-dash .lookup-result-fact dt,
+#visa-dash .lookup-result-source-label {
+  display: block;
+  margin: 0 0 2px;
+  color: var(--ink-muted);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+}
+#visa-dash #alert-form label {
+  color: var(--ink-muted);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+}
+#visa-dash .watch-change-badge,
+#visa-dash .badge,
+#visa-dash .closure-chip,
+#visa-dash .embassy-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 6px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--surface-raised);
+  color: var(--ink-soft);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0;
+  line-height: 1.5;
+  text-transform: none;
+}
+#visa-dash .watch-change-badge {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--green-text);
+}
+#visa-dash .badge.required { border-color: transparent; background: var(--red-soft); color: var(--red-text); }
+#visa-dash .badge.category { border-color: transparent; background: var(--surface-raised); color: var(--ink-soft); }
+#visa-dash .embassy-status.live { border-color: transparent; background: transparent; color: var(--green-text); }
+#visa-dash .embassy-status.stale { border-color: transparent; background: transparent; color: var(--amber-text); }
+#visa-dash .landing-visit {
+  max-width: 1080px;
+  margin: 0 auto 16px;
+  padding: 10px 0 10px 12px;
+  border: 0;
+  border-left: 2px solid var(--green);
+  border-radius: 0;
+  background: transparent;
+  color: var(--ink-soft);
+  font-size: 13px;
+  text-align: left;
+}
+#visa-dash[data-theme="dark"] .landing-visit { border-color: var(--green); background: transparent; color: var(--ink-soft); }
+#visa-dash .lookup-result-watch.is-saved {
+  border-color: var(--border);
+  background: var(--surface-raised);
+  color: var(--ink);
+}
+#visa-dash .glide-select__menu {
+  border-radius: 6px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .10);
+}
+#visa-dash .landing-foot { margin: 16px 0 0; text-align: left; }
+
+/* On narrow screens trackers stack: the title and description get the full
+   measure, then the live count and Open action share one quiet line. */
+@media (max-width: 760px) {
+  #visa-dash .tracker-card {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+    min-height: 0;
+    padding: 14px 0;
+  }
+  #visa-dash .tracker-row-meta {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    width: 100%;
+    max-width: none;
+    min-height: 0;
+    text-align: left;
+  }
+  #visa-dash .tracker-meta {
+    width: auto;
+    min-height: 0;
+    text-align: left;
+  }
+}
+#visa-dash .tracker-cta { flex: 0 0 auto; white-space: nowrap; }
+
+/* Mobile controls use 16px text so iOS does not zoom the page on focus. */
+@media (max-width: 760px) {
+  #visa-dash input:not([type="checkbox"]):not([type="radio"]),
+  #visa-dash select,
+  #visa-dash textarea { font-size: 16px; }
+  #visa-dash .home-lookup-number .searchbar input[type="text"],
+  #visa-dash .landing-search .searchbar input { font-size: 16px; }
+  #visa-dash .recent-chip {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 8px 12px;
+  }
+}
+@media (max-width: 760px) {
+  #visa-dash .recent-chip {
+    position: relative;
+    min-height: 32px;
+    padding: 4px 10px;
+  }
+  #visa-dash .recent-chip::after {
+    content: "";
+    position: absolute;
+    inset: -6px 0;
+  }
+}
+#visa-dash[data-theme="dark"] .tracker-card.g1 .tracker-meta,
+#visa-dash[data-theme="dark"] .tracker-card.permits .tracker-meta { color: var(--ink-muted); }
+#visa-dash[data-theme="dark"] .tracker-card.g1 .tracker-cta,
+#visa-dash[data-theme="dark"] .tracker-card.permits .tracker-cta { color: var(--ink-muted); }
+
+/* Every tab shares the same 1080px measure as the page title, including the
+   back link and the data tables inside it. */
+#visa-dash #tab-body { width: 100%; max-width: 1080px; margin: 0 auto; }
+#visa-dash > .back-btn { margin-left: max(0px, calc((100% - 1080px) / 2)); }
+
+/* Cards use a one-shot entrance animation with an initial opacity of zero.
+   Motion is disabled, so restore the resting state for every card. */
+#visa-dash .card { opacity: 1; transform: none; }
+#visa-dash #alert-form input[type="text"],
+#visa-dash #alert-form select { min-height: 40px; }
+@media (max-width: 760px) {
+  #visa-dash input:not([type="checkbox"]):not([type="radio"]),
+  #visa-dash select,
+  #visa-dash textarea { min-height: 44px; }
+}
+#visa-dash .alerts-digest-help {
+  margin: 0 0 20px;
+  padding: 12px 0;
+  border: 0;
+  border-top: 1px solid var(--border);
+  border-radius: 0;
+  background: transparent;
+  color: var(--ink-soft);
+}
+@media (max-width: 760px) {
+  #visa-dash .btn { min-height: 44px; }
+  #visa-dash #alert-form input[type="text"],
+  #visa-dash #alert-form select {
+    min-height: 44px;
+    font-size: 16px;
+  }
+}
+@media (max-width: 760px) {
+  #visa-dash .btn,
+  #visa-dash button.btn { min-height: 44px; }
 }

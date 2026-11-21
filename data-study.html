@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>What Irish visa decisions show: a data study | Irish Visa Decision Tracker</title>
+  <meta name="description" content="An original study of published Irish visa decisions across six offices: approval rates, publication volume, New Delhi file growth, closures and method.">
+  <link rel="canonical" href="https://irishvisaupdatetracker.pages.dev/data-study">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="describedby" href="/llms.txt" type="text/plain">
+  <meta name="theme-color" content="#ffffff">
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="What Irish visa decisions show: a data study | Irish Visa Decision Tracker">
+  <meta property="og:description" content="An original study of published Irish visa decisions across six offices: approval rates, publication volume, New Delhi file growth, closures and method.">
+  <meta property="og:url" content="https://irishvisaupdatetracker.pages.dev/data-study">
+  <meta property="og:image" content="https://irishvisaupdatetracker.pages.dev/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" href="/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <link rel="stylesheet" href="/pages.css">
+  <link rel="stylesheet" href="/site-chrome.css">
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebPage",
+  "url": "https://irishvisaupdatetracker.pages.dev/data-study",
+  "name": "What the published Irish visa decisions show",
+  "description": "An original data study of published Irish visa decisions by office.",
+  "inLanguage": "en",
+  "dateModified": "2026-11-21",
+  "isPartOf": {
+    "@id": "https://irishvisaupdatetracker.pages.dev/#website"
+  },
+  "about": {
+    "@type": "Dataset",
+    "name": "Irish visa decision files",
+    "url": "https://irishvisaupdatetracker.pages.dev/data/data_manifest.json"
+  }
+}
+  </script>
+</head>
+<body>
+  <!-- site-chrome:start -->
+  <a class="skip-link" href="#main-content">Skip to content</a>
+  <header class="sitebar">
+    <div class="sitebar-inner">
+      <a class="brand" href="/" aria-label="Irish Visa Decision Tracker home">
+        <img src="/icon.svg" alt="" width="24" height="24">
+        <span>Irish Visa Decision Tracker</span>
+      </a>
+      <nav class="sitebar-nav" aria-label="Site">
+        <a href="/">Tracker</a>
+        <a href="/daily-summaries">Daily summaries</a>
+        <a href="/visa-processing-times">Processing times</a>
+        <a href="/about">About</a>
+        <details class="sitebar-more is-current">
+          <summary>More</summary>
+          <div class="sitebar-more-panel">
+            <a href="/status">Data status</a>
+            <a href="/monthly-report">Monthly report</a>
+            <a href="/data-study" aria-current="page">Data study</a>
+            <a href="/reports">Report archive</a>
+            <a href="/when-are-visa-decisions-published">Publication schedule</a>
+            <a href="/stamp-1g-processing-dates">Stamp 1G</a>
+            <a href="/employment-permit-processing-dates">Employment permits</a>
+            <a href="/help">Help</a>
+            <a href="/contact">Contact</a>
+            <a href="/privacy">Privacy</a>
+            <a href="/terms">Terms</a>
+          </div>
+        </details>
+        <details class="sitebar-prefs">
+          <summary>Preferences</summary>
+          <div class="sitebar-more-panel sitebar-prefs-panel">
+            <div class="sitebar-pref-row">
+              <span class="sitebar-pref-label">Time zone</span>
+              <button class="sitebar-pref-button" type="button" data-time-mode-toggle data-mode="utc" aria-pressed="false">
+                <span data-time-mode-label>UTC</span>
+              </button>
+            </div>
+            <div class="sitebar-pref-row">
+              <span class="sitebar-pref-label">Theme</span>
+              <button class="sitebar-pref-button" type="button" data-theme-toggle aria-pressed="false">
+                <span data-theme-label>Light</span>
+              </button>
+            </div>
+            <label class="sitebar-pref-row" data-language-row hidden>
+              <span class="sitebar-pref-label">Language</span>
+              <select class="sitebar-pref-select" data-language-select aria-label="Language"></select>
+            </label>
+          </div>
+        </details>
+      </nav>
+      <details class="sitebar-mobile">
+        <summary><span class="sitebar-mobile-bars" aria-hidden="true"></span>Menu</summary>
+        <div class="sitebar-more-panel sitebar-mobile-panel">
+          <p class="sitebar-mobile-title">Tracker</p>
+          <a href="/">Tracker</a>
+          <a href="/daily-summaries">Daily summaries</a>
+          <a href="/visa-processing-times">Processing times</a>
+          <a href="/about">About</a>
+          <p class="sitebar-mobile-title">More</p>
+          <a href="/status">Data status</a>
+          <a href="/monthly-report">Monthly report</a>
+          <a href="/data-study" aria-current="page">Data study</a>
+          <a href="/reports">Report archive</a>
+          <a href="/when-are-visa-decisions-published">Publication schedule</a>
+          <a href="/stamp-1g-processing-dates">Stamp 1G</a>
+          <a href="/employment-permit-processing-dates">Employment permits</a>
+          <a href="/help">Help</a>
+          <a href="/contact">Contact</a>
+          <a href="/privacy">Privacy</a>
+          <a href="/terms">Terms</a>
+          <p class="sitebar-mobile-title">Preferences</p>
+          <div class="sitebar-pref-row">
+            <span class="sitebar-pref-label">Time zone</span>
+            <button class="sitebar-pref-button" type="button" data-time-mode-toggle data-mode="utc" aria-pressed="false">
+              <span data-time-mode-label>UTC</span>
+            </button>
+          </div>
+          <div class="sitebar-pref-row">
+            <span class="sitebar-pref-label">Theme</span>
+            <button class="sitebar-pref-button" type="button" data-theme-toggle aria-pressed="false">
+              <span data-theme-label>Light</span>
+            </button>
+          </div>
+        </div>
+      </details>
+    </div>
+  </header>
+  <!-- site-chrome:end -->
+  <main id="main-content" tabindex="-1" class="page">
+    <p class="page-kicker">Data study</p>
+    <h1>What the published Irish visa decisions show</h1>
+    <p class="page-meta">2026 edition &bull; 62,294 decisions in the latest official files &bull; Independent and unofficial</p>
+    <p class="page-freshness small-note"><strong>Data freshness:</strong> six offices — latest publications dated 1 November 2026 to 21 November 2026 · offices last successfully checked 18 November 2026 to 21 November 2026 · New Delhi decisions through 20 November 2026 · 2 offices need attention: Beijing, Abuja. <a href="/status">All six offices</a>.</p>
+
+    <p class="page-lede">Six Irish visa offices publish decision files, each in a different shape: New Delhi a cumulative daily spreadsheet, three embassies weekly PDF reports, Dublin a Tuesday snapshot and Beijing an irregular cumulative file. This study measures what those files actually contain — published decisions, not the probability that any one application will be approved.</p>
+
+    <p class="small-note">This study uses the same six-office files as the tracker. For the live New Delhi count and checked time, see <a href="/status">Data status</a>; to query the underlying rows, use <a href="/?tracker=visa&amp;tab=history">History</a>.</p>
+
+    <section>
+      <h2>Approval rates by office</h2>
+      <p>The approval share is the number of <strong>approved</strong> rows divided by all decided rows in the latest file the office published. It describes the file, not the applicant. The offices publish different things: New Delhi's file is cumulative, so its rate covers every decision in the file, while Abu Dhabi's latest PDF covers one reporting period.</p>
+      <ul class="study-bars" aria-label="Approval rate by office in the latest published file">
+        <li class="study-bar"><span class="study-bar-label">New Delhi</span><meter min="0" max="84.3" value="84.3" aria-hidden="true"></meter><span class="study-bar-value">84.3%</span></li>
+        <li class="study-bar"><span class="study-bar-label">Beijing</span><meter min="0" max="84.3" value="82.9" aria-hidden="true"></meter><span class="study-bar-value">82.9%</span></li>
+        <li class="study-bar"><span class="study-bar-label">Abu Dhabi</span><meter min="0" max="84.3" value="69.4" aria-hidden="true"></meter><span class="study-bar-value">69.4%</span></li>
+        <li class="study-bar"><span class="study-bar-label">Abuja</span><meter min="0" max="84.3" value="34.3" aria-hidden="true"></meter><span class="study-bar-value">34.3%</span></li>
+        <li class="study-bar"><span class="study-bar-label">Ankara</span><meter min="0" max="84.3" value="77.6" aria-hidden="true"></meter><span class="study-bar-value">77.6%</span></li>
+        <li class="study-bar"><span class="study-bar-label">Dublin</span><meter min="0" max="84.3" value="58.6" aria-hidden="true"></meter><span class="study-bar-value">58.6%</span></li>
+      </ul>
+      <div class="table-wrap" role="region" aria-label="Approval rate by office" tabindex="0">
+        <table class="office-table">
+          <caption>Latest official file by office</caption>
+          <thead><tr><th scope="col">Office</th><th scope="col">Report basis</th><th scope="col">Decisions</th><th scope="col">Approved</th><th scope="col">Refused</th><th scope="col">Approval rate</th></tr></thead>
+          <tbody>
+        <tr>
+          <th scope="row"><a href="/new-delhi-visa-decisions">New Delhi</a></th>
+          <td>Cumulative official file</td>
+          <td>43,599</td>
+          <td>36,769</td>
+          <td>6,830</td>
+          <td>84.3%</td>
+        </tr>
+        <tr>
+          <th scope="row"><a href="/beijing-visa-decisions">Beijing</a></th>
+          <td>Cumulative snapshot</td>
+          <td>13,724</td>
+          <td>11,373</td>
+          <td>2,351</td>
+          <td>82.9%</td>
+        </tr>
+        <tr>
+          <th scope="row"><a href="/abu-dhabi-visa-decisions">Abu Dhabi</a></th>
+          <td>Weekly report</td>
+          <td>232</td>
+          <td>161</td>
+          <td>71</td>
+          <td>69.4%</td>
+        </tr>
+        <tr>
+          <th scope="row"><a href="/abuja-visa-decisions">Abuja</a></th>
+          <td>Weekly report</td>
+          <td>99</td>
+          <td>34</td>
+          <td>65</td>
+          <td>34.3%</td>
+        </tr>
+        <tr>
+          <th scope="row"><a href="/ankara-visa-decisions">Ankara</a></th>
+          <td>Weekly report (OCR-extracted)</td>
+          <td>165</td>
+          <td>128</td>
+          <td>37</td>
+          <td>77.6%</td>
+        </tr>
+        <tr>
+          <th scope="row"><a href="/dublin-visa-decisions">Dublin</a></th>
+          <td>Decision snapshot</td>
+          <td>4,475</td>
+          <td>2,624</td>
+          <td>1,851</td>
+          <td>58.6%</td>
+        </tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="small-note">A high or low rate is a property of the published rows. It is not an approval probability and does not control for visa category, nationality or application date, because those fields are not in the public files.</p>
+    </section>
+
+    <section>
+      <h2>How much each office publishes</h2>
+      <p>Only three offices publish decisions with a genuine decision or reporting-period date: Abu Dhabi, Abuja and Ankara. The chart adds New Delhi's measured file growth between archived official-file dates. Dublin and Beijing publish snapshots, so counting their rows by month would double-count the same decisions and is excluded here.</p>
+      <ul class="study-bars study-bars--neutral" aria-label="Dated decisions published by month">
+        <li class="study-bar"><span class="study-bar-label">January 2026</span><meter min="0" max="2430" value="270" aria-hidden="true"></meter><span class="study-bar-value">270</span></li>
+        <li class="study-bar"><span class="study-bar-label">February 2026</span><meter min="0" max="2430" value="132" aria-hidden="true"></meter><span class="study-bar-value">132</span></li>
+        <li class="study-bar"><span class="study-bar-label">March 2026</span><meter min="0" max="2430" value="146" aria-hidden="true"></meter><span class="study-bar-value">146</span></li>
+        <li class="study-bar"><span class="study-bar-label">April 2026</span><meter min="0" max="2430" value="385" aria-hidden="true"></meter><span class="study-bar-value">385</span></li>
+        <li class="study-bar"><span class="study-bar-label">May 2026</span><meter min="0" max="2430" value="366" aria-hidden="true"></meter><span class="study-bar-value">366</span></li>
+        <li class="study-bar"><span class="study-bar-label">June 2026</span><meter min="0" max="2430" value="99" aria-hidden="true"></meter><span class="study-bar-value">99</span></li>
+        <li class="study-bar"><span class="study-bar-label">July 2026</span><meter min="0" max="2430" value="182" aria-hidden="true"></meter><span class="study-bar-value">182</span></li>
+        <li class="study-bar"><span class="study-bar-label">August 2026</span><meter min="0" max="2430" value="313" aria-hidden="true"></meter><span class="study-bar-value">313</span></li>
+        <li class="study-bar"><span class="study-bar-label">September 2026</span><meter min="0" max="2430" value="1159" aria-hidden="true"></meter><span class="study-bar-value">1,159</span></li>
+        <li class="study-bar"><span class="study-bar-label">October 2026</span><meter min="0" max="2430" value="1814" aria-hidden="true"></meter><span class="study-bar-value">1,814</span></li>
+        <li class="study-bar"><span class="study-bar-label">November 2026</span><meter min="0" max="2430" value="2430" aria-hidden="true"></meter><span class="study-bar-value">2,430</span></li>
+      </ul>
+      <div class="table-wrap" role="region" aria-label="Dated decisions by month" tabindex="0">
+        <table class="office-table">
+          <caption>Dated decisions by month and office</caption>
+          <thead><tr><th scope="col">Month</th><th scope="col">Abu Dhabi</th><th scope="col">Abuja</th><th scope="col">Ankara</th><th scope="col">New Delhi file growth</th><th scope="col">Total</th></tr></thead>
+          <tbody>
+        <tr>
+          <th scope="row">January 2026</th>
+          <td>0</td>
+          <td>270</td>
+          <td>0</td>
+          <td>0</td>
+          <td><strong>270</strong></td>
+        </tr>
+        <tr>
+          <th scope="row">February 2026</th>
+          <td>0</td>
+          <td>132</td>
+          <td>0</td>
+          <td>0</td>
+          <td><strong>132</strong></td>
+        </tr>
+        <tr>
+          <th scope="row">March 2026</th>
+          <td>0</td>
+          <td>146</td>
+          <td>0</td>
+          <td>0</td>
+          <td><strong>146</strong></td>
+        </tr>
+        <tr>
+          <th scope="row">April 2026</th>
+          <td>0</td>
+          <td>385</td>
+          <td>0</td>
+          <td>0</td>
+          <td><strong>385</strong></td>
+        </tr>
+        <tr>
+          <th scope="row">May 2026</th>
+          <td>0</td>
+          <td>366</td>
+          <td>0</td>
+          <td>0</td>
+          <td><strong>366</strong></td>
+        </tr>
+        <tr>
+          <th scope="row">June 2026</th>
+          <td>0</td>
+          <td>99</td>
+          <td>0</td>
+          <td>0</td>
+          <td><strong>99</strong></td>
+        </tr>
+        <tr>
+          <th scope="row">July 2026</th>
+          <td>0</td>
+          <td>182</td>
+          <td>0</td>
+          <td>0</td>
+          <td><strong>182</strong></td>
+        </tr>
+        <tr>
+          <th scope="row">August 2026</th>
+          <td>0</td>
+          <td>313</td>
+          <td>0</td>
+          <td>0</td>
+          <td><strong>313</strong></td>
+        </tr>
+        <tr>
+          <th scope="row">September 2026</th>
+          <td>930</td>
+          <td>229</td>
+          <td>0</td>
+          <td>0</td>
+          <td><strong>1,159</strong></td>
+        </tr>
+        <tr>
+          <th scope="row">October 2026</th>
+          <td>1,205</td>
+          <td>154</td>
+          <td>455</td>
+          <td>0</td>
+          <td><strong>1,814</strong></td>
+        </tr>
+        <tr>
+          <th scope="row">November 2026</th>
+          <td>765</td>
+          <td>99</td>
+          <td>337</td>
+          <td>1,229</td>
+          <td><strong>2,430</strong></td>
+        </tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="small-note">Dated reports currently cover 7,296 decisions. New Delhi's figure is the increase in the cumulative file between two archived file dates, so a gap between file dates combines several days. Abu Dhabi's dated archive begins in September 2026, Ankara's in October 2026 and Abuja's in January 2026, so the monthly series is not a complete year.</p>
+    </section>
+
+    <section>
+      <h2>What 43,599 New Delhi decisions show</h2>
+      <p>New Delhi's file is cumulative: every morning's spreadsheet contains every 2026 decision to date. The archive holds 9 file dates, which makes the file's growth measurable even though the tracker's searchable rows are stamped with the date the tracker saw them.</p>
+      <div class="table-wrap" role="region" aria-label="New Delhi official file growth" tabindex="0">
+        <table class="office-table">
+          <caption>New Delhi cumulative file, archived dates</caption>
+          <thead><tr><th scope="col">Official file date</th><th scope="col">Cumulative decisions</th><th scope="col">Added since prior file</th><th scope="col">Approval rate</th></tr></thead>
+          <tbody>
+        <tr>
+          <th scope="row"><a href="/reports/new-delhi/2026-11-05">5 November 2026</a></th>
+          <td>42,370</td>
+          <td>—</td>
+          <td>84.4%</td>
+        </tr>
+        <tr>
+          <th scope="row"><a href="/reports/new-delhi/2026-11-10">10 November 2026</a></th>
+          <td>42,472</td>
+          <td>+102</td>
+          <td>84.4%</td>
+        </tr>
+        <tr>
+          <th scope="row"><a href="/reports/new-delhi/2026-11-11">11 November 2026</a></th>
+          <td>42,621</td>
+          <td>+149</td>
+          <td>84.3%</td>
+        </tr>
+        <tr>
+          <th scope="row"><a href="/reports/new-delhi/2026-11-12">12 November 2026</a></th>
+          <td>42,790</td>
+          <td>+169</td>
+          <td>84.3%</td>
+        </tr>
+        <tr>
+          <th scope="row"><a href="/reports/new-delhi/2026-11-15">15 November 2026</a></th>
+          <td>42,988</td>
+          <td>+198</td>
+          <td>84.3%</td>
+        </tr>
+        <tr>
+          <th scope="row"><a href="/reports/new-delhi/2026-11-16">16 November 2026</a></th>
+          <td>43,152</td>
+          <td>+164</td>
+          <td>84.3%</td>
+        </tr>
+        <tr>
+          <th scope="row"><a href="/reports/new-delhi/2026-11-17">17 November 2026</a></th>
+          <td>43,351</td>
+          <td>+199</td>
+          <td>84.4%</td>
+        </tr>
+        <tr>
+          <th scope="row"><a href="/reports/new-delhi/2026-11-18">18 November 2026</a></th>
+          <td>43,534</td>
+          <td>+183</td>
+          <td>84.3%</td>
+        </tr>
+        <tr>
+          <th scope="row"><a href="/reports/new-delhi/2026-11-19">19 November 2026</a></th>
+          <td>43,599</td>
+          <td>+65</td>
+          <td>84.3%</td>
+        </tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="small-note">Across the archived file dates the cumulative total grew by 1,229 decisions. The first archived file is the initial import, so it is shown as a level rather than a one-day increase.</p>
+    </section>
+
+    <section>
+      <h2>Closures and seasonal reading</h2>
+      <p>The tracker records 19 Irish public-holiday closure dates for 2026. Embassies also observe local holidays, so a missing file on a working day in Ireland can still be a closure abroad. Treat the monthly series as publication volume, not demand: a short month can mean a holiday, a missing report or a publication gap.</p>
+      <ul class="study-list">
+        <li>Thursday 1 January 2026</li>
+        <li>Monday 26 January 2026</li>
+        <li>Monday 2 February 2026</li>
+        <li>Wednesday 4 March 2026</li>
+        <li>Monday 23 March 2026</li>
+        <li>Tuesday 24 March 2026</li>
+        <li>Friday 3 April 2026</li>
+        <li>Monday 6 April 2026</li>
+        <li>Friday 1 May 2026</li>
+        <li>Monday 1 June 2026</li>
+        <li>Monday 3 August 2026</li>
+        <li>Thursday 13 August 2026</li>
+        <li>Friday 14 August 2026</li>
+        <li>Friday 2 October 2026</li>
+        <li>Monday 26 October 2026</li>
+        <li>Monday 9 November 2026</li>
+        <li>Tuesday 10 November 2026</li>
+        <li>Friday 25 December 2026</li>
+        <li>Monday 28 December 2026</li>
+      </ul>
+      <p class="small-note">There is not enough complete-year history to claim a stable seasonal pattern. The honest finding is coverage: publication is continuous for the dated offices where reports exist, with visible gaps where a report was not available.</p>
+    </section>
+
+    <section>
+      <h2>Method and limits</h2>
+      <ul class="study-list">
+        <li><strong>Latest-file counts</strong> come from each office's most recent published file, as recorded in <a href="/data/data_manifest.json">data_manifest.json</a>.</li>
+        <li><strong>Dated counts</strong> come from the dated rows in the office JSON files, plus New Delhi file growth between archived file dates in <a href="/data/reports/index.json">the report archive</a>.</li>
+        <li><strong>Approval rate</strong> is approved rows divided by approved plus refused rows. The files do not include visa category, nationality or refusal reason.</li>
+        <li><strong>No personal data</strong> is used. Application numbers are searchable on the tracker but are not included in this study's aggregates.</li>
+        <li><strong>Not predictive.</strong> Nothing here estimates an individual application's chance of approval or its processing time.</li>
+      </ul>
+      <div class="table-wrap" role="region" aria-label="Study sources by office" tabindex="0">
+        <table class="office-table">
+          <caption>Sources and archive coverage</caption>
+          <thead><tr><th scope="col">Office</th><th scope="col">Report basis</th><th scope="col">Archived report dates</th><th scope="col">Source</th></tr></thead>
+          <tbody>
+        <tr>
+          <th scope="row">New Delhi</th>
+          <td>Cumulative official file</td>
+          <td>9</td>
+          <td><a href="https://www.ireland.ie/en/india/newdelhi/services/visas/processing-times-and-decisions/" target="_blank" rel="noopener noreferrer">Official page</a></td>
+        </tr>
+        <tr>
+          <th scope="row">Beijing</th>
+          <td>Cumulative snapshot</td>
+          <td>1</td>
+          <td><a href="https://www.ireland.ie/en/china/beijing/services/visas/visa-decisions/" target="_blank" rel="noopener noreferrer">Official page</a></td>
+        </tr>
+        <tr>
+          <th scope="row">Abu Dhabi</th>
+          <td>Weekly report</td>
+          <td>11</td>
+          <td><a href="https://www.ireland.ie/en/uae/abudhabi/services/visas/weekly-decision-reports/" target="_blank" rel="noopener noreferrer">Official page</a></td>
+        </tr>
+        <tr>
+          <th scope="row">Abuja</th>
+          <td>Weekly report</td>
+          <td>28</td>
+          <td><a href="https://www.ireland.ie/en/nigeria/abuja/services/visas/weekly-decision-reports/" target="_blank" rel="noopener noreferrer">Official page</a></td>
+        </tr>
+        <tr>
+          <th scope="row">Ankara</th>
+          <td>Weekly report (OCR-extracted)</td>
+          <td>2</td>
+          <td><a href="https://www.ireland.ie/en/turkiye/ankara/services/visas/weekly-decision-report/" target="_blank" rel="noopener noreferrer">Official page</a></td>
+        </tr>
+        <tr>
+          <th scope="row">Dublin</th>
+          <td>Decision snapshot</td>
+          <td>2</td>
+          <td><a href="https://www.irishimmigration.ie/visa-decisions/" target="_blank" rel="noopener noreferrer">Official page</a></td>
+        </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section>
+      <h2>Download and cite</h2>
+      <p>The study is rebuilt from the public data files whenever the site is built, so the figures follow the latest official files. The current 2026 edition is refreshed continuously; the dated snapshot under <code>/data/snapshots/</code> is the citable version for a quarter or year. Download the tables, or cite the study with its data date.</p>
+      <p class="study-downloads">
+        <a class="btn" href="/data/study/office-summary.csv">Office summary CSV</a>
+        <a class="btn" href="/data/study/monthly-volume.csv">Monthly volume CSV</a>
+        <a class="btn" href="/data/study/new-delhi-file-growth.csv">New Delhi growth CSV</a>
+        <a class="btn" href="/data/study/approval-rates.svg">Approval chart SVG</a>
+        <a class="btn" href="/data/study/monthly-volume.svg">Volume chart SVG</a>
+      </p>
+      <p class="small-note">Citation: Parth Soni. (2026). <em>Irish Visa Decision Tracker: published visa decisions by office</em> (latest office publications dated 1 November 2026 to 21 November 2026; offices last successfully checked 18 November 2026 to 21 November 2026) [Data set]. https://irishvisaupdatetracker.pages.dev/data-study &middot; See the <a href="/press">press and citation kit</a> for licence terms and a versioned snapshot.</p>
+      <p class="page-nav"><a href="/reports">Official report archive</a> &middot; <a href="/when-are-visa-decisions-published">Publication schedule</a> &middot; <a href="/press">Press &amp; citation</a> &middot; <a href="/status">Data status</a></p>
+    </section>
+  </main>
+  <!-- site-footer:start -->
+  <footer class="sitebar-footer">
+    <div class="sitebar-footer-inner">
+      <div class="sitebar-footer-brand">
+        <a class="brand" href="/" aria-label="Irish Visa Decision Tracker home">
+          <img src="/icon.svg" alt="" width="24" height="24">
+          <span>Irish Visa Decision Tracker</span>
+        </a>
+        <p>Independent and unofficial. Not immigration advice.</p>
+      </div>
+      <div class="sitebar-footer-col">
+        <p class="sitebar-footer-title">Data</p>
+        <ul>
+          <li><a href="/status">Data status</a></li>
+          <li><a href="/data">Open data</a></li>
+          <li><a href="/about#method">Method &amp; sources</a></li>
+          <li><a href="/monthly-report">Monthly report</a></li>
+          <li><a href="/data-study">Data study</a></li>
+          <li><a href="/reports">Report archive</a></li>
+          <li><a href="/when-are-visa-decisions-published">Publication schedule</a></li>
+          <li><a href="/press">Press &amp; citation</a></li>
+          <li><a href="/embed">Embed badge</a></li>
+        </ul>
+      </div>
+      <div class="sitebar-footer-col">
+        <p class="sitebar-footer-title">Trackers</p>
+        <ul>
+          <li><a href="/stamp-1g-processing-dates">Stamp 1G</a></li>
+          <li><a href="/employment-permit-processing-dates">Employment permits</a></li>
+          <li><a href="/new-delhi-visa-decisions">New Delhi decisions</a></li>
+          <li><a href="/beijing-visa-decisions">Beijing decisions</a></li>
+          <li><a href="/abu-dhabi-visa-decisions">Abu Dhabi decisions</a></li>
+          <li><a href="/abuja-visa-decisions">Abuja decisions</a></li>
+          <li><a href="/ankara-visa-decisions">Ankara decisions</a></li>
+          <li><a href="/dublin-visa-decisions">Dublin decisions</a></li>
+        </ul>
+      </div>
+      <div class="sitebar-footer-col">
+        <p class="sitebar-footer-title">Legal</p>
+        <ul>
+          <li><a href="/help">Help</a></li>
+          <li><a href="/contact">Contact</a></li>
+          <li><a href="/privacy">Privacy</a></li>
+          <li><a href="/terms">Terms</a></li>
+          <li><a href="https://github.com/parth-soni-10/Irish-Visa-Tracker" rel="noopener">GitHub</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="sitebar-footer-bottom">
+      <p>&copy; 2026 Parth Soni &middot; Dublin, Ireland</p>
+    </div>
+  </footer>
+  <!-- site-footer:end -->
+  <script src="/scripts/time-mode.js" defer></script>
+  <script src="/site-chrome.js" defer></script>
+</body>
+</html>

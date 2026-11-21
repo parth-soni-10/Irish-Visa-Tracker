@@ -3,7 +3,7 @@
 
   var THEME_KEY = 'visa-theme';
   var menus = Array.prototype.slice.call(
-    document.querySelectorAll('details.sitebar-more, details.sitebar-prefs')
+    document.querySelectorAll('details.sitebar-more, details.sitebar-prefs, details.sitebar-mobile')
   );
 
   function close(menu, restoreFocus) {

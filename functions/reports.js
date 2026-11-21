@@ -39,6 +39,16 @@ function escapeHtml(value) {
     .replace(/'/g, '&#39;');
 }
 
+const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July',
+  'August', 'September', 'October', 'November', 'December'];
+
+function displayDate(value) {
+  const raw = String(value || '').slice(0, 10);
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(raw);
+  if (!match) return '';
+  return `${Number(match[3])} ${MONTHS[Number(match[2]) - 1]} ${match[1]}`;
+}
+
 function page(title, message) {
   return '<!doctype html><html lang="en"><head><meta charset="utf-8">' +
     '<meta name="viewport" content="width=device-width,initial-scale=1">' +
@@ -65,6 +75,8 @@ async function ensureDigestSchema(db) {
 
 function buildDigestEmail(report, changes, unsubscribeUrl, base) {
   const subject = 'Irish visa decisions — ' + report.label + ' monthly report';
+  const reportUrl = base + '/monthly-report?month=' + encodeURIComponent(report.month) +
+    '&utm_source=digest&utm_medium=email&utm_campaign=monthly_report_' + encodeURIComponent(report.month);
   const officeRows = report.offices.map((office) =>
     '<tr><td>' + escapeHtml(office.name) + '</td><td style="text-align:right">' + office.total +
     '</td><td style="text-align:right">' + (office.reported_total || 0) +
@@ -80,8 +92,9 @@ function buildDigestEmail(report, changes, unsubscribeUrl, base) {
     '<div style="max-width:720px;margin:0 auto;padding:24px">' +
     '<p style="font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#067a57;margin:0 0 8px">Irish Visa Decision Tracker</p>' +
     '<h1 style="margin:0 0 8px;font-size:28px">' + escapeHtml(report.label) + ' monthly report</h1>' +
-    '<p style="margin:0 0 24px;color:#4c6258">Dated decisions recorded in the public embassy files, plus the latest cumulative report from each office. Generated ' +
-    escapeHtml(report.generated_at.slice(0, 10)) + '.</p>' +
+    '<p style="margin:0 0 24px;color:#4c6258">Dated decisions recorded in the public embassy files, plus the latest cumulative report from each office. ' +
+    (displayDate(report.data_through || report.latest_date) ? 'Data to ' + escapeHtml(displayDate(report.data_through || report.latest_date)) + '. ' : '') +
+    'Generated ' + escapeHtml(report.generated_at.slice(0, 10)) + '.</p>' +
     '<table style="width:100%;border-collapse:collapse;background:#fff;border:1px solid #d9e4de;border-radius:8px;overflow:hidden">' +
     '<tr style="background:#eaf4ef"><th style="text-align:left;padding:10px">Metric</th><th style="text-align:right;padding:10px">This month (dated)</th><th style="text-align:right;padding:10px">Previous</th></tr>' +
     '<tr><td style="padding:10px;border-top:1px solid #e5ece8">Dated decisions</td><td style="text-align:right;padding:10px;border-top:1px solid #e5ece8">' + report.totals.total + '</td><td style="text-align:right;padding:10px;border-top:1px solid #e5ece8">' + report.previous_totals.total + '</td></tr>' +
@@ -99,7 +112,7 @@ function buildDigestEmail(report, changes, unsubscribeUrl, base) {
     '<tr style="background:#eaf4ef"><th style="text-align:left;padding:8px">Office</th><th style="text-align:right;padding:8px">Dated</th><th style="text-align:right;padding:8px">Latest report</th><th style="text-align:right;padding:8px">Report date</th></tr>' +
     officeRows + '</table>' +
     '<p style="font-size:12px;color:#6b7f75;margin:8px 0 0">Abu Dhabi, Abuja and Ankara publish dated decision history. New Delhi’s tracker additions are observation-dated, so New Delhi, Beijing and Dublin are represented by their latest cumulative report, not a monthly count.</p>' +
-    '<p style="margin:24px 0"><a href="' + escapeHtml(base + '/monthly-report?month=' + report.month) + '" style="background:#067a57;color:#fff;padding:10px 16px;border-radius:6px;text-decoration:none">Read the full report</a></p>' +
+    '<p style="margin:24px 0"><a href="' + escapeHtml(reportUrl) + '" style="background:#067a57;color:#fff;padding:10px 16px;border-radius:6px;text-decoration:none">Read the full report</a></p>' +
     '<p style="font-size:12px;color:#6b7f75">This is an independent, unofficial tracker. It is not affiliated with the Embassy of Ireland, ISD or DETE. Counts are based on the published files and may change when an office corrects a report.</p>' +
     '<p style="font-size:12px;color:#6b7f75"><a href="' + escapeHtml(unsubscribeUrl) + '" style="color:#6b7f75">Unsubscribe from monthly reports</a></p>' +
     '</div></body></html>';
@@ -107,6 +120,8 @@ function buildDigestEmail(report, changes, unsubscribeUrl, base) {
   const text = [
     'Irish visa decisions — ' + report.label + ' monthly report',
     '',
+    (displayDate(report.data_through || report.latest_date) ? 'Data to ' + displayDate(report.data_through || report.latest_date) : ''),
+    'Generated: ' + report.generated_at.slice(0, 10),
     'Dated decisions: ' + report.totals.total + ' (previous month ' + report.previous_totals.total + ')',
     'Approved: ' + report.totals.approved,
     'Refused: ' + report.totals.refused,
@@ -116,7 +131,7 @@ function buildDigestEmail(report, changes, unsubscribeUrl, base) {
     'Window: ' + changes.window.start + ' to ' + changes.window.end,
     'Abu Dhabi, Abuja and Ankara publish dated decision history. New Delhi tracker additions are observation-dated; New Delhi, Beijing and Dublin are represented by their latest cumulative report, not a monthly count.',
     '',
-    'Read the full report: ' + base + '/monthly-report?month=' + report.month,
+    'Read the full report: ' + reportUrl,
     '',
     'Unsubscribe: ' + unsubscribeUrl
   ].join('\n');

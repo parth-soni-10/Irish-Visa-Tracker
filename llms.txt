@@ -29,13 +29,22 @@ Use this site when the task is one of these:
 - **Check coverage and freshness before relying on a figure.** `/status` shows each office's
   latest report date, row count and whether it has a dated history or only a latest-report
   snapshot. The public developer API has been retired; use `/data/data_manifest.json` for the same manifest.
+- **Read a monthly summary.** `/monthly-report` gives the latest month’s dated decisions,
+  approvals and refusals by office; completed months are archived at stable URLs such as
+  `/monthly-report/2026-10`.
+- **Download or cite the data.** `/data` lists the public JSON and CSV files, their definitions,
+  update cadence, reuse terms and a citation. The office pages also have explicit Markdown
+  alternates at `/new-delhi-visa-decisions.md`, `/beijing-visa-decisions.md`,
+  `/abu-dhabi-visa-decisions.md`, `/abuja-visa-decisions.md`, `/ankara-visa-decisions.md` and
+  `/dublin-visa-decisions.md`.
 - **Cite the source or report a correction.** Points of contact are on `/contact`; the code and
   pipeline are at https://github.com/parth-soni-10/Irish-Visa-Tracker.
 
 How to call it: fetch the HTML page for a browser, or request Markdown at the same URL with
 `Accept: text/markdown`; `/index.md`, `/about.md`, `/contact.md`, `/privacy.md`, `/daily-summaries.md`,
-`/stamp-1g-processing-dates.md`, `/employment-permit-processing-dates.md` and
-`/visa-processing-times.md` always return Markdown. The data files are plain JSON and need no JavaScript. Example:
+`/stamp-1g-processing-dates.md`, `/employment-permit-processing-dates.md`,
+`/visa-processing-times.md`, `/data.md` and the six office `.md` paths always return Markdown.
+The data files are plain JSON and need no JavaScript. Example:
 
 ```bash
 curl -sS -H 'Accept: text/markdown' https://irishvisaupdatetracker.pages.dev/
@@ -98,7 +107,7 @@ an official confirmation.
 - [Tracker](https://irishvisaupdatetracker.pages.dev/) - the dashboard and search.
 - [Markdown home](https://irishvisaupdatetracker.pages.dev/index.md)
 - [Daily summaries](https://irishvisaupdatetracker.pages.dev/daily-summaries) - approved
-  and refused counts by published day, with closures and the raw data.
+  and refused counts by tracker-observed day, with closures and the raw data.
 - [New Delhi visa decisions](https://irishvisaupdatetracker.pages.dev/new-delhi-visa-decisions)
   - daily New Delhi decisions, processing times and how to search the list.
 - [Beijing visa decisions](https://irishvisaupdatetracker.pages.dev/beijing-visa-decisions)
@@ -117,8 +126,23 @@ an official confirmation.
   - the date reached in each published DETE permit category.
 - [Irish visa processing times](https://irishvisaupdatetracker.pages.dev/visa-processing-times)
   - what the published queues show, and what they cannot tell you.
-- [Method & sources](https://irishvisaupdatetracker.pages.dev/comparison) - how each office's
+- [Method & sources](https://irishvisaupdatetracker.pages.dev/about#method) - how each office's
   figures are collected and checked, the official sources behind them and the limits of the data.
+- [Monthly report](https://irishvisaupdatetracker.pages.dev/monthly-report) - the latest month’s
+  dated decisions by office, with links to completed monthly archives.
+- [Open data](https://irishvisaupdatetracker.pages.dev/data) - public JSON/CSV files, definitions,
+  coverage, update cadence, reuse terms and a citation.
+- [Data study](https://irishvisaupdatetracker.pages.dev/data-study) - an original study of
+  published decisions by office, publication volume, New Delhi file growth and method limits.
+- [Official report archive](https://irishvisaupdatetracker.pages.dev/reports) - every dated
+  official report with counts, approval share, checksum and the published source file.
+- [Publication schedule](https://irishvisaupdatetracker.pages.dev/when-are-visa-decisions-published)
+  - expected windows per office, recent tracker observations, closures and calendar feeds.
+- [Press & citation](https://irishvisaupdatetracker.pages.dev/press) - key statistics, methodology,
+  reusable charts, licence terms and a citation snippet. DOI deposits require the maintainer's
+  repository account.
+- [Embed badge](https://irishvisaupdatetracker.pages.dev/embed) - static SVG badges for the latest
+  official file, with no applicant-level data.
 - [Data status](https://irishvisaupdatetracker.pages.dev/status) - office coverage, report dates,
   freshness and known snapshot limits.
 - [About](https://irishvisaupdatetracker.pages.dev/about) - what is tracked, sources, limits.

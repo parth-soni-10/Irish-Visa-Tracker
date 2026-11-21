@@ -155,10 +155,15 @@ export function buildJsonFeed(feed) {
           entry.added ? `Added since previous report: ${entry.added}` : '',
           entry.removed ? `Removed since previous report: ${entry.removed}` : '',
           entry.corrections ? `Corrected rows: ${entry.corrections}` : '',
+          `Observed by tracker: ${entry.fetched_at}`,
           `Official file: ${source}`,
           `Tracker: ${base}/status#office-coverage`
         ].filter(Boolean).join('\n'),
-        date_published: entry.fetched_at,
+        // Readers expect pubDate to be the report's publication date. The
+        // tracker's observation time is exposed separately instead of making
+        // a file published on the 16th look published on the 17th.
+        date_published: `${entry.report_date}T00:00:00.000Z`,
+        _observed_at: entry.fetched_at,
         tags: ['official-file', entry.office],
         _official_file: {
           office: entry.office,
@@ -193,6 +198,7 @@ export function buildRssFeed(feed) {
       entry.added ? `Added since previous report: ${entry.added}` : '',
       entry.removed ? `Removed since previous report: ${entry.removed}` : '',
       entry.corrections ? `Corrected rows: ${entry.corrections}` : '',
+      `Observed by tracker: ${entry.fetched_at}`,
       `Official file: ${source}`,
       `Tracker: ${base}/status#office-coverage`
     ].filter(Boolean).join('\n');
@@ -201,7 +207,7 @@ export function buildRssFeed(feed) {
       `      <title>${xmlEscape(`${entry.office_name}: ${entry.decisions.toLocaleString('en-IE')} decisions — ${label}`)}</title>`,
       `      <link>${xmlEscape(source)}</link>`,
       `      <guid isPermaLink="false">${xmlEscape(entry.id)}</guid>`,
-      `      <pubDate>${xmlEscape(new Date(entry.fetched_at).toUTCString())}</pubDate>`,
+      `      <pubDate>${xmlEscape(new Date(`${entry.report_date}T00:00:00Z`).toUTCString())}</pubDate>`,
       `      <category>${xmlEscape(entry.office_name)}</category>`,
       `      <description>${xmlEscape(description)}</description>`,
       '    </item>'
