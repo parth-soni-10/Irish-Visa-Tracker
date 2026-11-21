@@ -181,6 +181,10 @@ function drawMonthCard(report) {
 export async function buildSocialCards(options = {}) {
   const assetsRoot = path.resolve(options.assetsRootDir || ROOT);
   const outRoot = path.resolve(options.outDir || path.join(assetsRoot, 'assets', 'social'));
+  // Rendering with canvas depends on the host's font stack. Reuse the
+  // checked-in cards in ordinary builds so the GitHub verifier and the
+  // Cloudflare build publish byte-identical assets; --write refreshes them.
+  const force = options.force === true;
   const manifest = JSON.parse(fs.readFileSync(path.join(assetsRoot, 'data', 'data_manifest.json'), 'utf8'));
   const data = await loadMonthlyData(assetsRoot);
   const latestMonth = data.latestDate ? data.latestDate.slice(0, 7) : '';
@@ -194,12 +198,22 @@ export async function buildSocialCards(options = {}) {
   let count = 0;
   for (const office of manifest.offices || []) {
     if (!office || !office.slug || !Number(office.decisions)) continue;
-    fs.writeFileSync(path.join(outRoot, `office-${office.slug}.png`), drawOfficeCard(office));
+    const target = path.join(outRoot, `office-${office.slug}.png`);
+    if (!force && fs.existsSync(target)) {
+      count += 1;
+      continue;
+    }
+    fs.writeFileSync(target, drawOfficeCard(office));
     count += 1;
   }
   for (const month of months) {
     const report = buildMonthlyReport(data.rows, month, data.officeList);
-    fs.writeFileSync(path.join(outRoot, `month-${month}.png`), drawMonthCard(report));
+    const target = path.join(outRoot, `month-${month}.png`);
+    if (!force && fs.existsSync(target)) {
+      count += 1;
+      continue;
+    }
+    fs.writeFileSync(target, drawMonthCard(report));
     count += 1;
   }
   return { count, latestMonth, months: months.length, outRoot };
@@ -210,7 +224,7 @@ if (isMain) {
   const outDir = process.argv.includes('--write')
     ? path.join(ROOT, 'assets', 'social')
     : path.join(ROOT, '.pages-dist', 'assets', 'social');
-  buildSocialCards({ outDir })
+  buildSocialCards({ outDir, force: process.argv.includes('--write') })
     .then((result) => console.log(`Social cards: ${result.count} PNG(s) in ${path.relative(ROOT, result.outRoot)}.`))
     .catch((error) => {
       console.error('Social cards failed:', error);

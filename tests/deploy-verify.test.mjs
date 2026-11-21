@@ -7,7 +7,7 @@ import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
-import { normaliseAsset, stripCloudflareAnalytics } from '../tools/verify-deploy.mjs';
+import { isIgnored, normaliseAsset, stripCloudflareAnalytics } from '../tools/verify-deploy.mjs';
 
 const VERIFY_SCRIPT = fileURLToPath(new URL('../tools/verify-deploy.mjs', import.meta.url));
 
@@ -87,13 +87,19 @@ test('deploy verifier normalises CRLF for text but not binary files', () => {
   assert.deepEqual(normaliseAsset('icon.png', binary), binary);
 });
 
-test('deploy verifier ignores the generated timestamp in the fallback index', () => {
+test('deploy verifier ignores the generated timestamp in the search indexes', () => {
   const first = Buffer.from(JSON.stringify({ generated_at: '2026-11-17T10:00:00Z', rows: [['x']] }));
   const second = Buffer.from(JSON.stringify({ generated_at: '2026-11-17T11:00:00Z', rows: [['x']] }));
-  assert.deepEqual(
-    normaliseAsset('data/search_fallback.json', first),
-    normaliseAsset('data/search_fallback.json', second)
-  );
+  for (const name of ['data/search_fallback.json', 'data/search_preview.json']) {
+    assert.deepEqual(normaliseAsset(name, first), normaliseAsset(name, second), name);
+  }
+});
+
+test('deploy verifier skips Pages-consumed platform files', () => {
+  assert.equal(isIgnored('_redirects'), true);
+  assert.equal(isIgnored('_headers'), true);
+  assert.equal(isIgnored('404.html'), true);
+  assert.equal(isIgnored('index.html'), false);
 });
 
 test('deploy verifier retries a transient edge mismatch', async (t) => {

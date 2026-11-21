@@ -47,8 +47,8 @@ export function stripCloudflareAnalytics(html) {
 }
 
 export function normaliseAsset(name, bytes) {
-  if (name === 'data/search_fallback.json') {
-    // The generator stamps each build. The rows and office metadata are the
+  if (name === 'data/search_fallback.json' || name === 'data/search_preview.json') {
+    // The generators stamp each build. The rows and office metadata are the
     // parts that must match the deployed data.
     try {
       const payload = JSON.parse(bytes.toString('utf8'));
@@ -65,9 +65,11 @@ export function normaliseAsset(name, bytes) {
   return bytes;
 }
 
-function isIgnored(name) {
-  // These are platform files, not served as ordinary static assets.
-  return name === '_headers' || name === '404.html';
+export function isIgnored(name) {
+  // These are platform files, not served as ordinary static assets. Pages
+  // consumes _redirects/_headers during deployment, so probing them would
+  // always return the 404 page even when the deployment is correct.
+  return name === '_headers' || name === '_redirects' || name === '404.html';
 }
 
 async function fetchAsset(name) {
