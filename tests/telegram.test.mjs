@@ -81,6 +81,29 @@ test('start link rejects a bad application number', async () => {
   assert.equal(response.status, 400);
 });
 
+test('start link accepts the same formatted application numbers as site search', async () => {
+  for (const [input, expected] of [
+    ['IRL85444062', '85444062'],
+    ['8544 4062', '85444062'],
+    ['8544-4062', '85444062'],
+    ['08544062', '8544062']
+  ]) {
+    const { db, linkRows } = makeTelegramDb();
+    const response = await handleTelegramStart(new Request('https://tracker.test/api/telegram/start', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ application_number: input, embassy: 'new-delhi' })
+    }), {
+      DB: db,
+      TELEGRAM_BOT_TOKEN: '123:abc',
+      TELEGRAM_BOT_USERNAME: 'Visa_Tracker_test_bot'
+    });
+    assert.equal(response.status, 200, input + ' should be accepted');
+    const token = (await response.json()).url.split('start=')[1];
+    assert.equal(linkRows.get(token).application_number, expected);
+  }
+});
+
 test('start link reports that Telegram is not configured', async () => {
   const request = new Request('https://tracker.test/api/telegram/start', {
     method: 'POST',
@@ -237,7 +260,8 @@ test('webhook /digest saves a preferred hour and timezone, reports status and pr
     assert.equal(preference.digest_frequency, 'daily');
     assert.equal(preference.digest_hour, 8);
     assert.equal(preference.digest_timezone, 'Europe/Dublin');
-    assert.ok(preference.last_digest_sent, 'enabling a digest should record its schedule start');
+    assert.equal(preference.last_digest_sent, null, 'enabling a digest must not look like a delivered digest');
+    assert.ok(preference.digest_started_at, 'enabling a digest should record its schedule start');
     assert.match(api.sent[0].text, /Digest on: a daily digest at 08:00 Europe\/Dublin/);
     assert.match(api.sent[0].text, /Daily digests are sent only when something changes/);
 
@@ -248,7 +272,7 @@ test('webhook /digest saves a preferred hour and timezone, reports status and pr
     );
     assert.equal(status.status, 200);
     assert.match(api.sent[1].text, /Digest: a daily digest at 08:00 Europe\/Dublin/);
-    assert.match(api.sent[1].text, /Last digest:/);
+    assert.match(api.sent[1].text, /Last digest: not sent yet/);
     assert.match(api.sent[1].text, /Telegram-only/);
 
     const preview = await handleTelegramWebhook(
@@ -320,6 +344,119 @@ test('webhook /digest rejects bad hours and timezones without saving preferences
   }
 });
 
+test('per-application digest and removal commands leave other links alone', async () => {
+  const { db, subscriptionRows } = makeTelegramDb({
+    subscriptions: [
+      { chat_id: '123456789', application_number: '11111111', embassy: 'new-delhi', active: 1 },
+      { chat_id: '123456789', application_number: '22222222', embassy: 'beijing', active: 1 }
+    ]
+  });
+  const api = stubTelegramApi();
+  try {
+    await handleTelegramWebhook(webhookRequest(123456789, '/digest daily'), telegramEnv(db));
+    assert.deepEqual(subscriptionRows.map((row) => row.immediate), [0, 0]);
+
+    await handleTelegramWebhook(webhookRequest(123456789, '/immediate 11111111'), telegramEnv(db));
+    assert.deepEqual(subscriptionRows.map((row) => row.immediate), [1, 0]);
+
+    const back = await handleTelegramWebhook(webhookRequest(123456789, '/digest IRL11111111'), telegramEnv(db));
+    assert.equal(back.status, 200);
+    assert.deepEqual(subscriptionRows.map((row) => row.immediate), [0, 0]);
+    assert.match(api.sent.at(-1).text, /Digest mode enabled for 11111111/);
+
+    const removed = await handleTelegramWebhook(webhookRequest(123456789, '/remove 22222222'), telegramEnv(db));
+    assert.equal(removed.status, 200);
+    assert.deepEqual(subscriptionRows.map((row) => row.active), [1, 0]);
+    assert.match(api.sent.at(-1).text, /Alerts removed for 22222222/);
+
+    const missing = await handleTelegramWebhook(webhookRequest(123456789, '/remove 33333333'), telegramEnv(db));
+    assert.equal(missing.status, 200);
+    assert.match(api.sent.at(-1).text, /No active alert is linked/);
+  } finally {
+    api.restore();
+  }
+});
+
+test('daily no-change preview says the scheduled digest would be skipped', async () => {
+  const { db } = makeTelegramDb({
+    subscriptions: [
+      {
+        chat_id: '123456789',
+        application_number: '85444062',
+        embassy: 'new-delhi',
+        active: 1,
+        immediate: 0,
+        last_alert_sent: '2026-11-16'
+      }
+    ],
+    preferences: [{ chat_id: '123456789', digest_frequency: 'daily' }]
+  });
+  const api = stubTelegramApi();
+  try {
+    await handleTelegramWebhook(
+      webhookRequest(123456789, '/digest preview'),
+      telegramEnv(db, { ASSETS: reportAssets() })
+    );
+    assert.match(api.sent[0].text, /nothing was sent/);
+    assert.match(api.sent[0].text, /would be skipped because there are no new published decisions/);
+  } finally {
+    api.restore();
+  }
+});
+
+test('weekly no-change preview groups every office and application', async () => {
+  const { db } = makeTelegramDb({
+    subscriptions: [
+      {
+        chat_id: '123456789',
+        application_number: '85444062',
+        embassy: 'new-delhi',
+        active: 1,
+        immediate: 0,
+        last_alert_sent: '2026-11-16'
+      }
+    ],
+    preferences: [{ chat_id: '123456789', digest_frequency: 'weekly' }]
+  });
+  const api = stubTelegramApi();
+  try {
+    await handleTelegramWebhook(
+      webhookRequest(123456789, '/digest preview'),
+      telegramEnv(db, { ASSETS: reportAssets() })
+    );
+    assert.match(api.sent[0].text, /New Delhi: no change \(1 application: 85444062\)/);
+    assert.doesNotMatch(api.sent[0].text, /would be skipped/);
+  } finally {
+    api.restore();
+  }
+});
+
+test('digest preview ignores applications that are back in immediate mode', async () => {
+  const { db } = makeTelegramDb({
+    subscriptions: [
+      {
+        chat_id: '123456789',
+        application_number: '85444062',
+        embassy: 'new-delhi',
+        active: 1,
+        immediate: 1
+      }
+    ],
+    preferences: [{ chat_id: '123456789', digest_frequency: 'daily' }]
+  });
+  const api = stubTelegramApi();
+  try {
+    await handleTelegramWebhook(
+      webhookRequest(123456789, '/digest preview'),
+      telegramEnv(db, { ASSETS: reportAssets() })
+    );
+    assert.match(api.sent[0].text, /All linked applications are set to immediate alerts/);
+    assert.doesNotMatch(api.sent[0].text, /85444062 —/);
+  } finally {
+    api.restore();
+  }
+});
+
 const WEBHOOK_SECRET = 'webhook-secret';
 
 /**
@@ -333,6 +470,7 @@ function makeTelegramDb({ links = [], subscriptions = [], preferences = [] } = {
   const preferenceRows = new Map(preferences.map((row) => [String(row.chat_id), {
     digest_frequency: 'off',
     last_digest_sent: null,
+    digest_started_at: null,
     digest_hour: 9,
     digest_timezone: 'UTC',
     ...row
@@ -348,33 +486,47 @@ function makeTelegramDb({ links = [], subscriptions = [], preferences = [] } = {
         },
         async run() {
           if (/INSERT INTO telegram_subscriptions/i.test(sql)) {
-            const [chatId, applicationNumber, embassy] = statement.args;
+            const [chatId, applicationNumber, embassy, immediate, baseline] = statement.args;
             const existing = subscriptionRows.find(
               (row) =>
                 row.chat_id === chatId &&
                 row.application_number === applicationNumber &&
                 row.embassy === embassy
             );
-            if (existing) existing.active = 1;
+            if (existing) {
+              existing.active = 1;
+              existing.immediate = immediate;
+            }
             else {
               subscriptionRows.push({
                 chat_id: chatId,
                 application_number: applicationNumber,
                 embassy,
-                active: 1
+                active: 1,
+                immediate,
+                last_alert_sent: baseline
               });
             }
-          } else if (/UPDATE telegram_subscriptions SET active = 0 WHERE chat_id = \?/i.test(sql)) {
-            for (const row of subscriptionRows) {
-              if (row.chat_id === statement.args[0]) row.active = 0;
-            }
-          } else if (/UPDATE telegram_subscriptions SET immediate = 1 WHERE chat_id = \? AND application_number = \?/i.test(sql)) {
+          } else if (/UPDATE telegram_subscriptions SET active = 0 WHERE chat_id = \? AND application_number = \?/i.test(sql)) {
             for (const row of subscriptionRows) {
               if (
                 row.chat_id === statement.args[0] &&
                 row.application_number === statement.args[1] &&
                 row.active
-              ) row.immediate = 1;
+              ) row.active = 0;
+            }
+          } else if (/UPDATE telegram_subscriptions SET active = 0 WHERE chat_id = \?/i.test(sql)) {
+            for (const row of subscriptionRows) {
+              if (row.chat_id === statement.args[0]) row.active = 0;
+            }
+          } else if (/UPDATE telegram_subscriptions SET immediate = ([01]) WHERE chat_id = \? AND application_number = \?/i.test(sql)) {
+            const immediate = Number(sql.match(/SET immediate = ([01])/i)[1]);
+            for (const row of subscriptionRows) {
+              if (
+                row.chat_id === statement.args[0] &&
+                row.application_number === statement.args[1] &&
+                row.active
+              ) row.immediate = immediate;
             }
           } else if (/UPDATE telegram_subscriptions SET immediate = \? WHERE chat_id = \?/i.test(sql)) {
             for (const row of subscriptionRows) {
@@ -389,19 +541,34 @@ function makeTelegramDb({ links = [], subscriptions = [], preferences = [] } = {
               expires_at: expiresAt
             });
           } else if (/INSERT INTO telegram_preferences/i.test(sql)) {
-            const [chatId, frequency, lastSent, hour, timeZone] = statement.args;
-            preferenceRows.set(String(chatId), {
-              chat_id: String(chatId),
-              digest_frequency: frequency,
-              last_digest_sent: lastSent,
-              digest_hour: hour,
-              digest_timezone: timeZone
-            });
+            if (statement.args.length === 5) {
+              const [chatId, frequency, startedAt, hour, timeZone] = statement.args;
+              const existing = preferenceRows.get(String(chatId));
+              preferenceRows.set(String(chatId), {
+                chat_id: String(chatId),
+                digest_frequency: frequency,
+                last_digest_sent: existing ? existing.last_digest_sent : null,
+                digest_started_at: startedAt,
+                digest_hour: hour,
+                digest_timezone: timeZone
+              });
+            } else {
+              const [chatId, hour, timeZone] = statement.args;
+              preferenceRows.set(String(chatId), {
+                chat_id: String(chatId),
+                digest_frequency: 'off',
+                last_digest_sent: null,
+                digest_started_at: null,
+                digest_hour: hour,
+                digest_timezone: timeZone
+              });
+            }
           } else if (/UPDATE telegram_preferences SET digest_frequency = 'off'/i.test(sql)) {
             const preference = preferenceRows.get(String(statement.args[0]));
             if (preference) {
               preference.digest_frequency = 'off';
               preference.last_digest_sent = null;
+              preference.digest_started_at = null;
             }
           } else if (/UPDATE telegram_preferences SET last_digest_sent = \?/i.test(sql)) {
             const preference = preferenceRows.get(String(statement.args[1]));
@@ -460,6 +627,7 @@ function makeTelegramDb({ links = [], subscriptions = [], preferences = [] } = {
 function telegramEnv(db, extra = {}) {
   return {
     DB: db,
+    ASSETS: reportAssets(),
     TELEGRAM_BOT_TOKEN: '123:abc',
     TELEGRAM_WEBHOOK_SECRET: WEBHOOK_SECRET,
     ...extra
@@ -547,7 +715,14 @@ test('webhook /start consumes a valid token and links the chat', async () => {
     assert.deepEqual(await response.json(), { ok: true });
     assert.equal(linkRows.has('valid-token'), false);
     assert.deepEqual(subscriptionRows, [
-      { chat_id: '123456789', application_number: '85444062', embassy: 'new-delhi', active: 1 }
+      {
+        chat_id: '123456789',
+        application_number: '85444062',
+        embassy: 'new-delhi',
+        active: 1,
+        immediate: 1,
+        last_alert_sent: '2026-11-16'
+      }
     ]);
     assert.equal(api.sent.length, 1);
     assert.equal(api.sent[0].chat_id, '123456789');

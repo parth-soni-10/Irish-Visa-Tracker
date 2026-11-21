@@ -3723,3 +3723,43 @@
   }
   #visa-dash .cards .card:last-child { border-bottom: 0; }
 }
+
+/* Reserve the live-data slots that fill after first paint. The tracker meta
+   text and the six-row publications table are much taller than their
+   placeholders; without a reserved box, filling them moves the footer and
+   the sections below it (CLS). Keep these heights in sync with the loaded
+   content at each breakpoint. */
+#visa-dash .embassy-status-grid { min-height: 288px; }
+#visa-dash .tracker-row-meta { width: 44%; min-height: 44px; }
+#visa-dash .tracker-meta { width: 100%; min-height: 1.4em; text-align: right; }
+#visa-dash .tracker-card { min-height: 74px; }
+#visa-dash #recent-searches { min-height: 34px; }
+
+/* The coverage table starts as one loading row. Fixed column widths keep its
+   header from sliding sideways when the six real rows (and their source
+   links) arrive. */
+#visa-dash .coverage-table { width: 100%; table-layout: fixed; }
+#visa-dash .coverage-table td { overflow-wrap: anywhere; }
+@media (min-width: 761px) {
+  #visa-dash .coverage-table th:nth-child(2),
+  #visa-dash .coverage-table td:nth-child(2) { width: 20%; }
+  #visa-dash .coverage-table th:nth-child(3),
+  #visa-dash .coverage-table td:nth-child(3) { width: 12%; }
+  #visa-dash .coverage-table th:nth-child(4),
+  #visa-dash .coverage-table td:nth-child(4) { width: 27%; }
+  #visa-dash .coverage-table th:nth-child(5),
+  #visa-dash .coverage-table td:nth-child(5) { width: 17%; }
+}
+
+@media (max-width: 760px) {
+  #visa-dash .embassy-status-grid { min-height: 270px; }
+  #visa-dash .tracker-row-meta { width: 46%; min-height: 77px; }
+  #visa-dash .tracker-meta { min-height: 4.2em; }
+  #visa-dash .tracker-card { min-height: 108px; }
+  #visa-dash .home-lookup-status { min-height: 3em; }
+}
+@media (max-width: 340px) {
+  #visa-dash .tracker-row-meta { width: 46%; min-height: 94px; }
+  #visa-dash .tracker-meta { min-height: 5.6em; }
+  #visa-dash .tracker-card { min-height: 128px; }
+}

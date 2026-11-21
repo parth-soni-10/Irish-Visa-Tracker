@@ -26,8 +26,18 @@ const OFFICE_NAMES = {
   ankara: 'Ankara'
 };
 
-function normalizeNumber(value) {
-  return String(value || '').replace(/\s+/g, '').replace(/^IRL/i, '').toUpperCase();
+/**
+ * Application numbers are an optional IRL prefix, then digits; spaces and
+ * dashes are formatting only. Keep the same normalization on the site, the
+ * Telegram link endpoint, bot commands and alert matching.
+ */
+export function normalizeApplicationNumber(value) {
+  return String(value == null ? '' : value).replace(/\D/g, '').replace(/^0+/, '');
+}
+
+/** The tracker accepts the 6-12 digit numbers used by the published offices. */
+export function isValidApplicationNumber(value) {
+  return /^\d{6,12}$/.test(normalizeApplicationNumber(value));
 }
 
 /**
@@ -36,11 +46,11 @@ function normalizeNumber(value) {
  * Delhi decision for a Beijing application.
  */
 export function findDecision(rows, applicationNumber, embassy) {
-  const number = normalizeNumber(applicationNumber);
+  const number = normalizeApplicationNumber(applicationNumber);
   const office = String(embassy || '').trim();
   if (!number || !office) return null;
   return (rows || []).find((row) =>
-    normalizeNumber(row.number) === number &&
+    normalizeApplicationNumber(row.number) === number &&
     String(row.office || '').trim() === office
   ) || null;
 }
@@ -190,23 +200,32 @@ export function buildDigestMessage(chatRows, options = {}) {
 
   if (!changed.length) {
     lines.push('No new published decisions for your linked applications.');
-  } else {
-    for (const [office, officeRows] of offices) {
-      const changedRows = officeRows.filter((row) => row.decision);
-      const unchanged = officeRows.length - changedRows.length;
-      if (!changedRows.length) {
-        lines.push((OFFICE_NAMES[office] || office) + ': no change (' + unchanged +
-          ' application' + (unchanged === 1 ? '' : 's') + ').');
-        continue;
-      }
-      lines.push((OFFICE_NAMES[office] || office) + ':');
-      for (const row of changedRows) {
-        lines.push('• ' + row.application_number + ' — ' + row.decision.decision +
-          ' (decision ' + row.decision.date + ', published ' + row.decision.report_date + ')');
-      }
-      if (unchanged > 0) lines.push('  No change for ' + unchanged + ' other application' + (unchanged === 1 ? '' : 's') + '.');
-      lines.push('');
+  }
+  // Group even when nothing changed: the weekly no-change digest must say
+  // which offices had no change, not only that the whole chat had none.
+  for (const [office, officeRows] of offices) {
+    const changedRows = officeRows.filter((row) => row.decision);
+    const unchanged = officeRows.length - changedRows.length;
+    if (!changedRows.length) {
+      lines.push((OFFICE_NAMES[office] || office) + ': no change (' + unchanged +
+        ' application' + (unchanged === 1 ? '' : 's') + ': ' +
+        officeRows.map((row) => row.application_number).join(', ') + ').');
+      continue;
     }
+    lines.push((OFFICE_NAMES[office] || office) + ':');
+    for (const row of changedRows) {
+      lines.push('• ' + row.application_number + ' — ' + row.decision.decision +
+        ' (decision ' + row.decision.date + ', published ' + row.decision.report_date + ')');
+    }
+    if (unchanged > 0) {
+      const unchangedNumbers = officeRows
+        .filter((row) => !row.decision)
+        .map((row) => row.application_number)
+        .join(', ');
+      lines.push('  No change for ' + unchanged + ' other application' +
+        (unchanged === 1 ? '' : 's') + ': ' + unchangedNumbers + '.');
+    }
+    lines.push('');
   }
 
   lines.push('View or manage: ' + base + '/?tracker=visa&tab=alerts');

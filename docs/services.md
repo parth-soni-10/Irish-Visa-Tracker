@@ -92,19 +92,24 @@ Telegram”. The site creates a single-use token that expires in 15 minutes and
 opens `https://t.me/<bot>?start=<token>`; pressing Start stores that chat id
 against the application. The hourly alert runner then sends one message per
 published decision date, updating `last_alert_sent` so retries are idempotent.
-`/stop` disables the chat and `/status` lists its linked applications. Chat members
-can switch to `/digest daily`, `/digest weekly` or `/digest off`; a digest groups
-the linked applications by office and includes a no-change line. Add an optional
-preferred hour and IANA timezone, for example `/digest daily 8 Europe/Dublin`;
-the hourly runner waits for that local hour before sending. `/digest status`
-shows the frequency, delivery hour, timezone and last send, while `/digest
-preview` sends the current digest content immediately without marking anything
-sent or moving the schedule. Daily digests are suppressed when nothing changed;
-weekly digests include an explicit no-change summary. The digest is
+New links store the application's currently published decision date as their
+baseline, so an already-published decision does not alert; only a later report
+does. `/stop` disables the chat and `/status` lists its linked applications.
+Chat members can switch to `/digest daily`, `/digest weekly` or `/digest off`; a
+digest groups the linked applications by office and includes a no-change line
+for each office. Add an optional preferred hour and IANA timezone, for example
+`/digest daily 8 Europe/Dublin`; the hourly runner waits for that local hour
+before sending. `/digest status` shows the frequency, delivery hour, timezone
+and last actual delivery, while `/digest preview` shows the next content without
+marking anything sent or moving the schedule; a daily no-change preview says
+the scheduled digest would be skipped. Daily digests are suppressed when nothing
+changed; weekly digests include an explicit no-change summary.
+`/immediate <number>` returns one application to immediate mode.
+`/digest <number>` returns one to digest mode, and `/remove <number>` stops one
+application without affecting the rest of the chat. The digest is
 Telegram-only: applications saved only in the browser watchlist are local and
 are never uploaded, so they are delivered by browser push rather than the
-digest. `/immediate <8-digit-number>` opts one application back into immediate
-delivery. No email address or phone number is collected, so there is no domain
+digest. No email address or phone number is collected, so there is no domain
 verification, opt-in review or per-message fee.
 
 For a public low-noise channel, add the bot as a channel administrator and set

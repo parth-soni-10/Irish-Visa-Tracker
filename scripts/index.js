@@ -298,6 +298,7 @@
             let homeSearchTerm = urlState.q;
             let homeSearchOffice = urlState.office;
             let homeLookupSeq = 0;
+            let tabPaintSeq = 0;
             let pastDateFilter = urlState.date;
             // Kept beside the date filter: the two narrow the same rows and share
             // the URL - ?tab=past&status=accepted&date=2026-10-01.
@@ -1552,6 +1553,29 @@
                 else if (tabId === 'tools' && activeView === 'vfs') wireVFSTracking();
             }
 
+            // Let the browser paint the selected pill before building the tab
+            // body. The heavyweight tables/charts are the INP cost of a tab
+            // click; painting the pressed state first keeps the interaction
+            // responsive even when the subsequent render is expensive.
+            function afterNextPaint() {
+                return new Promise(function(resolve) {
+                    var settled = false;
+                    function done() {
+                        if (settled) return;
+                        settled = true;
+                        resolve();
+                    }
+                    if (typeof requestAnimationFrame !== 'function') {
+                        setTimeout(done, 0);
+                        return;
+                    }
+                    requestAnimationFrame(function() { setTimeout(done, 0); });
+                    // Background tabs and reduced-motion environments may not
+                    // paint; don't leave the selected tab without content.
+                    setTimeout(done, 100);
+                });
+            }
+
             async function switchTab(tabId, opts) {
                 if (!document.getElementById('tab-body')) return;
                 activeTab = tabId;
@@ -1564,7 +1588,13 @@
                     if (isActive) pills[i].setAttribute('aria-current', 'page');
                     else pills[i].removeAttribute('aria-current');
                 }
+                var paintSeq = ++tabPaintSeq;
+                await afterNextPaint();
+                // A second click may have replaced this request while the first
+                // frame was painting; only the latest tab may write the body.
+                if (paintSeq !== tabPaintSeq || activeTab !== tabId) return;
                 var rows = cache && cache.length ? cache : await loadData();
+                if (paintSeq !== tabPaintSeq || activeTab !== tabId) return;
                 paintTabBody(tabId, rows);
                 markVisited();
             }
@@ -3619,7 +3649,8 @@
                     '<code>/digest weekly</code> in the bot for one grouped summary, or <code>/digest daily</code> for a ' +
                     'digest only when something changes. Add your preferred hour and IANA timezone, for example ' +
                     '<code>/digest daily 8 Europe/Dublin</code>, then use <code>/digest status</code> or ' +
-                    '<code>/digest preview</code>. <code>/immediate 12345678</code> keeps one application immediate.</p>' +
+                    '<code>/digest preview</code>. <code>/immediate 12345678</code> keeps one application immediate, ' +
+                    '<code>/digest 12345678</code> returns it to the digest, and <code>/remove 12345678</code> stops it.</p>' +
                     '<div class="alerts-grid">' +
                         '<form class="card alerts-card" id="alert-form" name="telegram-alerts" novalidate style="max-width:100%;">' +
                             ALERT_FORM_HTML +
@@ -4276,7 +4307,8 @@
             const ALERT_FORM_HTML =
                 '<h3 class="readme-title" style="margin-top:0;">Get Decision Alerts on Telegram</h3>' +
                 '<p class="note2">Enter your application number and visa office. We will message you on Telegram when a decision is published. No email address is collected.</p>' +
-                '<p><label>Application Number <input type="text" name="application_number" required placeholder="12345678" pattern="\\d{8}" /></label></p>' +
+                '<p><label>Application Number <input type="text" name="application_number" required placeholder="e.g. 85444062 or IRL85444062" inputmode="text" autocomplete="off" maxlength="20" /></label></p>' +
+                '<p class="note2" style="margin-top:-6px;">6–12 digits. An IRL prefix, spaces and dashes are optional.</p>' +
                 '<p><label>Visa Office <select name="embassy" required>' +
                     '<option value="new-delhi">🇮🇳 New Delhi (India, Bangladesh, Nepal, Sri Lanka)</option>' +
                     '<option value="beijing">🇨🇳 Beijing (China, Hong Kong, Macau, Mongolia)</option>' +
@@ -4358,11 +4390,11 @@
                 if (!form || !statusEl || !btn) return;
                 const appNumEl = form.querySelector('input[name="application_number"]');
                 const embassyEl = form.querySelector('select[name="embassy"]');
-                const applicationNumber = (appNumEl && appNumEl.value ? appNumEl.value : '').trim();
+                const applicationNumber = normalizeIRL(appNumEl && appNumEl.value ? appNumEl.value : '');
                 const embassy = embassyEl && embassyEl.value ? embassyEl.value : '';
 
-                if (!/^\d{8}$/.test(applicationNumber)) {
-                    statusEl.textContent = 'Please enter a valid 8-digit application number.';
+                if (!/^\d{6,12}$/.test(applicationNumber)) {
+                    statusEl.textContent = 'Enter a 6–12 digit application number. An IRL prefix, spaces and dashes are optional.';
                     statusEl.style.color = 'var(--red)';
                     if (appNumEl) appNumEl.focus();
                     return;
@@ -5820,7 +5852,12 @@ async function renderLandingPage() {
 
                 TABS.forEach(function(tab) {
                     var pill = root.querySelector('.navpill[data-tab="' + tab.id + '"]');
-                    pill.addEventListener('click', function() { switchTab(tab.id); });
+                    pill.addEventListener('click', function() {
+                        // Re-selecting the current tab should not rebuild a large
+                        // result surface (and should not create a long INP).
+                        if (tab.id === activeTab) return;
+                        switchTab(tab.id);
+                    });
                 });
                 wireChrome();
                 paintTabBody(activeTab, cache || []);

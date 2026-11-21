@@ -32,6 +32,40 @@ function stubDB(rows = []) {
   };
 }
 
+function pagedDB(rows = []) {
+  return {
+    prepare(sql) {
+      const statement = {
+        args: [],
+        bind(...args) {
+          statement.args = args;
+          return statement;
+        },
+        async all() {
+          if (/FROM telegram_subscriptions s/i.test(sql)) {
+            const [limit, offset] = statement.args.map(Number);
+            return { results: rows.slice(offset, offset + limit) };
+          }
+          if (/PRAGMA table_info/i.test(sql)) {
+            return {
+              results: [
+                { name: 'immediate' },
+                { name: 'digest_hour' },
+                { name: 'digest_timezone' },
+                { name: 'digest_started_at' }
+              ]
+            };
+          }
+          return { results: [] };
+        },
+        run: async () => ({ success: true }),
+        first: async () => null,
+      };
+      return statement;
+    },
+  };
+}
+
 /** Serve data/*.json from disk so the runner never touches the network. */
 function stubFetch() {
   const original = globalThis.fetch;
@@ -148,7 +182,8 @@ test("digest groups by office and states no-change applications", () => {
   assert.match(message, /New Delhi:/);
   assert.match(message, /12345678 — Approved/);
   assert.match(message, /No change for 1 other application/);
-  assert.match(message, /Beijing: no change \(1 application\)/);
+  assert.match(message, /No change for 1 other application: 87654321/);
+  assert.match(message, /Beijing: no change \(1 application: 11112222\)/);
 });
 
 test("a digest with no changes states that explicitly", () => {
@@ -158,6 +193,8 @@ test("a digest with no changes states that explicitly", () => {
   ], { baseUrl: "https://tracker.test", now: new Date("2026-11-17T12:00:00Z") });
   assert.match(message, /2 tracked applications · 0 new decisions/);
   assert.match(message, /No new published decisions for your linked applications\./);
+  assert.match(message, /New Delhi: no change \(1 application: 12345678\)/);
+  assert.match(message, /Beijing: no change \(1 application: 87654321\)/);
 });
 
 test("runs with Telegram configured and returns the counters", async () => {
@@ -174,6 +211,97 @@ test("runs with Telegram configured and returns the counters", async () => {
     assert.equal(body.checked, 0);
     assert.equal(body.sent, 0);
     assert.equal(response.headers.get("Cache-Control"), "no-store");
+  } finally {
+    restore();
+  }
+});
+
+test("checks every Telegram subscription beyond the first 500-row page", async () => {
+  const rows = Array.from({ length: 501 }, (_, index) => ({
+    id: index + 1,
+    chat_id: "123456789",
+    application_number: "900000" + String(index).padStart(3, "0"),
+    embassy: "new-delhi",
+    last_alert_sent: null,
+    immediate: 1,
+    digest_frequency: "off",
+    last_digest_sent: null,
+    digest_started_at: null,
+    digest_hour: 9,
+    digest_timezone: "UTC",
+  }));
+  const restore = stubFetch();
+  try {
+    const response = await handleAlertsRun(runRequest(), {
+      ALERTS_CRON_SECRET: SECRET,
+      DB: pagedDB(rows),
+      TELEGRAM_BOT_TOKEN: "123456:test-token",
+    });
+    const body = await response.json();
+    assert.equal(response.status, 200);
+    assert.equal(body.telegram_checked, 501);
+    assert.equal(body.checked, 501);
+  } finally {
+    restore();
+  }
+});
+
+test("does not alert for an existing decision already stored as the link baseline", async () => {
+  const rows = [{
+    id: 1,
+    chat_id: "123456789",
+    application_number: "85444062",
+    embassy: "new-delhi",
+    last_alert_sent: "2026-11-16",
+    immediate: 1,
+    digest_frequency: "off",
+    last_digest_sent: null,
+    digest_started_at: null,
+    digest_hour: 9,
+    digest_timezone: "UTC",
+  }];
+  const restore = stubFetch();
+  try {
+    const response = await handleAlertsRun(runRequest(), {
+      ALERTS_CRON_SECRET: SECRET,
+      DB: pagedDB(rows),
+      TELEGRAM_BOT_TOKEN: "123456:test-token",
+    });
+    const body = await response.json();
+    assert.equal(response.status, 200);
+    assert.equal(body.telegram_checked, 1);
+    assert.equal(body.telegram_sent, 0);
+    assert.equal(body.sent, 0);
+  } finally {
+    restore();
+  }
+});
+
+test("does not put an immediate-only application into the chat digest", async () => {
+  const rows = [{
+    id: 1,
+    chat_id: "123456789",
+    application_number: "85444062",
+    embassy: "new-delhi",
+    last_alert_sent: "2026-11-16",
+    immediate: 1,
+    digest_frequency: "weekly",
+    last_digest_sent: null,
+    digest_started_at: "2026-11-01T00:00:00.000Z",
+    digest_hour: 9,
+    digest_timezone: "UTC",
+  }];
+  const restore = stubFetch();
+  try {
+    const response = await handleAlertsRun(runRequest(), {
+      ALERTS_CRON_SECRET: SECRET,
+      DB: pagedDB(rows),
+      TELEGRAM_BOT_TOKEN: "123456:test-token",
+    });
+    const body = await response.json();
+    assert.equal(response.status, 200);
+    assert.equal(body.digest_checked, 0);
+    assert.equal(body.digest_sent, 0);
   } finally {
     restore();
   }

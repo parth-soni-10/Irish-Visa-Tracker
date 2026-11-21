@@ -27,8 +27,30 @@ import {
 // the runner as the entry point for digest behavior.
 export { buildDigestMessage, dueForDigest, findDecision, shouldSend, shouldSendDigest };
 
-const MAX_ALERTS = 500;
+// D1's result size is bounded, so every scan is paged instead of silently
+// stopping after the first 500 subscriptions.
+const PAGE_SIZE = 500;
 const DEFAULT_BASE = 'https://irishvisaupdatetracker.pages.dev';
+
+async function readRowsPaged(fetchPage) {
+  const rows = [];
+  let offset = 0;
+  let previousPageKey = null;
+  while (true) {
+    const page = await fetchPage(offset);
+    // Some test doubles ignore OFFSET. Stop rather than looping forever when
+    // the same page comes back twice; real D1 pages advance normally.
+    const pageKey = page.length
+      ? JSON.stringify([page[0], page[page.length - 1]])
+      : '';
+    if (offset > 0 && pageKey && pageKey === previousPageKey) break;
+    previousPageKey = pageKey;
+    rows.push(...page);
+    if (page.length < PAGE_SIZE) break;
+    offset += PAGE_SIZE;
+  }
+  return rows;
+}
 
 function emptyCounters() {
   return { checked: 0, matched: 0, sent: 0, skipped: 0, failed: 0, would_send: 0 };
@@ -43,16 +65,19 @@ async function runPushAlerts(env, report, dryRun) {
   await ensurePushSchema(env);
   let rows = [];
   try {
-    const result = await env.DB.prepare(`
-      SELECT application_number,
-             COALESCE(embassy_slug, embassy) AS embassy,
-             MAX(last_alert_sent) AS last_alert_sent
-      FROM push_subscriptions
-      WHERE application_number IS NOT NULL AND application_number <> ''
-      GROUP BY application_number, COALESCE(embassy_slug, embassy)
-      LIMIT ?
-    `).bind(MAX_ALERTS).all();
-    rows = result.results || [];
+    rows = await readRowsPaged(async (offset) => {
+      const result = await env.DB.prepare(`
+        SELECT application_number,
+               COALESCE(embassy_slug, embassy) AS embassy,
+               MAX(last_alert_sent) AS last_alert_sent
+        FROM push_subscriptions
+        WHERE application_number IS NOT NULL AND application_number <> ''
+        GROUP BY application_number, COALESCE(embassy_slug, embassy)
+        ORDER BY application_number, embassy
+        LIMIT ? OFFSET ?
+      `).bind(PAGE_SIZE, offset).all();
+      return result.results || [];
+    });
   } catch (error) {
     console.warn('Push alert query failed:', error.message);
     return { ...emptyCounters(), failed: 1 };
@@ -96,34 +121,41 @@ async function runPushAlerts(env, report, dryRun) {
 }
 
 async function telegramRows(env) {
-  const result = await env.DB.prepare(`
-    SELECT s.id, s.chat_id, s.application_number, s.embassy, s.last_alert_sent,
-           COALESCE(s.immediate, 1) AS immediate,
-           COALESCE(p.digest_frequency, 'off') AS digest_frequency,
-           p.last_digest_sent,
-           COALESCE(p.digest_hour, 9) AS digest_hour,
-           COALESCE(p.digest_timezone, 'UTC') AS digest_timezone
-    FROM telegram_subscriptions s
-    LEFT JOIN telegram_preferences p ON p.chat_id = s.chat_id
-    WHERE s.active = 1
-    ORDER BY s.id
-    LIMIT ?
-  `).bind(MAX_ALERTS).all();
-  return result.results || [];
+  return readRowsPaged(async (offset) => {
+    const result = await env.DB.prepare(`
+      SELECT s.id, s.chat_id, s.application_number, s.embassy, s.last_alert_sent,
+             COALESCE(s.immediate, 1) AS immediate,
+             COALESCE(p.digest_frequency, 'off') AS digest_frequency,
+             p.last_digest_sent,
+             p.digest_started_at,
+             COALESCE(p.digest_hour, 9) AS digest_hour,
+             COALESCE(p.digest_timezone, 'UTC') AS digest_timezone
+      FROM telegram_subscriptions s
+      LEFT JOIN telegram_preferences p ON p.chat_id = s.chat_id
+      WHERE s.active = 1
+      ORDER BY s.id
+      LIMIT ? OFFSET ?
+    `).bind(PAGE_SIZE, offset).all();
+    return result.results || [];
+  });
 }
 
 // Backwards-compatible query for a deployment whose digest migration has not
 // run yet. The schema migrator normally adds `immediate` before this is used.
 async function legacyTelegramRows(env) {
-  const result = await env.DB.prepare(`
-    SELECT id, chat_id, application_number, embassy, last_alert_sent
-    FROM telegram_subscriptions WHERE active = 1 ORDER BY id LIMIT ?
-  `).bind(MAX_ALERTS).all();
-  return (result.results || []).map((row) => ({
+  const rows = await readRowsPaged(async (offset) => {
+    const result = await env.DB.prepare(`
+      SELECT id, chat_id, application_number, embassy, last_alert_sent
+      FROM telegram_subscriptions WHERE active = 1 ORDER BY id LIMIT ? OFFSET ?
+    `).bind(PAGE_SIZE, offset).all();
+    return result.results || [];
+  });
+  return rows.map((row) => ({
     ...row,
     immediate: 1,
     digest_frequency: 'off',
     last_digest_sent: null,
+    digest_started_at: null,
     digest_hour: 9,
     digest_timezone: 'UTC'
   }));
@@ -212,17 +244,26 @@ async function runTelegramDigests(env, report, dryRun) {
       skipped += 1;
       continue;
     }
+    // Applications opted back into immediate mode are handled by
+    // runTelegramAlerts and must not appear in (or trigger) the chat digest.
+    const digestRows = chatRows.filter((row) => Number(row.immediate) === 0);
+    if (!digestRows.length) {
+      skipped += 1;
+      continue;
+    }
     const schedule = {
       hour: chatRows[0].digest_hour,
       timeZone: chatRows[0].digest_timezone
     };
-    if (!dueForDigest(chatRows[0].last_digest_sent, frequency, Date.now(), schedule)) {
+    const digestAnchor = [chatRows[0].last_digest_sent, chatRows[0].digest_started_at]
+      .filter(Boolean).sort().pop() || null;
+    if (!dueForDigest(digestAnchor, frequency, Date.now(), schedule)) {
       skipped += 1;
       continue;
     }
 
-    checked += chatRows.length;
-    const states = chatRows.map((row) => {
+    checked += digestRows.length;
+    const states = digestRows.map((row) => {
       const decision = findDecision(report.rows, row.application_number, row.embassy);
       return {
         ...row,

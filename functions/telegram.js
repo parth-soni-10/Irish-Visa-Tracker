@@ -21,10 +21,13 @@ import {
   digestTimeZone,
   findDecision,
   formatDigestHour,
+  isValidApplicationNumber,
+  normalizeApplicationNumber,
   normalizeDigestHour,
   normalizeDigestTimeZone,
   parseDigestHour,
-  shouldSend
+  shouldSend,
+  shouldSendDigest
 } from './digest.js';
 
 const API_BASE = 'https://api.telegram.org/bot';
@@ -59,6 +62,7 @@ CREATE TABLE IF NOT EXISTS telegram_preferences (
   chat_id TEXT PRIMARY KEY,
   digest_frequency TEXT NOT NULL DEFAULT 'off',
   last_digest_sent TEXT,
+  digest_started_at TEXT,
   digest_hour INTEGER NOT NULL DEFAULT 9,
   digest_timezone TEXT NOT NULL DEFAULT 'UTC',
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
@@ -73,11 +77,13 @@ const HELP_TEXT = [
   '/status - list linked applications and their alert mode',
   '/digest daily [hour timezone] - one grouped update a day, only when something changes',
   '/digest weekly [hour timezone] - one weekly summary, including “no change”',
-  '/digest status - show your frequency, delivery hour, timezone and last send',
-  '/digest preview - send what the next digest would contain now; changes nothing',
+  '/digest status - show your frequency, delivery hour, timezone and last actual delivery',
+  '/digest preview - show what the next digest would contain; changes nothing',
   '/digest off - back to immediate alerts',
   'Example: /digest daily 8 Europe/Dublin',
   '/immediate 12345678 - keep one application immediate while the chat is in digest mode',
+  '/digest 12345678 - put one application back into digest mode',
+  '/remove 12345678 - stop alerts for one linked application',
   '/stop - turn off every Telegram alert for this chat'
 ].join('\n');
 
@@ -98,6 +104,7 @@ export async function ensureTelegramSchema(env) {
   await addColumnIfMissing(env, 'telegram_subscriptions', 'immediate', 'INTEGER NOT NULL DEFAULT 1');
   await addColumnIfMissing(env, 'telegram_preferences', 'digest_hour', 'INTEGER NOT NULL DEFAULT 9');
   await addColumnIfMissing(env, 'telegram_preferences', 'digest_timezone', "TEXT NOT NULL DEFAULT 'UTC'");
+  await addColumnIfMissing(env, 'telegram_preferences', 'digest_started_at', 'TEXT');
 }
 
 async function addColumnIfMissing(env, table, column, definition) {
@@ -201,7 +208,7 @@ async function botUsername(env) {
 async function chatPreferences(env, chatId) {
   try {
     return await env.DB.prepare(
-      'SELECT digest_frequency, last_digest_sent, digest_hour, digest_timezone FROM telegram_preferences WHERE chat_id = ?'
+      'SELECT digest_frequency, last_digest_sent, digest_started_at, digest_hour, digest_timezone FROM telegram_preferences WHERE chat_id = ?'
     ).bind(chatId).first();
   } catch {
     return null;
@@ -215,7 +222,8 @@ function preferenceParts(preference) {
     frequency,
     hour: normalizeDigestHour(preference && preference.digest_hour),
     timeZone: digestTimeZone(preference && preference.digest_timezone),
-    lastSent: preference && preference.last_digest_sent ? String(preference.last_digest_sent) : null
+    lastSent: preference && preference.last_digest_sent ? String(preference.last_digest_sent) : null,
+    startedAt: preference && preference.digest_started_at ? String(preference.digest_started_at) : null
   };
 }
 
@@ -242,7 +250,7 @@ function digestStatusMessage(preference, linkedCount) {
     lines.push('Preferred delivery hour when enabled: ' + formatDigestHour(hour) + ' ' + timeZone + '.');
   } else {
     lines.push('Digest: ' + digestStatus(frequency, hour, timeZone) + '.');
-    lines.push('Last digest: ' + formatDigestSentAt(lastSent) + '.');
+    lines.push('Last digest: ' + (lastSent ? formatDigestSentAt(lastSent) : 'not sent yet') + '.');
   }
   lines.push('Linked applications: ' + linkedCount + '.');
   lines.push('Telegram-only: browser watchlist entries stay on the device and are not included.');
@@ -252,15 +260,24 @@ function digestStatusMessage(preference, linkedCount) {
 
 async function chatDigestRows(env, chatId) {
   const result = await env.DB.prepare(
-    'SELECT application_number, embassy, last_alert_sent FROM telegram_subscriptions WHERE chat_id = ? AND active = 1 ORDER BY created_at'
+    'SELECT application_number, embassy, last_alert_sent, COALESCE(immediate, 1) AS immediate FROM telegram_subscriptions WHERE chat_id = ? AND active = 1 ORDER BY created_at'
   ).bind(chatId).all();
   return (result && result.results) || [];
 }
 
 async function buildDigestPreview(env, request, chatId, preference) {
-  const rows = await chatDigestRows(env, chatId);
-  if (!rows.length) {
+  const allRows = await chatDigestRows(env, chatId);
+  if (!allRows.length) {
     return 'No applications linked. Open the tracker and press “Get alerts on Telegram”.';
+  }
+  const rows = allRows.filter((row) => Number(row.immediate) === 0);
+  if (!rows.length) {
+    return 'All linked applications are set to immediate alerts, so there is no digest to preview. Use /digest daily or /digest weekly to put the chat in digest mode.';
+  }
+
+  const { frequency, timeZone } = preferenceParts(preference);
+  if (frequency === 'off') {
+    return 'Digest is off, so there is no scheduled digest to preview. Send /digest daily or /digest weekly to enable one.';
   }
 
   let report;
@@ -271,7 +288,6 @@ async function buildDigestPreview(env, request, chatId, preference) {
     return 'Could not build a digest preview right now. Try again later.';
   }
 
-  const { timeZone } = preferenceParts(preference);
   const states = rows.map((row) => {
     const decision = findDecision(report.rows, row.application_number, row.embassy);
     return {
@@ -279,11 +295,30 @@ async function buildDigestPreview(env, request, chatId, preference) {
       decision: decision && shouldSend(row.last_alert_sent, decision.date) ? decision : null
     };
   });
+  const changedCount = states.filter((state) => state.decision).length;
+  if (!shouldSendDigest(frequency, changedCount)) {
+    return 'Digest preview — nothing was sent and the schedule is unchanged.\n\n' +
+      'The next scheduled daily digest would be skipped because there are no new published decisions.';
+  }
   return 'Digest preview — nothing was sent and the schedule is unchanged.\n\n' +
     buildDigestMessage(states, {
       baseUrl: env.APP_BASE_URL || DEFAULT_BASE_URL,
       timeZone
     });
+}
+
+async function currentDecisionDate(env, request, applicationNumber, embassy) {
+  try {
+    const report = await loadReportData(env, request);
+    const decision = findDecision(report.rows, applicationNumber, embassy);
+    return decision && decision.date ? String(decision.date).slice(0, 10) : null;
+  } catch (error) {
+    console.warn('Telegram link baseline lookup failed:', error.message);
+    // If the current report cannot be read, use today as a conservative
+    // baseline: never alert an existing decision merely because the lookup
+    // failed while the link was being created.
+    return new Date().toISOString().slice(0, 10);
+  }
 }
 
 /**
@@ -295,10 +330,11 @@ export async function handleTelegramStart(request, env) {
   if (!env.DB) return json({ error: 'Database not configured' }, 503);
   let body;
   try { body = await request.json(); } catch { return json({ error: 'Malformed body' }, 400); }
-  const applicationNumber = String(body.application_number || '').trim();
+  if (!body || typeof body !== 'object') return json({ error: 'Malformed body' }, 400);
+  const applicationNumber = normalizeApplicationNumber(body.application_number);
   const embassy = String(body.embassy || '').trim();
-  if (!/^\d{8}$/.test(applicationNumber)) {
-    return json({ error: 'application_number must be 8 digits' }, 400);
+  if (!isValidApplicationNumber(applicationNumber)) {
+    return json({ error: 'application_number must contain 6 to 12 digits; IRL, spaces and dashes are optional' }, 400);
   }
   if (!EMBASSIES.has(embassy)) return json({ error: 'Invalid embassy' }, 400);
   if (!isTelegramConfigured(env)) {
@@ -372,21 +408,32 @@ export async function handleTelegramWebhook(request, env) {
       await reply(env, id, 'That link is invalid or has expired. Open the tracker and press “Get alerts on Telegram” again.');
       return json({ ok: true });
     }
+    const linkedNumber = normalizeApplicationNumber(link.application_number);
+    if (!isValidApplicationNumber(linkedNumber)) {
+      await reply(env, id, 'That link contains an invalid application number. Open the tracker and press “Get alerts on Telegram” again.');
+      return json({ ok: true });
+    }
     const preference = await chatPreferences(env, id);
     const current = preferenceParts(preference);
     const frequency = current.frequency;
     const immediate = frequency === 'off' ? 1 : 0;
+    // A number that is already in the current official file must not alert on
+    // the next hourly pass. Store the published decision date as the baseline;
+    // only a later decision will pass shouldSend(). Existing subscriptions keep
+    // their own last_alert_sent on the ON CONFLICT path.
+    const baseline = await currentDecisionDate(env, request, linkedNumber, link.embassy);
     await env.DB.prepare(`
-      INSERT INTO telegram_subscriptions (chat_id, application_number, embassy, active, immediate)
-      VALUES (?, ?, ?, 1, ?)
+      INSERT INTO telegram_subscriptions (chat_id, application_number, embassy, active, immediate, last_alert_sent)
+      VALUES (?, ?, ?, 1, ?, ?)
       ON CONFLICT(chat_id, application_number, embassy) DO UPDATE SET active = 1, immediate = excluded.immediate
-    `).bind(id, link.application_number, link.embassy, immediate).run();
+    `).bind(id, linkedNumber, link.embassy, immediate, baseline).run();
     await env.DB.prepare('DELETE FROM telegram_links WHERE token = ?').bind(argument).run();
     await reply(
       env,
       id,
-      'Alerts enabled for ' + link.application_number + ' (' + link.embassy + ').\n' +
+      'Alerts enabled for ' + linkedNumber + ' (' + link.embassy + ').\n' +
         'This chat uses ' + digestStatus(frequency, current.hour, current.timeZone) + '.\n' +
+        'Only decisions published after this link was created will alert.\n' +
         'Send /status to see every linked application.'
     );
     return json({ ok: true });
@@ -408,6 +455,31 @@ export async function handleTelegramWebhook(request, env) {
       return json({ ok: true });
     }
 
+    // /digest <number> returns one linked application to digest mode without
+    // resetting the chat's other per-application choices.
+    const numberInput = parts.slice(1).join(' ');
+    if (!DIGEST_FREQUENCIES.has(action) && action !== 'status' && action !== 'preview' &&
+        isValidApplicationNumber(numberInput)) {
+      const number = normalizeApplicationNumber(numberInput);
+      const current = preferenceParts(await chatPreferences(env, id));
+      if (current.frequency === 'off') {
+        await reply(env, id, 'Digest is off. Send /digest daily or /digest weekly first, then /digest ' + number + ' to return one application to digest mode.');
+        return json({ ok: true });
+      }
+      const linked = await env.DB.prepare(
+        'SELECT 1 AS linked FROM telegram_subscriptions WHERE chat_id = ? AND application_number = ? AND active = 1'
+      ).bind(id, number).first();
+      if (!linked) {
+        await reply(env, id, 'No active alert is linked to ' + number + '. Use /status to see your linked applications.');
+        return json({ ok: true });
+      }
+      await env.DB.prepare(
+        'UPDATE telegram_subscriptions SET immediate = 0 WHERE chat_id = ? AND application_number = ? AND active = 1'
+      ).bind(id, number).run();
+      await reply(env, id, 'Digest mode enabled for ' + number + '. Other linked applications keep their current mode.');
+      return json({ ok: true });
+    }
+
     if (!DIGEST_FREQUENCIES.has(action)) {
       await reply(
         env,
@@ -418,6 +490,8 @@ export async function handleTelegramWebhook(request, env) {
           '/digest status\n' +
           '/digest preview\n' +
           '/digest off\n' +
+          '/digest <number> - return one linked application to digest mode\n' +
+          '/remove <number> - stop one linked application\n' +
           'Example: /digest daily 8 Europe/Dublin'
       );
       return json({ ok: true });
@@ -449,16 +523,30 @@ export async function handleTelegramWebhook(request, env) {
 
     const frequency = action;
     const now = new Date().toISOString();
-    await env.DB.prepare(`
-      INSERT INTO telegram_preferences (chat_id, digest_frequency, last_digest_sent, digest_hour, digest_timezone, updated_at)
-      VALUES (?, ?, ?, ?, ?, datetime('now'))
-      ON CONFLICT(chat_id) DO UPDATE SET
-        digest_frequency = excluded.digest_frequency,
-        last_digest_sent = excluded.last_digest_sent,
-        digest_hour = excluded.digest_hour,
-        digest_timezone = excluded.digest_timezone,
-        updated_at = datetime('now')
-    `).bind(id, frequency, frequency === 'off' ? null : now, hour, timeZone).run();
+    if (frequency === 'off') {
+      await env.DB.prepare(`
+        INSERT INTO telegram_preferences (chat_id, digest_frequency, last_digest_sent, digest_started_at, digest_hour, digest_timezone, updated_at)
+        VALUES (?, 'off', NULL, NULL, ?, ?, datetime('now'))
+        ON CONFLICT(chat_id) DO UPDATE SET
+          digest_frequency = 'off',
+          last_digest_sent = NULL,
+          digest_started_at = NULL,
+          digest_hour = excluded.digest_hour,
+          digest_timezone = excluded.digest_timezone,
+          updated_at = datetime('now')
+      `).bind(id, hour, timeZone).run();
+    } else {
+      await env.DB.prepare(`
+        INSERT INTO telegram_preferences (chat_id, digest_frequency, digest_started_at, digest_hour, digest_timezone, updated_at)
+        VALUES (?, ?, ?, ?, ?, datetime('now'))
+        ON CONFLICT(chat_id) DO UPDATE SET
+          digest_frequency = excluded.digest_frequency,
+          digest_started_at = excluded.digest_started_at,
+          digest_hour = excluded.digest_hour,
+          digest_timezone = excluded.digest_timezone,
+          updated_at = datetime('now')
+      `).bind(id, frequency, now, hour, timeZone).run();
+    }
     await env.DB.prepare('UPDATE telegram_subscriptions SET immediate = ? WHERE chat_id = ?')
       .bind(frequency === 'off' ? 1 : 0, id).run();
     await reply(
@@ -469,7 +557,7 @@ export async function handleTelegramWebhook(request, env) {
           'Preferred delivery hour kept for later: ' + formatDigestHour(hour) + ' ' + timeZone + '.'
         : 'Digest on: ' + digestStatus(frequency, hour, timeZone) + '.\n' +
           'Only applications linked to this chat are included; browser watchlist entries stay on the device.\n' +
-          'Immediate alerts are off for this chat. Use /immediate 12345678 to keep one application immediate.\n' +
+          'Immediate alerts are off for this chat. Use /immediate 12345678 to keep one application immediate, or /digest 12345678 to return one to the digest.\n' +
           (frequency === 'daily'
             ? 'Daily digests are sent only when something changes.'
             : 'Weekly digests include a no-change summary.')
@@ -478,31 +566,52 @@ export async function handleTelegramWebhook(request, env) {
   }
 
   if (command === '/immediate') {
-    if (!/^\d{8}$/.test(argument)) {
-      await reply(env, id, 'Use /immediate followed by the 8-digit application number, for example:\n/immediate 12345678');
+    const number = normalizeApplicationNumber(parts.slice(1).join(' '));
+    if (!isValidApplicationNumber(number)) {
+      await reply(env, id, 'Use /immediate followed by a 6-12 digit application number, for example:\n/immediate 12345678');
       return json({ ok: true });
     }
     const linked = await env.DB.prepare(
       'SELECT 1 AS linked FROM telegram_subscriptions WHERE chat_id = ? AND application_number = ? AND active = 1'
-    ).bind(id, argument).first();
+    ).bind(id, number).first();
     if (!linked) {
-      await reply(env, id, 'No active alert is linked to ' + argument + '. Use /status to see your linked applications.');
+      await reply(env, id, 'No active alert is linked to ' + number + '. Use /status to see your linked applications.');
       return json({ ok: true });
     }
     await env.DB.prepare(
       'UPDATE telegram_subscriptions SET immediate = 1 WHERE chat_id = ? AND application_number = ? AND active = 1'
-    ).bind(id, argument).run();
+    ).bind(id, number).run();
     await reply(
       env,
       id,
-      'Immediate alerts enabled for ' + argument + '. Other linked applications stay in the digest.'
+      'Immediate alerts enabled for ' + number + '. Other linked applications stay in the digest.'
     );
+    return json({ ok: true });
+  }
+
+  if (command === '/remove') {
+    const number = normalizeApplicationNumber(parts.slice(1).join(' '));
+    if (!isValidApplicationNumber(number)) {
+      await reply(env, id, 'Use /remove followed by a 6-12 digit application number, for example:\n/remove 12345678');
+      return json({ ok: true });
+    }
+    const linked = await env.DB.prepare(
+      'SELECT 1 AS linked FROM telegram_subscriptions WHERE chat_id = ? AND application_number = ? AND active = 1'
+    ).bind(id, number).first();
+    if (!linked) {
+      await reply(env, id, 'No active alert is linked to ' + number + '. Use /status to see your linked applications.');
+      return json({ ok: true });
+    }
+    await env.DB.prepare(
+      'UPDATE telegram_subscriptions SET active = 0 WHERE chat_id = ? AND application_number = ? AND active = 1'
+    ).bind(id, number).run();
+    await reply(env, id, 'Alerts removed for ' + number + '. Other linked applications are unchanged.');
     return json({ ok: true });
   }
 
   if (command === '/stop') {
     await env.DB.prepare('UPDATE telegram_subscriptions SET active = 0 WHERE chat_id = ?').bind(id).run();
-    await env.DB.prepare("UPDATE telegram_preferences SET digest_frequency = 'off', last_digest_sent = NULL WHERE chat_id = ?")
+    await env.DB.prepare("UPDATE telegram_preferences SET digest_frequency = 'off', last_digest_sent = NULL, digest_started_at = NULL WHERE chat_id = ?")
       .bind(id).run().catch(() => {});
     await reply(env, id, 'Telegram alerts are off for this chat.');
     return json({ ok: true });
