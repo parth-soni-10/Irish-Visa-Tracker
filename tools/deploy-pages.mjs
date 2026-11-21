@@ -194,6 +194,36 @@ function bundleIndexAssets() {
   console.log(`Bundled ${cssFiles.length} stylesheets and ${scriptFiles.length} scripts for index.html`);
 }
 
+const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July',
+  'August', 'September', 'October', 'November', 'December'];
+
+function formatLongDate(iso) {
+  const parts = String(iso || '').slice(0, 10).split('-');
+  const month = MONTHS[Number(parts[1]) - 1];
+  if (parts.length !== 3 || !month) return '';
+  return `${Number(parts[2])} ${month} ${parts[0]}`;
+}
+
+function summarizeByDate(rows) {
+  const byDate = new Map();
+  for (const row of rows) {
+    if (!Array.isArray(row) || !row[0]) continue;
+    const date = String(row[0]).slice(0, 10);
+    if (!byDate.has(date)) byDate.set(date, { total: 0, approved: 0, refused: 0 });
+    const bucket = byDate.get(date);
+    bucket.total += 1;
+    if (/^approved/i.test(String(row[2]))) bucket.approved += 1;
+    else bucket.refused += 1;
+  }
+  return byDate;
+}
+
+function replaceFields(html, attribute, values) {
+  const re = new RegExp(`(<([a-z0-9]+)[^>]*\\b${attribute}="([^"]+)"[^>]*>)[\\s\\S]*?(</\\2>)`, 'gi');
+  return html.replace(re, (match, open, tag, key, close) =>
+    Object.prototype.hasOwnProperty.call(values, key) ? open + values[key] + close : match);
+}
+
 /**
  * The home page and daily summaries are static HTML. Write the latest New
  * Delhi count and report date into that text at build time so readers without
@@ -213,18 +243,9 @@ function injectLiveSummary() {
   }
   if (!meta || typeof meta.sheetRows !== 'number' || !meta.fileDate) return;
 
-  const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July',
-    'August', 'September', 'October', 'November', 'December'];
-  const longDate = (iso) => {
-    const parts = String(iso).slice(0, 10).split('-');
-    const month = months[Number(parts[1]) - 1];
-    if (parts.length !== 3 || !month) return null;
-    return `${Number(parts[2])} ${month} ${parts[0]}`;
-  };
-
-  const fileDate = longDate(meta.fileDate);
+  const fileDate = formatLongDate(meta.fileDate);
   if (!fileDate) return;
-  const checked = longDate(meta.lastRunAt) || fileDate;
+  const checked = formatLongDate(meta.lastRunAt) || fileDate;
   const count = meta.sheetRows.toLocaleString('en-IE');
   const summary = `${count} New Delhi decisions on record. Latest list: ${fileDate}. Checked ${checked}.`;
 
@@ -251,36 +272,10 @@ function injectLiveSummary() {
   console.log(`Live summary: ${summary}`);
 }
 
-const OFFICE_PAGE_FILES = {
-  'new-delhi': 'new-delhi-visa-decisions.html',
-  beijing: 'beijing-visa-decisions.html',
-  'abu-dhabi': 'abu-dhabi-visa-decisions.html',
-  abuja: 'abuja-visa-decisions.html',
-  ankara: 'ankara-visa-decisions.html',
-  dublin: 'dublin-visa-decisions.html',
-};
-
-function longOfficeDate(iso) {
-  const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July',
-    'August', 'September', 'October', 'November', 'December'];
-  const parts = String(iso || '').slice(0, 10).split('-');
-  const month = months[Number(parts[1]) - 1];
-  if (parts.length !== 3 || !month) return String(iso || '');
-  return `${Number(parts[2])} ${month} ${parts[0]}`;
-}
-
-function replaceOfficeField(html, key, value) {
-  const re = new RegExp(`(<([a-z0-9]+)[^>]*data-office="${key}"[^>]*>)[\\s\\S]*?(</\\2>)`, 'gi');
-  return html.replace(re, (match, open, tag, close) => open + value + close);
-}
-
-function replaceTodayField(html, key, value) {
-  const re = new RegExp(`(<([a-z0-9]+)[^>]*data-today="${key}"[^>]*>)[\\s\\S]*?(</\\2>)`, 'gi');
-  return html.replace(re, (match, open, tag, close) => open + value + close);
-}
-
-function injectOfficePages() {
-  const manifestPath = path.resolve(assetsRootDir, 'data', 'data_manifest.json');
+export function injectOfficePages(options = {}) {
+  const assetsRoot = path.resolve(options.assetsRootDir || assetsRootDir);
+  const dist = path.resolve(options.distDir || distDir);
+  const manifestPath = path.resolve(assetsRoot, 'data', 'data_manifest.json');
   if (!fs.existsSync(manifestPath)) return;
   let manifest;
   try {
@@ -291,7 +286,7 @@ function injectOfficePages() {
   }
   if (!Array.isArray(manifest.offices)) return;
 
-  const decisionsPath = path.resolve(assetsRootDir, 'data', 'visa_decisions.json');
+  const decisionsPath = path.resolve(assetsRoot, 'data', 'visa_decisions.json');
   let visaRows = [];
   if (fs.existsSync(decisionsPath)) {
     try {
@@ -302,22 +297,12 @@ function injectOfficePages() {
     }
   }
 
-  const byDate = new Map();
-  for (const row of visaRows) {
-    if (!Array.isArray(row) || !row[0]) continue;
-    const date = String(row[0]).slice(0, 10);
-    if (!byDate.has(date)) byDate.set(date, { total: 0, approved: 0, refused: 0 });
-    const bucket = byDate.get(date);
-    bucket.total += 1;
-    if (/^approved/i.test(String(row[2]))) bucket.approved += 1;
-    else bucket.refused += 1;
-  }
+  const byDate = summarizeByDate(visaRows);
   const allDates = [...byDate.keys()].sort();
 
   for (const office of manifest.offices) {
-    const file = OFFICE_PAGE_FILES[office.slug];
-    if (!file) continue;
-    const pagePath = path.resolve(distDir, file);
+    const file = `${office.slug}-visa-decisions.html`;
+    const pagePath = path.resolve(dist, file);
     if (!fs.existsSync(pagePath)) continue;
 
     const decisions = Number(office.decisions) || 0;
@@ -325,8 +310,8 @@ function injectOfficePages() {
     const refused = Number(office.refused) || 0;
     const approvalShare = decisions ? `${((approved / decisions) * 100).toFixed(1)}%` : '0.0%';
     const refusedShare = decisions ? `${((refused / decisions) * 100).toFixed(1)}%` : '0.0%';
-    const latest = longOfficeDate(office.report_date);
-    const checked = longOfficeDate(office.as_of || office.fetched_at);
+    const latest = formatLongDate(office.report_date);
+    const checked = formatLongDate(office.as_of || office.fetched_at);
     const reportCount = Array.isArray(office.archive_reports) && office.archive_reports.length
       ? office.archive_reports.length
       : 1;
@@ -335,35 +320,32 @@ function injectOfficePages() {
       ? `${allDates.length} published days`
       : isSnapshot ? 'the latest snapshot' : `${reportCount} weekly reports`;
     const archiveTotal = Number(office.archive_decisions) || decisions;
-    const firstHistoryDate = allDates.length ? longOfficeDate(allDates[0]) : '';
+    const firstHistoryDate = allDates.length ? formatLongDate(allDates[0]) : '';
     const archive = office.slug === 'new-delhi'
       ? `${allDates.length} published days${firstHistoryDate ? ` from ${firstHistoryDate}` : ''}`
       : isSnapshot
         ? `1 snapshot · ${archiveTotal.toLocaleString('en-IE')} decisions`
         : `${reportCount} weekly reports · ${archiveTotal.toLocaleString('en-IE')} decisions`;
 
-    let html = fs.readFileSync(pagePath, 'utf8');
-    html = replaceOfficeField(html, 'latest-date', latest);
-    html = replaceOfficeField(html, 'checked-date', checked);
-    html = replaceOfficeField(html, 'decisions', decisions.toLocaleString('en-IE'));
-    html = replaceOfficeField(html, 'approved', approved.toLocaleString('en-IE'));
-    html = replaceOfficeField(html, 'refused', refused.toLocaleString('en-IE'));
-    html = replaceOfficeField(html, 'approval-share', approvalShare);
-    html = replaceOfficeField(html, 'refused-share', refusedShare);
-    html = replaceOfficeField(html, 'history', history);
-    html = replaceOfficeField(html, 'archive', archive);
+    const fields = {
+      'latest-date': latest,
+      'checked-date': checked,
+      decisions: decisions.toLocaleString('en-IE'),
+      approved: approved.toLocaleString('en-IE'),
+      refused: refused.toLocaleString('en-IE'),
+      'approval-share': approvalShare,
+      'refused-share': refusedShare,
+      history,
+      archive,
+    };
 
     if (office.slug === 'new-delhi' && byDate.size) {
       const eligible = allDates.filter((date) => date <= String(office.report_date).slice(0, 10));
       const latestDay = eligible[eligible.length - 1];
       if (latestDay) {
         const bucket = byDate.get(latestDay);
-        html = replaceOfficeField(
-          html,
-          'latest-day',
-          `${longOfficeDate(latestDay)}: ${bucket.total.toLocaleString('en-IE')} decisions ` +
-            `(${bucket.approved.toLocaleString('en-IE')} approved, ${bucket.refused.toLocaleString('en-IE')} refused)`,
-        );
+        fields['latest-day'] = `${formatLongDate(latestDay)}: ${bucket.total.toLocaleString('en-IE')} decisions ` +
+          `(${bucket.approved.toLocaleString('en-IE')} approved, ${bucket.refused.toLocaleString('en-IE')} refused)`;
 
         // The official file date is the cutoff for the latest published file.
         // New Delhi rows can exist after that date; show them separately and
@@ -372,14 +354,15 @@ function injectOfficePages() {
         const trackerLatestDay = allDates[allDates.length - 1];
         const trackerBucket = trackerLatestDay ? byDate.get(trackerLatestDay) : null;
         const officialDate = String(latestDay).slice(0, 10);
-        const trackerLatest = trackerLatestDay && trackerLatestDay > officialDate && trackerBucket
-          ? `${longOfficeDate(trackerLatestDay)}: ${trackerBucket.total.toLocaleString('en-IE')} decisions ` +
+        fields['tracker-latest'] = trackerLatestDay && trackerLatestDay > officialDate && trackerBucket
+          ? `${formatLongDate(trackerLatestDay)}: ${trackerBucket.total.toLocaleString('en-IE')} decisions ` +
             `(${trackerBucket.approved.toLocaleString('en-IE')} approved, ${trackerBucket.refused.toLocaleString('en-IE')} refused; ` +
-            `partial day, not in the ${longOfficeDate(latestDay)} official file)`
+            `partial day, not in the ${formatLongDate(latestDay)} official file)`
           : 'No later tracker rows beyond the latest official file.';
-        html = replaceOfficeField(html, 'tracker-latest', trackerLatest);
       }
     }
+
+    let html = replaceFields(fs.readFileSync(pagePath, 'utf8'), 'data-office', fields);
 
     if (office.source_file) {
       html = html.replace(
@@ -407,16 +390,7 @@ function injectDailyToday() {
     return;
   }
   if (!Array.isArray(rows) || !rows.length) return;
-  const byDate = new Map();
-  for (const row of rows) {
-    if (!Array.isArray(row) || !row[0]) continue;
-    const date = String(row[0]).slice(0, 10);
-    if (!byDate.has(date)) byDate.set(date, { total: 0, approved: 0, refused: 0 });
-    const bucket = byDate.get(date);
-    bucket.total += 1;
-    if (/^approved/i.test(String(row[2]))) bucket.approved += 1;
-    else bucket.refused += 1;
-  }
+  const byDate = summarizeByDate(rows);
   if (!byDate.size) return;
   let cutoff = '';
   if (fs.existsSync(metaPath)) {
@@ -430,11 +404,12 @@ function injectDailyToday() {
   const latest = eligibleDates[eligibleDates.length - 1];
   if (!latest) return;
   const bucket = byDate.get(latest);
-  let html = fs.readFileSync(pagePath, 'utf8');
-  html = replaceTodayField(html, 'date', longOfficeDate(latest));
-  html = replaceTodayField(html, 'total', bucket.total.toLocaleString('en-IE'));
-  html = replaceTodayField(html, 'approved', bucket.approved.toLocaleString('en-IE'));
-  html = replaceTodayField(html, 'refused', bucket.refused.toLocaleString('en-IE'));
+  const html = replaceFields(fs.readFileSync(pagePath, 'utf8'), 'data-today', {
+    date: formatLongDate(latest),
+    total: bucket.total.toLocaleString('en-IE'),
+    approved: bucket.approved.toLocaleString('en-IE'),
+    refused: bucket.refused.toLocaleString('en-IE'),
+  });
   fs.writeFileSync(pagePath, html);
   console.log(`Daily summary: latest day ${latest} (${bucket.total} decisions).`);
 }
@@ -508,7 +483,9 @@ async function main() {
   console.log(`Output directory: ${distDir}`);
 }
 
-main().catch(err => {
-  console.error('Build failed:', err);
-  process.exit(1);
-});
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  main().catch(err => {
+    console.error('Build failed:', err);
+    process.exit(1);
+  });
+}

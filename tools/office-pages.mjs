@@ -26,12 +26,8 @@ const longDate = (iso) => {
   return `${Number(day)} ${MONTHS[Number(month) - 1]} ${year}`;
 };
 const pct = (part, total) => `${total ? ((part / total) * 100).toFixed(1) : '0.0'}%`;
-const esc = (value) => String(value)
-  .replace(/&/g, '&amp;')
-  .replace(/</g, '&lt;')
-  .replace(/>/g, '&gt;')
-  .replace(/"/g, '&quot;');
-const plain = (value) => String(value).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+const HTML_ESCAPES = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' };
+const esc = (value) => String(value).replace(/[&<>"]/g, (char) => HTML_ESCAPES[char]);
 
 const OFFICES = [
   {
@@ -48,7 +44,6 @@ const OFFICES = [
     fallback: {
       latest: '2026-11-19', checked: '2026-11-20',
       decisions: 43599, approved: 36769, refused: 6830,
-      history: '128 published days',
       archive: '128 published days from 12 July 2026',
     },
     sourceUrl: 'https://www.ireland.ie/en/india/newdelhi/services/visas/processing-times-and-decisions/',
@@ -114,7 +109,6 @@ const OFFICES = [
     fallback: {
       latest: '2026-11-01', checked: '2026-11-20',
       decisions: 13724, approved: 11373, refused: 2351,
-      history: 'the latest snapshot',
       archive: '1 snapshot · 13,724 decisions',
     },
     sourceUrl: 'https://www.ireland.ie/en/china/beijing/services/visas/visa-decisions/',
@@ -163,7 +157,6 @@ const OFFICES = [
     fallback: {
       latest: '2026-11-20', checked: '2026-11-20',
       decisions: 232, approved: 161, refused: 71,
-      history: '11 weekly reports',
       archive: '11 weekly reports · 2,900 decisions',
     },
     sourceUrl: 'https://www.ireland.ie/en/uae/abudhabi/services/visas/weekly-decision-reports/',
@@ -212,7 +205,6 @@ const OFFICES = [
     fallback: {
       latest: '2026-11-07', checked: '2026-11-20',
       decisions: 99, approved: 34, refused: 65,
-      history: '28 weekly reports',
       archive: '28 weekly reports · 2,375 decisions',
     },
     sourceUrl: 'https://www.ireland.ie/en/nigeria/abuja/services/visas/weekly-decision-reports/',
@@ -261,7 +253,6 @@ const OFFICES = [
     fallback: {
       latest: '2026-11-15', checked: '2026-11-20',
       decisions: 165, approved: 128, refused: 37,
-      history: '5 weekly reports',
       archive: '5 weekly reports · 792 decisions',
     },
     sourceUrl: 'https://www.ireland.ie/en/turkiye/ankara/services/visas/weekly-decision-report/',
@@ -310,7 +301,6 @@ const OFFICES = [
     fallback: {
       latest: '2026-11-20', checked: '2026-11-20',
       decisions: 4475, approved: 2624, refused: 1851,
-      history: 'the latest snapshot',
       archive: '1 snapshot · 4,475 decisions',
     },
     sourceUrl: 'https://www.irishimmigration.ie/visa-decisions/',
@@ -352,7 +342,7 @@ function schemaFor(office) {
   const faq = office.faq(f).map(([question, answer]) => ({
     '@type': 'Question',
     name: question,
-    acceptedAnswer: { '@type': 'Answer', text: plain(answer) },
+    acceptedAnswer: { '@type': 'Answer', text: answer },
   }));
   const graph = [
     {
@@ -522,7 +512,7 @@ ${schemaFor(office)}
         <li><strong>The number may be in a different format.</strong> Use the 8-digit application number; an IRL prefix, spaces and dashes are optional.</li>
         <li><strong>You may be using a different reference.</strong> A VFS reference, passport number, payment reference or courier tracking number will not match a published decision.</li>
         <li><strong>The latest file may not have loaded.</strong> Check <a href="/status">Data status</a> for the last successful check. Do not read a missing file as a refusal.</li>
-        ${office.missingExtra || ''}
+        ${office.missingExtra}
       </ul>
       <p class="small-note">A missing number is <strong>not a refusal</strong>. It means the tracker could not find it in the reports it checked.</p>
     </section>
