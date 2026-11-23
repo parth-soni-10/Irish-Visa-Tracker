@@ -4,23 +4,23 @@
   "categories": [
     {
       "stamp": "1, 1H",
-      "received_date": "2026-09-22"
+      "received_date": "2026-10-01"
     },
     {
       "stamp": "1G",
-      "received_date": "2026-09-25"
+      "received_date": "2026-09-29"
     },
     {
       "stamp": "2, 2A, 1A",
-      "received_date": "2026-09-19"
+      "received_date": "2026-09-25"
     },
     {
       "stamp": "4",
-      "received_date": "2026-09-30"
+      "received_date": "2026-10-06"
     },
     {
       "stamp": "All other categories",
-      "received_date": "2026-10-09"
+      "received_date": "2026-10-19"
     }
   ]
 }
