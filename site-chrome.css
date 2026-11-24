@@ -15,6 +15,17 @@
   font-display: swap;
   src: url('/fonts/inter-latin.woff2') format('woff2');
 }
+/* Metric-matched fallback: Arial scaled to Inter's advance widths, so text
+   wraps the same way before and after the swap. Without this the h1 gains a
+   second line only when Inter arrives, shifting the page by a line height. */
+@font-face {
+  font-family: 'Inter Fallback';
+  src: local('Arial'), local('Helvetica Neue'), local('Liberation Sans');
+  size-adjust: 109.3%;
+  ascent-override: 90.2%;
+  descent-override: 22.48%;
+  line-gap-override: 0%;
+}
 :root {
   --sc-ink: #171717;
   --sc-ink-soft: #525252;
@@ -27,7 +38,7 @@
   --sc-green: #0f7a43;
   --sc-green-deep: #0b6336;
   --sc-green-soft: #eef8f1;
-  --sc-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+  --sc-sans: 'Inter', 'Inter Fallback', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
 }
 
 /* The dashboard stores its theme on both #visa-dash and the document root.
