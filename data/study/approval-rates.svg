@@ -33,7 +33,7 @@
 <g>
       <text x="0" y="205" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="13" fill="#4b5563">Dublin</text>
       <rect x="160" y="194" width="430" height="14" rx="7" fill="#f1f5f9"/>
-      <rect x="160" y="194" width="285" height="14" rx="7" fill="#059669"/>
-      <text x="604" y="205" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="13" font-weight="600" fill="#111827">58.6%</text>
+      <rect x="160" y="194" width="299" height="14" rx="7" fill="#059669"/>
+      <text x="604" y="205" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="13" font-weight="600" fill="#111827">61.6%</text>
     </g>
 </svg>

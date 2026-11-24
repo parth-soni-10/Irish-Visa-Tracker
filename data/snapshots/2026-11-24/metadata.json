@@ -14,10 +14,10 @@
   ],
   "totals": {
     "offices": 6,
-    "decisions": 62547,
-    "approved": 51316,
-    "refused": 11231,
-    "approval_rate": "82.0%"
+    "decisions": 62920,
+    "approved": 51677,
+    "refused": 11243,
+    "approval_rate": "82.1%"
   },
   "offices": [
     {
@@ -74,10 +74,10 @@
       "slug": "dublin",
       "name": "Dublin",
       "report_date": "2026-11-24",
-      "decisions": 4475,
-      "approved": 2624,
-      "refused": 1851,
-      "approval_rate": "58.6%",
+      "decisions": 4848,
+      "approved": 2985,
+      "refused": 1863,
+      "approval_rate": "61.6%",
       "source_url": "https://www.irishimmigration.ie/visa-decisions/"
     }
   ],

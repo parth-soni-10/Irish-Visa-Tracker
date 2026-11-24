@@ -389,7 +389,7 @@ function schemaFor(office) {
       dateModified: f.checked,
       spatialCoverage: office.coverage,
       variableMeasured: ['Approved', 'Refused'],
-      creator: { '@id': `${SITE}/#organization` },
+      creator: { '@type': 'Organization', '@id': `${SITE}/#organization` },
       license: `${SITE}/terms`,
     },
     {
