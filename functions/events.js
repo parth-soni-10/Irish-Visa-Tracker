@@ -12,6 +12,13 @@ const EVENTS = new Set([
   'alert_telegram_opened',
   'watchlist_added',
   'application_search',
+  'office_selected',
+  'search_invalid_format',
+  'search_match_office',
+  'search_no_result',
+  'search_result_useful',
+  'search_result_not_useful',
+  'bulk_check',
   'activation_step_completed',
   'pwa_install_click'
 ]);

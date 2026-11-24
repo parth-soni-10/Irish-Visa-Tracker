@@ -15,9 +15,14 @@ function assetsEnv() {
     ASSETS: {
       async fetch(request) {
         const path = new URL(request.url).pathname;
-        if (path === '/' || path === '/index.html') {
+        if (path === '/' || path === '/index.html' || path === '/about') {
           return new Response('<!doctype html><h1>Tracker</h1>', {
             headers: { 'Content-Type': 'text/html; charset=utf-8' }
+          });
+        }
+        if (path === '/sw.js' || path === '/scripts/index-sw.js') {
+          return new Response('self.addEventListener("install", () => {})', {
+            headers: { 'Content-Type': 'application/javascript; charset=utf-8' }
           });
         }
         if (path === '/scripts/app.js') {
@@ -39,8 +44,18 @@ function assetsEnv() {
 const env = assetsEnv();
 const ctx = { waitUntil() {}, passThroughOnException() {} };
 
-test('HTML revalidates, versioned assets are immutable and data is never cached', async () => {
-  const document = await router.fetch(new Request('https://tracker.test/'), env, ctx);
+test('the homepage and service-worker entry points never cache while other HTML revalidates', async () => {
+  for (const path of ['/', '/index.html', '/sw.js', '/scripts/index-sw.js']) {
+    const response = await router.fetch(new Request('https://tracker.test' + path), env, ctx);
+    assert.equal(response.status, 200, path);
+    assert.match(response.headers.get('Cache-Control'), /no-store/, path);
+    assert.doesNotMatch(response.headers.get('Cache-Control'), /immutable/, path);
+    assert.match(response.headers.get('Pragma'), /no-cache/, path);
+    assert.equal(response.headers.get('Expires'), '0', path);
+    assert.equal(response.headers.get('CDN-Cache-Control'), 'no-store', path);
+  }
+
+  const document = await router.fetch(new Request('https://tracker.test/about'), env, ctx);
   assert.equal(document.status, 200);
   assert.match(document.headers.get('Cache-Control'), /no-cache/);
   assert.doesNotMatch(document.headers.get('Cache-Control'), /no-store/);
@@ -58,14 +73,30 @@ test('HTML revalidates, versioned assets are immutable and data is never cached'
   assert.equal(data.headers.get('Expires'), '0');
 });
 
-test('static headers revalidate HTML and cache versioned asset paths', async () => {
+test('static headers revalidate HTML, cache versioned assets and exempt update entry points', async () => {
   const headers = await read('_headers');
   const html = headers.match(/\/\*\.html[\s\S]*?(?=\n\/|$)/);
   assert.ok(html, 'HTML _headers block is missing');
   assert.match(html[0], /Cache-Control: no-cache, must-revalidate/);
   assert.match(html[0], /Pragma: no-cache/);
   assert.match(html[0], /Expires: 0/);
+
+  for (const [name, path] of [['homepage', '/'], ['index', '/index.html'], ['service worker', '/sw.js']]) {
+    const block = headers.match(new RegExp('^' + path.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\r?\\n([\\s\\S]*?)(?=\\r?\\n\\r?\\n)', 'm'));
+    assert.ok(block, name + ' block is missing');
+    assert.match(block[1], /Cache-Control: no-store/, name);
+    assert.doesNotMatch(block[1], /immutable/, name);
+  }
+
+  const appScript = headers.match(/\/scripts\/index-sw\.js\r?\n([\s\S]*?)(?=\r?\n\r?\n)/);
+  assert.ok(appScript, 'service-worker registration block is missing');
+  assert.match(appScript[1], /! Cache-Control/);
+  assert.match(appScript[1], /! CDN-Cache-Control/);
+  assert.match(appScript[1], /Cache-Control: no-store/);
+  assert.ok(headers.indexOf('/scripts/index-sw.js') > headers.indexOf('/scripts/*'), 'the exception must follow /scripts/*');
+
   assert.match(headers, /\/styles\/\*[\s\S]*?Cache-Control: public, max-age=31536000, immutable/);
+  assert.match(headers, /\/scripts\/\*[\s\S]*?Cache-Control: public, max-age=31536000, immutable/);
   assert.match(headers, /\/pages\.css[\s\S]*?Cache-Control: public, max-age=31536000, immutable/);
   assert.match(headers, /\/data\/\*[\s\S]*?Cache-Control: no-store/);
   // A broad cache rule would be merged with the asset rule by Cloudflare.

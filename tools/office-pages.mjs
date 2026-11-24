@@ -465,7 +465,7 @@ function faqSection(office) {
 
 function related(office) {
   const links = OFFICES.filter((item) => item.slug !== office.slug)
-    .map((item) => `<a href="${item.route}">${item.name}</a>`)
+    .map((item) => `<a href="${item.route}">${item.name} visa decisions</a>`)
     .join(' · ');
   return `<p class="page-nav">${links} · <a href="/irish-visa-decisions-today">Irish visa decisions today</a> · <a href="/visa-processing-times">Processing times</a> · <a href="/daily-summaries">Daily summaries</a> · <a href="/help">Help</a></p>`;
 }
@@ -476,7 +476,7 @@ function officeSearch(office) {
       <input type="hidden" name="tracker" value="visa">
       <input type="hidden" name="tab" value="search">
       <input type="hidden" name="office" value="${office.slug}">
-      <label for="${id}">Check your application number</label>
+      <label for="${id}">Search by application number</label>
       <div class="office-search-row">
         <input id="${id}" name="q" type="text" inputmode="numeric" autocomplete="off" maxlength="200" placeholder="e.g. 48850812" aria-describedby="${id}-note" required>
         <button class="btn primary" type="submit">Check ${office.name}</button>
@@ -530,7 +530,7 @@ ${schemaFor(office)}
     <p class="page-meta">Independent and unofficial &bull; Not immigration advice</p>
 
     ${officeSearch(office)}
-    <p class="office-freshness" data-freshness="${office.slug}">${office.name} — ${office.snapshot ? 'snapshot' : 'report'} ${longDate(f.latest)} &middot; ${f.decisions.toLocaleString('en-IE')} decisions &middot; checked ${longDate(f.checked)} &middot; ${office.snapshot ? 'Snapshot' : 'Official'}${f.observation ? ` <span class="office-freshness-observation">${esc(f.observation)}</span>` : ''}</p>
+    <p class="office-freshness" data-freshness="${office.slug}">${office.name} — latest official ${office.snapshot ? 'snapshot' : 'report'}: ${longDate(f.latest)} &middot; ${f.decisions.toLocaleString('en-IE')} decisions &middot; checked ${longDate(f.checked)} &middot; ${office.snapshot ? 'Snapshot' : 'Official'}${f.observation ? ` <span class="office-freshness-observation">${esc(f.observation)}</span>` : ''}</p>
 
     <p class="page-lede">${office.lede}</p>
 
@@ -603,6 +603,8 @@ ${schemaFor(office)}
       ${office.dataNoteHtml}
       <p class="small-note">This is an independent, unofficial tracker. It is not affiliated with the Embassy of Ireland, ISD or any Irish government body, and it is not immigration advice. If a row is wrong or missing, report it with the office, report date and source URL through the <a href="/corrections">correction ledger</a>.</p>
     </section>
+
+    <p class="small-note"><strong>Cite this page:</strong> Irish Visa Decision Tracker, “${office.name} visa decisions,” ${SITE}${office.route}. Updated ${longDate(f.latest)}. <a href="/press">Citation and reuse</a> · <a href="/data-study">Data study</a>.</p>
 
     ${faqSection(office)}
 

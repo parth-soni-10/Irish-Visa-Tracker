@@ -1,0 +1,110 @@
+{
+  "generated_at": "2026-11-24T16:05:27.335Z",
+  "source": "seed",
+  "notes": "Seeded from the signed-in Search Console snapshot available on 24 November 2026. Run npm run coverage:dashboard with GSC/Bing credentials to refresh.",
+  "gsc": {
+    "site": "https://irishvisaupdatetracker.pages.dev/",
+    "period": {
+      "start": "2026-10-28",
+      "end": "2026-11-24",
+      "days": 28
+    },
+    "totals": {
+      "clicks": 17,
+      "impressions": 940,
+      "ctr": 0.0181,
+      "position": 16.27
+    },
+    "pages": [
+      {
+        "page": "/",
+        "clicks": 17,
+        "impressions": 940,
+        "ctr": 0.0181,
+        "position": 16.27
+      }
+    ],
+    "priorityUrls": [
+      {
+        "url": "/new-delhi-visa-decisions",
+        "coverageState": "URL is unknown to Google",
+        "indexingState": "not indexed",
+        "lastCrawlTime": "",
+        "verdict": "NEUTRAL"
+      },
+      {
+        "url": "/beijing-visa-decisions",
+        "coverageState": "URL is unknown to Google",
+        "indexingState": "not indexed",
+        "lastCrawlTime": "",
+        "verdict": "NEUTRAL"
+      },
+      {
+        "url": "/dublin-visa-decisions",
+        "coverageState": "URL is unknown to Google",
+        "indexingState": "not indexed",
+        "lastCrawlTime": "",
+        "verdict": "NEUTRAL"
+      },
+      {
+        "url": "/abu-dhabi-visa-decisions",
+        "coverageState": "URL is unknown to Google",
+        "indexingState": "not indexed",
+        "lastCrawlTime": "",
+        "verdict": "NEUTRAL"
+      },
+      {
+        "url": "/abuja-visa-decisions",
+        "coverageState": "URL is unknown to Google",
+        "indexingState": "not indexed",
+        "lastCrawlTime": "",
+        "verdict": "NEUTRAL"
+      },
+      {
+        "url": "/ankara-visa-decisions",
+        "coverageState": "URL is unknown to Google",
+        "indexingState": "not indexed",
+        "lastCrawlTime": "",
+        "verdict": "NEUTRAL"
+      }
+    ],
+    "sitemaps": [
+      {
+        "path": "https://irishvisaupdatetracker.pages.dev/sitemap.xml",
+        "lastSubmitted": "2026-11-24T13:13:12.000Z",
+        "isPending": true,
+        "errors": 0,
+        "warnings": 0,
+        "contents": []
+      }
+    ]
+  },
+  "bing": {
+    "configured": false,
+    "status": "BING_WEBMASTER_API_KEY is not set.",
+    "crawlStats": null,
+    "urlInfo": [],
+    "issues": []
+  },
+  "performance": {
+    "profile": "Desktop 1440x900, 0.4 Mbps, 500 ms latency, 1x CPU (local lab)",
+    "before": {
+      "fcp": 3.66,
+      "lcp": 3.82,
+      "cls": 0.224
+    },
+    "after": {
+      "lcp": 2.656,
+      "cls": 0.0194
+    },
+    "mobile": {
+      "profile": "Slow 4G, 4x CPU",
+      "lcp": 1.944,
+      "cls": 0.0194
+    },
+    "notes": "Desktop 1440x900, 0.4 Mbps, 500 ms, 1x CPU: LCP 2.656s after the performance work (was 3.82s). Mobile 390x844, 1.6 Mbps, 150 ms, 4x CPU: LCP 1.944s. The search fallback and full history are not fetched on first paint. Lab numbers are regression guards, not field data."
+  },
+  "errors": [
+    "No Search Console or Bing credentials were provided; showing the checked-in seed snapshot."
+  ]
+}

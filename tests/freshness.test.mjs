@@ -94,7 +94,7 @@ test("official surfaces keep their data-through separate from tracker observatio
     new RegExp(`${count} New Delhi decisions in the latest official file \\(report ${longDate(newDelhi.report_date)}\\)[\\s\\S]*Tracker observed decisions dated through ${observed}`),
   );
   assert.match(office, new RegExp(`${count} decisions`));
-  assert.match(office, new RegExp(`report ${longDate(newDelhi.report_date)}`));
+  assert.match(office, new RegExp(`latest official report: ${longDate(newDelhi.report_date)}`));
   assert.ok(office.includes(
     `office-freshness-observation">Tracker observed decisions dated through ${observed}; these are not in the ${official} official file.`,
   ));

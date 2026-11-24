@@ -37,6 +37,13 @@ Use this site when the task is one of these:
   alternates at `/new-delhi-visa-decisions.md`, `/beijing-visa-decisions.md`,
   `/abu-dhabi-visa-decisions.md`, `/abuja-visa-decisions.md`, `/ankara-visa-decisions.md` and
   `/dublin-visa-decisions.md`.
+- **Find the next step after a decision.** `/after-approval`, `/after-refusal` and
+  `/missing-decision` explain passport return, appeal/reapplication and office transfers with
+  official links. `/find-my-office` narrows the likely office by country and category.
+- **Check several applications or find every page.** `/bulk-tools` checks up to 100 numbers in
+  the browser and exports a dated CSV; `/all-pages` is a plain HTML index of every office,
+  report permalink, date archive, data page and guide. `/decisions` lists quality-gated decision
+  dates (weekdays with at least 10 published decisions).
 - **Cite the source or report a correction.** Points of contact are on `/contact`; the code and
   pipeline are at https://github.com/parth-soni-10/Irish-Visa-Tracker.
 

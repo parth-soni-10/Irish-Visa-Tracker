@@ -7,5 +7,12 @@ export const CONTENT_DATES = {
   "/contact": "21 November 2026",
   "/corrections": "21 November 2026",
   "/privacy": "21 November 2026",
-  "/terms": "21 November 2026"
+  "/terms": "21 November 2026",
+  "/all-pages": "24 November 2026",
+  "/after-approval": "24 November 2026",
+  "/after-refusal": "24 November 2026",
+  "/missing-decision": "24 November 2026",
+  "/find-my-office": "24 November 2026",
+  "/bulk-tools": "24 November 2026",
+  "/decisions": "24 November 2026"
 };

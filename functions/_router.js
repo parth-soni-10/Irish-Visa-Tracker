@@ -96,6 +96,9 @@ const IMMUTABLE_ROOTS = new Set([
   "/icon.svg",
   "/apple-touch-icon.png",
 ]);
+// These URLs control deployment and service-worker updates. They must never
+// be reused from an HTTP cache, even though /scripts/* is otherwise immutable.
+const NO_STORE_ASSETS = new Set(["/sw.js", "/scripts/index-sw.js", "/index.html"]);
 
 function setNoStore(headers) {
   headers.set("Cache-Control", NO_STORE);
@@ -281,8 +284,12 @@ async function fetchDocument(env, request, document) {
   if (document.alternate) {
     headers.set("Link", `<${document.alternate}>; rel="alternate"; type="text/markdown"`);
   }
-  // HTML revalidates; its versioned CSS/JS URLs are cached by the asset rules.
-  setHtmlCache(headers);
+  // The homepage is the deployment entry point: it must be fetched new so the
+  // next build's versioned assets and service-worker registration are visible
+  // immediately. Other HTML revalidates; versioned CSS/JS is cached by the
+  // asset rules.
+  if (document.noStore) setNoStore(headers);
+  else setHtmlCache(headers);
   mergeVary(headers);
   return addSecurityHeaders(new Response(request.method === "HEAD" ? null : response.body, {
     status: response.status,
@@ -344,7 +351,7 @@ async function agentDocumentResponse(request, env, document, origin = "") {
   if (choice === "markdown") {
     return markdownResponse(document.markdown, 200, request.method, origin);
   }
-  return fetchDocument(env, request, { file: document.file, alternate: document.alternate });
+  return fetchDocument(env, request, { file: document.file, alternate: document.alternate, noStore: document.noStore });
 }
 
 // Main request handler
@@ -685,7 +692,7 @@ async function handleRequest(request, env) {
 
   // Static assets and SPA fallback
   const documents = [
-    { path: "/", file: "index.html" },
+    { path: "/", file: "index.html", noStore: true },
     { path: "/about", file: "about.html" },
     { path: "/help", file: "help.html" },
     { path: "/vfs-tracking", file: "vfs-tracking.html" },
@@ -713,8 +720,21 @@ async function handleRequest(request, env) {
     { path: "/embed", file: "embed.html" },
     { path: "/community-timelines", file: "community-timelines.html" },
     { path: "/reports", file: "reports.html" },
-
+    { path: "/all-pages", file: "all-pages.html" },
+    { path: "/after-approval", file: "after-approval.html" },
+    { path: "/after-refusal", file: "after-refusal.html" },
+    { path: "/missing-decision", file: "missing-decision.html" },
+    { path: "/find-my-office", file: "find-my-office.html" },
+    { path: "/bulk-tools", file: "bulk-tools.html" },
+    { path: "/decisions", file: "decisions.html" },
+    { path: "/search-coverage", file: "search-coverage.html" },
   ];
+
+  // Quality-gated date archives live in decisions/<YYYY-MM-DD>.html.
+  const decisionDateMatch = pathname.match(/^\/decisions\/(\d{4}-\d{2}-\d{2})$/);
+  if (decisionDateMatch) {
+    return fetchDocument(env, request, { file: `decisions/${decisionDateMatch[1]}.html` });
+  }
 
   // Report permalinks live in reports/<office>/<date>.html and office report
   // indexes in reports/<office>.html. A generic asset fetch cannot be relied on
@@ -765,7 +785,8 @@ async function handleRequest(request, env) {
   const assetResponse = await env.ASSETS.fetch(request);
   if (assetResponse.status !== 404) {
     const headers = new Headers(assetResponse.headers);
-    if (isImmutableAsset(pathname)) setAssetCache(headers);
+    if (NO_STORE_ASSETS.has(pathname)) setNoStore(headers);
+    else if (isImmutableAsset(pathname)) setAssetCache(headers);
     else setStaticCache(headers);
     mergeVary(headers);
     return addSecurityHeaders(new Response(request.method === "HEAD" ? null : assetResponse.body, {

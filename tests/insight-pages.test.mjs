@@ -138,6 +138,8 @@ test("the today page lists every office's newest file with a build stamp", async
   const html = await readFile(path.join(dist, "irish-visa-decisions-today.html"), "utf8");
   const manifest = JSON.parse(await readFile(path.join(ROOT, "data", "data_manifest.json"), "utf8"));
   assert.match(html, /<h1>Irish visa decisions today<\/h1>/);
+  assert.match(html, /<title>Irish Visa Decisions Today — Latest by Office<\/title>/);
+  assert.match(html, /<strong>Last checked:<\/strong> <time datetime="/);
   assert.match(html, /<strong>Page built:<\/strong> <time datetime="[^"]+">[^<]+<\/time> Dublin time/);
   assert.doesNotMatch(html, /<strong>Last updated:<\/strong>/);
   assert.equal((html.match(/class="office-table/g) || []).length, 1);
@@ -150,7 +152,7 @@ test("the today page lists every office's newest file with a build stamp", async
     const reportDate = String(office.report_date || "").slice(0, 10);
     const row = rows.find((candidate) => candidate.includes(`href="/${office.slug}-visa-decisions"`));
     assert.ok(row, `${office.slug} row is missing from the today table`);
-    assert.ok(row.includes(`>${office.name}</a>`), `${office.slug} name is missing from its table row`);
+    assert.ok(row.includes(`>${office.name} visa decisions</a>`), `${office.slug} name is missing from its table row`);
     assert.ok(reportDate, `${office.slug} report date is missing from the manifest`);
     assert.match(row, new RegExp(`data-label="Latest publication"><time datetime="${reportDate}"`));
     assert.match(row, new RegExp(`data-label="Decisions">${office.decisions.toLocaleString("en-IE")}</td>`));
@@ -196,6 +198,8 @@ test("every archived report gets a source-linked permalink and no duplicate snap
   assert.match(reportsIndex, new RegExp(`/reports/new-delhi/${latest.report_date}`));
   assert.match(reportsIndex, /Tracker observed/);
   assert.match(reportsIndex, /Dates and provenance/);
+  assert.match(reportsIndex, /href="\/new-delhi-visa-decisions">New Delhi visa decisions<\/a>/);
+  assert.match(reportsIndex, /href="\/irish-visa-decisions-today">Latest decisions today<\/a>/);
 
   // The wide report tables stack on phones, so every value cell needs its
   // column label in the markup and the permalink key/value tables are marked.
@@ -226,6 +230,10 @@ test("badges, study exports, snapshots and sitemap entries are generated", async
   assert.match(badge, /role="img"/);
   assert.ok(badge.includes(`Last successful check ${freshness.bySlug["new-delhi"].last_success_label}`));
   assert.match(badge, /Static snapshot, not a live feed/);
+  assert.match(badge, /Current|Check status/);
+  const allBadge = await readFile(path.join(dist, "badges", "all.svg"), "utf8");
+  assert.match(allBadge, /All six offices/);
+  assert.match(allBadge, /Current|Check status/);
   const beijingBadge = await readFile(path.join(dist, "badges", "beijing.svg"), "utf8");
   assert.ok(beijingBadge.includes(`Last successful check ${freshness.bySlug.beijing.last_success_label}`));
   assert.match(beijingBadge, /latest check failed/);

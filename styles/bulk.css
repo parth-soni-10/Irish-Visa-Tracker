@@ -1,0 +1,40 @@
+/* Bulk check and office finder */
+.bulk-form { display: flex; flex-direction: column; gap: 14px; margin: 22px 0 30px; }
+.bulk-field { display: flex; flex-direction: column; gap: 7px; color: var(--ink-soft); font-size: 12px; font-weight: 700; }
+.bulk-field textarea {
+  width: 100%;
+  min-height: 190px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-control);
+  background: var(--surface);
+  color: var(--ink);
+  font: 14px/1.55 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  resize: vertical;
+}
+.bulk-field textarea:focus-visible { outline: 2px solid var(--green); outline-offset: 2px; border-color: var(--green); }
+.bulk-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.bulk-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 10px;
+  margin: 0 0 14px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-container);
+  background: var(--surface-soft, var(--surface));
+}
+.bulk-filters label { display: flex; flex-direction: column; gap: 4px; color: var(--ink-soft); font-size: 11px; font-weight: 700; }
+.bulk-filters select,
+.bulk-filters input { min-height: 38px; padding: 6px 9px; border: 1px solid var(--border); border-radius: var(--r-control); background: var(--surface); color: var(--ink); font: 13px var(--sans); }
+.office-finder-card { margin: 20px 0; padding: 18px; border: 1px solid var(--border); border-radius: var(--r-container); background: var(--surface-soft, var(--surface)); }
+.office-finder-card h2 { margin-top: 0; }
+#office-finder-result { margin-top: 18px; }
+#bulk-results-table td,
+#bulk-results-table th { vertical-align: top; }
+@media (max-width: 640px) {
+  .bulk-actions .btn { width: 100%; }
+  .bulk-filters label { flex: 1 1 100%; }
+  .bulk-field textarea { min-height: 160px; font-size: 16px; }
+}

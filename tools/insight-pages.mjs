@@ -97,7 +97,7 @@ const CONTENT_PAGES = [
   {
     file: 'irish-visa-decisions-today.html',
     route: '/irish-visa-decisions-today',
-    title: 'Irish Visa Decisions Today: Latest by Office',
+    title: 'Irish Visa Decisions Today — Latest by Office',
     description: 'What each Irish visa office has published most recently, with today’s date, decision counts, approved and refused totals, and the tracker’s last successful check.',
   },
   {
@@ -123,6 +123,48 @@ const CONTENT_PAGES = [
     route: '/reports',
     title: 'Official report archive | Irish Visa Decision Tracker',
     description: 'Every official report and snapshot check in the tracker archive, with decision counts, approval rates, checksums and links to the published source file.',
+  },
+  {
+    file: 'all-pages.html',
+    route: '/all-pages',
+    title: 'All pages | Irish Visa Decision Tracker',
+    description: 'A plain HTML index of every office page, official report, data page and guide on the Irish Visa Decision Tracker.',
+  },
+  {
+    file: 'after-approval.html',
+    route: '/after-approval',
+    title: 'Approved: what happens after an Irish visa decision',
+    description: 'What an approved Irish visa decision means, how passport return usually works, what to check on the visa, and which official sources to use before booking travel.',
+  },
+  {
+    file: 'after-refusal.html',
+    route: '/after-refusal',
+    title: 'Refused: appeal, review or reapply for an Irish visa',
+    description: 'What to check after an Irish visa refusal, how appeal rights and deadlines differ, the 2026 short-stay change, and how to reapply without relying on a generic template.',
+  },
+  {
+    file: 'missing-decision.html',
+    route: '/missing-decision',
+    title: 'My Irish visa number is missing or changed office',
+    description: 'What to check when an Irish visa application number is not in the published decisions, including number format, publication lag, office transfers and corrections.',
+  },
+  {
+    file: 'find-my-office.html',
+    route: '/find-my-office',
+    title: 'Find my Irish visa office | Tracker',
+    description: 'Use country, visa category and application date to identify the Irish visa office that likely handles a file, with links to the official processing and decisions pages.',
+  },
+  {
+    file: 'bulk-tools.html',
+    route: '/bulk-tools',
+    title: 'Bulk application check for agents and advisers | Tracker',
+    description: 'Paste multiple Irish visa application numbers, check them against the published decision files in one browser session, filter the results and export a dated CSV. Nothing is uploaded.',
+  },
+  {
+    file: 'decisions.html',
+    route: '/decisions',
+    title: 'Irish visa decisions by date | Tracker',
+    description: 'Quality-gated date archive of published Irish visa decisions across the six offices, with office counts, source reports and unique publication context.',
   },
 ];
 
@@ -779,6 +821,13 @@ function todayPage(data) {
       ? `No office has published a decision file dated today. The newest publication is dated ${longDate(newest)}.`
       : 'No dated office publication is recorded yet.';
 
+  const lastChecked = fresh
+    .map((office) => office.last_success_at || office.checked_at)
+    .filter(Boolean)
+    .sort()
+    .pop() || '';
+  const description = `Latest official Irish visa decisions for all six offices on ${longDate(today)}, with each office’s latest report date, decisions, approved and refused totals, and last successful check.`;
+
   const rows = fresh.map((office) => {
     const meta = (data.bySlug && data.bySlug.get(office.slug)) || {};
     const reportDate = String(office.report_date || '').slice(0, 10);
@@ -789,7 +838,7 @@ function todayPage(data) {
         ? '<br><span class="small-note">Report overdue</span>'
         : '';
     return `<tr>
-            <th scope="row"><a href="/${esc(office.slug)}-visa-decisions">${esc(office.name)}</a></th>
+            <th scope="row"><a href="/${esc(office.slug)}-visa-decisions">${esc(office.name)} visa decisions</a></th>
             <td data-label="Usual pattern">${esc(meta.cadence || '')}</td>
             <td data-label="Latest publication">${reportDate ? `<time datetime="${reportDate}">${esc(longDate(reportDate))}</time>` : '—'}</td>
             <td data-label="Decisions">${num(office.decisions)}</td>
@@ -808,8 +857,13 @@ function todayPage(data) {
       from each office, the decisions it contains, and when the tracker last checked it.
     </p>
 
+    <p class="small-note"><strong>Office decision pages:</strong>
+      ${fresh.map((office) => `<a href="/${esc(office.slug)}-visa-decisions">${esc(office.name)} visa decisions</a>`).join(' · ')}
+    </p>
+
     <p class="page-data-freshness">
       <strong>Today:</strong> <time datetime="${today}">${esc(longDate(today))}</time> &middot;
+      <strong>Last checked:</strong> ${lastChecked ? timeHTML(lastChecked) : '—'} &middot;
       <strong>Page built:</strong> <time datetime="${esc(iso)}">${esc(label)}</time> Dublin time
     </p>
 
@@ -848,12 +902,14 @@ ${rows}
         <a class="btn" href="/when-are-visa-decisions-published">Publication schedule</a>
       </p>
     </section>
+
+    <p class="small-note"><strong>Cite this page:</strong> Irish Visa Decision Tracker, “Irish visa decisions today,” ${SITE}${page.route}. <a href="/press">Citation, reuse and data downloads</a>.</p>
 `;
 
   return shell({
     route: page.route,
     title: page.title,
-    description: page.description,
+    description,
     body,
     jsonLd: {
       '@context': 'https://schema.org',
@@ -863,7 +919,7 @@ ${rows}
           '@id': `${SITE}${page.route}#webpage`,
           url: `${SITE}${page.route}`,
           name: 'Irish visa decisions today',
-          description: page.description,
+          description,
           inLanguage: 'en',
           isPartOf: { '@id': `${SITE}/#website` },
           dateModified: today,
@@ -1233,9 +1289,26 @@ function embedSnippet(office) {
 </a>`;
 }
 
+function embedAllSnippet(stats) {
+  return `<a href="${SITE}/irish-visa-decisions-today" rel="noopener">
+  <img src="${SITE}/badges/all.svg"
+       alt="All six Irish visa offices: ${num(stats.decisions)} decisions in the latest official files, ${longDate(stats.latestDate)}"
+       width="340" height="100" loading="lazy">
+</a>`;
+}
+
 function embedPage(data) {
   const stats = latestStats(data);
   const asOf = stats.latestDate;
+  const allCard = `<div class="badge-card">
+        <img src="/badges/all.svg" alt="All six Irish visa offices: ${num(stats.decisions)} decisions in the latest official files, ${longDate(stats.latestDate)}" width="340" height="100" loading="lazy">
+        <p class="badge-card-title">All six offices</p>
+        <p class="small-note">One badge for a resource list, with the latest publication date and combined count.</p>
+        <details class="embed-details">
+          <summary>Copy the all-six snippet</summary>
+          <pre class="embed-code" tabindex="0"><code>${esc(embedAllSnippet(stats))}</code></pre>
+        </details>
+      </div>`;
   const cards = data.offices.filter((office) => Number(office.decisions) > 0).map((office) => `<div class="badge-card">
         <img src="/badges/${office.slug}.svg" alt="${esc(badgeAlt(office))}" width="340" height="100" loading="lazy">
         <p class="badge-card-title">${esc(office.name)}</p>
@@ -1248,16 +1321,17 @@ function embedPage(data) {
 
   const body = `    <p class="page-kicker">Embedded badge</p>
     <h1>Embed the latest official file</h1>
-    <p class="page-meta">Static SVG &bull; No tracking &bull; No application data &bull; Six offices</p>
+    <p class="page-meta">Static SVG &bull; No tracking &bull; No application data &bull; One office or all six</p>
     <p class="page-freshness small-note"><strong>Data freshness:</strong> ${esc(canonicalFreshness(data))}. <a href="/status">All six offices</a>.</p>
 
-    <p class="page-lede">A small badge for a forum post, student page or resource list. It shows one office's latest report date, decision count and approval share, and links back to that office's tracker page. The image is a static SVG: no script, no cookie and no applicant-level data.</p>
+    <p class="page-lede">A small badge for a forum post, student page or resource list. It shows the latest report date, decision count and approval share for one office or all six, with a current/check-status label, and links back to the relevant tracker page. The image is a static SVG: no script, no cookie and no applicant-level data.</p>
 
     <p class="callout"><strong>Keep the alt text.</strong> The snippet below includes a descriptive <code>alt</code> attribute, which is what screen readers and search engines see. Change the office name in the snippet, not the data.</p>
 
     <section>
       <h2>Choose a badge</h2>
       <div class="badge-grid">
+      ${allCard}
       ${cards}
       </div>
     </section>
@@ -1266,7 +1340,9 @@ function embedPage(data) {
       <h2>Markdown version</h2>
       <p>For a README or Markdown post, replace <code>new-delhi</code> with the office slug you need.</p>
       <pre class="embed-code" tabindex="0"><code>${esc(`[![New Delhi latest official file](${SITE}/badges/new-delhi.svg)](${SITE}/new-delhi-visa-decisions)`)}</code></pre>
-      <p class="small-note">Badges inherit the site's no-store policy so a deploy's numbers are never stale. They are rebuilt from the public manifest, so the numbers always match the office page at the time of the last deploy.</p>
+      <p class="small-note">For all six offices:</p>
+      <pre class="embed-code" tabindex="0"><code>${esc(`[![All six Irish visa offices](${SITE}/badges/all.svg)](${SITE}/irish-visa-decisions-today)`)}</code></pre>
+      <p class="small-note">Badges are rebuilt from the public manifest at deploy time. They are static snapshots, not a live feed; the current/check-status label is the quickest way to see whether the underlying office data is fresh.</p>
     </section>
 
     <section>
@@ -1274,6 +1350,7 @@ function embedPage(data) {
       <ul class="study-list">
         <li><strong>Office and report date</strong> — the latest official file the tracker holds.</li>
         <li><strong>Decisions and approval share</strong> — published rows in that file, not an applicant's odds.</li>
+        <li><strong>Current or check status</strong> — “Current” means the newest official file passed its check; “Check status” means the office is stale, overdue or the last check failed. The label is not a promise that a newer unpublished file does not exist.</li>
         <li><strong>No personal data</strong> — application numbers never appear in the image or its URL.</li>
       </ul>
       <p class="page-nav"><a href="/data-study">Data study</a> &middot; <a href="/press">Press &amp; citation</a> &middot; <a href="/reports">Report archive</a></p>
@@ -1425,7 +1502,7 @@ function reportsIndexPage(data) {
   const officeLinks = data.offices.map((office) => {
     const history = reportHistory(officeEntries(data, office.slug));
     const isSnapshot = SNAPSHOT_OFFICES.has(office.slug);
-    return `<li><a href="/reports/${office.slug}">${esc(office.name)}</a> <span class="small-note">${num(history.length)} ${isSnapshot ? 'snapshot' : 'dated report'}${history.length === 1 ? '' : 's'}</span></li>`;
+    return `<li><a href="/${office.slug}-visa-decisions">${esc(office.name)} visa decisions</a> <span class="small-note">${num(history.length)} ${isSnapshot ? 'snapshot' : 'dated report'}${history.length === 1 ? '' : 's'}</span> · <a class="small-note" href="/reports/${office.slug}">report archive</a></li>`;
   }).join('\n        ');
 
   const body = `    <p class="page-kicker">Official report archive</p>
@@ -1461,7 +1538,7 @@ function reportsIndexPage(data) {
         </table>
       </div>
       <p class="small-note">The archive records what each office published. A missing date is a publication gap, never a reconstructed report. Beijing and Dublin publish live snapshots: their dates are the day the tracker checked an unchanged list, not a new dated decision report.</p>
-      <p class="page-nav"><a href="/data-study">Data study</a> &middot; <a href="/when-are-visa-decisions-published">Publication schedule</a> &middot; <a href="/press">Press &amp; citation</a> &middot; <a href="/status">Data status</a></p>
+      <p class="page-nav"><a href="/irish-visa-decisions-today">Latest decisions today</a> &middot; <a href="/data-study">Data study</a> &middot; <a href="/when-are-visa-decisions-published">Publication schedule</a> &middot; <a href="/press">Press &amp; citation</a> &middot; <a href="/status">Data status</a></p>
     </section>`;
 
   return shell({
@@ -1645,6 +1722,14 @@ function reportDetailPage(data, office, entry, prior) {
   });
 }
 
+function badgeStatus(fresh) {
+  if (!fresh) return { label: 'Snapshot', fill: '#e5e7eb', ink: '#374151' };
+  if (fresh.status === 'error' || fresh.attention || fresh.stale) {
+    return { label: 'Check status', fill: '#fef3c7', ink: '#92400e' };
+  }
+  return { label: 'Current', fill: '#d1fae5', ink: '#065f46' };
+}
+
 function badgeSvg(office, fresh) {
   const decisions = Number(office.decisions) || 0;
   const approved = Number(office.approved) || 0;
@@ -1655,16 +1740,41 @@ function badgeSvg(office, fresh) {
   const basis = fresh && fresh.status === 'error'
     ? ' The latest check failed, so this is not a live reading.'
     : ' Static snapshot, not a live feed.';
-  const desc = `${title}.${checked}${basis}`;
+  const status = badgeStatus(fresh);
+  const desc = `${title}. ${status.label}.${checked}${basis}`;
   return `<svg xmlns="http://www.w3.org/2000/svg" width="340" height="100" viewBox="0 0 340 100" role="img" aria-labelledby="badge-title badge-desc">
   <title id="badge-title">${esc(office.name)} latest official visa decision file</title>
   <desc id="badge-desc">${esc(desc)}</desc>
   <rect width="340" height="100" rx="10" fill="#ffffff" stroke="#e2e8f0"/>
   <rect x="0" y="0" width="6" height="100" rx="3" fill="#059669"/>
   <text x="22" y="26" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="9.5" font-weight="700" letter-spacing="1.1" fill="#6b7280">IRISH VISA DECISION TRACKER</text>
+  <rect x="262" y="14" width="66" height="18" rx="9" fill="${status.fill}"/>
+  <text x="295" y="27" text-anchor="middle" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="9" font-weight="700" fill="${status.ink}">${status.label}</text>
   <text x="22" y="50" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="18" font-weight="700" fill="#111827">${esc(office.name)}</text>
   <text x="22" y="71" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#4b5563">${esc(shortDate(office.report_date))} &#183; ${num(decisions)} decisions &#183; ${pct(approved, decisions)} approved</text>
   <text x="318" y="88" text-anchor="end" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="9.5" fill="#6b7280">Latest official file</text>
+</svg>
+`;
+}
+
+function allBadgeSvg(data) {
+  const stats = latestStats(data);
+  const statuses = data.offices.map((office) => badgeStatus(data.freshness.bySlug[office.slug]));
+  const status = statuses.some((item) => item.label !== 'Current')
+    ? { label: 'Check status', fill: '#fef3c7', ink: '#92400e' }
+    : { label: 'Current', fill: '#d1fae5', ink: '#065f46' };
+  const desc = `All six Irish visa offices: ${num(stats.decisions)} decisions in the latest official files, ${longDate(stats.latestDate)}. ${status.label}. Static snapshot, not a live feed.`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="340" height="100" viewBox="0 0 340 100" role="img" aria-labelledby="badge-title badge-desc">
+  <title id="badge-title">All six Irish visa offices — latest official files</title>
+  <desc id="badge-desc">${esc(desc)}</desc>
+  <rect width="340" height="100" rx="10" fill="#ffffff" stroke="#e2e8f0"/>
+  <rect x="0" y="0" width="6" height="100" rx="3" fill="#059669"/>
+  <text x="22" y="26" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="9.5" font-weight="700" letter-spacing="1.1" fill="#6b7280">IRISH VISA DECISION TRACKER</text>
+  <rect x="262" y="14" width="66" height="18" rx="9" fill="${status.fill}"/>
+  <text x="295" y="27" text-anchor="middle" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="9" font-weight="700" fill="${status.ink}">${status.label}</text>
+  <text x="22" y="50" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="18" font-weight="700" fill="#111827">All six offices</text>
+  <text x="22" y="71" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#4b5563">${esc(shortDate(stats.latestDate))} &#183; ${num(stats.decisions)} decisions &#183; ${pct(stats.approved, stats.decisions)} approved</text>
+  <text x="318" y="88" text-anchor="end" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="9.5" fill="#6b7280">Latest official files</text>
 </svg>
 `;
 }
@@ -1849,6 +1959,7 @@ export function buildInsightPages(options = {}) {
   for (const office of data.offices.filter((item) => Number(item.decisions) > 0)) {
     writeFile(path.join(outDir, 'badges', `${office.slug}.svg`), badgeSvg(office, data.freshness.bySlug[office.slug]));
   }
+  writeFile(path.join(outDir, 'badges', 'all.svg'), allBadgeSvg(data));
 
   writeFile(path.join(outDir, 'data', 'study', 'office-summary.csv'), officeSummaryCsv(data));
   writeFile(path.join(outDir, 'data', 'study', 'monthly-volume.csv'), monthlyVolumeCsv(monthly));
@@ -1881,7 +1992,7 @@ export function buildInsightPages(options = {}) {
     outDir,
     pages: Object.keys(pages),
     reportPages,
-    badges: data.offices.filter((office) => Number(office.decisions) > 0).length,
+    badges: data.offices.filter((office) => Number(office.decisions) > 0).length + 1,
     sitemapAdded,
     asOf,
   };

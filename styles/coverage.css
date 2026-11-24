@@ -1,0 +1,30 @@
+/* Internal search-coverage dashboard. Noindex; kept out of the sitemap. */
+.coverage-pill {
+  display: inline-block;
+  padding: 2px 7px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: normal;
+}
+.coverage-good { color: var(--green-ink, #14532d); background: #ecfdf5; border-color: #86efac; }
+.coverage-warn { color: #78350f; background: #fffbeb; border-color: #fcd34d; }
+.coverage-bad { color: #7f1d1d; background: #fef2f2; border-color: #fca5a5; }
+.coverage-json {
+  max-height: 260px;
+  overflow: auto;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-control);
+  background: var(--surface-soft, #f8fafc);
+  color: var(--ink);
+  font: 12px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+@media (prefers-color-scheme: dark) {
+  .coverage-good { color: #bbf7d0; background: #052e16; border-color: #166534; }
+  .coverage-warn { color: #fde68a; background: #422006; border-color: #92400e; }
+  .coverage-bad { color: #fecaca; background: #450a0a; border-color: #991b1b; }
+}

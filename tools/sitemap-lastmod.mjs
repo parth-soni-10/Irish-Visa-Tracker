@@ -66,6 +66,33 @@ export function buildLastmodMap(assetsRoot = ROOT) {
     ...latestReportDates,
   ]);
   const latestMonth = latest ? latest.slice(0, 7) : '';
+  const decisionByDate = new Map();
+  for (const [slug, entries] of Object.entries((reports && reports.offices) || {})) {
+    const sorted = (Array.isArray(entries) ? entries : [])
+      .filter((entry) => entry && /^\d{4}-\d{2}-\d{2}/.test(String(entry.report_date || '')))
+      .slice()
+      .sort((a, b) => String(b.report_date).localeCompare(String(a.report_date)));
+    let previous = '';
+    for (const entry of sorted) {
+      const key = [entry.decisions, entry.approved, entry.refused, entry.source_file].join('|');
+      if (key === previous) continue;
+      previous = key;
+      const date = dateOnly(entry && entry.report_date);
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) continue;
+      const day = new Date(`${date}T00:00:00Z`);
+      if (day.getUTCDay() === 0 || day.getUTCDay() === 6) continue;
+      const decisions = Number(entry.decisions) || 0;
+      if (!decisionByDate.has(date)) decisionByDate.set(date, new Map());
+      const offices = decisionByDate.get(date);
+      if (!offices.has(slug) || decisions > (Number(offices.get(slug)) || 0)) {
+        offices.set(slug, decisions);
+      }
+    }
+  }
+  const decisionDates = [...decisionByDate.entries()]
+    .map(([date, offices]) => ({ date, total: [...offices.values()].reduce((sum, value) => sum + value, 0) }))
+    .filter((item) => item.total >= 10)
+    .sort((a, b) => b.date.localeCompare(a.date));
 
   const map = new Map();
   for (const office of Array.isArray(manifest.offices) ? manifest.offices : []) {
@@ -103,6 +130,8 @@ export function buildLastmodMap(assetsRoot = ROOT) {
   for (const [route, date] of Object.entries((contentDates && contentDates.pages) || {})) {
     if (/^\d{4}-\d{2}-\d{2}$/.test(String(date))) map.set(route, String(date));
   }
+  for (const item of decisionDates) map.set(`/decisions/${item.date}`, item.date);
+  if (decisionDates.length) map.set('/decisions', decisionDates[0].date);
   const latestRun = (rows) => maxDate((Array.isArray(rows) ? rows : []).map((row) => row && row.run_date));
   const stampDate = latestRun(stampRows);
   const permitDate = latestRun(permitRows);

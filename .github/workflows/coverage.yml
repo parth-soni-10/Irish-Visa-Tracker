@@ -1,0 +1,57 @@
+name: Weekly search coverage
+
+# Measures discoverability instead of guessing from a screenshot. Search
+# Console URL Inspection is read-only: Request indexing remains a signed-in
+# manual action. IndexNow is handled by the deploy workflow for Bing/Yandex.
+
+on:
+  schedule:
+    - cron: '0 6 * * 1' # Monday 06:00 UTC
+  workflow_dispatch: {}
+
+concurrency:
+  group: search-coverage
+  cancel-in-progress: true
+
+jobs:
+  coverage:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '20.x'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Refresh Search Console and Bing snapshot
+        env:
+          GSC_SERVICE_ACCOUNT_JSON: ${{ secrets.GSC_SERVICE_ACCOUNT_JSON }}
+          GSC_SITE_URL: ${{ vars.GSC_SITE_URL || 'https://irishvisaupdatetracker.pages.dev/' }}
+          BING_WEBMASTER_API_KEY: ${{ secrets.BING_WEBMASTER_API_KEY }}
+        run: node tools/coverage-dashboard.mjs
+
+      - name: Commit the snapshot and dashboard
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/search-coverage.json search-coverage.html
+          if git diff --staged --quiet; then
+            echo "No coverage change to commit."
+          else
+            git commit -m "ops: refresh search coverage snapshot"
+            git push
+          fi
+
+      # A failed API call must be visible. The script keeps the seed data,
+      # records the error in the dashboard and leaves the run non-zero only
+      # when the dashboard could not be written at all.
+      - name: Show refresh warnings
+        run: |
+          node -e "const d=require('./data/search-coverage.json'); if (d.errors && d.errors.length) for (const e of d.errors) console.warn('warning: '+e);"

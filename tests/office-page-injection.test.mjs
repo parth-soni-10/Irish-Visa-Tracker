@@ -101,6 +101,16 @@ test("deploy office-page injection writes current manifest data into a temporary
     const html = await readFile(path.join(dist, file), "utf8");
 
     assert.doesNotMatch(html, /STALE-/, `${file}: injector left a stale field`);
+    assert.match(
+      html,
+      new RegExp(`<title>${escapeRegExp(office.name)} Visa Decisions — Latest [^<]+<\\/title>`),
+      `${file}: title is missing the office and latest date`,
+    );
+    assert.match(
+      html,
+      new RegExp(`<meta name="description" content="Search Irish visa decisions for [^"]*Latest official (?:report|snapshot): [^"]*Search by application number\\.`),
+      `${file}: description is missing the current snippet`,
+    );
     if (office.slug === "beijing" && office.status === "error") {
       assert.match(html, /The last successful check on [^<]+ found no newer decision-file link than the 1 November 2026 snapshot\./);
       assert.match(html, /The tracker's latest check on [^<]+ failed \(No decision file link found\)/);

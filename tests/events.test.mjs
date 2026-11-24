@@ -32,11 +32,19 @@ test('conversion events accept only the fixed vocabulary', async () => {
   const env = { DB: eventDB() };
   const accepted = await handleEvents(request({ event: 'alert_telegram_click', source: 'home' }), env);
   assert.equal(accepted.status, 202);
-  assert.deepEqual(env.DB.inserts, [['alert_telegram_click', 'home', null]]);
+  const useful = await handleEvents(request({ event: 'search_result_useful', source: 'lookup_result' }), env);
+  assert.equal(useful.status, 202);
+  const empty = await handleEvents(request({ event: 'search_no_result', source: 'home' }), env);
+  assert.equal(empty.status, 202);
+  assert.deepEqual(env.DB.inserts, [
+    ['alert_telegram_click', 'home', null],
+    ['search_result_useful', 'lookup_result', null],
+    ['search_no_result', 'home', null]
+  ]);
 
   const rejected = await handleEvents(request({ event: 'pasted-free-text', source: 'home' }), env);
   assert.equal(rejected.status, 400);
-  assert.equal(env.DB.inserts.length, 1);
+  assert.equal(env.DB.inserts.length, 3);
 });
 
 test('application numbers are stored only when they are public eight-digit values', async () => {

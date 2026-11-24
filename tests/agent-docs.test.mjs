@@ -298,7 +298,7 @@ test("every page title the app sets carries the brand", async () => {
   const script = await read("scripts/index.js");
   const titles = [...script.matchAll(/document\.title = '([^']+)'/g)].map((match) => match[1]);
   assert.ok(titles.length >= 4, "expected the app's four titles");
-  const homeTitle = 'Ireland Visa Decisions: New Delhi & 5 Offices';
+  const homeTitle = 'Irish Visa Decisions — Search All 6 Offices';
   assert.ok(titles.includes(homeTitle), 'the home page title is missing');
   for (const title of titles) {
     if (title === homeTitle) continue;
@@ -317,6 +317,14 @@ test("homepage HTML has content without JavaScript", async () => {
   assert.match(text, /Embassy of Ireland/);
   assert.match(text, /Stamp 1G/);
   assert.match(text, /\/about|About the project/);
+
+  const directory = html.match(/<section class="office-directory"[\s\S]*?<\/section>/);
+  assert.ok(directory, "persistent office directory is missing");
+  for (const slug of ["new-delhi", "beijing", "abu-dhabi", "abuja", "ankara", "dublin"]) {
+    assert.match(directory[0], new RegExp(`href="/${slug}-visa-decisions"`), slug);
+  }
+  assert.match(directory[0], /href="\/irish-visa-decisions-today"/);
+  assert.match(directory[0], /href="\/reports"/);
 });
 
 test("homepage metadata and structured data are complete", async () => {
@@ -374,7 +382,7 @@ test("sitemap, robots and llms.txt point at the published pages", async () => {
     if (page.file === "admin.html" || page.file === "404.html") continue;
     // Community timelines stays available but is not promoted until its
     // aggregate clears the minimum sample size.
-    if (page.route === "/community-timelines") continue;
+    if (page.route === "/community-timelines" || page.noindex) continue;
     assert.match(
       sitemap,
       new RegExp(`<loc>https://irishvisaupdatetracker\\.pages\\.dev${page.route}</loc>`),

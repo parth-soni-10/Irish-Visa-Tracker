@@ -10,12 +10,14 @@ import { fileURLToPath } from 'url';
 import { buildSearchFallback } from './build-search-fallback.mjs';
 import { buildSearchPreview } from './build-search-preview.mjs';
 import { buildInsightPages } from './insight-pages.mjs';
+import { buildGrowthPages } from './growth-pages.mjs';
 import { buildMonthlyPages } from './monthly-pages.mjs';
 import { buildSocialCards } from './social-cards.mjs';
 import { buildLastmodMap, updateSitemap } from './sitemap-lastmod.mjs';
 import { loadFreshness, writeFreshness, longDate, checkedStamp, timeHTML, SNAPSHOT_OFFICES } from './freshness.mjs';
 import { freshnessFooterHTML, freshnessHistoryHTML } from './freshness-ui.mjs';
 import { versionAssets } from './version-assets.mjs';
+import { auditDiscovery } from './audit-discovery.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -60,6 +62,14 @@ const assetsToCopy = [
   'privacy.html',
   'terms.html',
   'monthly-report.html',
+  'all-pages.html',
+  'after-approval.html',
+  'after-refusal.html',
+  'missing-decision.html',
+  'find-my-office.html',
+  'bulk-tools.html',
+  'decisions.html',
+  'search-coverage.html',
 
   'stamp-1g-processing-dates.html',
   'visa-processing-times.html',
@@ -562,6 +572,7 @@ export function injectOfficePages(options = {}) {
     const approvalShare = decisions ? `${((approved / decisions) * 100).toFixed(1)}%` : '0.0%';
     const refusedShare = decisions ? `${((refused / decisions) * 100).toFixed(1)}%` : '0.0%';
     const latest = longDate(canonical ? canonical.report_date : office.report_date);
+    const isSnapshot = canonical ? canonical.snapshot : SNAPSHOT_OFFICES.has(office.slug);
     const checked = canonical
       ? checkedStamp(canonical.checked_at) || latest
       : longDate(office.as_of || office.fetched_at);
@@ -582,7 +593,6 @@ export function injectOfficePages(options = {}) {
     const reportCount = Array.isArray(office.archive_reports) && office.archive_reports.length
       ? office.archive_reports.length
       : 1;
-    const isSnapshot = canonical ? canonical.snapshot : SNAPSHOT_OFFICES.has(office.slug);
     const history = office.slug === 'new-delhi'
       ? `${allDates.length} days with published decisions`
       : isSnapshot ? 'the latest snapshot' : `${reportCount} weekly reports`;
@@ -638,18 +648,26 @@ export function injectOfficePages(options = {}) {
       [office.slug]: reportHistoryHtml(office, reports, decisionSummary),
     });
 
-    // Test current-fact snippets on the two offices with the strongest query
-    // signal. Keep the rest on the stable evergreen descriptions for now.
-    const seoDescription = office.slug === 'new-delhi'
-      ? `Search Irish visa decisions for applicants from India, Bangladesh, Nepal and Sri Lanka. Latest official file: ${latest} — ${decisions.toLocaleString('en-IE')} decisions, with approved and refused counts.`
-      : office.slug === 'dublin'
-        ? `Search Irish visa decisions for Pakistan and transferred applications. Latest snapshot: ${latest} — ${decisions.toLocaleString('en-IE')} decisions, with approved and refused counts.`
-        : '';
-    if (seoDescription) {
-      html = replaceMetaContent(html, 'name="description"', seoDescription);
-      html = replaceMetaContent(html, 'property="og:description"', seoDescription);
-      html = replaceMetaContent(html, 'name="twitter:description"', seoDescription);
-    }
+    // Every office page gets a current-fact snippet: the named office query,
+    // the latest official publication date, the countries covered and the
+    // application-number action. New Delhi, Abu Dhabi and Ankara are the first
+    // priority for CTR, but the same template keeps all six consistent.
+    const seoCoverage = {
+      'new-delhi': 'India, Bangladesh, Nepal and Sri Lanka',
+      beijing: 'China, Hong Kong, Macau and Mongolia',
+      'abu-dhabi': 'the UAE, Afghanistan, Algeria, Bahrain, Jordan, Kuwait, Lebanon, Libya, Morocco, Oman, Qatar, Sudan, Syria and Tunisia',
+      abuja: 'Nigeria, Ghana, Côte d’Ivoire and Senegal',
+      ankara: 'Türkiye, Azerbaijan and Saudi residents',
+      dublin: 'Pakistan and transferred applications',
+    }[office.slug] || 'its published applications';
+    const seoTitle = `${office.name} Visa Decisions — Latest ${latest}`;
+    const seoDescription = `Search Irish visa decisions for ${seoCoverage}. Latest official ${isSnapshot ? 'snapshot' : 'report'}: ${latest} — ${decisions.toLocaleString('en-IE')} decisions. Search by application number.`;
+    html = html.replace(/<title>[\s\S]*?<\/title>/i, `<title>${escapeHtml(seoTitle)}</title>`);
+    html = replaceMetaContent(html, 'property="og:title"', seoTitle);
+    html = replaceMetaContent(html, 'name="twitter:title"', seoTitle);
+    html = replaceMetaContent(html, 'name="description"', seoDescription);
+    html = replaceMetaContent(html, 'property="og:description"', seoDescription);
+    html = replaceMetaContent(html, 'name="twitter:description"', seoDescription);
 
     if (office.source_file) {
       html = html.replace(
@@ -1018,6 +1036,10 @@ async function main() {
   console.log(`Insight pages: ${insights.pages.length} pages, ${insights.reportPages} report permalinks, ${insights.badges} badges` +
     (insights.sitemapAdded ? `, ${insights.sitemapAdded} sitemap entries` : '') + '.');
 
+  const growth = buildGrowthPages({ assetsRootDir, distDir });
+  console.log(`Growth pages: ${growth.pages.length} pages, ${growth.datePages} date pages, ${growth.archives} eligible date(s)` +
+    (growth.sitemapAdded ? `, ${growth.sitemapAdded} sitemap entries` : '') + '.');
+
   const monthly = await buildMonthlyPages({ assetsRootDir, distDir });
   console.log(`Monthly report: ${monthly.pages} pages, latest ${monthly.latestMonth}, ${monthly.months.length} archived month(s).`);
 
@@ -1036,6 +1058,13 @@ async function main() {
   rewriteSiteOrigin();
   const assetVersion = versionAssets(distDir);
   console.log(`Asset version: ${assetVersion.version} (${assetVersion.htmlFiles} HTML, ${assetVersion.cssFiles} CSS files).`);
+
+  const discovery = auditDiscovery({ assetsRootDir, distDir });
+  console.log(`Discovery audit: ${discovery.checked} sitemap URLs, ${discovery.reportPermalinks} report permalinks, ${discovery.datePages} date pages` +
+    (discovery.failures.length ? `, ${discovery.failures.length} failure(s)` : '') + '.');
+  if (discovery.failures.length) {
+    throw new Error(`Discovery audit failed:\n${discovery.failures.join('\n')}`);
+  }
 
   console.log(`Build complete! Copied ${copied} files to ${outDir}`);
   console.log(`Output directory: ${distDir}`);

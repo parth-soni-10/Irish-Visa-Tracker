@@ -75,9 +75,12 @@ test("each office page links the tracker, all other offices and its CTA", async 
   for (const page of PAGES) {
     const html = await read(page.file);
     assert.match(html, new RegExp(`\\?tracker=visa&amp;tab=search&amp;office=${page.slug}`, "i"), page.file);
+    assert.match(html, /<label[^>]*>Search by application number<\/label>/, page.file);
+    assert.match(html, /Cite this page:/, page.file);
     for (const other of PAGES) {
       if (other.file === page.file) continue;
       assert.match(html, new RegExp(`href="${other.route}"`), `${page.file} is missing ${other.route}`);
+      assert.match(html, new RegExp(`>${other.name} visa decisions<\/a>`), `${page.file} is missing a descriptive ${other.name} anchor`);
     }
     assert.match(html, /href="\/visa-processing-times"/, page.file);
     assert.match(html, /href="\/daily-summaries"/, page.file);

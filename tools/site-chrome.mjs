@@ -95,6 +95,16 @@ export const PAGES = [
   { file: 'status.html', route: '/status', current: '/status', skip: 'content' },
   { file: 'terms.html', route: '/terms', current: '/terms', skip: 'content' },
   { file: 'visa-processing-times.html', route: '/visa-processing-times', current: '/visa-processing-times', skip: 'content' },
+  { file: 'all-pages.html', route: '/all-pages', current: null, skip: 'content' },
+  { file: 'after-approval.html', route: '/after-approval', current: null, skip: 'content' },
+  { file: 'after-refusal.html', route: '/after-refusal', current: null, skip: 'content' },
+  { file: 'missing-decision.html', route: '/missing-decision', current: null, skip: 'content' },
+  { file: 'find-my-office.html', route: '/find-my-office', current: null, skip: 'content' },
+  { file: 'bulk-tools.html', route: '/bulk-tools', current: null, skip: 'content' },
+  { file: 'decisions.html', route: '/decisions', current: null, skip: 'content' },
+  // Operational dashboard: available to the maintainer and linked from the
+  // crawl hub, but deliberately noindex and excluded from the sitemap.
+  { file: 'search-coverage.html', route: '/search-coverage', current: null, skip: 'content', noindex: true },
   // `wrangler pages dev` answers unknown paths with its own not-found page and
   // ignores the checked-in 404.html, so this page is covered by --check rather
   // than by the live layout/audit matrices.
@@ -220,6 +230,8 @@ function footerLines() {
     '        <li><a href="/when-are-visa-decisions-published">Publication schedule</a></li>',
     '        <li><a href="/press">Press &amp; citation</a></li>',
     '        <li><a href="/embed">Embed badge</a></li>',
+    '        <li><a href="/decisions">Decisions by date</a></li>',
+    '        <li><a href="/all-pages">All pages</a></li>',
     '      </ul>',
     '    </div>',
     '    <div class="sitebar-footer-col">',
@@ -239,6 +251,8 @@ function footerLines() {
     '      <p class="sitebar-footer-title">Legal</p>',
     '      <ul>',
     '        <li><a href="/help">Help</a></li>',
+    '        <li><a href="/find-my-office">Find my office</a></li>',
+    '        <li><a href="/bulk-tools">Bulk check</a></li>',
     '        <li><a href="/contact">Contact</a></li>',
     '        <li><a href="/privacy">Privacy</a></li>',
     '        <li><a href="/terms">Terms</a></li>',

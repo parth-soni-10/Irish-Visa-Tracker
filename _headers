@@ -15,9 +15,22 @@
 # Cache-Control deliberately does not appear on /*: Cloudflare combines the
 # headers of every matching block, so a broad no-cache rule here would be
 # joined with the immutable asset rule below. HTML, assets and data get
-# non-overlapping rules instead.
+# non-overlapping rules instead. The homepage and service-worker URLs are the
+# exceptions: they must never be reused from an HTTP cache, so their narrower
+# rules detach the broader HTML/asset Cache-Control values.
+/
+  Cache-Control: no-store, no-cache, must-revalidate, max-age=0
+  Pragma: no-cache
+  Expires: 0
+  CDN-Cache-Control: no-store
+
 /employer
   Cache-Control: no-store
+
+/search-coverage
+  X-Robots-Tag: noindex, follow
+  Cache-Control: no-cache, must-revalidate, max-age=0
+  CDN-Cache-Control: no-cache
 
 /404-internal
   Cache-Control: no-store
@@ -36,13 +49,21 @@
   Expires: 0
   CDN-Cache-Control: no-cache
 
+/index.html
+  ! Cache-Control
+  ! CDN-Cache-Control
+  Cache-Control: no-store, no-cache, must-revalidate, max-age=0
+  CDN-Cache-Control: no-store
+
 /manifest.json
   Cache-Control: no-cache, must-revalidate, max-age=0
   CDN-Cache-Control: no-cache
 
 /sw.js
-  Cache-Control: no-cache, must-revalidate, max-age=0
-  CDN-Cache-Control: no-cache
+  Cache-Control: no-store, no-cache, must-revalidate, max-age=0
+  Pragma: no-cache
+  Expires: 0
+  CDN-Cache-Control: no-store
 
 /sitemap.xml
   Cache-Control: no-cache, must-revalidate, max-age=0
@@ -74,6 +95,16 @@
 /scripts/*
   Cache-Control: public, max-age=31536000, immutable
   CDN-Cache-Control: public, max-age=31536000, immutable
+
+# The registration script is part of the update path, not an immutable app
+# asset. Detach the broad /scripts/* values before setting no-store.
+/scripts/index-sw.js
+  ! Cache-Control
+  ! CDN-Cache-Control
+  Cache-Control: no-store, no-cache, must-revalidate, max-age=0
+  Pragma: no-cache
+  Expires: 0
+  CDN-Cache-Control: no-store
 
 /fonts/*
   Cache-Control: public, max-age=31536000, immutable

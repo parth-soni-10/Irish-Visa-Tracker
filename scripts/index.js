@@ -1024,6 +1024,29 @@
                 el.hidden = !html;
             }
 
+            // The landing page keeps freshness in a single pre-reserved line.
+            // Injecting the full warning above the search form made it the LCP
+            // candidate and pushed the form, cards and overview down (CLS).
+            // Detail stays one click away on /status; this only updates text in
+            // place, so it cannot create a late, oversized paint or a shift.
+            function paintLandingFreshness() {
+                var el = document.getElementById('landing-freshness');
+                if (!el) return;
+                var issues = siteFreshnessIssues();
+                var label = issues.length
+                    ? (issues.length === 1 ? 'One office report needs a check' : issues.length + ' office reports need a check')
+                    : 'All six office reports are current';
+                el.classList.toggle('is-warn', issues.length > 0);
+                el.innerHTML = label + ' — <a href="/status">check report freshness</a>.';
+            }
+
+            function paintLandingFreshnessUnavailable() {
+                var el = document.getElementById('landing-freshness');
+                if (!el) return;
+                el.classList.add('is-warn');
+                el.innerHTML = 'Report freshness is unavailable — <a href="/status">open data status</a>.';
+            }
+
             // ===== hero builder (Mockup C) - per-tab hero with real data =====
             function buildHeroHTML(tabId, rows) {
                 const model = getDatasetModel(rows);
@@ -1284,7 +1307,8 @@
                             }
                             saveRecentSearch(homeSearchTerm);
                             refreshRecentChips();
-                            if (homeSearchTerm.trim().length >= 6) trackConversion('application_search', 'home');
+                            if (homeSearchTerm.trim().length >= 6) trackConversion('application_search', 'home_' + homeSearchOffice);
+                            else if (homeSearchTerm.trim()) trackConversion('search_invalid_format', 'home_' + homeSearchOffice);
                         }
                     });
                     homeSearchEl.addEventListener('blur', function() {
@@ -1315,7 +1339,8 @@
                     }
                     saveRecentSearch(homeSearchTerm);
                     refreshRecentChips();
-                    if (homeSearchTerm.trim().length >= 6) trackConversion('application_search', 'home');
+                    if (homeSearchTerm.trim().length >= 6) trackConversion('application_search', 'home_' + homeSearchOffice);
+                    else trackConversion('search_invalid_format', 'home_' + homeSearchOffice);
                     runHomeLookup();
                     syncUrl('replace');
                 });
@@ -1324,6 +1349,7 @@
                     var nextOffice = e.target.value;
                     homeSearchOffice = nextOffice === 'all' || WATCH_OFFICES.indexOf(nextOffice) !== -1
                         ? nextOffice : 'all';
+                    trackConversion('office_selected', 'home_' + homeSearchOffice);
                     if (homeSearchTerm.trim()) runHomeLookup();
                     syncUrl('replace');
                 });
@@ -1333,6 +1359,18 @@
                     var retry = target && target.closest('[data-home-retry]');
                     if (retry) {
                         runHomeLookup();
+                        return;
+                    }
+                    var feedbackBtn = target && target.closest('[data-lookup-feedback]');
+                    if (feedbackBtn) {
+                        var useful = feedbackBtn.getAttribute('data-lookup-feedback') === 'yes';
+                        trackConversion(useful ? 'search_result_useful' : 'search_result_not_useful', 'lookup_result');
+                        var feedbackWrap = feedbackBtn.closest('[data-lookup-feedback-wrap]');
+                        if (feedbackWrap) {
+                            feedbackWrap.querySelectorAll('button').forEach(function(button) { button.disabled = true; });
+                            var feedbackStatus = feedbackWrap.querySelector('[data-lookup-feedback-status]');
+                            if (feedbackStatus) feedbackStatus.textContent = 'Thanks — recorded without the application number.';
+                        }
                         return;
                     }
                     var shareBtn = target && target.closest('[data-lookup-share]');
@@ -2055,7 +2093,9 @@
             function renderSearchResults(data, container) {
                 container.innerHTML = '';
                 if (!data.results || !data.results.length) {
-                    container.innerHTML = '<p class="note2">No results found.</p>';
+                    trackConversion('search_no_result', 'search_tab');
+                    container.innerHTML = '<p class="note2">No results found.</p>' +
+                        '<p class="note2">Try the application number from your receipt, search all six offices, or read <a href="/missing-decision">what a missing number means</a>.</p>';
                     return;
                 }
                 var html = '<div class="search-results-header">' +
@@ -2194,6 +2234,7 @@
             function renderWatchlistLayout() {
                 return '<div class="watch-card">' +
                     '<h3 class="watch-h3">Watch an application</h3>' +
+                    '<p class="note2">Checking several applications for a group or client? Use the <a href="/bulk-tools">bulk check</a> to paste up to 100 numbers and export a dated CSV.</p>' +
                     '<p class="note2" style="margin:0 0 12px;">Saved on this device only; no account is needed. After saving, choose browser notifications for this device or Telegram alerts through the bot.</p>' +
                     '<form id="watch-add-form" novalidate>' +
                     '<div class="watch-field"><label>Application number</label>' +
@@ -2321,7 +2362,8 @@
                 var html = '<div class="table-wrap watchlist-table-wrap"><table class="results-table"><thead><tr>' +
                     '<th scope="col">Application</th><th scope="col">Office</th>' +
                     '<th scope="col">Nickname</th><th scope="col">Latest decision</th>' +
-                    '<th scope="col">Date</th><th scope="col">&nbsp;</th>' +
+                    '<th scope="col">Date</th><th scope="col">Source report</th>' +
+                    '<th scope="col">Last checked</th><th scope="col">&nbsp;</th>' +
                     '</tr></thead><tbody>';
                 list.forEach(function(item) {
                     var state = states[item.office] || { status: 'loading', rows: [] };
@@ -2350,6 +2392,17 @@
                             state.status === 'error' ? 'Office data unavailable' : 'No decision found';
                         pill = '<span class="note2">' + decision + '</span>';
                     }
+                    var rowMeta = state.meta || ((_embassyManifest || []).filter(function(office) {
+                        return office.slug === item.office;
+                    })[0] || {});
+                    var reportDate = String(rowMeta.report_date || '').slice(0, 10);
+                    var reportSource = reportDate
+                        ? '/reports/' + item.office + '/' + reportDate
+                        : '/reports/' + item.office;
+                    var lastChecked = rowMeta.last_success_label ||
+                        (rowMeta.last_success_at ? lookupFormatDate(rowMeta.last_success_at) : '') ||
+                        (rowMeta.fetched_at ? lookupFormatDate(rowMeta.fetched_at) : '') ||
+                        '\u2014';
                     var pushLabel = item.push ? 'Push on' : 'Enable push';
                     var pushTitle = item.push ? 'Browser notifications are enabled' : 'Enable browser notifications';
                     html += '<tr data-office="' + escapeHtml(item.office) +
@@ -2359,6 +2412,9 @@
                         '<td>' + escapeHtml(item.nickname || '\u2014') + '</td>' +
                         '<td>' + pill + '</td>' +
                         '<td>' + date + '</td>' +
+                        '<td><a href="' + escapeHtml(reportSource) + '">' +
+                        (reportDate ? escapeHtml(lookupFormatDate(reportDate)) : 'Report index') + '</a></td>' +
+                        '<td>' + escapeHtml(lastChecked) + '</td>' +
                         '<td><button type="button" class="export-btn tu-btn" data-watch-push="' +
                         escapeHtml(item.number) + '" data-watch-office="' + escapeHtml(item.office) +
                         '" aria-pressed="' + (item.push ? 'true' : 'false') + '" title="' + pushTitle +
@@ -2892,6 +2948,11 @@
                 }
                 var sourceUrl = OFFICE_SOURCE_URLS[row.embassy || 'new-delhi'];
                 var links = '<p class="lookup-result-links">' +
+                    (status === 'accepted' ? '<a href="/after-approval">What happens after approval</a>' :
+                        status === 'rejected' ? '<a href="/after-refusal">Appeal or reapply after refusal</a>' :
+                            '<a href="/after-approval">After approval</a>') +
+                    ' \u00b7 <a href="/missing-decision">Missing or changed office</a>' +
+                    ' \u00b7 ' +
                     (sourceUrl ? '<a href="' + escapeHtml(sourceUrl) + '" target="_blank" rel="noopener noreferrer">Official office report</a>' : '') +
                     (sourceUrl ? ' \u00b7 ' : '') +
                     '<a href="https://www.irishimmigration.ie/" target="_blank" rel="noopener noreferrer">Immigration Service Delivery</a>' +
@@ -3009,6 +3070,11 @@
                     escapeHtml(number) + '" data-lookup-share-office="' + escapeHtml(office) +
                     '" aria-label="Copy result link for application ' + escapeHtml(number) + '" aria-describedby="' + privacyId +
                     '">Copy result link</button>' +
+                    '<div class="lookup-result-feedback" data-lookup-feedback-wrap>' +
+                    '<span>Was this result useful?</span>' +
+                    '<button type="button" class="export-btn tu-btn" data-lookup-feedback="yes">Yes</button>' +
+                    '<button type="button" class="export-btn tu-btn" data-lookup-feedback="no">No</button>' +
+                    '<span class="note2" data-lookup-feedback-status role="status" aria-live="polite"></span></div>' +
                     '<div class="lookup-result-status" data-lookup-action-status role="status" aria-live="polite"></div>' +
                     '<p class="lookup-result-privacy" id="' + privacyId + '">A copied link contains application number ' +
                     escapeHtml(number) + '. Share it only with people you trust.</p>' +
@@ -3078,6 +3144,11 @@
                     '<button type="button" class="btn" data-home-retry>Try this search again</button>' +
                     '<a class="home-lookup-link" href="/status">See data status</a>' +
                     '</div>' +
+                    '<div class="lookup-result-feedback" data-lookup-feedback-wrap>' +
+                    '<span>Was this page useful?</span>' +
+                    '<button type="button" class="export-btn tu-btn" data-lookup-feedback="yes">Yes</button>' +
+                    '<button type="button" class="export-btn tu-btn" data-lookup-feedback="no">No</button>' +
+                    '<span class="note2" data-lookup-feedback-status role="status" aria-live="polite"></span></div>' +
                     '<p class="home-lookup-empty-foot">Still stuck? <a href="/contact#feedback">Send a correction or ask a question</a>.</p>' +
                     '</div>';
             }
@@ -3159,6 +3230,7 @@
                 if (!box) return;
                 var fallbackNote = lookupFallbackNoteHTML(fallback);
                 if (!rows.length) {
+                    trackConversion('search_no_result', 'home_' + homeSearchOffice);
                     // The card below already carries the heading; keep the live
                     // status as a count so screen readers do not hear it twice.
                     if (status) status.textContent = '0 results for ' + (term || homeSearchTerm.trim()) +
@@ -3168,6 +3240,8 @@
                     if (noResultWatch) noResultWatchButtonState(noResultWatch, noResultWatch.getAttribute('data-home-noresult-watch'));
                     return;
                 }
+                var matchedOffices = [...new Set(rows.map(function(row) { return row.embassy; }).filter(Boolean))];
+                if (matchedOffices.length) trackConversion('search_match_office', 'match_' + matchedOffices.join('-'));
                 var scope = homeSearchOffice === 'all' ? 'all six offices' : officeName(homeSearchOffice);
                 var countText = total + ' published match' + (total === 1 ? '' : 'es') +
                     ' across ' + scope + (rows.length < total ? ' \u00b7 showing first ' + rows.length : '');
@@ -5355,7 +5429,7 @@
             }
 
 async function renderLandingPage() {
-                document.title = 'Ireland Visa Decisions: New Delhi & 5 Offices';
+                document.title = 'Irish Visa Decisions — Search All 6 Offices';
                 // Paint the cards IMMEDIATELY with placeholder stats - never
                 // block on the network. Each card's meta line fills in as its
                 // own fetch resolves (both are small static files, so this is
@@ -5366,7 +5440,6 @@ async function renderLandingPage() {
                     '<h1>Check your Irish visa decision</h1>' +
                     '<p class="page-task">Search six offices by application number, or open a processing-date tracker.</p>' +
                     '<div class="landing-status" id="landing-status" aria-live="polite"><span class="note2">Checking today’s updates…</span></div>' +
-                    '<div id="site-freshness-banner" class="site-freshness" role="status" hidden></div>' +
                     '<p class="landing-visit" id="landing-visit" hidden></p>' +
                     '<form class="landing-search" id="landing-search" role="search" novalidate>' +
                     '<div class="searchbar landing-search-number">' + searchIcon() +
@@ -5375,6 +5448,7 @@ async function renderLandingPage() {
                     officeOptionsHTML(homeSearchOffice) + '</select>' +
                     '<button class="btn" type="submit">Search</button></form>' +
                     '<p class="landing-search-hint">Use the 8-digit number on your receipt; an IRL prefix is optional. <a href="/help#find-number">Where do I find it?</a></p>' +
+                    '<p class="landing-freshness" id="landing-freshness"><a href="/status">Checking report freshness…</a></p>' +
                     '<div class="tracker-grid" aria-label="Trackers">' +
                     trackerCardHTML('visa', 'plane', 'Visa decisions',
                         'Search published decisions from six offices by application number.', 'Loading…', 'visa-meta', '') +
@@ -5403,10 +5477,11 @@ async function renderLandingPage() {
                         visaCard.textContent = (Number(nd.decisions) || 0).toLocaleString('en-IE') +
                             ' decisions' + (nd.report_date ? ' · report ' + lookupFormatDate(nd.report_date) : '');
                     }
-                    paintSiteFreshnessBanner();
+                    paintLandingFreshness();
                     paintLandingVisitDelta(_embassyManifest);
                     paintLandingCoverageSummary(_embassyManifest);
                 }).catch(function() {
+                    paintLandingFreshnessUnavailable();
                     var meta = document.getElementById('landing-overview-meta');
                     if (meta) meta.innerHTML = 'Office check times are unavailable right now. <a href="/status">Open data status</a>.';
                 });
