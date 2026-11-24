@@ -38,7 +38,7 @@ function expectedCopy(office) {
  * Provenance footer. The timestamps carry data-iv-time so the site-wide
  * UTC/Local control updates them; the text fallback is always UTC.
  */
-export function freshnessFooterHTML(freshness) {
+export function freshnessFooterHTML(freshness, { includeTable = true, includeGlossary = true } = {}) {
   const offices = officesOf(freshness);
   if (!offices.length) return '';
   const reports = offices.map((office) => office.report_date);
@@ -69,7 +69,7 @@ export function freshnessFooterHTML(freshness) {
       <p class="small-note"><strong>Latest office publications:</strong> ${esc(dateRange(reports))} &middot;
         <strong>Last successful check:</strong> ${timeHTML(latestSuccess)} &middot;
         <strong>Last attempt:</strong> ${timeHTML(latestAttempt)}.</p>
-      <div class="table-wrap" role="region" aria-label="Official publication and check provenance" tabindex="0">
+      ${includeTable ? `<div class="table-wrap" role="region" aria-label="Official publication and check provenance" tabindex="0">
         <table class="office-table stack-table">
           <caption>Each office keeps its report date, official data-through date and tracker observations separate</caption>
           <thead><tr><th scope="col">Office</th><th scope="col">Latest official report</th><th scope="col">Official data through</th><th scope="col">Last successful check</th><th scope="col">Last attempt</th><th scope="col">Next expected</th></tr></thead>
@@ -77,8 +77,8 @@ export function freshnessFooterHTML(freshness) {
             ${rows}
           </tbody>
         </table>
-      </div>
-      <details class="freshness-glossary">
+      </div>` : ''}
+      ${includeGlossary ? `<details class="freshness-glossary">
         <summary>What these dates mean</summary>
         <dl>
           <dt>Report date</dt><dd>The date printed on the office file, or the end of its reporting period. It is not necessarily the date an individual decision was made.</dd>
@@ -88,9 +88,9 @@ export function freshnessFooterHTML(freshness) {
           <dt>Last attempt</dt><dd>The most recent scheduled run for the office, whether it succeeded or failed.</dd>
           <dt>Expected next file</dt><dd>Calculated from the latest report date and the office's usual publication rhythm. It is an expectation, not a guarantee.</dd>
         </dl>
-      </details>
+      </details>` : ''}
       <p class="small-note"><a href="/status#office-coverage">Office coverage and checks</a> &middot; <a href="/data/freshness.json">freshness.json</a> &middot; <a href="/when-are-visa-decisions-published">Publication schedule</a></p>
-    </section>`;
+    </section>`.replace(/[ \t]+$/gm, '');
 }
 
 /** Per-office observation lag and recent first observations. */

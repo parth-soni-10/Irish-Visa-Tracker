@@ -42,6 +42,7 @@ const OFFICES = [
       latest: '2026-11-19', checked: '2026-11-21',
       decisions: 43599, approved: 36769, refused: 6830,
       archive: '77 days with published decisions, from 12 July 2026',
+      observation: 'Tracker observed decisions dated through 20 November 2026; these are not in the 19 November 2026 official file.',
     },
     sourceUrl: 'https://www.ireland.ie/en/india/newdelhi/services/visas/processing-times-and-decisions/',
     sourceName: 'Embassy of Ireland, New Delhi — processing times and decisions',
@@ -149,10 +150,10 @@ const OFFICES = [
     name: 'Abu Dhabi',
     file: 'abu-dhabi-visa-decisions.html',
     route: '/abu-dhabi-visa-decisions',
-    title: 'Ireland Visa Decisions for the UAE, Gulf & North Africa – Abu Dhabi',
-    description: 'Search Irish visa decisions for applicants from the UAE, Afghanistan, Algeria, Bahrain, Jordan, Kuwait, Lebanon, Libya, Morocco, Oman, Qatar, Sudan, Syria and Tunisia in the latest Abu Dhabi report.',
+    title: 'Ireland Visa Decisions: UAE, Gulf, North Africa & Pakistan – Abu Dhabi',
+    description: 'Search Irish visa decisions for applicants from the UAE, Afghanistan, Algeria, Bahrain, Jordan, Kuwait, Lebanon, Libya, Morocco, Oman, Pakistan, Qatar, Sudan, Syria and Tunisia in the latest Abu Dhabi report.',
     h1: 'Abu Dhabi visa decisions',
-    subhead: 'Ireland visa decisions for the UAE, Gulf and North Africa',
+    subhead: 'Ireland visa decisions for the UAE, Gulf, North Africa and Pakistan',
     kicker: 'Abu Dhabi visa office',
     latestLabel: 'Latest weekly report',
     latestNote: 'Week ending',
@@ -167,8 +168,8 @@ const OFFICES = [
     sourceLabel: 'Open the latest Abu Dhabi PDF',
     dataUrl: '/data/embassy-abu-dhabi.json',
     aboutName: 'Embassy of Ireland, Abu Dhabi',
-    coverage: ['United Arab Emirates', 'Afghanistan', 'Algeria', 'Bahrain', 'Jordan', 'Kuwait', 'Lebanon', 'Libya', 'Morocco', 'Oman', 'Qatar', 'Sudan', 'Syria', 'Tunisia'],
-    lede: 'The Embassy of Ireland in Abu Dhabi publishes visa decisions in weekly PDF reports for the UAE, Afghanistan, Algeria, Bahrain, Jordan, Kuwait, Lebanon, Libya, Morocco, Oman, Qatar, Sudan, Syria and Tunisia. This page tracks the latest report and how to read a weekly decision period.',
+    coverage: ['United Arab Emirates', 'Afghanistan', 'Algeria', 'Bahrain', 'Jordan', 'Kuwait', 'Lebanon', 'Libya', 'Morocco', 'Oman', 'Pakistan', 'Qatar', 'Sudan', 'Syria', 'Tunisia'],
+    lede: 'The Embassy of Ireland in Abu Dhabi publishes visa decisions in weekly PDF reports for the UAE, Afghanistan, Algeria, Bahrain, Jordan, Kuwait, Lebanon, Libya, Morocco, Oman, Pakistan, Qatar, Sudan, Syria and Tunisia. This page tracks the latest report and how to read a weekly decision period.',
     historyHtml: 'The tracker’s archive holds <strong data-office="history">11 weekly reports</strong>.',
     historyNote: 'Each row is one weekly report. The count is the number of decisions listed in that report, and the report date is the end of its reporting period.',
     whatHtml: `
@@ -176,7 +177,7 @@ const OFFICES = [
       <p>The report date is the end of the period, not the date of an individual decision. A number may appear in one weekly report and not another, so search the office history rather than only the latest file.</p>
       <p>The tracker keeps each dated report it has ingested, which is what makes the weekly history searchable.</p>`,
     scopeHtml: `
-      <p>Abu Dhabi accepts visa applications from the <strong>United Arab Emirates, Afghanistan, Algeria, Bahrain, Jordan, Kuwait, Lebanon, Libya, Morocco, Oman, Qatar, Sudan, Syria and Tunisia</strong>.</p>
+      <p>Abu Dhabi accepts visa applications from the <strong>United Arab Emirates, Afghanistan, Algeria, Bahrain, Jordan, Kuwait, Lebanon, Libya, Morocco, Oman, Pakistan, Qatar, Sudan, Syria and Tunisia</strong>.</p>
       <p>A VFS centre is not the visa office. Your receipt or acknowledgement shows which office has your file.</p>
       <p>If your number is missing here, search <a href="/?tracker=visa&amp;tab=search">all six offices</a> before concluding anything.</p>`,
     scheduleTitle: 'How the weekly reports work',
@@ -188,7 +189,7 @@ const OFFICES = [
     dataNoteHtml: '<p>The tracker stores each dated Abu Dhabi weekly report. The archive count covers the reports it has ingested, not every report the embassy has ever published.</p>',
     faq: () => [
       ['How often does Abu Dhabi publish visa decisions?', 'The office publishes weekly PDF decision reports. Each report covers a period and carries the period-end date.'],
-      ['Which countries does the Abu Dhabi visa office handle?', 'The United Arab Emirates, Afghanistan, Algeria, Bahrain, Jordan, Kuwait, Lebanon, Libya, Morocco, Oman, Qatar, Sudan, Syria and Tunisia.'],
+      ['Which countries does the Abu Dhabi visa office handle?', 'The United Arab Emirates, Afghanistan, Algeria, Bahrain, Jordan, Kuwait, Lebanon, Libya, Morocco, Oman, Pakistan, Qatar, Sudan, Syria and Tunisia.'],
       ['Why is my number missing from the latest Abu Dhabi report?', 'It may be in an earlier or later weekly report, the decision may not be published yet, or your file may be with another office. Search the archive before treating it as a refusal.'],
       ['What does the report date mean?', 'It is the end of the reporting period, not the date of an individual decision.'],
       ['Does an Approved result mean my passport is ready?', 'No. The report records the decision, not the passport’s location. Wait for the official decision letter and the VFS return process.'],
@@ -300,10 +301,10 @@ const OFFICES = [
     snapshot: true,
     file: 'dublin-visa-decisions.html',
     route: '/dublin-visa-decisions',
-    title: 'Ireland Visa Decisions for Transferred Applications – Dublin',
-    description: 'Search Irish visa decisions for applications transferred from overseas offices, with Tuesday updates, approved and refused counts and Dublin scope.',
+    title: 'Ireland Visa Decisions for Pakistan & Transferred Applications – Dublin',
+    description: 'Search Irish visa decisions for Pakistan and applications transferred from overseas offices, with Tuesday updates, counts and Dublin scope.',
     h1: 'Dublin visa decisions',
-    subhead: 'Ireland visa decisions for transferred applications',
+    subhead: 'Ireland visa decisions for Pakistan and transferred applications',
     kicker: 'Dublin visa office',
     latestLabel: 'Latest snapshot',
     latestNote: 'Report date',
@@ -318,8 +319,8 @@ const OFFICES = [
     sourceLabel: 'Open the official Dublin decisions page',
     dataUrl: '/data/embassy-dublin.json',
     aboutName: 'Immigration Service Delivery, Dublin Visa Office',
-    coverage: ['Ireland'],
-    lede: 'The Dublin Visa Office publishes decisions every Tuesday and a queue of processing dates by category. It handles applications transferred from overseas offices for certain categories. This page tracks the latest decision snapshot and how the Tuesday publication works.',
+    coverage: ['Ireland', 'Pakistan', 'Applications transferred from overseas offices'],
+    lede: 'The Dublin Visa Office publishes decisions every Tuesday and a queue of processing dates by category. It handles join-family applications from Pakistan and applications transferred from overseas offices for certain categories. This page tracks the latest decision snapshot and how the Tuesday publication works.',
     historyHtml: 'The tracker holds <strong data-office="history">the latest snapshot</strong>; the Dublin Visa Office publishes decisions every Tuesday.',
     historyNote: 'Dublin publishes a snapshot of its decision list. Repeated checks of an unchanged snapshot are collapsed into one row, so each row is a distinct published list.',
     whatHtml: `
@@ -328,6 +329,7 @@ const OFFICES = [
       <p>Dublin also decides applications transferred from overseas offices, so a number that is missing from an embassy list may still appear here.</p>`,
     scopeHtml: `
       <p>Dublin handles applications transferred from overseas offices and certain categories, including EU Free Movement family applications; Join Family applications for an Irish national de facto partner, a CSEP/HA de facto partner or a UK national; Minister of Religion; and Volunteer.</p>
+      <p>Join-family visa applications from residents of <strong>Pakistan</strong> are considered by the Dublin Visa Office.</p>
       <p>Dublin also publishes the queue for visa categories processed by the Dublin Visa Office. The queue is shown on <a href="/visa-processing-times">processing times</a>, not as an individual decision.</p>
       <p>A VFS centre is not the visa office. Your receipt or acknowledgement shows which office has your file.</p>`,
     scheduleTitle: 'Tuesday decisions and the Dublin queue',
@@ -341,6 +343,7 @@ const OFFICES = [
       ['How often does Dublin publish visa decisions?', 'The Dublin Visa Office publishes visa decisions every Tuesday.'],
       ['Which applications does the Dublin visa office handle?', 'Dublin handles applications transferred from overseas offices and certain categories, including EU Free Movement family applications, specified Join Family categories, Minister of Religion and Volunteer. Check your receipt and the official ISD page for your file.'],
       ['Why is my number missing from the Dublin list?', 'The decision may not be published until the next Tuesday, your file may be with another office, or the number may be in a different format. A missing number is not a refusal.'],
+      ['Which countries does the Dublin visa office handle?', 'It handles applications transferred from overseas offices and certain categories. Join-family applications from residents of Pakistan are considered in Dublin.'],
       ['What is the Dublin queue?', 'It is a set of processing dates by visa category, not an individual decision list. See the processing times page for the current queue.'],
       ['Does an Approved result mean my passport is ready?', 'No. The list records the decision, not the passport’s location. Wait for the official decision letter and the VFS return process.'],
     ],
@@ -457,7 +460,7 @@ function related(office) {
   const links = OFFICES.filter((item) => item.slug !== office.slug)
     .map((item) => `<a href="${item.route}">${item.name}</a>`)
     .join(' · ');
-  return `<p class="page-nav">${links} · <a href="/visa-processing-times">Processing times</a> · <a href="/daily-summaries">Daily summaries</a> · <a href="/help">Help</a></p>`;
+  return `<p class="page-nav">${links} · <a href="/irish-visa-decisions-today">Irish visa decisions today</a> · <a href="/visa-processing-times">Processing times</a> · <a href="/daily-summaries">Daily summaries</a> · <a href="/help">Help</a></p>`;
 }
 
 function officeSearch(office) {
@@ -520,7 +523,7 @@ ${schemaFor(office)}
     <p class="page-meta">Independent and unofficial &bull; Not immigration advice</p>
 
     ${officeSearch(office)}
-    <p class="office-freshness" data-freshness="${office.slug}">${office.name} — ${office.snapshot ? 'snapshot' : 'report'} ${longDate(f.latest)} &middot; ${f.decisions.toLocaleString('en-IE')} decisions &middot; checked ${longDate(f.checked)} &middot; ${office.snapshot ? 'Snapshot' : 'Official'}</p>
+    <p class="office-freshness" data-freshness="${office.slug}">${office.name} — ${office.snapshot ? 'snapshot' : 'report'} ${longDate(f.latest)} &middot; ${f.decisions.toLocaleString('en-IE')} decisions &middot; checked ${longDate(f.checked)} &middot; ${office.snapshot ? 'Snapshot' : 'Official'}${f.observation ? ` <span class="office-freshness-observation">${esc(f.observation)}</span>` : ''}</p>
 
     <p class="page-lede">${office.lede}</p>
 

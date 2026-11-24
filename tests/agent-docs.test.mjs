@@ -298,7 +298,7 @@ test("every page title the app sets carries the brand", async () => {
   const script = await read("scripts/index.js");
   const titles = [...script.matchAll(/document\.title = '([^']+)'/g)].map((match) => match[1]);
   assert.ok(titles.length >= 4, "expected the app's four titles");
-  const homeTitle = 'Ireland Visa Decision List: New Delhi & 5 More Offices | Free Check';
+  const homeTitle = 'Ireland Visa Decision List: New Delhi & 5 Offices';
   assert.ok(titles.includes(homeTitle), 'the home page title is missing');
   for (const title of titles) {
     if (title === homeTitle) continue;
@@ -358,6 +358,11 @@ test("trust pages are real pages with the expected content", async () => {
     assert.match(html, /<link rel="canonical"/);
     for (const needle of needles) assert.match(text, new RegExp(needle));
   }
+});
+
+test("community timelines stays out of the index until it has enough aggregate data", async () => {
+  const html = await read("community-timelines.html");
+  assert.match(html, /<meta name="robots" content="noindex, follow">/);
 });
 
 test("sitemap, robots and llms.txt point at the published pages", async () => {

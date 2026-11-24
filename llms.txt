@@ -148,6 +148,8 @@ an official confirmation.
 - [About](https://irishvisaupdatetracker.pages.dev/about) - what is tracked, sources, limits.
 - [Help & FAQ](https://irishvisaupdatetracker.pages.dev/help) - number formats, statuses,
   missing results, office coverage, alerts and checklists.
+- [VFS tracking](https://irishvisaupdatetracker.pages.dev/vfs-tracking) - the official VFS Global
+  tracking handoff for applications submitted in India, and what to do when a reference fails.
 - [Contact](https://irishvisaupdatetracker.pages.dev/contact) - corrections, bug reports, scope.
 - [Correction ledger](https://irishvisaupdatetracker.pages.dev/corrections) - source-linked file
   diffs, changed rows and a structured error-report link.

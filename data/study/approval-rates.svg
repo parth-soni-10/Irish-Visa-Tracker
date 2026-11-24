@@ -3,37 +3,37 @@
 <g>
       <text x="0" y="45" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="13" fill="#4b5563">New Delhi</text>
       <rect x="160" y="34" width="430" height="14" rx="7" fill="#f1f5f9"/>
-      <rect x="160" y="34" width="430" height="14" rx="7" fill="#059669"/>
+      <rect x="160" y="34" width="410" height="14" rx="7" fill="#059669"/>
       <text x="604" y="45" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="13" font-weight="600" fill="#111827">84.3%</text>
     </g>
 <g>
       <text x="0" y="77" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="13" fill="#4b5563">Beijing</text>
       <rect x="160" y="66" width="430" height="14" rx="7" fill="#f1f5f9"/>
-      <rect x="160" y="66" width="423" height="14" rx="7" fill="#059669"/>
+      <rect x="160" y="66" width="403" height="14" rx="7" fill="#059669"/>
       <text x="604" y="77" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="13" font-weight="600" fill="#111827">82.9%</text>
     </g>
 <g>
       <text x="0" y="109" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="13" fill="#4b5563">Abu Dhabi</text>
       <rect x="160" y="98" width="430" height="14" rx="7" fill="#f1f5f9"/>
-      <rect x="160" y="98" width="354" height="14" rx="7" fill="#059669"/>
+      <rect x="160" y="98" width="337" height="14" rx="7" fill="#059669"/>
       <text x="604" y="109" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="13" font-weight="600" fill="#111827">69.4%</text>
     </g>
 <g>
       <text x="0" y="141" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="13" fill="#4b5563">Abuja</text>
       <rect x="160" y="130" width="430" height="14" rx="7" fill="#f1f5f9"/>
-      <rect x="160" y="130" width="175" height="14" rx="7" fill="#059669"/>
+      <rect x="160" y="130" width="167" height="14" rx="7" fill="#059669"/>
       <text x="604" y="141" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="13" font-weight="600" fill="#111827">34.3%</text>
     </g>
 <g>
       <text x="0" y="173" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="13" fill="#4b5563">Ankara</text>
       <rect x="160" y="162" width="430" height="14" rx="7" fill="#f1f5f9"/>
-      <rect x="160" y="162" width="396" height="14" rx="7" fill="#059669"/>
-      <text x="604" y="173" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="13" font-weight="600" fill="#111827">77.6%</text>
+      <rect x="160" y="162" width="430" height="14" rx="7" fill="#059669"/>
+      <text x="604" y="173" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="13" font-weight="600" fill="#111827">88.5%</text>
     </g>
 <g>
       <text x="0" y="205" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="13" fill="#4b5563">Dublin</text>
       <rect x="160" y="194" width="430" height="14" rx="7" fill="#f1f5f9"/>
-      <rect x="160" y="194" width="299" height="14" rx="7" fill="#059669"/>
+      <rect x="160" y="194" width="285" height="14" rx="7" fill="#059669"/>
       <text x="604" y="205" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="13" font-weight="600" fill="#111827">58.6%</text>
     </g>
 </svg>

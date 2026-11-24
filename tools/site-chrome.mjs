@@ -42,6 +42,7 @@ const MORE_LINKS = [
   { href: '/when-are-visa-decisions-published', label: 'Publication schedule' },
   { href: '/stamp-1g-processing-dates', label: 'Stamp 1G' },
   { href: '/employment-permit-processing-dates', label: 'Employment permits' },
+  { href: '/vfs-tracking', label: 'VFS tracking' },
   { href: '/help', label: 'Help' },
   { href: '/contact', label: 'Contact' },
   { href: '/privacy', label: 'Privacy' },
@@ -74,6 +75,7 @@ export const PAGES = [
   { file: 'contact.html', route: '/contact', current: '/contact', skip: 'content', corrections: true },
   { file: 'corrections.html', route: '/corrections', current: '/corrections', skip: 'content', corrections: true },
   { file: 'daily-summaries.html', route: '/daily-summaries', current: '/daily-summaries', skip: 'content' },
+  { file: 'irish-visa-decisions-today.html', route: '/irish-visa-decisions-today', current: '/daily-summaries', skip: 'content' },
   {
     file: 'employment-permit-processing-dates.html',
     route: '/employment-permit-processing-dates',
@@ -81,6 +83,7 @@ export const PAGES = [
     skip: 'content',
   },
   { file: 'help.html', route: '/help', current: '/help', skip: 'content' },
+  { file: 'vfs-tracking.html', route: '/vfs-tracking', current: '/vfs-tracking', skip: 'content' },
   { file: 'monthly-report.html', route: '/monthly-report', current: '/monthly-report', skip: 'content', corrections: true },
   { file: 'privacy.html', route: '/privacy', current: '/privacy', skip: 'content' },
   {
@@ -343,7 +346,8 @@ function main() {
 
     for (const problem of validate(after, page)) failures.push(`${page.file}: ${problem}`);
 
-    if (after !== before) {
+    // Chrome is shared text; a generated page's mixed line endings are not a stale header.
+    if (after.replace(/\r\n/g, '\n') !== before.replace(/\r\n/g, '\n')) {
       changed += 1;
       if (mode === 'write') fs.writeFileSync(file, after);
       else failures.push(`${page.file}: shared header/footer is stale (run npm run chrome:sync)`);

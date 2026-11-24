@@ -7,6 +7,14 @@ import { fileURLToPath } from "node:url";
 import { loadFreshness } from "../tools/freshness.mjs";
 
 const ROOT = fileURLToPath(new URL("../", import.meta.url));
+const MONTHS = ["January", "February", "March", "April", "May", "June", "July",
+  "August", "September", "October", "November", "December"];
+
+function longDate(value) {
+  const raw = String(value).slice(0, 10);
+  const [year, month, day] = raw.split("-");
+  return `${Number(day)} ${MONTHS[Number(month) - 1]} ${year}`;
+}
 
 async function read(name) {
   return readFile(path.join(ROOT, name), "utf8");
@@ -44,22 +52,22 @@ test("freshness.json makes every date role explicit and keeps success separate f
 
   const beijing = freshness.bySlug.beijing;
   assert.equal(beijing.last_success_at.slice(0, 10), "2026-11-18");
-  assert.equal(beijing.last_attempt_at.slice(0, 10), "2026-11-21");
+  assert.equal(beijing.last_attempt_at.slice(0, 10), freshness.as_of);
   assert.equal(beijing.status, "error");
 
   const newDelhi = freshness.bySlug["new-delhi"];
-  assert.equal(newDelhi.official_data_through, "2026-11-19");
-  assert.equal(newDelhi.observed_data_through, "2026-11-20");
+  assert.equal(newDelhi.official_data_through, newDelhi.report_date);
+  assert.ok(newDelhi.observed_data_through > newDelhi.official_data_through);
   assert.equal(newDelhi.observation_scope, "tracker");
   assert.match(
     newDelhi.observation_note,
-    /Tracker observed decisions dated through 20 November 2026; these are not in the 19 November 2026 official file\./,
+    new RegExp(`Tracker observed decisions dated through ${longDate(newDelhi.observed_data_through)}; these are not in the ${longDate(newDelhi.official_data_through)} official file\\.`),
   );
-  assert.match(newDelhi.summary, /43,599 decisions/);
-  assert.match(newDelhi.summary, /report 19 November 2026/);
-  assert.doesNotMatch(newDelhi.summary, /20 November 2026/);
+  assert.match(newDelhi.summary, new RegExp(`${newDelhi.decisions.toLocaleString("en-IE")} decisions`));
+  assert.match(newDelhi.summary, new RegExp(`report ${longDate(newDelhi.report_date)}`));
+  assert.doesNotMatch(newDelhi.summary, new RegExp(longDate(newDelhi.observed_data_through)));
   assert.equal(newDelhi.expected_rule.kind, "weekday");
-  assert.equal(newDelhi.observation_lag.sample_size, 9);
+  assert.ok(newDelhi.observation_lag.sample_size > 0);
   assert.equal(newDelhi.observation_lag.median_days, 2);
   assert.ok(newDelhi.observation_lag.history.length > 0);
   assert.equal(freshness.bySlug.beijing.observation_lag.sample_size, 1);
@@ -72,28 +80,30 @@ test("official surfaces keep their data-through separate from tracker observatio
     read("new-delhi-visa-decisions.html"),
     read("data.html"),
   ]);
+  const freshness = loadFreshness(ROOT);
+  const newDelhi = freshness.bySlug["new-delhi"];
+  const official = longDate(newDelhi.official_data_through);
+  const observed = longDate(newDelhi.observed_data_through);
+  const count = newDelhi.decisions.toLocaleString("en-IE");
 
-  assert.match(
-    status,
-    /data-label="Official data through"><time datetime="2026-11-19">19 November 2026<\/time><br><span class="small-note" data-observation="tracker">Tracker observed through 20 November 2026/,
-  );
+  assert.ok(status.includes(
+    `data-label="Official data through"><time datetime="${newDelhi.official_data_through}">${official}</time><br><span class="small-note" data-observation="tracker">Tracker observed through ${observed}`,
+  ));
   assert.match(
     home,
-    /43,599 New Delhi decisions in the latest official file \(report 19 November 2026\)[\s\S]*Tracker observed decisions dated through 20 November 2026/,
+    new RegExp(`${count} New Delhi decisions in the latest official file \\(report ${longDate(newDelhi.report_date)}\\)[\\s\\S]*Tracker observed decisions dated through ${observed}`),
   );
-  assert.match(office, /43,599 decisions/);
-  assert.match(office, /report 19 November 2026/);
-  assert.match(
-    office,
-    /office-freshness-observation">Tracker observed decisions dated through 20 November 2026; these are not in the 19 November 2026 official file\./,
-  );
-  assert.match(
-    dataPage,
-    /New Delhi official decisions through 19 November 2026 · tracker observed through 20 November 2026 \(not in the official file\)/,
-  );
+  assert.match(office, new RegExp(`${count} decisions`));
+  assert.match(office, new RegExp(`report ${longDate(newDelhi.report_date)}`));
+  assert.ok(office.includes(
+    `office-freshness-observation">Tracker observed decisions dated through ${observed}; these are not in the ${official} official file.`,
+  ));
+  assert.ok(dataPage.includes(
+    `New Delhi official decisions through ${official} · tracker observed through ${observed} (not in the official file)`,
+  ));
   assert.match(status, /data-freshness-footer/);
   assert.match(status, /data-freshness-history/);
-  assert.match(status, /data-iv-time="2026-11-21T14:53:49\.962Z"/);
+  assert.ok(status.includes(`data-iv-time="${newDelhi.last_success_at}"`));
   assert.match(status, /What these dates mean/);
 });
 
@@ -107,20 +117,21 @@ test("missed publication windows stay visible instead of rolling forward", () =>
   assert.equal(abuja.status_tone, "warn");
 
   const newDelhi = freshness.bySlug["new-delhi"];
-  assert.equal(newDelhi.due_at, "2026-11-20");
-  assert.equal(newDelhi.overdue, false, "a Friday file is not overdue on a Saturday");
-  assert.match(newDelhi.due_label, /Expected 23 November 2026/);
+  assert.ok(newDelhi.due_at >= newDelhi.report_date);
+  assert.equal(newDelhi.overdue, false, "the next scheduled file is not overdue before its window closes");
+  assert.match(newDelhi.due_label, new RegExp(`Expected ${longDate(newDelhi.due_at)}`));
 });
 
 test("citation pages use the oldest office check, not the newest build date", async () => {
+  const freshness = loadFreshness(ROOT);
+  const checkDates = freshness.offices
+    .map((office) => String(office.last_success_at).slice(0, 10))
+    .sort();
+  const range = `offices last successfully checked ${longDate(checkDates[0])} to ${longDate(checkDates[checkDates.length - 1])}`;
   for (const file of ["data.html", "data-study.html", "press.html"]) {
     const html = await read(file);
-    assert.match(
-      html,
-      /offices last successfully checked 18 November 2026 to 21 November 2026/,
-      file,
-    );
-    assert.doesNotMatch(html, /data checked 21 November 2026/, file);
+    assert.ok(html.includes(range), `${file} should cite the full office check range`);
+    assert.doesNotMatch(html, new RegExp(`data checked ${longDate(checkDates[checkDates.length - 1])}`), file);
   }
   const dataPage = await read("data.html");
   assert.match(dataPage, /2 offices need attention: Beijing, Abuja/);

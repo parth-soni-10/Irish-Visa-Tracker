@@ -622,13 +622,13 @@ export const BEIJING_MARKDOWN = officeMarkdown({
 });
 
 export const ABU_DHABI_MARKDOWN = officeMarkdown({
-  title: "Abu Dhabi visa decisions for the UAE, Gulf and North Africa",
+  title: "Abu Dhabi visa decisions for the UAE, Gulf, North Africa and Pakistan",
   route: "/abu-dhabi-visa-decisions",
   latest: "20 November 2026 (week ending)",
   decisions: "232",
   approved: "161",
   refused: "71",
-  countries: "United Arab Emirates, Afghanistan, Algeria, Bahrain, Jordan, Kuwait, Lebanon, Libya, Morocco, Oman, Qatar, Sudan, Syria and Tunisia",
+  countries: "United Arab Emirates, Afghanistan, Algeria, Bahrain, Jordan, Kuwait, Lebanon, Libya, Morocco, Oman, Pakistan, Qatar, Sudan, Syria and Tunisia",
   source: "https://www.ireland.ie/en/uae/abudhabi/services/visas/weekly-decision-reports/",
   data: "/data/embassy-abu-dhabi.json",
   note: "Abu Dhabi publishes weekly PDF reports. The report date is the end of the reporting period, not the date of an individual decision. The tracker keeps each dated report it has ingested; read the report archive for earlier periods.",
@@ -661,13 +661,13 @@ export const ANKARA_MARKDOWN = officeMarkdown({
 });
 
 export const DUBLIN_MARKDOWN = officeMarkdown({
-  title: "Dublin visa decisions for transferred applications",
+  title: "Dublin visa decisions for Pakistan and transferred applications",
   route: "/dublin-visa-decisions",
   latest: "20 November 2026",
   decisions: "4,475",
   approved: "2,624",
   refused: "1,851",
-  countries: "Applications transferred from overseas offices and specified categories, including EU Free Movement family, certain Join Family categories, Minister of Religion and Volunteer",
+  countries: "Join-family applications from Pakistan, applications transferred from overseas offices and specified categories, including EU Free Movement family, certain Join Family categories, Minister of Religion and Volunteer",
   source: "https://www.irishimmigration.ie/visa-decisions/",
   data: "/data/embassy-dublin.json",
   note: "The Dublin Visa Office publishes decisions every Tuesday and a separate processing queue by category. The tracker holds the latest decision snapshot; the queue is shown on the processing-times page and is not an individual decision list.",

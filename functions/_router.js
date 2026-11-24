@@ -84,12 +84,58 @@ const REPO_RAW = "https://raw.githubusercontent.com/parth-soni/irish-visa-tracke
 // A deployment must be visible on the next request. Never let a browser, a
 // CDN, or a stale service worker reuse a response from an earlier build.
 const NO_STORE = "no-store, no-cache, must-revalidate, max-age=0";
+const HTML_CACHE = "no-cache, must-revalidate, max-age=0";
+const ASSET_CACHE = "public, max-age=31536000, immutable";
+const STATIC_CACHE = "public, max-age=3600, must-revalidate";
+const IMMUTABLE_ROOTS = new Set([
+  "/analytics-chart.css",
+  "/analytics-chart.js",
+  "/pages.css",
+  "/site-chrome.css",
+  "/site-chrome.js",
+  "/icon.svg",
+  "/apple-touch-icon.png",
+]);
 
 function setNoStore(headers) {
   headers.set("Cache-Control", NO_STORE);
   headers.set("Pragma", "no-cache");
   headers.set("Expires", "0");
   headers.set("CDN-Cache-Control", "no-store");
+  return headers;
+}
+
+/** HTML revalidates on every visit, so a deploy is visible immediately while
+ *  ETag/Last-Modified still avoid re-sending an unchanged page. */
+function setHtmlCache(headers) {
+  headers.set("Cache-Control", HTML_CACHE);
+  headers.set("Pragma", "no-cache");
+  headers.set("Expires", "0");
+  headers.set("CDN-Cache-Control", "no-cache");
+  return headers;
+}
+
+function isImmutableAsset(pathname) {
+  return pathname.startsWith("/styles/")
+    || pathname.startsWith("/scripts/")
+    || pathname.startsWith("/fonts/")
+    || pathname.startsWith("/assets/")
+    || IMMUTABLE_ROOTS.has(pathname);
+}
+
+function setAssetCache(headers) {
+  headers.set("Cache-Control", ASSET_CACHE);
+  headers.set("CDN-Cache-Control", ASSET_CACHE);
+  headers.delete("Pragma");
+  headers.delete("Expires");
+  return headers;
+}
+
+function setStaticCache(headers) {
+  headers.set("Cache-Control", STATIC_CACHE);
+  headers.set("CDN-Cache-Control", STATIC_CACHE);
+  headers.delete("Pragma");
+  headers.delete("Expires");
   return headers;
 }
 
@@ -235,8 +281,8 @@ async function fetchDocument(env, request, document) {
   if (document.alternate) {
     headers.set("Link", `<${document.alternate}>; rel="alternate"; type="text/markdown"`);
   }
-  // HTML and the unversioned JS/CSS it references must never outlive a deploy.
-  setNoStore(headers);
+  // HTML revalidates; its versioned CSS/JS URLs are cached by the asset rules.
+  setHtmlCache(headers);
   mergeVary(headers);
   return addSecurityHeaders(new Response(request.method === "HEAD" ? null : response.body, {
     status: response.status,
@@ -303,7 +349,29 @@ async function agentDocumentResponse(request, env, document, origin = "") {
 
 // Main request handler
 async function handleRequest(request, env) {
-  const { pathname } = new URL(request.url);
+  const requestUrl = new URL(request.url);
+  const { pathname } = requestUrl;
+
+  // After the custom-domain cutover, point the old pages.dev hostname at the
+  // branded origin with a permanent redirect. Only GET/HEAD are redirected:
+  // POST bodies must not be replayed across origins. Set
+  // PAGES_DEV_REDIRECT_ORIGIN=https://your-domain.example in Pages variables.
+  if ((request.method === "GET" || request.method === "HEAD")
+      && requestUrl.hostname === "irishvisaupdatetracker.pages.dev") {
+    let redirectOrigin = "";
+    try {
+      const configured = new URL(String(env.PAGES_DEV_REDIRECT_ORIGIN || ""));
+      if (configured.protocol === "https:") redirectOrigin = configured.origin;
+    } catch {
+      // Leave pages.dev serving normally when the variable is absent/invalid.
+    }
+    if (redirectOrigin) {
+      return addSecurityHeaders(new Response(null, {
+        status: 301,
+        headers: { Location: `${redirectOrigin}${requestUrl.pathname}${requestUrl.search}` },
+      }));
+    }
+  }
 
   if ((request.method === "GET" || request.method === "HEAD") && LEGACY_REDIRECTS.has(pathname)) {
     const target = new URL(LEGACY_REDIRECTS.get(pathname), request.url);
@@ -620,11 +688,13 @@ async function handleRequest(request, env) {
     { path: "/", file: "index.html" },
     { path: "/about", file: "about.html" },
     { path: "/help", file: "help.html" },
+    { path: "/vfs-tracking", file: "vfs-tracking.html" },
     { path: "/contact", file: "contact.html" },
     { path: "/corrections", file: "corrections.html" },
     { path: "/privacy", file: "privacy.html" },
     { path: "/terms", file: "terms.html" },
     { path: "/daily-summaries", file: "daily-summaries.html" },
+    { path: "/irish-visa-decisions-today", file: "irish-visa-decisions-today.html" },
     { path: "/new-delhi-visa-decisions", file: "new-delhi-visa-decisions.html" },
     { path: "/beijing-visa-decisions", file: "beijing-visa-decisions.html" },
     { path: "/abu-dhabi-visa-decisions", file: "abu-dhabi-visa-decisions.html" },
@@ -695,7 +765,8 @@ async function handleRequest(request, env) {
   const assetResponse = await env.ASSETS.fetch(request);
   if (assetResponse.status !== 404) {
     const headers = new Headers(assetResponse.headers);
-    setNoStore(headers);
+    if (isImmutableAsset(pathname)) setAssetCache(headers);
+    else setStaticCache(headers);
     mergeVary(headers);
     return addSecurityHeaders(new Response(request.method === "HEAD" ? null : assetResponse.body, {
       status: assetResponse.status,

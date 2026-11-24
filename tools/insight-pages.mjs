@@ -79,20 +79,26 @@ const CONTENT_PAGES = [
   {
     file: 'data.html',
     route: '/data',
-    title: 'Open data: Irish visa decisions | Irish Visa Decision Tracker',
+    title: 'Irish Visa Open Data | Irish Visa Tracker',
     description: 'Download the public JSON and CSV files behind the Irish Visa Decision Tracker, with coverage, definitions, update cadence, reuse terms and citation details.',
   },
   {
     file: 'data-study.html',
     route: '/data-study',
-    title: 'What Irish visa decisions show: a data study | Irish Visa Decision Tracker',
+    title: 'Irish Visa Data Study: What Decisions Show',
     description: 'An original study of published Irish visa decisions across six offices: approval rates, publication volume, New Delhi file growth, closures and method.',
   },
   {
     file: 'when-are-visa-decisions-published.html',
     route: '/when-are-visa-decisions-published',
-    title: 'When are Irish visa decisions published? | Irish Visa Decision Tracker',
+    title: 'When Are Irish Visa Decisions Published? | Tracker',
     description: 'Expected publication windows for the six Irish visa offices, recent tracker observations, public-holiday closures and calendar subscriptions.',
+  },
+  {
+    file: 'irish-visa-decisions-today.html',
+    route: '/irish-visa-decisions-today',
+    title: 'Irish Visa Decisions Today: Latest by Office',
+    description: 'What each Irish visa office has published most recently, with today’s date, decision counts, approved and refused totals, and the tracker’s last successful check.',
   },
   {
     file: 'press.html',
@@ -103,13 +109,13 @@ const CONTENT_PAGES = [
   {
     file: 'embed.html',
     route: '/embed',
-    title: 'Embed the latest official file badge | Irish Visa Decision Tracker',
+    title: 'Embeddable Irish Visa Data Badge | Tracker',
     description: 'A small, static SVG badge showing the latest official file date and decision count for each Irish visa office.',
   },
   {
     file: 'community-timelines.html',
     route: '/community-timelines',
-    title: 'Community processing timelines: aggregate view | Irish Visa Decision Tracker',
+    title: 'Community Processing Timelines | Tracker',
     description: 'Privacy-safe aggregate of community-reported processing timelines, published only when a group has enough submissions to protect anonymity.',
   },
   {
@@ -444,7 +450,7 @@ function csv(rows) {
   return `${rows.map((row) => row.map(csvCell).join(',')).join('\n')}\n`;
 }
 
-function shell({ route, title, description, body, jsonLd, markdown }) {
+function shell({ route, title, description, body, jsonLd, markdown, robots }) {
   const page = PAGES.find((candidate) => candidate.route === route)
     || { route, current: route.startsWith('/reports') ? '/reports' : null, skip: 'content' };
   const ld = jsonLd
@@ -458,7 +464,7 @@ function shell({ route, title, description, body, jsonLd, markdown }) {
   <title>${esc(title)}</title>
   <meta name="description" content="${esc(description)}">
   <link rel="canonical" href="${SITE}${route}">
-${markdown ? `  <link rel="alternate" type="text/markdown" href="${markdown}">\n` : ''}  <link rel="manifest" href="/manifest.json">
+${robots ? `  <meta name="robots" content="${esc(robots)}">\n` : ''}${markdown ? `  <link rel="alternate" type="text/markdown" href="${markdown}">\n` : ''}  <link rel="manifest" href="/manifest.json">
   <link rel="describedby" href="/llms.txt" type="text/plain">
   <meta name="theme-color" content="#ffffff">
   <meta property="og:type" content="article">
@@ -730,6 +736,139 @@ function studyPage(data) {
   });
 }
 
+/** Today and the build time in Dublin, so "today" is the Irish publication
+ *  day rather than the UTC day of a late-evening build. */
+function dublinNow() {
+  const now = new Date();
+  const today = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Europe/Dublin', year: 'numeric', month: '2-digit', day: '2-digit',
+  }).format(now);
+  const label = new Intl.DateTimeFormat('en-IE', {
+    timeZone: 'Europe/Dublin', day: 'numeric', month: 'long', year: 'numeric',
+    hour: '2-digit', minute: '2-digit', hour12: false,
+  }).format(now);
+  return { iso: now.toISOString(), today, label };
+}
+
+function todayPage(data) {
+  const page = CONTENT_PAGES.find((entry) => entry.route === '/irish-visa-decisions-today');
+  const fresh = data.freshness && Array.isArray(data.freshness.offices) && data.freshness.offices.length
+    ? data.freshness.offices
+    : data.offices;
+  const { iso, today, label } = dublinNow();
+  const reportDates = fresh
+    .map((office) => String(office.report_date || '').slice(0, 10))
+    .filter(Boolean)
+    .sort();
+  const newest = reportDates[reportDates.length - 1] || '';
+  const publishedToday = fresh.filter((office) => String(office.report_date || '').slice(0, 10) === today);
+  const todayCopy = publishedToday.length
+    ? `${publishedToday.length === 1 ? 'One office has' : `${publishedToday.length} offices have`} published a decision file dated today: ${publishedToday.map((office) => office.name).join(', ')}.`
+    : newest
+      ? `No office has published a decision file dated today. The newest publication is dated ${longDate(newest)}.`
+      : 'No dated office publication is recorded yet.';
+
+  const rows = fresh.map((office) => {
+    const meta = (data.bySlug && data.bySlug.get(office.slug)) || {};
+    const reportDate = String(office.report_date || '').slice(0, 10);
+    const checked = office.last_success_at || office.checked_at;
+    const statusNote = office.status === 'error'
+      ? '<br><span class="small-note">Latest refresh failed</span>'
+      : office.overdue
+        ? '<br><span class="small-note">Report overdue</span>'
+        : '';
+    return `<tr>
+            <th scope="row"><a href="/${esc(office.slug)}-visa-decisions">${esc(office.name)}</a></th>
+            <td data-label="Usual pattern">${esc(meta.cadence || '')}</td>
+            <td data-label="Latest publication">${reportDate ? `<time datetime="${reportDate}">${esc(longDate(reportDate))}</time>` : '—'}</td>
+            <td data-label="Decisions">${num(office.decisions)}</td>
+            <td data-label="Approved">${num(office.approved)}</td>
+            <td data-label="Refused">${num(office.refused)}</td>
+            <td data-label="Last successful check">${checked ? timeHTML(checked) : '—'}${statusNote}</td>
+          </tr>`;
+  }).join('\n');
+
+  const body = `    <p class="page-kicker">Published decision files</p>
+    <h1>Irish visa decisions today</h1>
+    <p class="page-meta">Independent and unofficial &bull; Not immigration advice</p>
+
+    <p class="page-lede">
+      Each office publishes on its own schedule. This page shows the newest official publication
+      from each office, the decisions it contains, and when the tracker last checked it.
+    </p>
+
+    <p class="page-data-freshness">
+      <strong>Today:</strong> <time datetime="${today}">${esc(longDate(today))}</time> &middot;
+      <strong>Page built:</strong> <time datetime="${esc(iso)}">${esc(label)}</time> Dublin time
+    </p>
+
+    <p class="callout"><strong>${esc(todayCopy)}</strong></p>
+
+    <section>
+      <h2>Latest published decisions by office</h2>
+      <div class="table-wrap" role="region" aria-label="Latest official publication by office" tabindex="0">
+        <table class="office-table stack-table">
+          <caption>Newest official file from each office as of ${esc(longDate(today))}</caption>
+          <thead><tr><th scope="col">Office</th><th scope="col">Usual pattern</th><th scope="col">Latest publication</th><th scope="col">Decisions</th><th scope="col">Approved</th><th scope="col">Refused</th><th scope="col">Last successful check</th></tr></thead>
+          <tbody>
+${rows}
+          </tbody>
+        </table>
+      </div>
+      <p class="small-note">Each count belongs to that office's own latest file. The files cover different periods, so do not add them together as a daily total.</p>
+    </section>
+
+    <section>
+      <h2>What “today” means here</h2>
+      <ul>
+        <li><strong>New Delhi</strong> publishes a cumulative file each weekday morning. Its count is the total in the file, not the number added that day.</li>
+        <li><strong>Abu Dhabi, Abuja and Ankara</strong> publish weekly reports. The report date is the end of the period, not the date of an individual decision.</li>
+        <li><strong>Beijing and Dublin</strong> publish snapshots. A newer check can return the same list, so a new observation is not always a new decision.</li>
+        <li><strong>A missing number is not a refusal.</strong> It may be unpublished, with another office, or in a file the tracker has not seen yet.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Check an application number</h2>
+      <p>The tracker searches the published files of all six offices. It records decisions only; it cannot see an application that has not been published or tell you when a passport will be returned.</p>
+      <p class="study-downloads">
+        <a class="btn" href="/?tracker=visa&amp;tab=search">Search an application number</a>
+        <a class="btn" href="/daily-summaries">Daily summaries</a>
+        <a class="btn" href="/when-are-visa-decisions-published">Publication schedule</a>
+      </p>
+    </section>
+`;
+
+  return shell({
+    route: page.route,
+    title: page.title,
+    description: page.description,
+    body,
+    jsonLd: {
+      '@context': 'https://schema.org',
+      '@graph': [
+        {
+          '@type': 'WebPage',
+          '@id': `${SITE}${page.route}#webpage`,
+          url: `${SITE}${page.route}`,
+          name: 'Irish visa decisions today',
+          description: page.description,
+          inLanguage: 'en',
+          isPartOf: { '@id': `${SITE}/#website` },
+          dateModified: today,
+        },
+        {
+          '@type': 'BreadcrumbList',
+          itemListElement: [
+            { '@type': 'ListItem', position: 1, name: 'Tracker', item: `${SITE}/` },
+            { '@type': 'ListItem', position: 2, name: 'Irish visa decisions today', item: `${SITE}${page.route}` },
+          ],
+        },
+      ],
+    },
+  });
+}
+
 function schedulePage(data) {
   const stats = latestStats(data);
   const asOf = stats.latestDate;
@@ -972,7 +1111,7 @@ function dataPage(data) {
   `;
   return shell({
     route: '/data',
-    title: 'Open data: Irish visa decisions | Irish Visa Decision Tracker',
+    title: 'Irish Visa Open Data | Irish Visa Tracker',
     description: 'Download the public JSON and CSV files behind the Irish Visa Decision Tracker, with coverage, definitions, update cadence, reuse terms and citation details.',
     body,
     jsonLd,
@@ -1208,6 +1347,7 @@ function communityPage(data) {
     route: '/community-timelines',
     title: CONTENT_PAGES.find((page) => page.route === '/community-timelines').title,
     description: CONTENT_PAGES.find((page) => page.route === '/community-timelines').description,
+    robots: 'noindex, follow',
     body,
     jsonLd: {
       '@context': 'https://schema.org',
@@ -1238,7 +1378,7 @@ function signed(value) {
 }
 
 function reportTitle(office, entry) {
-  return `${office.name} visa decisions — ${longDate(entry.report_date)} | Irish Visa Decision Tracker`;
+  return `${office.name} visa decisions — ${shortDate(entry.report_date)} | Tracker`;
 }
 
 function reportsIndexPage(data) {
@@ -1374,7 +1514,7 @@ function officeReportsPage(data, office) {
 
   return shell({
     route: `/reports/${office.slug}`,
-    title: `${office.name} official report archive | Irish Visa Decision Tracker`,
+    title: `${office.name} reports | Irish Visa Tracker`,
     description: `${SNAPSHOT_OFFICES.has(office.slug) ? 'Snapshot checks' : 'Dated'} ${office.name} Irish visa decision reports with counts, approval rates, checksums and official source links.`,
     body,
     jsonLd: {
@@ -1653,6 +1793,7 @@ export function buildInsightPages(options = {}) {
   const archive = reportArchiveStats(data);
 
   const pages = {
+    'irish-visa-decisions-today.html': todayPage(data),
     'data.html': dataPage(data),
     'data-study.html': studyPage(data),
     'when-are-visa-decisions-published.html': schedulePage(data),
@@ -1662,17 +1803,19 @@ export function buildInsightPages(options = {}) {
     'reports.html': reportsIndexPage(data),
   };
   const footer = freshnessFooterHTML(data.freshness);
+  const todayFooter = freshnessFooterHTML(data.freshness, { includeTable: false, includeGlossary: false });
   const history = freshnessHistoryHTML(data.freshness);
-  const withFooter = (html, includeHistory = false) => {
+  const withFooter = (html, includeHistory = false, footerHtml = footer) => {
     const extra = includeHistory && history
       ? `<section><h2>Observation history</h2>${history}</section>`
       : '';
-    return html.replace('</main>', `${extra}${footer}</main>`);
+    return html.replace('</main>', `${extra}${footerHtml}</main>`);
   };
   for (const [file, html] of Object.entries(pages)) {
     writeFile(path.join(outDir, file), withFooter(
       html,
       file === 'when-are-visa-decisions-published.html',
+      file === 'irish-visa-decisions-today.html' ? todayFooter : footer,
     ));
   }
 

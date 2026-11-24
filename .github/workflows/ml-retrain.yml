@@ -57,12 +57,12 @@ jobs:
       - name: Train ML model
         if: ${{ steps.check_data.outputs.force == 'true' }}
         run: |
-          python train_model.py
+          python ml_pipeline.py train
 
       - name: Regenerate the Worker tree ensemble
         if: ${{ steps.check_data.outputs.force == 'true' }}
         run: |
-          python export_trees.py
+          python ml_pipeline.py export
       
       - name: Check model performance
         if: ${{ steps.check_data.outputs.force == 'true' }}

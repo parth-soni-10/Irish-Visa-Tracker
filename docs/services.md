@@ -13,6 +13,8 @@ never stored in this repository and must not be pasted into chat or committed.
   `SCRAPER_CRON_SECRET`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_WEBHOOK_SECRET`,
   `VAPID_PRIVATE_KEY`, `VAPID_PUBLIC_KEY`, `VAPID_SUBJECT`. Optional channel
   announcement settings: `TELEGRAM_CHANNEL_ID`, `TELEGRAM_CHANNEL_URL`.
+  Optional custom-domain cutover setting: `PAGES_DEV_REDIRECT_ORIGIN` (the new
+  `https://` origin; absent means no old-host redirect).
 - Optional monitoring secret: `ALERT_WEBHOOK_URL` (GitHub Actions and the
   separate monitoring Worker).
 
@@ -39,6 +41,7 @@ D1 also stores the operational counters and the activation funnel:
 | Variable | State | Effect when absent |
 |---|---|---|
 | `APP_BASE_URL` | Configured | Links fall back to the production origin |
+| `PAGES_DEV_REDIRECT_ORIGIN` | Optional until a custom domain is live | The old `pages.dev` host returns no redirect |
 | `ALERT_WEBHOOK_URL` | Optional shared alert destination | External uptime and cron-failure alerts have no out-of-band delivery |
 | `SCRAPER_CRON_SECRET` | Configured | `/api/alerts/run` and `/api/digest/send` return 503 |
 | `EMAIL_WEBHOOK_URL` | Configured to the deployment’s `/api/email/send` bridge | Email delivery is disabled |

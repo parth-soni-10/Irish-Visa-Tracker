@@ -11,6 +11,11 @@
 # geometry, so style-src-attr is the one deliberate exception. Data files ship
 # with the site itself; connect-src stays self-only except for Web Push and
 # Cloudflare's optional insights beacon.
+#
+# Cache-Control deliberately does not appear on /*: Cloudflare combines the
+# headers of every matching block, so a broad no-cache rule here would be
+# joined with the immutable asset rule below. HTML, assets and data get
+# non-overlapping rules instead.
 /employer
   Cache-Control: no-store
 
@@ -19,20 +24,88 @@
   X-Robots-Tag: noindex
 
 /404-internal.html
-  Cache-Control: no-store
   X-Robots-Tag: noindex
 
 /build-info.json
   Cache-Control: no-store
   X-Robots-Tag: noindex
 
-/*
-  Cache-Control: no-store, no-cache, must-revalidate, max-age=0
+/*.html
+  Cache-Control: no-cache, must-revalidate, max-age=0
   Pragma: no-cache
   Expires: 0
-  CDN-Cache-Control: no-store
+  CDN-Cache-Control: no-cache
+
+/manifest.json
+  Cache-Control: no-cache, must-revalidate, max-age=0
+  CDN-Cache-Control: no-cache
+
+/sw.js
+  Cache-Control: no-cache, must-revalidate, max-age=0
+  CDN-Cache-Control: no-cache
+
+/sitemap.xml
+  Cache-Control: no-cache, must-revalidate, max-age=0
+  CDN-Cache-Control: no-cache
+
+/robots.txt
+  Cache-Control: no-cache, must-revalidate, max-age=0
+  CDN-Cache-Control: no-cache
+
+/llms.txt
+  Cache-Control: no-cache, must-revalidate, max-age=0
+  CDN-Cache-Control: no-cache
+
+/*
   X-Frame-Options: DENY
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: geolocation=(), microphone=(), camera=(), payment=()
   Content-Security-Policy: default-src 'none'; script-src 'self' https://cdn.jsdelivr.net https://static.cloudflareinsights.com; script-src-attr 'none'; style-src 'self'; style-src-attr 'unsafe-inline'; style-src-elem 'self'; font-src 'self' data:; img-src 'self' data: https:; connect-src 'self' https://fcm.googleapis.com https://cloudflareinsights.com; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'
+
+# Static assets are referenced with ?v=<build hash> in the built HTML/CSS.
+# The hash changes whenever any of these files changes, so the URL can safely
+# be cached for a year. The router applies the same policy to requests that
+# reach the Pages Function rather than the assets layer.
+/styles/*
+  Cache-Control: public, max-age=31536000, immutable
+  CDN-Cache-Control: public, max-age=31536000, immutable
+
+/scripts/*
+  Cache-Control: public, max-age=31536000, immutable
+  CDN-Cache-Control: public, max-age=31536000, immutable
+
+/fonts/*
+  Cache-Control: public, max-age=31536000, immutable
+  CDN-Cache-Control: public, max-age=31536000, immutable
+
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+  CDN-Cache-Control: public, max-age=31536000, immutable
+
+/analytics-chart.css
+  Cache-Control: public, max-age=31536000, immutable
+  CDN-Cache-Control: public, max-age=31536000, immutable
+
+/analytics-chart.js
+  Cache-Control: public, max-age=31536000, immutable
+  CDN-Cache-Control: public, max-age=31536000, immutable
+
+/pages.css
+  Cache-Control: public, max-age=31536000, immutable
+  CDN-Cache-Control: public, max-age=31536000, immutable
+
+/site-chrome.css
+  Cache-Control: public, max-age=31536000, immutable
+  CDN-Cache-Control: public, max-age=31536000, immutable
+
+/site-chrome.js
+  Cache-Control: public, max-age=31536000, immutable
+  CDN-Cache-Control: public, max-age=31536000, immutable
+
+# Data files change with each scrape/deploy; never serve a stale decision list.
+/data/*
+  Cache-Control: no-store, no-cache, must-revalidate, max-age=0
+  Pragma: no-cache
+  Expires: 0
+  CDN-Cache-Control: no-store

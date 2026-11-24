@@ -5,6 +5,14 @@ import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 
 const ROOT = fileURLToPath(new URL("../", import.meta.url));
+const MONTHS = ["January", "February", "March", "April", "May", "June", "July",
+  "August", "September", "October", "November", "December"];
+
+function longDate(value) {
+  const raw = String(value).slice(0, 10);
+  const [year, month, day] = raw.split("-");
+  return `${Number(day)} ${MONTHS[Number(month) - 1]} ${year}`;
+}
 
 async function read(relativePath) {
   return readFile(path.join(ROOT, relativePath), "utf8");
@@ -59,10 +67,9 @@ test("status page answers search freshness and keeps provenance in details", asy
   assert.ok(beijingRow.includes("is-error"), "Beijing should keep its error state");
   const newDelhiRow = rows.find((row) => row.includes(">New Delhi<"));
   assert.ok(newDelhiRow, "New Delhi row should render");
-  assert.ok(newDelhiRow.includes("19 November 2026"), "New Delhi official data-through date");
-  assert.match(
-    newDelhiRow,
-    /data-observation="tracker">Tracker observed through 20 November 2026/,
+  assert.ok(newDelhiRow.includes(longDate(newDelhi.official_data_through)), "New Delhi official data-through date");
+  assert.ok(
+    newDelhiRow.includes(`data-observation="tracker">Tracker observed through ${longDate(newDelhi.observed_data_through)}`),
     "New Delhi tracker observation is labelled separately",
   );
   assert.ok(newDelhiRow.includes(newDelhi.decisions.toLocaleString("en-IE")), "New Delhi decisions");

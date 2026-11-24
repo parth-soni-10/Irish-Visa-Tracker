@@ -2,7 +2,8 @@
 // Do not edit by hand; edit the JSON and rebuild.
 export const CONTENT_DATES = {
   "/about": "21 November 2026",
-  "/help": "21 November 2026",
+  "/help": "24 November 2026",
+  "/vfs-tracking": "24 November 2026",
   "/contact": "21 November 2026",
   "/corrections": "21 November 2026",
   "/privacy": "21 November 2026",

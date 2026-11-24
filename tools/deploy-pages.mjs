@@ -15,6 +15,7 @@ import { buildSocialCards } from './social-cards.mjs';
 import { buildLastmodMap, updateSitemap } from './sitemap-lastmod.mjs';
 import { loadFreshness, writeFreshness, longDate, checkedStamp, timeHTML, SNAPSHOT_OFFICES } from './freshness.mjs';
 import { freshnessFooterHTML, freshnessHistoryHTML } from './freshness-ui.mjs';
+import { versionAssets } from './version-assets.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -44,6 +45,7 @@ const assetsToCopy = [
   '404.html',
   'about.html',
   'help.html',
+  'vfs-tracking.html',
   'status.html',
   'contact.html',
   'corrections.html',
@@ -463,6 +465,47 @@ function injectLiveSummary() {
   }
 
   console.log(`Live summary: ${summary}`);
+}
+
+/** The date in Dublin, so a build near midnight UTC does not label the
+ *  homepage with yesterday's date. */
+function dublinTodayISO() {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Europe/Dublin',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(new Date());
+}
+
+/**
+ * Write the "as of today" line into the homepage. The title now says
+ * "today"; the line states which official publication is newest and whether
+ * any office published a newer file today, so the claim is checkable rather
+ * than an undated freshness badge.
+ */
+export function injectTodayLine(options = {}) {
+  const assetsRoot = path.resolve(options.assetsRootDir || assetsRootDir);
+  const dist = path.resolve(options.distDir || distDir);
+  const pagePath = path.resolve(dist, 'index.html');
+  if (!fs.existsSync(pagePath)) return;
+  const freshness = loadFreshness(assetsRoot);
+  const dates = freshness.offices
+    .map((office) => String(office.report_date || '').slice(0, 10))
+    .filter((date) => /^\d{4}-\d{2}-\d{2}$/.test(date))
+    .sort();
+  const latest = dates[dates.length - 1];
+  if (!latest) return;
+  const today = dublinTodayISO();
+  const copy = latest === today
+    ? `As of ${longDate(today)}, an official decision file dated today has been published.`
+    : `As of ${longDate(today)}, the newest official office publication is dated ${longDate(latest)}. No office has published a newer decision file today.`;
+  const html = fs.readFileSync(pagePath, 'utf8').replace(
+    /(<p[^>]*data-today-line[^>]*>)[\s\S]*?(<\/p>)/,
+    `$1${copy}$2`,
+  );
+  fs.writeFileSync(pagePath, html);
+  console.log(`Today line: ${copy}`);
 }
 
 export function injectOfficePages(options = {}) {
@@ -942,6 +985,7 @@ async function main() {
   injectOfficeFreshness();
   injectLatestReports();
   injectDailyToday();
+  injectTodayLine();
   bundleIndexAssets();
   injectHomepageDates();
   
@@ -972,6 +1016,8 @@ async function main() {
   console.log(`Sitemap lastmod: ${lastmod.updated} URL(s), ${lastmod.removed} static URL(s) without lastmod.`);
 
   rewriteSiteOrigin();
+  const assetVersion = versionAssets(distDir);
+  console.log(`Asset version: ${assetVersion.version} (${assetVersion.htmlFiles} HTML, ${assetVersion.cssFiles} CSS files).`);
 
   console.log(`Build complete! Copied ${copied} files to ${outDir}`);
   console.log(`Output directory: ${distDir}`);

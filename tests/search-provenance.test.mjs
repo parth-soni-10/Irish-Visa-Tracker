@@ -5,6 +5,7 @@ import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
 import { onRequestPost } from '../functions/api/search.js';
+import { loadFreshness } from '../tools/freshness.mjs';
 
 const ROOT = fileURLToPath(new URL('../', import.meta.url));
 
@@ -54,10 +55,13 @@ async function readJson(relative) {
 }
 
 test('search results distinguish tracker observations from official report rows', async () => {
+  const freshness = loadFreshness(ROOT);
+  const newDelhi = freshness.bySlug['new-delhi'];
   const tracker = await readJson('data/visa_decisions.json');
   const trackerRow = tracker.find((row) =>
-    Array.isArray(row) && row[0] === '2026-11-20' && /^(approved|refused)$/i.test(String(row[2])));
-  assert.ok(trackerRow, 'fixture needs a New Delhi tracker observation dated 20 November');
+    Array.isArray(row) && row[0] > newDelhi.official_data_through &&
+    /^(approved|refused)$/i.test(String(row[2])));
+  assert.ok(trackerRow, 'fixture needs a New Delhi tracker observation newer than the official file');
 
   const trackerPayload = await search({ query: digits(trackerRow[1]), mode: 'fuzzy', limit: 100 });
   const trackerResult = trackerPayload.results.find((row) => digits(row.number) === digits(trackerRow[1]));
@@ -66,22 +70,22 @@ test('search results distinguish tracker observations from official report rows'
   assert.equal(trackerResult.source_kind, 'tracker');
   assert.equal(trackerResult.source_label, 'Tracker observation');
   assert.equal(trackerResult.report_date, null, 'tracker rows must not inherit the official report date');
-  assert.equal(trackerResult.official_report_date, '2026-11-19');
-  assert.equal(trackerResult.observed_date, '2026-11-20');
-  assert.equal(trackerResult.observed_at, '2026-11-20');
+  assert.equal(trackerResult.official_report_date, newDelhi.official_data_through);
+  assert.equal(trackerResult.observed_date, trackerRow[0]);
+  assert.equal(trackerResult.observed_at, trackerRow[0]);
   assert.equal(trackerResult.freshness_status, 'official');
-  assert.equal(trackerResult.official_data_through, '2026-11-19');
+  assert.equal(trackerResult.official_data_through, newDelhi.official_data_through);
   assert.equal(trackerResult.source_file, null);
   assert.ok(trackerResult.source_url);
-  assert.equal(trackerResult.last_success_label, '21 Nov 2026, 14:53 UTC');
+  assert.equal(trackerResult.last_success_label, newDelhi.last_success_label);
   assert.equal(trackerResult.stale, false);
   assert.equal(trackerResult.office_status_label, 'Official');
 
-  assert.equal(trackerPayload.offices['new-delhi'].last_success_label, '21 Nov 2026, 14:53 UTC');
+  assert.equal(trackerPayload.offices['new-delhi'].last_success_label, newDelhi.last_success_label);
   assert.equal(trackerPayload.offices['new-delhi'].stale, false);
 
   const official = await readJson('data/embassy-new-delhi.json');
-  const officialRow = (official.decisions || []).find((row) => row.date === '2026-11-19');
+  const officialRow = (official.decisions || []).find((row) => row.date === newDelhi.official_data_through);
   assert.ok(officialRow, 'fixture needs an official New Delhi row');
   const officialPayload = await search({ query: digits(officialRow.number), mode: 'fuzzy', limit: 100 });
   const officialResult = officialPayload.results.find((row) => digits(row.number) === digits(officialRow.number));
@@ -89,9 +93,9 @@ test('search results distinguish tracker observations from official report rows'
   assert.equal(officialResult.source, 'official');
   assert.equal(officialResult.source_kind, 'official');
   assert.equal(officialResult.source_label, 'Official report');
-  assert.equal(officialResult.report_date, '2026-11-19');
+  assert.equal(officialResult.report_date, newDelhi.official_data_through);
   assert.equal(officialResult.source_file, official.source_file);
-  assert.equal(officialResult.last_success_label, '21 Nov 2026, 14:53 UTC');
+  assert.equal(officialResult.last_success_label, newDelhi.last_success_label);
 });
 
 test('search exposes the last successful check and stale/error state for each office', async () => {

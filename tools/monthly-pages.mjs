@@ -137,6 +137,61 @@ function archiveNav(months, current, latest) {
     </nav>`;
 }
 
+function monthlySchema(report, route, title, description) {
+  const datePublished = `${report.month}-01`;
+  const dateModified = String(report.latest_date || report.report_date || monthEnd(report.month)).slice(0, 10);
+  const pageUrl = `${SITE}${route}`;
+  const items = [
+    { '@type': 'ListItem', position: 1, name: 'Home', item: `${SITE}/` },
+    { '@type': 'ListItem', position: 2, name: 'Monthly report', item: `${SITE}/monthly-report` },
+  ];
+  if (route !== '/monthly-report') {
+    items.push({ '@type': 'ListItem', position: 3, name: report.label, item: pageUrl });
+  }
+  return {
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'Article',
+        '@id': `${pageUrl}#article`,
+        headline: title,
+        description,
+        url: pageUrl,
+        mainEntityOfPage: { '@id': pageUrl },
+        datePublished,
+        dateModified,
+        inLanguage: 'en',
+        isAccessibleForFree: true,
+        image: `${SITE}/assets/social/month-${report.month}.png`,
+        author: {
+          '@type': 'Person',
+          name: 'Parth Soni',
+          url: `${SITE}/about`,
+        },
+        publisher: {
+          '@type': 'Organization',
+          name: 'Irish Visa Decision Tracker',
+          logo: {
+            '@type': 'ImageObject',
+            url: `${SITE}/icon-512.png`,
+            width: 512,
+            height: 512,
+          },
+        },
+      },
+      {
+        '@type': 'BreadcrumbList',
+        '@id': `${pageUrl}#breadcrumb`,
+        itemListElement: items,
+      },
+    ],
+  };
+}
+
+function monthlySchemaBlock(report, route, title, description) {
+  return `<script type="application/ld+json" data-monthly-schema>\n${JSON.stringify(monthlySchema(report, route, title, description), null, 2)}\n</script>`;
+}
+
 function archivePage(report, months, latestMonth, freshness) {
   const route = `/monthly-report/${report.month}`;
   const title = `Irish visa decisions — ${report.label} | Monthly report`;
@@ -167,6 +222,7 @@ function archivePage(report, months, latestMonth, freshness) {
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
   <link rel="stylesheet" href="/styles/monthly-report.css">
   <link rel="stylesheet" href="/site-chrome.css">
+${monthlySchemaBlock(report, route, title, description)}
 </head>
 <body>
   <!-- site-chrome:start -->
@@ -227,10 +283,11 @@ function injectLatest(shell, report, months, latestMonth, freshness) {
   const title = `Irish visa decisions — ${report.label} | Monthly report`;
   const description = `Irish visa decisions published in ${report.label}: ${num(report.totals.total)} dated decisions, ${num(report.totals.approved)} approved and ${num(report.totals.refused)} refused. Independent and unofficial.`;
   let html = shell;
+  html = html.replace(/<script type="application\/ld\+json" data-monthly-schema>[\s\S]*?<\/script>\s*/g, '');
   html = html.replace(/<title>[\s\S]*?<\/title>/, `<title>${esc(title)}</title>`);
   html = html.replace(/(<meta name="description" content=")[^"]*(">)/, `$1${esc(description)}$2`);
   html = html.replace(/\n\s*<meta (?:property="og:[^"]+"|name="twitter:[^"]+")[^>]*>/g, '');
-  html = html.replace('</head>', `  <meta property="og:type" content="article">\n  <meta property="og:title" content="${esc(title)}">\n  <meta property="og:description" content="${esc(description)}">\n  <meta property="og:url" content="${SITE}/monthly-report">\n  <meta property="og:image" content="${SITE}/assets/social/month-${report.month}.png">\n  <meta property="og:image:width" content="1200">\n  <meta property="og:image:height" content="630">\n  <meta name="twitter:card" content="summary_large_image">\n  <meta name="twitter:title" content="${esc(title)}">\n  <meta name="twitter:description" content="${esc(description)}">\n  <meta name="twitter:image" content="${SITE}/assets/social/month-${report.month}.png">\n</head>`);
+  html = html.replace('</head>', `  <meta property="og:type" content="article">\n  <meta property="og:title" content="${esc(title)}">\n  <meta property="og:description" content="${esc(description)}">\n  <meta property="og:url" content="${SITE}/monthly-report">\n  <meta property="og:image" content="${SITE}/assets/social/month-${report.month}.png">\n  <meta property="og:image:width" content="1200">\n  <meta property="og:image:height" content="630">\n  <meta name="twitter:card" content="summary_large_image">\n  <meta name="twitter:title" content="${esc(title)}">\n  <meta name="twitter:description" content="${esc(description)}">\n  <meta name="twitter:image" content="${SITE}/assets/social/month-${report.month}.png">\n${monthlySchemaBlock(report, '/monthly-report', title, description)}\n</head>`);
   html = html.replace('<input id="report-month" type="month" aria-label="Report month">', `<input id="report-month" type="month" aria-label="Report month" value="${report.month}">`);
   html = html.replace('id="download-json" href="/api/reports/monthly"', `id="download-json" href="/api/reports/monthly?month=${report.month}"`);
   const dataThrough = report.latest_date ? longDate(report.latest_date) : '';

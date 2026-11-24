@@ -6,9 +6,22 @@ import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 
 import { buildInsightPages, publicationDateCopy } from "../tools/insight-pages.mjs";
+import { loadFreshness } from "../tools/freshness.mjs";
 
 const ROOT = fileURLToPath(new URL("../", import.meta.url));
 const SITE = "https://irishvisaupdatetracker.pages.dev";
+const MONTHS = ["January", "February", "March", "April", "May", "June", "July",
+  "August", "September", "October", "November", "December"];
+
+function longDate(value) {
+  const raw = String(value).slice(0, 10);
+  const [year, month, day] = raw.split("-");
+  return `${Number(day)} ${MONTHS[Number(month) - 1]} ${year}`;
+}
+
+function escapeRegExp(value) {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
 
 test("citations use the range of last successful office checks", () => {
   const range = publicationDateCopy({
@@ -51,6 +64,11 @@ test("build renders the study, schedule, press, embed and community pages from t
   const { dist } = await build(t);
   const manifest = JSON.parse(await readFile(path.join(ROOT, "data", "data_manifest.json"), "utf8"));
   const total = manifest.offices.reduce((sum, office) => sum + (Number(office.decisions) || 0), 0);
+  const freshness = loadFreshness(ROOT);
+  const checkDates = freshness.offices
+    .map((office) => String(office.last_success_at).slice(0, 10))
+    .sort();
+  const checkRange = `offices last successfully checked ${longDate(checkDates[0])} to ${longDate(checkDates[checkDates.length - 1])}`;
 
   const study = await readFile(path.join(dist, "data-study.html"), "utf8");
   assert.match(study, /What the published Irish visa decisions show/);
@@ -92,6 +110,7 @@ test("build renders the study, schedule, press, embed and community pages from t
 
   const community = await readFile(path.join(dist, "community-timelines.html"), "utf8");
   assert.match(community, /Not enough data to publish an aggregate yet/);
+  assert.match(community, /<meta name="robots" content="noindex, follow">/);
   assert.doesNotMatch(community, /Median wait/);
 
   const openData = await readFile(path.join(dist, "data.html"), "utf8");
@@ -104,7 +123,7 @@ test("build renders the study, schedule, press, embed and community pages from t
   assert.match(openData, /newest office publication is dated/);
   assert.match(openData, /Office dates differ; see the manifest/);
   assert.match(openData, /latest office publications dated [^)]+; (?:data checked|offices last successfully checked) [^)]+/);
-  assert.match(openData, /six offices — latest publications dated [^·]+ · offices last successfully checked 18 November 2026 to 21 November 2026/);
+  assert.match(openData, new RegExp(`six offices — latest publications dated [^·]+ · ${escapeRegExp(checkRange)}`));
 
   for (const file of ["data", "data-study", "when-are-visa-decisions-published", "press", "embed", "community-timelines"]) {
     const html = await readFile(path.join(dist, `${file}.html`), "utf8");
@@ -112,6 +131,37 @@ test("build renders the study, schedule, press, embed and community pages from t
     assert.match(html, /<main id="main-content"/, file);
     assert.doesNotMatch(html, /style="/i, `${file}: inline style attribute`);
   }
+});
+
+test("the today page lists every office's newest file with a build stamp", async (t) => {
+  const { dist } = await build(t);
+  const html = await readFile(path.join(dist, "irish-visa-decisions-today.html"), "utf8");
+  const manifest = JSON.parse(await readFile(path.join(ROOT, "data", "data_manifest.json"), "utf8"));
+  assert.match(html, /<h1>Irish visa decisions today<\/h1>/);
+  assert.match(html, /<strong>Page built:<\/strong> <time datetime="[^"]+">[^<]+<\/time> Dublin time/);
+  assert.doesNotMatch(html, /<strong>Last updated:<\/strong>/);
+  assert.equal((html.match(/class="office-table/g) || []).length, 1);
+  const mainTable = html.match(/<table class="office-table[^"]*">([\s\S]*?)<\/table>/)?.[1] || "";
+  assert.match(mainTable, /<caption>Newest official file from each office as of \d{1,2} [A-Z][a-z]+ \d{4}<\/caption>/);
+  const tbody = mainTable.match(/<tbody>([\s\S]*?)<\/tbody>/)?.[1] || "";
+  const rows = [...tbody.matchAll(/<tr>([\s\S]*?)<\/tr>/g)].map((match) => match[1]);
+  assert.equal(rows.length, manifest.offices.length);
+  for (const office of manifest.offices) {
+    const reportDate = String(office.report_date || "").slice(0, 10);
+    const row = rows.find((candidate) => candidate.includes(`href="/${office.slug}-visa-decisions"`));
+    assert.ok(row, `${office.slug} row is missing from the today table`);
+    assert.ok(row.includes(`>${office.name}</a>`), `${office.slug} name is missing from its table row`);
+    assert.ok(reportDate, `${office.slug} report date is missing from the manifest`);
+    assert.match(row, new RegExp(`data-label="Latest publication"><time datetime="${reportDate}"`));
+    assert.match(row, new RegExp(`data-label="Decisions">${office.decisions.toLocaleString("en-IE")}</td>`));
+    assert.match(row, new RegExp(`data-label="Approved">${office.approved.toLocaleString("en-IE")}</td>`));
+    assert.match(row, new RegExp(`data-label="Refused">${office.refused.toLocaleString("en-IE")}</td>`));
+    assert.match(row, /data-label="Last successful check"><time datetime="/);
+  }
+  assert.match(html, /<link rel="canonical" href="https:\/\/irishvisaupdatetracker\.pages\.dev\/irish-visa-decisions-today">/);
+  const sitemap = await readFile(path.join(dist, "sitemap.xml"), "utf8");
+  assert.match(sitemap, /<loc>https:\/\/irishvisaupdatetracker\.pages\.dev\/irish-visa-decisions-today<\/loc>/);
+  assert.match(sitemap, /<lastmod>\d{4}-\d{2}-\d{2}<\/lastmod>/);
 });
 
 test("every archived report gets a source-linked permalink and no duplicate snapshot pages", async (t) => {
@@ -168,15 +218,16 @@ test("badges, study exports, snapshots and sitemap entries are generated", async
   const { dist, result } = await build(t);
   const manifest = JSON.parse(await readFile(path.join(ROOT, "data", "data_manifest.json"), "utf8"));
   const delhi = manifest.offices.find((office) => office.slug === "new-delhi");
+  const freshness = loadFreshness(ROOT);
   const badge = await readFile(path.join(dist, "badges", "new-delhi.svg"), "utf8");
   assert.match(badge, /^<svg /);
   assert.match(badge, /New Delhi/);
   assert.match(badge, new RegExp(delhi.decisions.toLocaleString("en-IE")));
   assert.match(badge, /role="img"/);
-  assert.match(badge, /Last successful check 21 Nov 2026, \d{2}:\d{2} UTC/);
+  assert.ok(badge.includes(`Last successful check ${freshness.bySlug["new-delhi"].last_success_label}`));
   assert.match(badge, /Static snapshot, not a live feed/);
   const beijingBadge = await readFile(path.join(dist, "badges", "beijing.svg"), "utf8");
-  assert.match(beijingBadge, /Last successful check 18 Nov 2026, 06:01 UTC/);
+  assert.ok(beijingBadge.includes(`Last successful check ${freshness.bySlug.beijing.last_success_label}`));
   assert.match(beijingBadge, /latest check failed/);
 
   const summary = await readFile(path.join(dist, "data", "study", "office-summary.csv"), "utf8");

@@ -2,7 +2,8 @@
   "note": "Last editorial change to pages whose content is not generated from a dated data file. Update the date when the page copy changes; the sitemap uses this instead of the build clock.",
   "pages": {
     "/about": "2026-11-21",
-    "/help": "2026-11-21",
+    "/help": "2026-11-24",
+    "/vfs-tracking": "2026-11-24",
     "/contact": "2026-11-21",
     "/corrections": "2026-11-21",
     "/privacy": "2026-11-21",

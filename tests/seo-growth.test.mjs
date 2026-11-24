@@ -5,12 +5,25 @@ import path from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 
-import { injectHomepageDates, injectLatestReports } from "../tools/deploy-pages.mjs";
+import { injectHomepageDates, injectLatestReports, injectTodayLine } from "../tools/deploy-pages.mjs";
 import { loadFreshness } from "../tools/freshness.mjs";
 import { DEFAULT_SITE_ORIGIN, siteOrigin } from "../tools/site-config.mjs";
 import { buildLastmodMap, updateSitemap } from "../tools/sitemap-lastmod.mjs";
 
 const ROOT = fileURLToPath(new URL("../", import.meta.url));
+const MONTHS = ["January", "February", "March", "April", "May", "June", "July",
+  "August", "September", "October", "November", "December"];
+
+function longDate(value) {
+  const raw = String(value).slice(0, 10);
+  const [year, month, day] = raw.split("-");
+  return `${Number(day)} ${MONTHS[Number(month) - 1]} ${year}`;
+}
+
+async function latestRunDate(name) {
+  const rows = JSON.parse(await readFile(path.join(ROOT, "data", name), "utf8"));
+  return rows.map((row) => String(row.run_date).slice(0, 10)).sort().at(-1);
+}
 
 test("custom origins are https-only bare origins", () => {
   assert.equal(siteOrigin({}), DEFAULT_SITE_ORIGIN);
@@ -34,7 +47,8 @@ test("status gets a build-time latest-report row for every office", async (t) =>
   assert.match(html, /<th scope="col">Details<\/th>/);
   assert.match(html, /id="latest-reports-generated"[^>]*datetime="\d{4}-\d{2}-\d{2}T[^"]+Z"/);
   assert.match(html, /id="latest-reports-generated"[^>]*>[^<]*UTC<\/time>/);
-  assert.match(html, /14 days old at last build · Due since 14 Nov 2026/);
+  assert.ok(html.includes(beijing.age_label_at_build), "Beijing shows its build-time age");
+  if (beijing.due_short_label) assert.ok(html.includes(beijing.due_short_label), "Beijing shows its due label");
   assert.ok(beijing.last_success_label, "Beijing should have a last successful check label");
   assert.ok(html.includes(beijing.last_success_label), "status should show Beijing's last successful check");
   assert.ok(html.includes(beijing.last_attempt_label), "status should show Beijing's last attempt");
@@ -46,9 +60,23 @@ test("status gets a build-time latest-report row for every office", async (t) =>
   }
   assert.ok(html.includes("We couldn't refresh Beijing this time."), "Beijing explains the search impact");
   assert.ok(html.includes("The Abuja report is overdue"), "Abuja explains the search impact");
-  assert.match(html, /<time datetime="2026-11-19">19 November 2026<\/time>/);
+  const newDelhi = freshness.bySlug["new-delhi"];
+  assert.ok(html.includes(`<time datetime="${newDelhi.report_date}">${longDate(newDelhi.report_date)}</time>`));
   const tbody = html.match(/<tbody[^>]*data-latest-reports[^>]*>([\s\S]*?)<\/tbody>/)[1];
   assert.doesNotMatch(tbody, /Loading/);
+});
+
+test("the homepage today line is rewritten from the newest publication", async (t) => {
+  const temp = await mkdtemp(path.join(os.tmpdir(), "today-line-"));
+  t.after(() => rm(temp, { recursive: true, force: true }));
+  await copyFile(path.join(ROOT, "index.html"), path.join(temp, "index.html"));
+  injectTodayLine({ assetsRootDir: ROOT, distDir: temp });
+  const html = await readFile(path.join(temp, "index.html"), "utf8");
+  assert.match(
+    html,
+    /As of [^<]+, (?:the newest official office publication is dated [^<]+\. No office has published a newer decision file today\.|an official decision file dated today has been published\.)/,
+  );
+  assert.match(html, /data-today-line/);
 });
 
 test("the homepage Dataset dates come from their own data files", async (t) => {
@@ -61,9 +89,13 @@ test("the homepage Dataset dates come from their own data files", async (t) => {
   injectHomepageDates({ assetsRootDir: ROOT, distDir: temp });
   const html = await readFile(path.join(temp, "index.html"), "utf8");
   assert.doesNotMatch(html, /"dateModified": "2026-11-07"/);
-  assert.match(html, /#dataset-visa-decisions"[\s\S]*?"dateModified": "2026-11-21"/);
-  assert.match(html, /#dataset-stamp-1g"[\s\S]*?"dateModified": "2026-11-21"/);
-  assert.match(html, /#dataset-work-permits"[\s\S]*?"dateModified": "2026-11-21"/);
+  const freshness = loadFreshness(ROOT);
+  const visaDate = String(freshness.bySlug["new-delhi"].last_success_at).slice(0, 10);
+  const stampDate = await latestRunDate("stamp_1g.json");
+  const permitDate = await latestRunDate("work_permits.json");
+  assert.match(html, new RegExp(`#dataset-visa-decisions"[\\s\\S]*?"dateModified": "${visaDate}"`));
+  assert.match(html, new RegExp(`#dataset-stamp-1g"[\\s\\S]*?"dateModified": "${stampDate}"`));
+  assert.match(html, new RegExp(`#dataset-work-permits"[\\s\\S]*?"dateModified": "${permitDate}"`));
 });
 
 test("sitemap lastmod follows each page's data, not the build date", async () => {

@@ -23,6 +23,7 @@ perf/raw/
 node_modules/
 .functions-build/
 test-functions/
+.pytest_cache/
 playwright-report/
 test-results/
 /test-results.json

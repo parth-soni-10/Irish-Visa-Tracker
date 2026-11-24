@@ -11,7 +11,7 @@ const COUNTRY_INTENT = {
   "abu-dhabi": /UAE, Afghanistan, Algeria/,
   abuja: /Nigeria, Côte d’Ivoire, Ghana and Senegal/,
   ankara: /Türkiye, Azerbaijan and visa-required nationals resident in Saudi Arabia/,
-  dublin: /transferred from overseas offices/,
+  dublin: /Pakistan[^.]*transferred|transferred[^.]*Pakistan/s,
 };
 
 const PAGES = [
@@ -59,9 +59,15 @@ test("office pages carry unique crawl metadata and working schema", async () => 
 test("New Delhi separates the official-file day from later tracker rows", async () => {
   const html = await read("new-delhi-visa-decisions.html");
   assert.match(html, /Latest official-file day/);
-  assert.match(html, /19 November 2026: 183 decisions \(143 approved, 40 refused\)/);
+  assert.match(
+    html,
+    /data-office="latest-day">\d{1,2} [A-Z][a-z]+ \d{4}: [\d,]+ decisions \([\d,]+ approved, [\d,]+ refused\)/,
+  );
   assert.match(html, /Tracker’s latest day/);
-  assert.match(html, /20 November 2026: 65 decisions/);
+  assert.match(
+    html,
+    /data-office="tracker-latest">\d{1,2} [A-Z][a-z]+ \d{4}: [\d,]+ decisions \([\d,]+ approved, [\d,]+ refused; partial day, not in the .* official file\)/,
+  );
   assert.match(html, /partial day, not in the .* official file/);
 });
 

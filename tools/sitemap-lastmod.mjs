@@ -86,6 +86,7 @@ export function buildLastmodMap(assetsRoot = ROOT) {
     for (const route of [
       '/',
       '/daily-summaries',
+      '/irish-visa-decisions-today',
       '/data',
       '/data-study',
       '/status',

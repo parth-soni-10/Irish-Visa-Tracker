@@ -17,6 +17,90 @@
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
   <link rel="stylesheet" href="/pages.css">
   <link rel="stylesheet" href="/site-chrome.css">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebPage",
+      "@id": "https://irishvisaupdatetracker.pages.dev/help#webpage",
+      "url": "https://irishvisaupdatetracker.pages.dev/help",
+      "name": "How to check your Irish visa application status",
+      "description": "Check an Irish visa application by number, understand approved and refused results, and see what to do when a result is missing.",
+      "inLanguage": "en",
+      "dateModified": "2026-11-24",
+      "isPartOf": {
+        "@id": "https://irishvisaupdatetracker.pages.dev/#website"
+      }
+    },
+    {
+      "@type": "FAQPage",
+      "@id": "https://irishvisaupdatetracker.pages.dev/help#faq",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "How do I check my Irish visa application status?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Open Search, leave the office selector on all six offices, and enter the application number from your receipt or acknowledgement email. The tracker searches published decision files only; it cannot see an application that has not been published yet."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Where do I find my application number?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Use the application number on your receipt, acknowledgement email or decision email. It is usually an 8-digit number, and an IRL prefix, spaces and dashes are optional. Do not use a VFS reference, passport number, payment reference or courier tracking number."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "What do Approved and Refused mean?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Approved means the office’s published report records the application as approved. Refused means it records a refusal. A published row is not a visa, does not give a refusal reason, and is not legal advice; confirm the outcome with the official source and your decision letter."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Why might my result be missing?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "The decision may not be published yet, it may be under another office, the application number may be in a different format, or the office may publish only a latest snapshot. A missing result is not a refusal."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "What is the difference between decision date and report date?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "The decision date is attached to an individual row. The report date is the date of the office file that published that row. They can differ, especially for weekly reports."
+          }
+        }
+      ]
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      "@id": "https://irishvisaupdatetracker.pages.dev/help#breadcrumb",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "Home",
+          "item": "https://irishvisaupdatetracker.pages.dev/"
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": "Help",
+          "item": "https://irishvisaupdatetracker.pages.dev/help"
+        }
+      ]
+    }
+  ]
+}
+</script>
 </head>
 <body>
   <!-- site-chrome:start -->
@@ -42,6 +126,7 @@
             <a href="/when-are-visa-decisions-published">Publication schedule</a>
             <a href="/stamp-1g-processing-dates">Stamp 1G</a>
             <a href="/employment-permit-processing-dates">Employment permits</a>
+            <a href="/vfs-tracking">VFS tracking</a>
             <a href="/help" aria-current="page">Help</a>
             <a href="/contact">Contact</a>
             <a href="/privacy">Privacy</a>
@@ -82,6 +167,7 @@
           <a href="/when-are-visa-decisions-published">Publication schedule</a>
           <a href="/stamp-1g-processing-dates">Stamp 1G</a>
           <a href="/employment-permit-processing-dates">Employment permits</a>
+          <a href="/vfs-tracking">VFS tracking</a>
           <a href="/help" aria-current="page">Help</a>
           <a href="/contact">Contact</a>
           <a href="/privacy">Privacy</a>
@@ -111,8 +197,9 @@
 
     <p class="page-lede">
       Open the search with all six offices selected, enter the 8-digit application number from
-      your receipt, and check the result against the official source. This page explains what the
-      result means, why a number can be missing, and how alerts and office coverage work.
+      your receipt, and check the result against the official source. This page explains how to
+      track an application, what the result means, why a number can be missing, and how alerts
+      and office coverage work.
     </p>
 
     <section id="check-status">
@@ -129,6 +216,10 @@
         and enter the number. If the result is missing, it is not a refusal - check the official
         office file and your own decision letter.
       </p>
+      <p class="small-note">
+        See <a href="/irish-visa-decisions-today">today's published decisions by office</a> for
+        the newest file date and counts before you search.
+      </p>
     </section>
 
     <section id="find-number">
@@ -141,6 +232,40 @@
       <p>
         Do not use a VFS reference number, a passport number, a payment reference or a courier
         tracking number. Those are different identifiers and will not match a published decision.
+      </p>
+    </section>
+
+    <section id="track">
+      <h2>How do I track an Irish visa application?</h2>
+      <p>
+        There is no single official tracker for every Irish visa. Where you can see progress
+        depends on who has your file: the visa application centre that took your documents,
+        the visa office that decides the case, or the office's published decision list.
+      </p>
+      <ol>
+        <li><strong>Use the reference from your application centre.</strong> If you applied
+          through VFS Global, the centre that accepted your documents runs its own tracking
+          service. Use the reference on your VFS receipt on the
+          <a href="https://visa.vfsglobal.com/" target="_blank" rel="noopener noreferrer">VFS Global</a>
+          site, or open the tracker's <a href="/vfs-tracking">VFS tracking page</a> for
+          applications submitted in India. VFS handles appointments, document submission and
+          passport return; it does not decide the application.</li>
+        <li><strong>Confirm which visa office has your file.</strong> Your receipt,
+          acknowledgement email or application summary names the office. A VFS centre is not
+          the visa office, and some categories are transferred to Dublin.</li>
+        <li><strong>Search the office's published decisions.</strong> Search all six offices
+          here, or open the office page for its latest file and publication schedule:
+          <a href="/new-delhi-visa-decisions">New Delhi</a>,
+          <a href="/beijing-visa-decisions">Beijing</a>,
+          <a href="/abu-dhabi-visa-decisions">Abu Dhabi</a>,
+          <a href="/abuja-visa-decisions">Abuja</a>,
+          <a href="/ankara-visa-decisions">Ankara</a> and
+          <a href="/dublin-visa-decisions">Dublin</a>.</li>
+      </ol>
+      <p class="small-note">
+        A tracking reference showing "in progress" and a decision list showing no row can both
+        be correct. This tracker records published decisions only; it cannot see the internal
+        status of an application or tell you when a passport will be returned.
       </p>
     </section>
 

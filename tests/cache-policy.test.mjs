@@ -39,23 +39,58 @@ function assetsEnv() {
 const env = assetsEnv();
 const ctx = { waitUntil() {}, passThroughOnException() {} };
 
-test('documents, app scripts and data are never cached by the router', async () => {
-  for (const path of ['/', '/scripts/app.js', '/data/test.json']) {
-    const response = await router.fetch(new Request('https://tracker.test' + path), env, ctx);
-    assert.equal(response.status, 200, path);
-    assert.match(response.headers.get('Cache-Control'), /no-store/, path);
-    assert.match(response.headers.get('Pragma'), /no-cache/, path);
-    assert.equal(response.headers.get('Expires'), '0', path);
-  }
+test('HTML revalidates, versioned assets are immutable and data is never cached', async () => {
+  const document = await router.fetch(new Request('https://tracker.test/'), env, ctx);
+  assert.equal(document.status, 200);
+  assert.match(document.headers.get('Cache-Control'), /no-cache/);
+  assert.doesNotMatch(document.headers.get('Cache-Control'), /no-store/);
+  assert.match(document.headers.get('Pragma'), /no-cache/);
+  assert.equal(document.headers.get('Expires'), '0');
+
+  const asset = await router.fetch(new Request('https://tracker.test/scripts/app.js'), env, ctx);
+  assert.equal(asset.status, 200);
+  assert.equal(asset.headers.get('Cache-Control'), 'public, max-age=31536000, immutable');
+
+  const data = await router.fetch(new Request('https://tracker.test/data/test.json'), env, ctx);
+  assert.equal(data.status, 200);
+  assert.match(data.headers.get('Cache-Control'), /no-store/);
+  assert.match(data.headers.get('Pragma'), /no-cache/);
+  assert.equal(data.headers.get('Expires'), '0');
 });
 
-test('every static path gets the no-store policy', async () => {
+test('static headers revalidate HTML and cache versioned asset paths', async () => {
   const headers = await read('_headers');
-  const global = headers.match(/\/\*[\s\S]*?(?=\n\/|$)/);
-  assert.ok(global, 'global _headers block is missing');
-  assert.match(global[0], /Cache-Control: no-store/);
-  assert.match(global[0], /Pragma: no-cache/);
-  assert.match(global[0], /Expires: 0/);
+  const html = headers.match(/\/\*\.html[\s\S]*?(?=\n\/|$)/);
+  assert.ok(html, 'HTML _headers block is missing');
+  assert.match(html[0], /Cache-Control: no-cache, must-revalidate/);
+  assert.match(html[0], /Pragma: no-cache/);
+  assert.match(html[0], /Expires: 0/);
+  assert.match(headers, /\/styles\/\*[\s\S]*?Cache-Control: public, max-age=31536000, immutable/);
+  assert.match(headers, /\/pages\.css[\s\S]*?Cache-Control: public, max-age=31536000, immutable/);
+  assert.match(headers, /\/data\/\*[\s\S]*?Cache-Control: no-store/);
+  // A broad cache rule would be merged with the asset rule by Cloudflare.
+  const global = headers.match(/^\/\*\r?\n([\s\S]*?)(?=\r?\n\r?\n)/m);
+  assert.ok(global, 'global security block is missing');
+  assert.doesNotMatch(global[1], /Cache-Control/);
+});
+
+
+test('the old pages.dev host redirects to the configured custom origin', async () => {
+  const redirectEnv = { ...env, PAGES_DEV_REDIRECT_ORIGIN: 'https://tracker.example' };
+  const oldHost = await router.fetch(
+    new Request('https://irishvisaupdatetracker.pages.dev/about?ref=old'),
+    redirectEnv,
+    ctx,
+  );
+  assert.equal(oldHost.status, 301);
+  assert.equal(oldHost.headers.get('Location'), 'https://tracker.example/about?ref=old');
+
+  const customHost = await router.fetch(
+    new Request('https://tracker.example/'),
+    redirectEnv,
+    ctx,
+  );
+  assert.equal(customHost.status, 200);
 });
 
 test('the service worker has no fetch cache and clears old caches', async () => {

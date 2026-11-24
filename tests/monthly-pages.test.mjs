@@ -28,11 +28,11 @@ test("the latest monthly report is static and keeps the interactive shell", asyn
 
   const html = await readFile(path.join(dist, "monthly-report.html"), "utf8");
   assert.match(html, /class="cards" id="summary-cards"/);
-  assert.match(html, /<div class="value">1,201<\/div>/);
+  assert.match(html, /<div class="value">1,417<\/div>/);
   assert.match(html, /class="month-nav"/);
   assert.match(html, /href="\/monthly-report\/2026-10"/);
   assert.match(html, /id="report-month"[^>]*value="2026-11"/);
-  assert.match(html, /id="report-data-through">Data to 20 November 2026\. November 2026 is a partial month/);
+  assert.match(html, /id="report-data-through">Data to 22 November 2026\. November 2026 is a partial month/);
   assert.match(html, /id="digest-form"/);
   assert.match(html, /src="\/scripts\/monthly-report-1\.js"/);
   assert.doesNotMatch(html, /Loading the official files/);
@@ -50,6 +50,15 @@ test("the latest monthly report is static and keeps the interactive shell", asyn
   assert.equal($('meta[property="og:image"]').length, 1);
   assert.equal($('meta[name="twitter:image"]').length, 1);
   assert.equal($('script[src="/scripts/public-channel.js"]').length, 1);
+  assert.equal($('script[data-monthly-schema]').length, 1);
+  const monthlyGraph = JSON.parse($('script[data-monthly-schema]').text())['@graph'];
+  const article = monthlyGraph.find((node) => node['@type'] === 'Article');
+  const breadcrumb = monthlyGraph.find((node) => node['@type'] === 'BreadcrumbList');
+  assert.ok(article, 'latest monthly report needs Article schema');
+  assert.equal(article.datePublished, '2026-11-01');
+  assert.equal(article.author.name, 'Parth Soni');
+  assert.equal(article.publisher.logo.url, `${SITE}/icon-512.png`);
+  assert.equal(breadcrumb.itemListElement.length, 2);
 });
 
 test("prior months are self-canonical archive pages without a duplicate current month", async (t) => {
@@ -65,6 +74,12 @@ test("prior months are self-canonical archive pages without a duplicate current 
   assert.match(archive, /Daily dated decisions/);
   assert.doesNotMatch(archive, /Loading/);
   assert.match(archive, /href="\/monthly-report\/2026-09"/);
+  const archive$ = cheerio.load(archive);
+  const archiveGraph = JSON.parse(archive$('script[data-monthly-schema]').text())['@graph'];
+  assert.ok(archiveGraph.some((node) => node['@type'] === 'Article'));
+  const archiveBreadcrumb = archiveGraph.find((node) => node['@type'] === 'BreadcrumbList');
+  assert.equal(archiveBreadcrumb.itemListElement.length, 3);
+  assert.equal(archiveBreadcrumb.itemListElement[2].name, 'October 2026');
 
   await assert.rejects(
     stat(path.join(dist, "monthly-report", "2026-11.html")),

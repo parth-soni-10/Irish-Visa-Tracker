@@ -45,15 +45,19 @@ property. Those steps need the maintainer's accounts.
 
 4. **Redirect the old address.**
    Cloudflare Pages does not let this repository add DNS or a zone redirect for
-   a `pages.dev` hostname. Use a redirect rule on a zone you control, or a
-   Pages `_redirects` rule with the absolute old source once the domain is
-   active:
-   ```
-   https://irishvisaupdatetracker.pages.dev/*  https://visa.example.ie/:splat  301
-   ```
-   Test both a clean URL (`/new-delhi-visa-decisions`) and a report permalink
-   (`/reports/new-delhi/2026-11-19`) with `curl -I`, including the query string.
-   Keep the old property in Search Console during the transition.
+   a `pages.dev` hostname. The router therefore supports a runtime fallback:
+   set the Pages variable `PAGES_DEV_REDIRECT_ORIGIN=https://visa.example.ie`.
+   It returns a `301` for `GET`/`HEAD` requests on the exact old host, preserving
+   the path and query string; other hosts and `POST` requests are unaffected.
+   Remove the variable if you ever need the old host to serve again.
+
+   If you also control the `pages.dev` hostname through a zone or redirect
+   rule, use it as the primary redirect and keep this fallback during the
+   transition. Test both a clean URL (`/new-delhi-visa-decisions`) and a report
+   permalink (`/reports/new-delhi/2026-11-19`) with `curl -I`, including the
+   query string. Keep the old property in Search Console during the transition.
+   Search Console does not follow a redirected sitemap, so submit the new
+   domain's `/sitemap.xml` rather than relying on the old one.
 
 5. **Search Console change of address.**
    - Add and verify the new domain as a property (DNS or HTML verification).
@@ -76,8 +80,9 @@ property. Those steps need the maintainer's accounts.
 
 - Do not change `SITE_ORIGIN` without rebuilding: the checked-in source pages
   keep the default origin as a fallback.
-- The Pages project's own `*.pages.dev` hostname remains reachable unless a
-  redirect is added. A canonical tag is a hint, not a redirect.
+- The Pages project's own `*.pages.dev` hostname remains reachable unless
+  `PAGES_DEV_REDIRECT_ORIGIN` is set (or a zone redirect is added). A canonical
+  tag is a hint, not a redirect.
 - Social cards live at `/assets/social/`; the generated URLs follow the new
   origin automatically.
 - `TELEGRAM_CHANNEL_URL`, `EMAIL_FROM` and other service variables are

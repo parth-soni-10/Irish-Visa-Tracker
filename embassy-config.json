@@ -38,7 +38,7 @@
       "slug": "abu-dhabi",
       "name": "Abu Dhabi",
       "flag": "🇦🇪",
-      "countries": ["UAE", "Afghanistan", "Algeria", "Bahrain", "Jordan", "Kuwait", "Lebanon", "Libya", "Morocco", "Oman", "Qatar", "Sudan", "Syria", "Tunisia"],
+      "countries": ["UAE", "Afghanistan", "Algeria", "Bahrain", "Jordan", "Kuwait", "Lebanon", "Libya", "Morocco", "Oman", "Pakistan", "Qatar", "Sudan", "Syria", "Tunisia"],
       "source": "pdf-weekly",
       "url": "https://www.ireland.ie/en/uae/abudhabi/services/visas/weekly-decision-reports/",
       "schedule": "weekly-friday",
