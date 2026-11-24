@@ -19,6 +19,13 @@ test('the growth hub has a plain link path and a quality-gated date archive', as
   assert.ok(result.datePages >= 1);
   const allPages = await readFile(path.join(dist, 'all-pages.html'), 'utf8');
   assert.match(allPages, /All pages on the Irish Visa Decision Tracker/);
+  assert.match(allPages, /Six visa office pages/);
+  for (const slug of ['new-delhi', 'beijing', 'abu-dhabi', 'abuja', 'ankara', 'dublin']) {
+    assert.ok(allPages.includes(`href="/${slug}-visa-decisions"`), `all-pages links ${slug}`);
+  }
+  assert.match(allPages, /"@type": "CollectionPage"/);
+  assert.match(allPages, /"dateModified": "2026-11-24"/);
+  assert.match(allPages, /"hasPart":/);
   assert.match(allPages, /\/reports\/new-delhi/);
   assert.match(allPages, /\/reports\/new-delhi\/2026-11-23/);
   assert.match(allPages, /\/decisions\/2026-11-23/);
@@ -69,6 +76,9 @@ test('IndexNow covers report permalinks, date pages and growth pages without dup
   assert.ok(urls.some((url) => /\/decisions\/2026-11-23$/.test(url)));
   assert.ok(urls.includes('https://irishvisaupdatetracker.pages.dev/all-pages'));
   assert.ok(urls.includes('https://irishvisaupdatetracker.pages.dev/bulk-tools'));
+  for (const slug of ['new-delhi', 'beijing', 'abu-dhabi', 'abuja', 'ankara', 'dublin']) {
+    assert.ok(urls.includes(`https://irishvisaupdatetracker.pages.dev/${slug}-visa-decisions`), `IndexNow includes ${slug}`);
+  }
   assert.ok(urls.every((url) => url.startsWith('https://irishvisaupdatetracker.pages.dev/')));
   assert.ok(eligibleDecisionDates(ROOT).every((date) => new Date(`${date}T00:00:00Z`).getUTCDay() !== 0 && new Date(`${date}T00:00:00Z`).getUTCDay() !== 6));
 });

@@ -191,7 +191,14 @@ export function loadGrowthData(assetsRoot = ROOT) {
   }
   const dates = reportEntries.map((item) => item.date).sort();
   const asOf = String(meta.fileDate || dates.at(-1) || '').slice(0, 10);
-  return { manifest, reports, freshness, meta, bySlug, freshBySlug, reportEntries, generatedReportEntries, asOf };
+  // The hub describes all six offices, not only New Delhi. Track the newest
+  // publication separately so its dateModified does not lag a newer Dublin or
+  // weekly report that is already linked on the page.
+  const latestPublication = [asOf, dates.at(-1) || '']
+    .filter(Boolean)
+    .sort()
+    .at(-1) || '';
+  return { manifest, reports, freshness, meta, bySlug, freshBySlug, reportEntries, generatedReportEntries, asOf, latestPublication };
 }
 
 function reportDatesFor(data, slug) {
@@ -244,6 +251,11 @@ function allPagesPage(data, archives) {
     ? archives.map((archive) => `<li><a href="/decisions/${archive.date}">${esc(longDate(archive.date))}</a> <span class="small-note">${num(archive.total)} decisions</span></li>`).join('')
     : '<li>No date page clears the minimum data threshold yet.</li>';
 
+  const officeLinks = OFFICES.map((slug) => {
+    const office = data.bySlug.get(slug);
+    return `<li><a href="${office.route}"><strong>${esc(office.name)} visa decisions</strong><span>${esc(office.countries)}</span></a></li>`;
+  }).join('\n        ');
+
   const body = `    <p class="page-kicker">Site map</p>
     <h1>All pages on the Irish Visa Decision Tracker</h1>
     <p class="page-lede">This is a plain HTML index for readers and crawlers. Every office, official report, data page and guide has a direct link here, outside the collapsed navigation menu.</p>
@@ -252,8 +264,16 @@ function allPagesPage(data, archives) {
       <div class="study-stat"><span class="status-kicker">Offices</span><strong>6</strong><span>Independent published files</span></div>
       <div class="study-stat"><span class="status-kicker">Archived reports</span><strong>${num(data.generatedReportEntries.length)}</strong><span>One link per published list</span></div>
       <div class="study-stat"><span class="status-kicker">Date pages</span><strong>${num(archives.length)}</strong><span>Weekdays with at least 10 decisions</span></div>
-      <div class="study-stat"><span class="status-kicker">Latest publication</span><strong>${esc(shortDate(data.asOf))}</strong><span>Across the six offices</span></div>
+      <div class="study-stat"><span class="status-kicker">Latest publication</span><strong>${esc(shortDate(data.latestPublication))}</strong><span>Across the six offices</span></div>
     </div>
+
+    <section>
+      <h2>Six visa office pages</h2>
+      <p>These are the primary landing pages for the six published decision files. Each one links to its office report archive, official source and application search.</p>
+      <ul class="office-directory-list">
+        ${officeLinks}
+      </ul>
+    </section>
 
     <section>
       <h2>Start here</h2>
@@ -338,8 +358,16 @@ function allPagesPage(data, archives) {
       name: 'All pages on the Irish Visa Decision Tracker',
       description: 'Crawlable index of office pages, official reports, data pages and guides.',
       inLanguage: 'en',
-      dateModified: data.asOf || EDITORIAL_DATE,
+      dateModified: data.latestPublication || EDITORIAL_DATE,
       isPartOf: { '@id': `${SITE}/#website` },
+      hasPart: OFFICES.map((slug) => {
+        const office = data.bySlug.get(slug);
+        return {
+          '@type': 'WebPage',
+          name: `${office.name} visa decisions`,
+          url: `${SITE}${office.route}`,
+        };
+      }),
     },
   });
 }
@@ -701,7 +729,7 @@ function findMyOfficePage(data) {
       <div class="est-field"><label for="office-category">Visa category</label>
         <select id="office-category" name="category" required><option value="">Choose a category</option>${categories.map(([value, label]) => `<option value="${value}">${esc(label)}</option>`).join('')}</select></div>
       <div class="est-field"><label for="office-applied">Application date <span class="small-note">(optional)</span></label>
-        <input type="date" id="office-applied" name="applied" max="${esc(data.asOf || EDITORIAL_DATE)}"></div>
+        <input type="date" id="office-applied" name="applied" max="${esc(data.latestPublication || EDITORIAL_DATE)}"></div>
       <div class="est-submit"><button class="btn" type="submit">Show likely office</button></div>
     </form>
     <div id="office-finder-result" class="small-note" role="status" aria-live="polite"></div>
