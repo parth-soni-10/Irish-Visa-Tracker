@@ -28,7 +28,12 @@ test("every Dataset declares the site Organization as creator and the terms lice
       const datasets = collectDatasets(JSON.parse(match[1]));
       for (const dataset of datasets) {
         count += 1;
-        assert.deepEqual(dataset.creator, { "@type": "Organization", "@id": `${SITE}/#organization` }, `${file}: Dataset creator`);
+        assert.deepEqual(dataset.creator, {
+          "@type": "Organization",
+          "@id": `${SITE}/#organization`,
+          "name": "Irish Visa Decision Tracker",
+          "url": `${SITE}/`,
+        }, `${file}: Dataset creator`);
         assert.equal(dataset.license, `${SITE}/terms`, `${file}: Dataset license`);
       }
     }

@@ -389,7 +389,12 @@ function schemaFor(office) {
       dateModified: f.checked,
       spatialCoverage: office.coverage,
       variableMeasured: ['Approved', 'Refused'],
-      creator: { '@type': 'Organization', '@id': `${SITE}/#organization` },
+      creator: {
+        '@type': 'Organization',
+        '@id': `${SITE}/#organization`,
+        name: 'Irish Visa Decision Tracker',
+        url: `${SITE}/`,
+      },
       license: `${SITE}/terms`,
     },
     {
