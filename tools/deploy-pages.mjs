@@ -257,6 +257,11 @@ const REPORT_HISTORY_LIMIT = 8;
 const HTML_ESCAPES = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' };
 const escapeHtml = (value) => String(value).replace(/[&<>"]/g, (char) => HTML_ESCAPES[char]);
 
+function replaceMetaContent(html, attribute, value) {
+  const pattern = new RegExp(`(<meta ${attribute} content=")[^"]*(")`, 'i');
+  return html.replace(pattern, (match, open, close) => open + escapeHtml(value) + close);
+}
+
 function httpUrl(value) {
   const raw = String(value || '').trim();
   if (!/^https?:\/\//i.test(raw)) return '';
@@ -610,7 +615,7 @@ export function injectOfficePages(options = {}) {
       const latestDay = eligible[eligible.length - 1];
       if (latestDay) {
         const bucket = byDate.get(latestDay);
-        fields['latest-day'] = `${longDate(latestDay)}: ${bucket.total.toLocaleString('en-IE')} decisions ` +
+        fields['latest-day'] = `${longDate(latestDay)}: ${bucket.total.toLocaleString('en-IE')} ${bucket.total === 1 ? 'decision' : 'decisions'} ` +
           `(${bucket.approved.toLocaleString('en-IE')} approved, ${bucket.refused.toLocaleString('en-IE')} refused)`;
 
         // The official file date is the cutoff for the latest published file.
@@ -621,9 +626,9 @@ export function injectOfficePages(options = {}) {
         const trackerBucket = trackerLatestDay ? byDate.get(trackerLatestDay) : null;
         const officialDate = String(latestDay).slice(0, 10);
         fields['tracker-latest'] = trackerLatestDay && trackerLatestDay > officialDate && trackerBucket
-          ? `${longDate(trackerLatestDay)}: ${trackerBucket.total.toLocaleString('en-IE')} decisions ` +
+          ? `${longDate(trackerLatestDay)}: ${trackerBucket.total.toLocaleString('en-IE')} ${trackerBucket.total === 1 ? 'decision' : 'decisions'} ` +
             `(${trackerBucket.approved.toLocaleString('en-IE')} approved, ${trackerBucket.refused.toLocaleString('en-IE')} refused; ` +
-            `partial day, not in the ${longDate(latestDay)} official file)`
+            `partial day, not in the ${latest} official file)`
           : 'No later tracker rows beyond the latest official file.';
       }
     }
@@ -632,6 +637,19 @@ export function injectOfficePages(options = {}) {
     html = replaceFields(html, 'data-report-history', {
       [office.slug]: reportHistoryHtml(office, reports, decisionSummary),
     });
+
+    // Test current-fact snippets on the two offices with the strongest query
+    // signal. Keep the rest on the stable evergreen descriptions for now.
+    const seoDescription = office.slug === 'new-delhi'
+      ? `Search Irish visa decisions for applicants from India, Bangladesh, Nepal and Sri Lanka. Latest official file: ${latest} — ${decisions.toLocaleString('en-IE')} decisions, with approved and refused counts.`
+      : office.slug === 'dublin'
+        ? `Search Irish visa decisions for Pakistan and transferred applications. Latest snapshot: ${latest} — ${decisions.toLocaleString('en-IE')} decisions, with approved and refused counts.`
+        : '';
+    if (seoDescription) {
+      html = replaceMetaContent(html, 'name="description"', seoDescription);
+      html = replaceMetaContent(html, 'property="og:description"', seoDescription);
+      html = replaceMetaContent(html, 'name="twitter:description"', seoDescription);
+    }
 
     if (office.source_file) {
       html = html.replace(

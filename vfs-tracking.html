@@ -160,7 +160,7 @@
 
     <section id="open-tracking">
       <h2>Open the official VFS tracking page</h2>
-      <form id="vfs-track-form" class="estimator-form" action="https://visa.vfsglobal.com/ind/en/irl/track-application" method="get" target="_blank" referrerpolicy="no-referrer" novalidate>
+      <form id="vfs-track-form" class="estimator-form" action="https://visa.vfsglobal.com/ind/en/irl/track-application" method="get" target="_blank" referrerpolicy="no-referrer">
         <div class="est-field">
           <label for="vfs-reference">VFS reference number</label>
           <input type="text" id="vfs-reference" name="reference" required autocomplete="off" spellcheck="false" placeholder="e.g. IN1234567890">
@@ -173,8 +173,6 @@
           <button class="btn" type="submit">Track on VFS Global</button>
         </div>
       </form>
-      <p class="small-note" id="vfs-track-status" role="status" aria-live="polite"></p>
-      <noscript><p class="small-note">The handoff needs JavaScript. Use the official VFS Global link below instead.</p></noscript>
       <p class="small-note">
         The form opens VFS Global in a new tab and passes the two values in that page's address.
         They are not sent to this site. VFS shows the live status only after it verifies the
@@ -229,7 +227,6 @@
       <h2>Official links</h2>
       <ul>
         <li><a href="https://visa.vfsglobal.com/ind/en/irl/track-application" target="_blank" rel="noopener noreferrer">VFS Global: track an Ireland application (India)</a></li>
-        <li><a href="https://visa.vfsglobal.com/ind/en/irl/book-an-appointment" target="_blank" rel="noopener noreferrer">VFS Global: book an appointment (India)</a></li>
         <li><a href="https://www.irishimmigration.ie/visa-decisions/" target="_blank" rel="noopener noreferrer">Immigration Service Delivery: published visa decisions</a></li>
         <li><a href="https://www.ireland.ie/en/india/newdelhi/services/visas/processing-times-and-decisions/" target="_blank" rel="noopener noreferrer">Embassy of Ireland, New Delhi: processing times and decisions</a></li>
       </ul>
@@ -301,7 +298,6 @@
   <script src="/scripts/freshness.js" defer></script>
   <!-- site-footer:end -->
 
-  <script src="/scripts/vfs-tracking.js" defer></script>
   <script src="/scripts/time-mode.js" defer></script>
   <script src="/site-chrome.js" defer></script>
 </body>

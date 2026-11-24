@@ -61,7 +61,7 @@
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: geolocation=(), microphone=(), camera=(), payment=()
-  Content-Security-Policy: default-src 'none'; script-src 'self' https://cdn.jsdelivr.net https://static.cloudflareinsights.com; script-src-attr 'none'; style-src 'self'; style-src-attr 'unsafe-inline'; style-src-elem 'self'; font-src 'self' data:; img-src 'self' data: https:; connect-src 'self' https://fcm.googleapis.com https://cloudflareinsights.com; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'
+  Content-Security-Policy: default-src 'none'; script-src 'self' https://cdn.jsdelivr.net https://static.cloudflareinsights.com; script-src-attr 'none'; style-src 'self'; style-src-attr 'unsafe-inline'; style-src-elem 'self'; font-src 'self' data:; img-src 'self' data: https:; connect-src 'self' https://fcm.googleapis.com https://cloudflareinsights.com; base-uri 'self'; form-action 'self' https://visa.vfsglobal.com; frame-ancestors 'none'; object-src 'none'
 
 # Static assets are referenced with ?v=<build hash> in the built HTML/CSS.
 # The hash changes whenever any of these files changes, so the URL can safely

@@ -61,7 +61,7 @@ test("New Delhi separates the official-file day from later tracker rows", async 
   assert.match(html, /Latest official-file day/);
   assert.match(
     html,
-    /data-office="latest-day">\d{1,2} [A-Z][a-z]+ \d{4}: [\d,]+ decisions \([\d,]+ approved, [\d,]+ refused\)/,
+    /data-office="latest-day">\d{1,2} [A-Z][a-z]+ \d{4}: [\d,]+ decisions? \([\d,]+ approved, [\d,]+ refused\)/,
   );
   assert.match(html, /Tracker’s latest day/);
   assert.match(
@@ -102,4 +102,39 @@ test("the sitemap lists every office page with a lastmod", async () => {
     assert.ok(block, `${page.file} is missing a sitemap entry`);
     assert.match(block[0], /<lastmod>\d{4}-\d{2}-\d{2}<\/lastmod>/, page.file);
   }
+});
+
+test("Abu Dhabi excludes Pakistan and cross-links Dublin instead", async () => {
+  const html = await read("abu-dhabi-visa-decisions.html");
+  assert.doesNotMatch(html, /<title>[^<]*Pakistan/);
+  assert.doesNotMatch(html, /Pakistan,/);
+  assert.match(html, /Abu Dhabi’s published country list does not include Pakistan/);
+  assert.match(html, /<a href="\/dublin-visa-decisions">Dublin Visa Office<\/a>/);
+
+  const config = JSON.parse(await read("embassy-config.json"));
+  const abuDhabi = config.embassies.find((office) => office.slug === "abu-dhabi");
+  const dublin = config.embassies.find((office) => office.slug === "dublin");
+  assert.ok(abuDhabi, "Abu Dhabi office is missing from embassy-config.json");
+  assert.ok(dublin, "Dublin office is missing from embassy-config.json");
+  assert.ok(!abuDhabi.countries.includes("Pakistan"));
+  assert.ok(dublin.countries.includes("Pakistan"));
+
+  const generator = await read("tools/office-pages.mjs");
+  const abuDhabiSource = generator.slice(
+    generator.indexOf("slug: 'abu-dhabi'"),
+    generator.indexOf("slug: 'abuja'"),
+  );
+  assert.doesNotMatch(abuDhabiSource, /title: '[^']*Pakistan/);
+  assert.doesNotMatch(abuDhabiSource, /description: '[^']*Pakistan/);
+  assert.doesNotMatch(abuDhabiSource, /coverage: \[[^\]]*Pakistan/);
+  assert.match(abuDhabiSource, /href="\/dublin-visa-decisions"/);
+
+  const agentDocs = await read("functions/_agent-docs.js");
+  const abuDhabiDocs = agentDocs.slice(
+    agentDocs.indexOf("export const ABU_DHABI_MARKDOWN"),
+    agentDocs.indexOf("export const ABUJA_MARKDOWN"),
+  );
+  assert.doesNotMatch(abuDhabiDocs, /title: "[^"]*Pakistan/);
+  assert.doesNotMatch(abuDhabiDocs, /countries: "[^"]*Pakistan/);
+  assert.match(abuDhabiDocs, /\[Dublin Visa Office\]\(https:\/\/irishvisaupdatetracker\.pages\.dev\/dublin-visa-decisions\)/);
 });

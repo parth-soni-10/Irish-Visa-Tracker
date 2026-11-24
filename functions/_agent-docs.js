@@ -622,16 +622,16 @@ export const BEIJING_MARKDOWN = officeMarkdown({
 });
 
 export const ABU_DHABI_MARKDOWN = officeMarkdown({
-  title: "Abu Dhabi visa decisions for the UAE, Gulf, North Africa and Pakistan",
+  title: "Abu Dhabi visa decisions for the UAE, Gulf and North Africa",
   route: "/abu-dhabi-visa-decisions",
   latest: "20 November 2026 (week ending)",
   decisions: "232",
   approved: "161",
   refused: "71",
-  countries: "United Arab Emirates, Afghanistan, Algeria, Bahrain, Jordan, Kuwait, Lebanon, Libya, Morocco, Oman, Pakistan, Qatar, Sudan, Syria and Tunisia",
+  countries: "United Arab Emirates, Afghanistan, Algeria, Bahrain, Jordan, Kuwait, Lebanon, Libya, Morocco, Oman, Qatar, Sudan, Syria and Tunisia",
   source: "https://www.ireland.ie/en/uae/abudhabi/services/visas/weekly-decision-reports/",
   data: "/data/embassy-abu-dhabi.json",
-  note: "Abu Dhabi publishes weekly PDF reports. The report date is the end of the reporting period, not the date of an individual decision. The tracker keeps each dated report it has ingested; read the report archive for earlier periods.",
+  note: "Abu Dhabi publishes weekly PDF reports. The report date is the end of the reporting period, not the date of an individual decision. The tracker keeps each dated report it has ingested; read the report archive for earlier periods. Abu Dhabi's published country list does not include Pakistan; join-family applications from residents of Pakistan are considered by the [Dublin Visa Office](https://irishvisaupdatetracker.pages.dev/dublin-visa-decisions).",
 });
 
 export const ABUJA_MARKDOWN = officeMarkdown({

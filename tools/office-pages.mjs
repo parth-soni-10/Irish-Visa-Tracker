@@ -39,22 +39,22 @@ const OFFICES = [
     latestLabel: 'Latest official file',
     latestNote: 'Report date',
     fallback: {
-      latest: '2026-11-19', checked: '2026-11-21',
-      decisions: 43599, approved: 36769, refused: 6830,
-      archive: '77 days with published decisions, from 12 July 2026',
-      observation: 'Tracker observed decisions dated through 20 November 2026; these are not in the 19 November 2026 official file.',
+      latest: '2026-11-23', checked: '2026-11-24',
+      decisions: 43800, approved: 36932, refused: 6868,
+      archive: '132 days with published decisions, from 12 July 2026',
+      observation: 'Tracker observed decisions dated through 24 November 2026; these are not in the 23 November 2026 official file.',
     },
     sourceUrl: 'https://www.ireland.ie/en/india/newdelhi/services/visas/processing-times-and-decisions/',
     sourceName: 'Embassy of Ireland, New Delhi — processing times and decisions',
-    sourceFile: 'https://www.ireland.ie/5346/20261119_NDVO_Visa_Decisions.ods',
+    sourceFile: 'https://www.ireland.ie/5351/20261123_NDVO_Visa_Decisions.ods',
     sourceLabel: 'Open the latest New Delhi ODS',
     dataUrl: '/data/visa_decisions.json',
     aboutName: 'Embassy of Ireland, New Delhi',
     coverage: ['India', 'Bangladesh', 'Nepal', 'Sri Lanka'],
     lede: 'The Embassy of Ireland in New Delhi — the New Delhi Visa Office, or NDVO — publishes a cumulative list of Irish visa decisions each morning. It covers applicants from India, Bangladesh, Nepal and Sri Lanka. This page tracks the latest file, the office’s published processing times and what the list can and cannot tell you about an application.',
-    historyHtml: 'The tracker’s searchable history covers <strong data-office="history">77 days with published decisions</strong>, from 12 July 2026.',
+    historyHtml: 'The tracker’s searchable history covers <strong data-office="history">132 days with published decisions</strong>, from 12 July 2026.',
     historyNote: 'New Delhi publishes one cumulative file each morning. A row’s count is the total in that day’s file, not the number added that day; the newest row is the latest official file.',
-    extraTableRow: '<tr><th>Latest official-file day</th><td><span data-office="latest-day">19 November 2026: 183 decisions (143 approved, 40 refused)</span></td></tr>\n            <tr><th>Tracker’s latest day</th><td><span data-office="tracker-latest">20 November 2026: 65 decisions (58 approved, 7 refused; partial day, not in the latest official file)</span></td></tr>',
+    extraTableRow: '<tr><th>Latest official-file day</th><td><span data-office="latest-day">20 November 2026: 65 decisions (58 approved, 7 refused)</span></td></tr>\n            <tr><th>Tracker’s latest day</th><td><span data-office="tracker-latest">24 November 2026: 201 decisions (163 approved, 38 refused; partial day, not in the 23 November 2026 official file)</span></td></tr>',
     whatHtml: `
       <p>Each morning, by about 11:00 Indian Standard Time, the Embassy publishes a cumulative spreadsheet of visa decisions made in 2026 up to the previous day. Each row is an application number and one outcome: <strong>Approved</strong> or <strong>Refused</strong>.</p>
       <p>The list is cumulative, not a daily-only file. The tracker keeps the dated history, so you can search one application number or see how many decisions were published on a given day.</p>
@@ -83,7 +83,7 @@ const OFFICES = [
       <p class="small-note">Official usual timeframes published on 17 September 2026. They are <strong>not guarantees</strong>. They count working days from receipt at the embassy and exclude VFS appointment waits, document transit and return delivery. The embassy advises applying up to 90 days before travel.</p>
       <p class="small-note">From 1 June 2026, short-stay refusal appeals are no longer available except for EU Free Movement cases. Read your decision letter for the route that applies.</p>`,
     missingExtra: '<li><strong>Another office may have the file.</strong> Some categories are decided in Dublin; search all six offices rather than assuming New Delhi refused or lost the application.</li>',
-    dataNoteHtml: '<p>Latest official file: <span data-office="latest-date">19 November 2026</span>. Tracker checked: <span data-office="checked-date">21 November 2026</span>. History: <span data-office="archive">77 days with published decisions, from 12 July 2026</span>. The tracker keeps the New Delhi history as <code>[date, application number, decision]</code> rows. The latest official cumulative file is the authority for the counts above; the history adds the dated days the embassy has published.</p>',
+    dataNoteHtml: '<p>Latest official file: <span data-office="latest-date">23 November 2026</span>. Tracker checked: <span data-office="checked-date">24 November 2026</span>. History: <span data-office="archive">132 days with published decisions, from 12 July 2026</span>. The tracker keeps the New Delhi history as <code>[date, application number, decision]</code> rows. The latest official cumulative file is the authority for the counts above; the history adds the dated days the embassy has published.</p>',
     faq: (f) => [
       ['How often does New Delhi publish visa decisions?', 'Each morning, by about 11:00 Indian Standard Time, the embassy publishes a cumulative list of decisions made in 2026 up to the previous day.'],
       ['Where do I find my New Delhi application number?', 'Use the 8-digit application number on your receipt, acknowledgement email or decision email. An IRL prefix, spaces and dashes are optional. Do not use a VFS reference, passport number or courier tracking number.'],
@@ -150,10 +150,10 @@ const OFFICES = [
     name: 'Abu Dhabi',
     file: 'abu-dhabi-visa-decisions.html',
     route: '/abu-dhabi-visa-decisions',
-    title: 'Ireland Visa Decisions: UAE, Gulf, North Africa & Pakistan – Abu Dhabi',
-    description: 'Search Irish visa decisions for applicants from the UAE, Afghanistan, Algeria, Bahrain, Jordan, Kuwait, Lebanon, Libya, Morocco, Oman, Pakistan, Qatar, Sudan, Syria and Tunisia in the latest Abu Dhabi report.',
+    title: 'Ireland Visa Decisions: UAE, Gulf & North Africa – Abu Dhabi',
+    description: 'Search Irish visa decisions for applicants from the UAE, Afghanistan, Algeria, Bahrain, Jordan, Kuwait, Lebanon, Libya, Morocco, Oman, Qatar, Sudan, Syria and Tunisia in the latest Abu Dhabi report.',
     h1: 'Abu Dhabi visa decisions',
-    subhead: 'Ireland visa decisions for the UAE, Gulf, North Africa and Pakistan',
+    subhead: 'Ireland visa decisions for the UAE, Gulf and North Africa',
     kicker: 'Abu Dhabi visa office',
     latestLabel: 'Latest weekly report',
     latestNote: 'Week ending',
@@ -168,8 +168,8 @@ const OFFICES = [
     sourceLabel: 'Open the latest Abu Dhabi PDF',
     dataUrl: '/data/embassy-abu-dhabi.json',
     aboutName: 'Embassy of Ireland, Abu Dhabi',
-    coverage: ['United Arab Emirates', 'Afghanistan', 'Algeria', 'Bahrain', 'Jordan', 'Kuwait', 'Lebanon', 'Libya', 'Morocco', 'Oman', 'Pakistan', 'Qatar', 'Sudan', 'Syria', 'Tunisia'],
-    lede: 'The Embassy of Ireland in Abu Dhabi publishes visa decisions in weekly PDF reports for the UAE, Afghanistan, Algeria, Bahrain, Jordan, Kuwait, Lebanon, Libya, Morocco, Oman, Pakistan, Qatar, Sudan, Syria and Tunisia. This page tracks the latest report and how to read a weekly decision period.',
+    coverage: ['United Arab Emirates', 'Afghanistan', 'Algeria', 'Bahrain', 'Jordan', 'Kuwait', 'Lebanon', 'Libya', 'Morocco', 'Oman', 'Qatar', 'Sudan', 'Syria', 'Tunisia'],
+    lede: 'The Embassy of Ireland in Abu Dhabi publishes visa decisions in weekly PDF reports for the UAE, Afghanistan, Algeria, Bahrain, Jordan, Kuwait, Lebanon, Libya, Morocco, Oman, Qatar, Sudan, Syria and Tunisia. This page tracks the latest report and how to read a weekly decision period.',
     historyHtml: 'The tracker’s archive holds <strong data-office="history">11 weekly reports</strong>.',
     historyNote: 'Each row is one weekly report. The count is the number of decisions listed in that report, and the report date is the end of its reporting period.',
     whatHtml: `
@@ -177,7 +177,8 @@ const OFFICES = [
       <p>The report date is the end of the period, not the date of an individual decision. A number may appear in one weekly report and not another, so search the office history rather than only the latest file.</p>
       <p>The tracker keeps each dated report it has ingested, which is what makes the weekly history searchable.</p>`,
     scopeHtml: `
-      <p>Abu Dhabi accepts visa applications from the <strong>United Arab Emirates, Afghanistan, Algeria, Bahrain, Jordan, Kuwait, Lebanon, Libya, Morocco, Oman, Pakistan, Qatar, Sudan, Syria and Tunisia</strong>.</p>
+      <p>Abu Dhabi accepts visa applications from the <strong>United Arab Emirates, Afghanistan, Algeria, Bahrain, Jordan, Kuwait, Lebanon, Libya, Morocco, Oman, Qatar, Sudan, Syria and Tunisia</strong>.</p>
+      <p>Abu Dhabi’s published country list does not include Pakistan. Join-family applications from residents of Pakistan are considered by the <a href="/dublin-visa-decisions">Dublin Visa Office</a>.</p>
       <p>A VFS centre is not the visa office. Your receipt or acknowledgement shows which office has your file.</p>
       <p>If your number is missing here, search <a href="/?tracker=visa&amp;tab=search">all six offices</a> before concluding anything.</p>`,
     scheduleTitle: 'How the weekly reports work',
@@ -189,7 +190,7 @@ const OFFICES = [
     dataNoteHtml: '<p>The tracker stores each dated Abu Dhabi weekly report. The archive count covers the reports it has ingested, not every report the embassy has ever published.</p>',
     faq: () => [
       ['How often does Abu Dhabi publish visa decisions?', 'The office publishes weekly PDF decision reports. Each report covers a period and carries the period-end date.'],
-      ['Which countries does the Abu Dhabi visa office handle?', 'The United Arab Emirates, Afghanistan, Algeria, Bahrain, Jordan, Kuwait, Lebanon, Libya, Morocco, Oman, Pakistan, Qatar, Sudan, Syria and Tunisia.'],
+      ['Which countries does the Abu Dhabi visa office handle?', 'The United Arab Emirates, Afghanistan, Algeria, Bahrain, Jordan, Kuwait, Lebanon, Libya, Morocco, Oman, Qatar, Sudan, Syria and Tunisia.'],
       ['Why is my number missing from the latest Abu Dhabi report?', 'It may be in an earlier or later weekly report, the decision may not be published yet, or your file may be with another office. Search the archive before treating it as a refusal.'],
       ['What does the report date mean?', 'It is the end of the reporting period, not the date of an individual decision.'],
       ['Does an Approved result mean my passport is ready?', 'No. The report records the decision, not the passport’s location. Wait for the official decision letter and the VFS return process.'],
@@ -389,6 +390,7 @@ function schemaFor(office) {
       spatialCoverage: office.coverage,
       variableMeasured: ['Approved', 'Refused'],
       creator: { '@id': `${SITE}/#organization` },
+      license: `${SITE}/terms`,
     },
     {
       '@type': 'FAQPage',

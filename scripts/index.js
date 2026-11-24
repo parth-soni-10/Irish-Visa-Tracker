@@ -5355,7 +5355,7 @@
             }
 
 async function renderLandingPage() {
-                document.title = 'Ireland Visa Decision List: New Delhi & 5 Offices';
+                document.title = 'Ireland Visa Decisions: New Delhi & 5 Offices';
                 // Paint the cards IMMEDIATELY with placeholder stats - never
                 // block on the network. Each card's meta line fills in as its
                 // own fetch resolves (both are small static files, so this is

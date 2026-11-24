@@ -162,7 +162,7 @@ function addSecurityHeaders(response) {
     "connect-src 'self' https://fcm.googleapis.com https://cloudflareinsights.com; " +
     "frame-ancestors 'none'; " +
     "base-uri 'self'; " +
-    "form-action 'self'; " +
+    "form-action 'self' https://visa.vfsglobal.com; " +
     "object-src 'none';"
   );
   return new Response(response.body, {

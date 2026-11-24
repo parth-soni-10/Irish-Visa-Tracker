@@ -731,7 +731,13 @@ function studyPage(data) {
       inLanguage: 'en',
       dateModified: asOf,
       isPartOf: { '@id': `${SITE}/#website` },
-      about: { '@type': 'Dataset', name: 'Irish visa decision files', url: `${SITE}/data/data_manifest.json` },
+      about: {
+        '@type': 'Dataset',
+        name: 'Irish visa decision files',
+        url: `${SITE}/data/data_manifest.json`,
+        creator: { '@id': `${SITE}/#organization` },
+        license: `${SITE}/terms`,
+      },
     },
   });
 }
@@ -1032,7 +1038,7 @@ function dataPage(data) {
     description: 'Decision counts and dated official reports published by the Irish visa offices in New Delhi, Beijing, Abu Dhabi, Abuja, Ankara and Dublin, compiled by an independent tracker.',
     url: `${SITE}/data`,
     identifier: `${SITE}/data#dataset`,
-    creator: { '@type': 'Person', name: 'Parth Soni', url: `${SITE}/about` },
+    creator: { '@id': `${SITE}/#organization` },
     license: `${SITE}/terms`,
     isAccessibleForFree: true,
     dateModified: asOf,
