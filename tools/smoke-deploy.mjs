@@ -15,6 +15,10 @@ const EXPECT_COMMIT = String(process.env.SMOKE_EXPECT_COMMIT || '').trim();
 let failures = 0;
 let requestNumber = 0;
 
+// Must stay in step with the no-store blocks in _headers (asserted by
+// tests/cache-policy.test.mjs) and NO_STORE in functions/_router.js.
+const NO_STORE = 'no-store, no-cache, must-revalidate, max-age=0';
+
 async function get(path, options = {}) {
   // Each probe gets a unique query so an old edge cache entry cannot make a
   // removed route look present (or a new asset look stale).
@@ -28,10 +32,31 @@ async function get(path, options = {}) {
     status: response.status,
     type: response.headers.get('content-type') || '',
     cacheControl: response.headers.get('cache-control') || '',
+    cdnCacheControl: response.headers.get('cdn-cache-control') || '',
+    pragma: response.headers.get('pragma') || '',
+    expires: response.headers.get('expires') || '',
     location: response.headers.get('location'),
     text,
     json
   };
+}
+
+/** The full _headers no-store policy, not just one directive: a deployment
+ *  that keeps no-store but drops Pragma/Expires/CDN-Cache-Control, or that
+ *  lets the immutable /scripts/* rule leak through, is still a caching bug. */
+function noStoreProblems(response) {
+  const problems = [];
+  if (response.cacheControl !== NO_STORE) problems.push('Cache-Control=' + (response.cacheControl || 'missing'));
+  if (response.pragma.toLowerCase() !== 'no-cache') problems.push('Pragma=' + (response.pragma || 'missing'));
+  if (response.expires !== '0') problems.push('Expires=' + (response.expires || 'missing'));
+  if (response.cdnCacheControl !== 'no-store') problems.push('CDN-Cache-Control=' + (response.cdnCacheControl || 'missing'));
+  if (/immutable|public/i.test(response.cacheControl)) problems.push('public/immutable leaked');
+  return problems;
+}
+
+function checkNoStore(label, response) {
+  const problems = noStoreProblems(response);
+  check(label + ' is never cached', problems.length === 0, problems.join(', ') || response.cacheControl);
 }
 
 function check(name, ok, detail) {
@@ -44,7 +69,7 @@ console.log('Smoke-testing ' + BASE + '\n');
 const home = await get('/');
 check('homepage serves', home.status === 200 && /Irish Visa/i.test(home.text), 'HTTP ' + home.status);
 check('homepage is HTML', home.type.includes('text/html'), home.type);
-check('homepage is never cached', /no-store/i.test(home.cacheControl), home.cacheControl);
+checkNoStore('homepage', home);
 
 const comparisonRoute = await get('/comparison', { redirect: 'manual' });
 check('comparison route redirects to method section', comparisonRoute.status === 301 && /\/about#method/.test(comparisonRoute.location), 'HTTP ' + comparisonRoute.status);
@@ -81,10 +106,18 @@ const sw = await get('/sw.js');
 check('service worker serves', sw.status === 200 && /addEventListener/.test(sw.text), 'HTTP ' + sw.status);
 check('service worker is JavaScript', sw.type.includes('javascript'), sw.type);
 check('service worker has no fetch cache', !/caches\.open|respondWith/.test(sw.text), 'no Cache Storage use');
-check('service worker is never cached', /no-store/i.test(sw.cacheControl), sw.cacheControl);
+checkNoStore('service worker', sw);
+
+// /index.html is a 308 onto /, so the redirect itself must carry the policy:
+// following it would only re-check the homepage and hide a missing block.
+const indexRoute = await get('/index.html', { redirect: 'manual' });
+const indexTarget = indexRoute.location ? new URL(indexRoute.location, BASE) : null;
+check('index route redirects to the homepage', indexRoute.status === 308 && indexTarget && indexTarget.pathname === '/', 'HTTP ' + indexRoute.status + (indexRoute.location ? ' -> ' + indexTarget.pathname : ''));
+checkNoStore('index route', indexRoute);
 
 const appScript = await get('/scripts/index-sw.js');
-check('app script is never cached', appScript.status === 200 && /no-store/i.test(appScript.cacheControl), appScript.cacheControl);
+check('app script serves', appScript.status === 200, 'HTTP ' + appScript.status);
+checkNoStore('app script', appScript);
 
 const icon = await get('/icon-192.png');
 check('manifest icon serves', icon.status === 200 && icon.type.includes('image/png'), 'HTTP ' + icon.status + ' ' + icon.type);

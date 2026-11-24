@@ -106,6 +106,50 @@ test('static headers revalidate HTML, cache versioned assets and exempt update e
 });
 
 
+test('the deploy smoke check asserts the same no-store policy as _headers', async () => {
+  const headers = await read('_headers');
+  const smoke = await read('tools/smoke-deploy.mjs');
+
+  // The homepage block defines the policy the other entry points repeat.
+  const homepage = headers.match(/^\/\r?\n([\s\S]*?)(?=\r?\n\r?\n)/m);
+  assert.ok(homepage, 'homepage _headers block is missing');
+  const policy = homepage[1].match(/Cache-Control: ([^\r\n]+)/);
+  assert.ok(policy, 'homepage Cache-Control is missing');
+  const cacheControl = policy[1].trim();
+  assert.match(cacheControl, /no-store/);
+  assert.doesNotMatch(cacheControl, /immutable|public/);
+
+  const escaped = cacheControl.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  // The smoke check must compare against this exact value, not a substring.
+  assert.match(smoke, new RegExp("const NO_STORE = '" + escaped + "';"));
+
+  for (const path of ['/', '/sw.js', '/scripts/index-sw.js']) {
+    const block = headers.match(new RegExp('^' + path.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\r?\\n([\\s\\S]*?)(?=\\r?\\n\\r?\\n)', 'm'));
+    assert.ok(block, path + ' block is missing');
+    assert.match(block[1], new RegExp('Cache-Control: ' + escaped), path);
+    assert.match(block[1], /Pragma: no-cache/, path);
+    assert.match(block[1], /Expires: 0/, path);
+    assert.match(block[1], /CDN-Cache-Control: no-store/, path);
+    assert.doesNotMatch(block[1], /immutable|public, max-age/, path);
+  }
+
+  const index = headers.match(/\/index\.html\r?\n([\s\S]*?)(?=\r?\n\r?\n)/);
+  assert.ok(index, '/index.html block is missing');
+  assert.match(index[1], /! Cache-Control/);
+  assert.match(index[1], /! CDN-Cache-Control/);
+  assert.match(index[1], new RegExp('Cache-Control: ' + escaped));
+  assert.match(index[1], /CDN-Cache-Control: no-store/);
+
+  // Every entry point covered by that policy is probed on the deploy.
+  assert.match(smoke, /checkNoStore\('homepage', home\)/);
+  assert.match(smoke, /checkNoStore\('service worker', sw\)/);
+  assert.match(smoke, /get\('\/index\.html', \{ redirect: 'manual' \}\)/);
+  assert.match(smoke, /indexTarget\.pathname === '\/'/);
+  assert.match(smoke, /checkNoStore\('index route', indexRoute\)/);
+  assert.match(smoke, /get\('\/scripts\/index-sw\.js'\)/);
+  assert.match(smoke, /checkNoStore\('app script', appScript\)/);
+});
+
 test('the old pages.dev host redirects to the configured custom origin', async () => {
   const redirectEnv = { ...env, PAGES_DEV_REDIRECT_ORIGIN: 'https://tracker.example' };
   const oldHost = await router.fetch(
