@@ -401,6 +401,26 @@
                 return r;
             }
 
+            // Classifying 40k+ rows in one pass is a half-second main-thread
+            // task on a throttled phone, and it lands right after the click that
+            // asked for the history. Yielding between batches keeps each task
+            // short so the next tap stays responsive while the table fills.
+            async function preloadRowsProgressively(raw) {
+                const CHUNK = 2000;
+                const rows = new Array(raw.length);
+                for (let start = 0; start < raw.length; start += CHUNK) {
+                    const end = Math.min(start + CHUNK, raw.length);
+                    for (let i = start; i < end; i++) {
+                        const r = raw[i];
+                        rows[i] = preloadRow(Array.isArray(r) ? { date: r[0], irl: r[1], decision: r[2] } : r);
+                    }
+                    if (end < raw.length) {
+                        await new Promise(function(resolve) { setTimeout(resolve, 0); });
+                    }
+                }
+                return rows;
+            }
+
             function rowHTML(r) {
                 var dateLabel = humanDate(r.date);
                 var dateCell = '<time datetime="' + escapeHtml(r.date) + '">' + escapeHtml(dateLabel) + '</time>';
@@ -882,7 +902,7 @@
                         persistSnapshot(raw);
                         // Pre-compute classify + row HTML once per row, then sort by
                         // date desc so render paths are pure filter + string concat.
-                        cache = raw.map(r => preloadRow(Array.isArray(r) ? { date: r[0], irl: r[1], decision: r[2] } : r));
+                        cache = await preloadRowsProgressively(raw);
                         cache.sort((a, b) => b.date.localeCompare(a.date));
                         dataComplete = true;
                         cacheFetchedAt = Date.now();
