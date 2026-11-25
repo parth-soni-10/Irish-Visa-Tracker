@@ -14,10 +14,10 @@
   ],
   "totals": {
     "offices": 6,
-    "decisions": 63057,
-    "approved": 51764,
-    "refused": 11293,
-    "approval_rate": "82.1%"
+    "decisions": 63758,
+    "approved": 52384,
+    "refused": 11374,
+    "approval_rate": "82.2%"
   },
   "offices": [
     {
@@ -33,11 +33,11 @@
     {
       "slug": "beijing",
       "name": "Beijing",
-      "report_date": "2026-11-01",
-      "decisions": 13724,
-      "approved": 11373,
-      "refused": 2351,
-      "approval_rate": "82.9%",
+      "report_date": "2026-11-22",
+      "decisions": 14425,
+      "approved": 11993,
+      "refused": 2432,
+      "approval_rate": "83.1%",
       "source_url": "https://www.ireland.ie/en/china/beijing/services/visas/visa-decisions/"
     },
     {

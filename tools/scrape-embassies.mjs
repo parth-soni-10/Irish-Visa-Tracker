@@ -6,7 +6,9 @@
  * report dates in their cumulative archives:
  *
  *   new-delhi  ireland.ie ODS        (cumulative year-to-date)
- *   beijing    ireland.ie ODS        (cumulative year-to-date)
+ *   beijing    ireland.ie PDF        (cumulative year-to-date; was ODS until
+ *                                    November 2026, and `cumulative` accepts
+ *                                    either format)
  *   abu-dhabi  ireland.ie PDF        (weekly)
  *   abuja      ireland.ie PDF        (weekly)
  *   ankara     ireland.ie PDF        (weekly, scanned - OCR needed)
@@ -48,7 +50,8 @@ const OFFICES = {
   beijing: {
     name: 'Beijing',
     page: 'https://www.ireland.ie/en/china/beijing/services/visas/visa-decisions/',
-    kind: 'ods',
+    // Spreadsheet until November 2026, a cumulative PDF since.
+    kind: 'cumulative',
     official: 'Embassy of Ireland, Beijing',
   },
   'abu-dhabi': {
@@ -65,6 +68,10 @@ const OFFICES = {
     kind: 'pdf',
     // The weekly PDF is merged into the checked-in archive.
     preserveHistory: true,
+    // Abuja has re-uploaded a week under the previous week's filename and
+    // labelled it with the later dates, so the first link is not necessarily
+    // the newest report. Read the period out of each candidate file instead.
+    probeCandidates: true,
     official: 'Embassy of Ireland, Abuja',
   },
   ankara: {
@@ -211,21 +218,77 @@ function diffDecisions(previous, next) {
 /* Source parsing                                                      */
 /* ------------------------------------------------------------------ */
 
-function findLatestFileLink($, pageUrl, kind) {
-  // 'ods' covers every spreadsheet format the offices publish: .ods and,
-  // since November 2026, .xlsx.
-  const pattern = kind === 'ods' ? /\.(?:ods|xlsx)(\?|$)/i : /\.pdf(\?|$)/i;
-  let found = null;
+const MONTH_NAMES = ['january','february','march','april','may','june','july','august','september','october','november','december'];
+
+/**
+ * The period a link claims to cover, from text like
+ * "Abuja Visa Decisions 08 November to 14 November 2026". The last day/month
+ * pair wins, and the year comes from the text because weekly labels only
+ * carry it once.
+ */
+function labelPeriodEnd(text) {
+  const value = String(text || '');
+  const pairs = [...value.matchAll(/(\d{1,2})\s+([A-Za-z]{3,9})/g)];
+  if (!pairs.length) return null;
+  const year = value.match(/(20\d{2})/);
+  if (!year) return null;
+  const [, day, monthName] = pairs[pairs.length - 1];
+  const month = MONTH_NAMES.indexOf(monthName.toLowerCase()) + 1;
+  if (!month) return null;
+  return `${year[1]}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+}
+
+function fileLinks($, pageUrl, pattern) {
+  const links = [];
   $('a').each((_, el) => {
-    if (found) return;
     const href = $(el).attr('href') || '';
     if (!pattern.test(href)) return;
-    found = {
-      url: absolute(href, pageUrl),
-      text: $(el).text().replace(/\s+/g, ' ').trim(),
-    };
+    const text = $(el).text().replace(/\s+/g, ' ').trim();
+    links.push({ url: absolute(href, pageUrl), text, labelEnd: labelPeriodEnd(text) });
   });
-  return found;
+  return links;
+}
+
+function findLatestFileLink($, pageUrl, kind) {
+  // 'ods' covers every spreadsheet format the offices publish: .ods and,
+  // since November 2026, .xlsx. 'cumulative' takes whatever an office
+  // publishes for the year to date, including the PDF Beijing switched to in
+  // November 2026, and still prefers a spreadsheet when both are offered.
+  const patterns =
+    kind === 'cumulative'
+      ? [/\.(?:ods|xlsx)(\?|$)/i, /\.pdf(\?|$)/i]
+      : [kind === 'ods' ? /\.(?:ods|xlsx)(\?|$)/i : /\.pdf(\?|$)/i];
+  for (const pattern of patterns) {
+    const [first] = fileLinks($, pageUrl, pattern);
+    if (first) return first;
+  }
+  return null;
+}
+
+/**
+ * Download up to three PDF candidates from a weekly office page and return the
+ * one whose own text covers the newest period. Text extraction only: these are
+ * text-layer PDFs, and OCR over several candidates would cost minutes.
+ */
+async function probeNewestPdf($, pageUrl, firstLink, firstBuffer, fetchFile, slug) {
+  const candidates = fileLinks($, pageUrl, /\.pdf(\?|$)/i).slice(0, 3);
+  if (candidates.length < 2) return null;
+  let best = null;
+  for (const candidate of candidates) {
+    const buffer =
+      candidate.url === firstLink.url ? firstBuffer : await fetchFile(candidate.url, pageUrl);
+    const parsed = await parsePdfReport(buffer, {
+      ocr: false,
+      slug,
+      log: () => {},
+      warn: () => {},
+    });
+    const end = periodEnd(parsed.text);
+    if (!best || (end && (!best.end || end > best.end))) {
+      best = { link: candidate, buffer, parsed, end };
+    }
+  }
+  return best;
 }
 
 function parseOds(buffer) {
@@ -419,12 +482,27 @@ export async function ingestOffice(slug, config, context = {}) {
       categories: queue.categories.length,
     };
   } else {
-    const link = findLatestFileLink($, config.page, config.kind);
+    let link = findLatestFileLink($, config.page, config.kind);
     if (!link) throw new Error('No decision file link found');
-    sourceFile = link.url;
-    const buffer = await fetchFile(link.url, config.page);
+    let buffer = await fetchFile(link.url, config.page);
+    let preparedPdf = null;
 
-    if (config.kind === 'ods') {
+    // A weekly office may leave a newer week under an older filename or in a
+    // second upload, so read the period out of each candidate file and keep
+    // the newest rather than trusting the first link on the page.
+    if (config.probeCandidates && /\.pdf(\?|$)/i.test(link.url)) {
+      const best = await probeNewestPdf($, config.page, link, buffer, fetchFile, slug);
+      if (best) {
+        link = best.link;
+        buffer = best.buffer;
+        preparedPdf = best.parsed;
+      }
+    }
+
+    sourceFile = link.url;
+    const spreadsheet = /\.(?:ods|xlsx)(\?|$)/i.test(sourceFile);
+
+    if (spreadsheet) {
       decisions = parseOds(buffer);
       // Re-read the first rows for the period sentence (cheap, already in memory).
       const wb = XLSX.read(buffer, { type: 'buffer' });
@@ -433,7 +511,7 @@ export async function ingestOffice(slug, config, context = {}) {
       const periodText2 = periodRow ? periodRow.join(' ') : '';
       reportDate = periodEnd(periodText2) || periodEnd(link.text) || fetchedAt.slice(0, 10);
     } else {
-      const parsed = await parsePdfReport(buffer, {
+      const parsed = preparedPdf || await parsePdfReport(buffer, {
         ocr: Boolean(config.ocr),
         ocrImpl: context.ocrImpl,
         slug,
@@ -449,7 +527,17 @@ export async function ingestOffice(slug, config, context = {}) {
         note = parsed.note;
       }
 
-      reportDate = periodEnd(text) || periodEnd(link.text) || fetchedAt.slice(0, 10);
+      const contentEnd = periodEnd(text);
+      const claimedEnd = link.labelEnd || periodEnd(link.text);
+      reportDate = contentEnd || claimedEnd || fetchedAt.slice(0, 10);
+      // The office can label an upload with later dates while the file inside
+      // still covers the older week (Abuja did this in November 2026). Record
+      // the gap instead of presenting the older week as the labelled one.
+      if (!note && claimedEnd && contentEnd && claimedEnd > contentEnd) {
+        note =
+          `The newest upload is labelled up to ${claimedEnd}, but the file itself covers up to ` +
+          `${contentEnd}. The office has not published that later week yet.`;
+      }
       if (decisions.length < 10) {
         status = 'ocr_required';
         note = note || 'The published PDF is scanned; text extraction found no decision rows. OCR is required.';

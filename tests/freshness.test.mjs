@@ -50,10 +50,23 @@ test("freshness.json makes every date role explicit and keeps success separate f
     }
   }
 
-  const beijing = freshness.bySlug.beijing;
-  assert.equal(beijing.last_success_at.slice(0, 10), "2026-11-18");
-  assert.equal(beijing.last_attempt_at.slice(0, 10), freshness.as_of);
-  assert.equal(beijing.status, "error");
+  // Every office is attempted on each run. When the latest attempt failed, its
+  // timestamp and label must stay separate from the last successful check; no
+  // office should report a stale success as if it were today's read.
+  for (const office of freshness.offices) {
+    assert.equal(
+      String(office.last_attempt_at).slice(0, 10),
+      freshness.as_of,
+      `${office.slug}: the latest attempt belongs to the data date`,
+    );
+    if (office.status === "error") {
+      assert.notEqual(
+        office.last_success_label,
+        office.last_attempt_label,
+        `${office.slug}: a failed attempt must not read as a successful check`,
+      );
+    }
+  }
 
   const newDelhi = freshness.bySlug["new-delhi"];
   assert.equal(newDelhi.official_data_through, newDelhi.report_date);
@@ -70,7 +83,10 @@ test("freshness.json makes every date role explicit and keeps success separate f
   assert.ok(newDelhi.observation_lag.sample_size > 0);
   assert.equal(newDelhi.observation_lag.median_days, 2);
   assert.ok(newDelhi.observation_lag.history.length > 0);
-  assert.equal(freshness.bySlug.beijing.observation_lag.sample_size, 1);
+  assert.ok(
+    Number.isInteger(freshness.bySlug.beijing.observation_lag.sample_size),
+    "Beijing keeps an observation-lag record",
+  );
 });
 
 test("official surfaces keep their data-through separate from tracker observation", async () => {
@@ -127,14 +143,31 @@ test("citation pages use the oldest office check, not the newest build date", as
   const checkDates = freshness.offices
     .map((office) => String(office.last_success_at).slice(0, 10))
     .sort();
-  const range = `offices last successfully checked ${longDate(checkDates[0])} to ${longDate(checkDates[checkDates.length - 1])}`;
+  const first = checkDates[0];
+  const last = checkDates[checkDates.length - 1];
+  // A single check day cites that day; a spread cites the whole range and must
+  // not pass the newest check off as if it were the oldest.
+  const copy =
+    first === last
+      ? `offices last successfully checked ${longDate(first)}`
+      : `offices last successfully checked ${longDate(first)} to ${longDate(last)}`;
   for (const file of ["data.html", "data-study.html", "press.html"]) {
     const html = await read(file);
-    assert.ok(html.includes(range), `${file} should cite the full office check range`);
-    assert.doesNotMatch(html, new RegExp(`data checked ${longDate(checkDates[checkDates.length - 1])}`), file);
+    assert.ok(html.includes(copy), `${file} should cite the office check date(s)`);
+    if (first !== last) {
+      assert.doesNotMatch(html, new RegExp(`data checked ${longDate(last)}`), file);
+    }
   }
   const dataPage = await read("data.html");
-  assert.match(dataPage, /2 offices need attention: Beijing, Abuja/);
+  const attention = freshness.offices
+    .filter((office) => office.status === "error" || office.overdue)
+    .map((office) => office.name);
+  if (attention.length) {
+    const copy = `${attention.length} office${attention.length === 1 ? "" : "s"} need${attention.length === 1 ? "s" : ""} attention: ${attention.join(", ")}`;
+    assert.ok(dataPage.includes(copy), `data.html should name the offices that need attention (${copy})`);
+  } else {
+    assert.doesNotMatch(dataPage, /offices? needs? attention:/);
+  }
 });
 
 test("the daily page separates official file, observed day and decision date", async () => {

@@ -142,6 +142,59 @@
     ],
     "beijing": [
       {
+        "report_date": "2026-11-22",
+        "fetched_at": "2026-11-25T13:13:42.058Z",
+        "decisions": 14425,
+        "approved": 11993,
+        "refused": 2432,
+        "source_file": "https://www.ireland.ie/5352/Beijing_Visa_Decisions_01_January_to_22_November_2026.pdf",
+        "checksum": "83171c1b4f6a9eb5",
+        "added": 707,
+        "removed": 6,
+        "changed": [
+          {
+            "number": "84684742",
+            "from": "Refused",
+            "to": "Approved"
+          },
+          {
+            "number": "84964332",
+            "from": "Refused",
+            "to": "Approved"
+          },
+          {
+            "number": "85150912",
+            "from": "Refused",
+            "to": "Approved"
+          },
+          {
+            "number": "85405712",
+            "from": "Refused",
+            "to": "Approved"
+          },
+          {
+            "number": "85572642",
+            "from": "Refused",
+            "to": "Approved"
+          },
+          {
+            "number": "85724272",
+            "from": "Refused",
+            "to": "Approved"
+          },
+          {
+            "number": "85871002",
+            "from": "Refused",
+            "to": "Approved"
+          },
+          {
+            "number": "86089472",
+            "from": "Refused",
+            "to": "Approved"
+          }
+        ]
+      },
+      {
         "report_date": "2026-11-01",
         "fetched_at": "2026-11-18T06:01:42.341Z",
         "decisions": 13724,
@@ -299,7 +352,7 @@
     "abuja": [
       {
         "report_date": "2026-11-07",
-        "fetched_at": "2026-11-25T11:54:23.428Z",
+        "fetched_at": "2026-11-25T13:13:51.156Z",
         "decisions": 99,
         "approved": 34,
         "refused": 65,

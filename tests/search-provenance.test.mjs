@@ -98,25 +98,32 @@ test('search results distinguish tracker observations from official report rows'
   assert.equal(officialResult.last_success_label, newDelhi.last_success_label);
 });
 
-test('search exposes the last successful check and stale/error state for each office', async () => {
+test('search exposes the last successful check and freshness state for each office', async () => {
   const beijing = await readJson('data/embassy-beijing.json');
   const beijingRow = (beijing.decisions || []).find((row) => /^(Approved|Refused)$/i.test(String(row.decision)));
   assert.ok(beijingRow, 'fixture needs a Beijing decision row');
 
+  // Search must report the same freshness the site publishes for the office,
+  // whatever state that office is in; the rendering of the failed-refresh copy
+  // itself is covered by the synthetic office in freshness-client.test.mjs.
+  const freshness = await readJson('data/freshness.json');
+  const published = freshness.offices.find((entry) => entry.slug === 'beijing');
+  assert.ok(published, 'freshness.json should carry Beijing');
+
   const payload = await search({ query: digits(beijingRow.number), mode: 'fuzzy', limit: 100 });
   const result = payload.results.find((row) => row.embassy === 'beijing' && digits(row.number) === digits(beijingRow.number));
   assert.ok(result, 'Beijing row should be returned by search');
-  assert.equal(result.office_status, 'error');
-  assert.equal(result.freshness_status, 'error');
-  assert.equal(result.freshness_status_label, "Couldn't refresh");
-  assert.equal(result.office_attention, true);
-  assert.equal(result.stale, false);
-  assert.equal(result.last_success_label, '18 Nov 2026, 06:01 UTC');
+  assert.equal(result.office_status, beijing.data_status);
+  assert.equal(result.freshness_status, published.status);
+  assert.equal(result.freshness_status_label, published.status_label);
+  assert.equal(result.office_attention, published.attention);
+  assert.equal(result.stale, published.stale);
+  assert.equal(result.last_success_label, published.last_success_label);
 
   const office = payload.offices.beijing;
-  assert.equal(office.status, 'error');
-  assert.equal(office.attention, true);
-  assert.equal(office.last_success_label, '18 Nov 2026, 06:01 UTC');
+  assert.equal(office.status, published.status);
+  assert.equal(office.attention, published.attention);
+  assert.equal(office.last_success_label, published.last_success_label);
   assert.ok(office.official_data_through);
   assert.ok(office.observed_data_through);
 });

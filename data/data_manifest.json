@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-25T11:54:39.072Z",
+  "generated_at": "2026-11-25T13:13:51.763Z",
   "offices": [
     {
       "slug": "new-delhi",
@@ -30,26 +30,26 @@
       "slug": "beijing",
       "name": "Beijing",
       "source_url": "https://www.ireland.ie/en/china/beijing/services/visas/visa-decisions/",
-      "source_file": "https://www.ireland.ie/5288/20261101_BVO_visa_decisions.ods",
+      "source_file": "https://www.ireland.ie/5352/Beijing_Visa_Decisions_01_January_to_22_November_2026.pdf",
       "source_name": "Embassy of Ireland, Beijing",
-      "report_date": "2026-11-01",
+      "report_date": "2026-11-22",
       "as_of": "2026-11-25",
-      "fetched_at": "2026-11-18T06:01:42.341Z",
-      "status": "error",
-      "note": "No decision file link found",
-      "decisions": 13724,
-      "archive_decisions": 13724,
+      "fetched_at": "2026-11-25T13:13:42.058Z",
+      "status": "official",
+      "note": null,
+      "decisions": 14425,
+      "archive_decisions": 14425,
       "historical_decisions": 0,
       "archive_reports": [
         {
-          "report_date": "2026-11-01",
-          "decisions": 13724
+          "report_date": "2026-11-22",
+          "decisions": 14425
         }
       ],
-      "approved": 11373,
-      "refused": 2351,
-      "corrections": 0,
-      "added": 0
+      "approved": 11993,
+      "refused": 2432,
+      "corrections": 8,
+      "added": 707
     },
     {
       "slug": "abu-dhabi",
@@ -124,9 +124,9 @@
       "source_name": "Embassy of Ireland, Abuja",
       "report_date": "2026-11-07",
       "as_of": "2026-11-25",
-      "fetched_at": "2026-11-25T11:54:23.428Z",
+      "fetched_at": "2026-11-25T13:13:51.156Z",
       "status": "official",
-      "note": null,
+      "note": "The newest upload is labelled up to 2026-11-14, but the file itself covers up to 2026-11-07. The office has not published that later week yet.",
       "decisions": 99,
       "archive_decisions": 2375,
       "historical_decisions": 2276,

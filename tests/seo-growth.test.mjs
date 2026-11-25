@@ -49,17 +49,41 @@ test("status gets a build-time latest-report row for every office", async (t) =>
   assert.match(html, /id="latest-reports-generated"[^>]*>[^<]*UTC<\/time>/);
   assert.ok(html.includes(beijing.age_label_at_build), "Beijing shows its build-time age");
   if (beijing.due_short_label) assert.ok(html.includes(beijing.due_short_label), "Beijing shows its due label");
-  assert.ok(beijing.last_success_label, "Beijing should have a last successful check label");
-  assert.ok(html.includes(beijing.last_success_label), "status should show Beijing's last successful check");
-  assert.ok(html.includes(beijing.last_attempt_label), "status should show Beijing's last attempt");
-  assert.notEqual(beijing.last_success_label, beijing.last_attempt_label, "a failed attempt must not look like a successful check");
+  // Every office shows both its last successful check and its latest attempt,
+  // and an office whose latest attempt failed keeps the two visibly distinct.
+  for (const office of freshness.offices) {
+    assert.ok(office.last_success_label, `${office.slug} should have a last successful check label`);
+    assert.ok(html.includes(office.last_success_label), `status should show ${office.slug}'s last successful check`);
+    if (office.last_attempt_label) {
+      assert.ok(html.includes(office.last_attempt_label), `status should show ${office.slug}'s last attempt`);
+    }
+    if (office.status === "error") {
+      assert.notEqual(
+        office.last_success_label,
+        office.last_attempt_label,
+        `${office.slug}: a failed attempt must not look like a successful check`,
+      );
+      assert.ok(
+        html.includes(`We couldn't refresh ${office.name} this time.`),
+        `${office.slug} explains the search impact`,
+      );
+    }
+  }
+  if (!freshness.offices.some((office) => office.status === "error")) {
+    assert.doesNotMatch(
+      html,
+      /We couldn't refresh [^<]+ this time\./,
+      "no office claims a failed refresh when every office was read",
+    );
+  }
   const manifest = JSON.parse(await readFile(path.join(ROOT, "data", "data_manifest.json"), "utf8"));
   for (const office of manifest.offices) {
     assert.match(html, new RegExp(`<strong>${office.name}</strong>`), office.slug);
     assert.match(html, new RegExp(`href="/${office.slug}-visa-decisions"`), office.slug);
   }
-  assert.ok(html.includes("We couldn't refresh Beijing this time."), "Beijing explains the search impact");
-  assert.ok(html.includes("The Abuja report is overdue"), "Abuja explains the search impact");
+  if (freshness.bySlug.abuja.overdue) {
+    assert.ok(html.includes("The Abuja report is overdue"), "Abuja explains the search impact");
+  }
   const newDelhi = freshness.bySlug["new-delhi"];
   assert.ok(html.includes(`<time datetime="${newDelhi.report_date}">${longDate(newDelhi.report_date)}</time>`));
   const tbody = html.match(/<tbody[^>]*data-latest-reports[^>]*>([\s\S]*?)<\/tbody>/)[1];

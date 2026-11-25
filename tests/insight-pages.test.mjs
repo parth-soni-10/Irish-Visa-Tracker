@@ -68,7 +68,12 @@ test("build renders the study, schedule, press, embed and community pages from t
   const checkDates = freshness.offices
     .map((office) => String(office.last_success_at).slice(0, 10))
     .sort();
-  const checkRange = `offices last successfully checked ${longDate(checkDates[0])} to ${longDate(checkDates[checkDates.length - 1])}`;
+  // The footer copy cites one check day, or the range when the offices were
+  // read on different days.
+  const checkRange =
+    checkDates[0] === checkDates[checkDates.length - 1]
+      ? `offices last successfully checked ${longDate(checkDates[0])}`
+      : `offices last successfully checked ${longDate(checkDates[0])} to ${longDate(checkDates[checkDates.length - 1])}`;
 
   const study = await readFile(path.join(dist, "data-study.html"), "utf8");
   assert.match(study, /What the published Irish visa decisions show/);
@@ -301,8 +306,13 @@ test("badges, study exports, snapshots and sitemap entries are generated", async
   assert.match(allBadge, /All six offices/);
   assert.match(allBadge, /Current|Check status/);
   const beijingBadge = await readFile(path.join(dist, "badges", "beijing.svg"), "utf8");
-  assert.ok(beijingBadge.includes(`Last successful check ${freshness.bySlug.beijing.last_success_label}`));
-  assert.match(beijingBadge, /latest check failed/);
+  const beijingFreshness = freshness.bySlug.beijing;
+  assert.ok(beijingBadge.includes(`Last successful check ${beijingFreshness.last_success_label}`));
+  if (beijingFreshness.status === "error") {
+    assert.match(beijingBadge, /latest check failed/);
+  } else {
+    assert.doesNotMatch(beijingBadge, /latest check failed/);
+  }
 
   const summary = await readFile(path.join(dist, "data", "study", "office-summary.csv"), "utf8");
   assert.match(summary, /^office,slug,latest_report_date,decisions,approved,refused/);
