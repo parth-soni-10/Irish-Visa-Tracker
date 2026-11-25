@@ -261,8 +261,8 @@ mobile/
 
 ### Data flow
 
-1. On first launch, download `data/search_fallback.json` (about 3.2 MB raw; gzip much smaller) and `data/freshness.json`.
-2. Insert rows `[office, number, date, decision]` into SQLite in one transaction.
+1. On first launch, download `data/search_fallback.json` (about 0.6 MB raw; the file is columnar - `version: 2`, a shared `dates` table, and one `{number_deltas, date_index, approved}` series per office - so decode it to rows before inserting) and `data/freshness.json`.
+2. Decode each office series to rows `[office, number, date, decision]` (accumulate `number_deltas`, resolve `date_index` against `dates`, map `approved` 1/0 to Approved/Refused) and insert them into SQLite in one transaction.
 3. On later launches, compare `data_manifest.json` / `generated_at`; only re-download when it changes.
 4. Online search uses `POST /api/search` with the same payload as the website:
    ```json

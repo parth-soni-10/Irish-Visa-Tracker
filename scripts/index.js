@@ -2724,6 +2724,41 @@
                 return officeLookupMetaPromise;
             }
 
+            function isFallbackRows(payload) {
+                if (Array.isArray(payload.rows)) return true;
+                return Boolean(payload.rows && typeof payload.rows === 'object');
+            }
+
+            // The fallback file stores one columnar series per office: ascending
+            // number deltas, an index into the shared date table, and a 0/1
+            // outcome. This restores the [office, number, date, decision] rows
+            // the lookup already works with.
+            function decodeFallbackRows(payload) {
+                if (Array.isArray(payload.rows)) return payload.rows;
+                // Decode once per page load; the lookup runs on every keystroke.
+                if (payload._decodedRows) return payload._decodedRows;
+                var dates = Array.isArray(payload.dates) ? payload.dates : [];
+                var rows = [];
+                Object.keys(payload.rows || {}).forEach(function(slug) {
+                    var series = payload.rows[slug] || {};
+                    var numbers = series.number_deltas || [];
+                    var dateIndex = series.date_index || [];
+                    var approved = series.approved || [];
+                    var running = 0;
+                    for (var i = 0; i < numbers.length; i += 1) {
+                        running += Number(numbers[i]) || 0;
+                        rows.push([
+                            slug,
+                            String(running),
+                            dates[dateIndex[i]] || '',
+                            approved[i] ? 'Approved' : 'Refused'
+                        ]);
+                    }
+                });
+                payload._decodedRows = rows;
+                return rows;
+            }
+
             function loadOfflineSearchIndex() {
                 if (offlineSearchIndex) return Promise.resolve(offlineSearchIndex);
                 if (offlineSearchIndexPromise) return offlineSearchIndexPromise;
@@ -2733,7 +2768,7 @@
                         return res.json();
                     })
                     .then(function(payload) {
-                        if (!payload || !Array.isArray(payload.rows) || !payload.offices) {
+                        if (!payload || !payload.offices || !isFallbackRows(payload)) {
                             throw new Error('invalid fallback index');
                         }
                         offlineSearchIndex = payload;
@@ -2766,7 +2801,7 @@
                 var raw = String(term || '').trim().toLowerCase();
                 return loadOfflineSearchIndex().then(function(index) {
                     var matches = [];
-                    (index.rows || []).forEach(function(row) {
+                    decodeFallbackRows(index).forEach(function(row) {
                         if (!Array.isArray(row) || row.length < 4) return;
                         var slug = String(row[0] || '');
                         if (office !== 'all' && slug !== office) return;

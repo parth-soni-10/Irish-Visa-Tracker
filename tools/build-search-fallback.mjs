@@ -95,15 +95,45 @@ export function buildSearchFallback({ dataDir, manifestPath, outFile }) {
     }
   }
 
-  const rows = [...byKey.values()];
+  // Columnar form. A row used to repeat the office slug, a full ISO date and
+  // the word Approved/Refused, which cost about 48 bytes each. The office is
+  // now the key, dates live in one shared table, numbers are stored as
+  // ascending deltas and the outcome is a 0/1 flag.
+  // Row order is kept exactly as the source files produced it, because the
+  // lookup sorts by score and date only: equal hits keep their file order.
+  const rows = [...byKey.values()]
+    .map(([slug, number, date, decision]) => ({ slug, number, date, decision }));
+  const dates = [...new Set(rows.map((row) => row.date))].sort();
+  const dateIndex = new Map(dates.map((date, index) => [date, index]));
+  const series = {};
+  let previousSlug = '';
+  let previousNumber = 0;
+  for (const row of rows) {
+    if (!series[row.slug]) {
+      series[row.slug] = { number_deltas: [], date_index: [], approved: [] };
+      previousNumber = 0;
+    }
+    const number = Number(row.number);
+    series[row.slug].number_deltas.push(previousSlug === row.slug ? number - previousNumber : number);
+    series[row.slug].date_index.push(dateIndex.get(row.date));
+    series[row.slug].approved.push(row.decision === 'Approved' ? 1 : 0);
+    previousSlug = row.slug;
+    previousNumber = number;
+  }
+  // number_deltas[0] is the first number itself; every later entry is that
+  // number minus the one before it in the file (it can be negative), so a
+  // reader accumulates to recover it.
   const output = {
     generated_at: new Date().toISOString(),
+    version: 2,
+    dates,
     offices,
-    rows
+    rows: series
   };
   fs.mkdirSync(path.dirname(outFile), { recursive: true });
-  fs.writeFileSync(outFile, JSON.stringify(output) + '\n');
-  return { rows: rows.length, bytes: Buffer.byteLength(JSON.stringify(output)) };
+  const text = JSON.stringify(output) + '\n';
+  fs.writeFileSync(outFile, text);
+  return { rows: rows.length, bytes: Buffer.byteLength(text) };
 }
 
 const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);

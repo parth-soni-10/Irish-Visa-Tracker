@@ -33,7 +33,27 @@
       if (!response.ok) throw new Error('HTTP ' + response.status);
       return response.json();
     }).then(function (payload) {
-      if (!payload || !Array.isArray(payload.rows) || !payload.offices) throw new Error('Invalid index');
+      if (!payload || !payload.offices || !(Array.isArray(payload.rows) || (payload.rows && typeof payload.rows === 'object'))) {
+        throw new Error('Invalid index');
+      }
+      // One columnar series per office: ascending number deltas, an index into
+      // the shared date table, and a 0/1 outcome. Restore the row tuples here.
+      if (!Array.isArray(payload.rows)) {
+        var dates = Array.isArray(payload.dates) ? payload.dates : [];
+        var rows = [];
+        Object.keys(payload.rows).forEach(function (slug) {
+          var series = payload.rows[slug] || {};
+          var numbers = series.number_deltas || [];
+          var dateIndex = series.date_index || [];
+          var approved = series.approved || [];
+          var running = 0;
+          for (var i = 0; i < numbers.length; i += 1) {
+            running += Number(numbers[i]) || 0;
+            rows.push([slug, String(running), dates[dateIndex[i]] || '', approved[i] ? 'Approved' : 'Refused']);
+          }
+        });
+        payload.rows = rows;
+      }
       index = payload;
       return payload;
     }).finally(function () { indexPromise = null; });
@@ -167,7 +187,7 @@
         status.textContent = 'Paste at least one application number with 6 or more digits.';
         return;
       }
-      status.textContent = 'Loading the local fallback index (about 3.2 MB)…';
+      status.textContent = 'Loading the local fallback index (under 1 MB)…';
       loadIndex().then(function (payload) {
         rows = [];
         requested.forEach(function (item) {

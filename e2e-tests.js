@@ -753,6 +753,8 @@ test.describe('All-office search result cards', () => {
         contentType: 'application/json',
         body: JSON.stringify({
           generated_at: '2026-11-17T09:31:55.082Z',
+          version: 2,
+          dates: ['2026-11-01'],
           offices: {
             beijing: {
               source_url: 'https://www.ireland.ie/en/china/beijing/services/visas/visa-decisions/',
@@ -762,7 +764,7 @@ test.describe('All-office search result cards', () => {
               status: 'official',
             },
           },
-          rows: [['beijing', '44078322', '2026-11-01', 'Refused']],
+          rows: { beijing: { number_deltas: [44078322], date_index: [0], approved: [0] } },
         }),
       }));
 
