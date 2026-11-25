@@ -7,6 +7,7 @@ import { fileURLToPath } from "node:url";
 
 import { buildInsightPages, publicationDateCopy } from "../tools/insight-pages.mjs";
 import { loadFreshness } from "../tools/freshness.mjs";
+import { OFFICE_SERIES_KIND } from "../tools/office-analysis.mjs";
 
 const ROOT = fileURLToPath(new URL("../", import.meta.url));
 const SITE = "https://irishvisaupdatetracker.pages.dev";
@@ -77,7 +78,16 @@ test("build renders the study, schedule, press, embed and community pages from t
 
   const study = await readFile(path.join(dist, "data-study.html"), "utf8");
   assert.match(study, /What the published Irish visa decisions show/);
-  assert.match(study, new RegExp(total.toLocaleString("en-IE")));
+  // A cumulative list or snapshot is not comparable with one week of a period
+  // report, so the study reports the latest-file rows by basis instead of
+  // headlining a sum of both.
+  const weeklyTotal = manifest.offices
+    .filter((office) => (OFFICE_SERIES_KIND[office.slug] || "weekly") === "weekly")
+    .reduce((sum, office) => sum + (Number(office.decisions) || 0), 0);
+  const seriesTotal = total - weeklyTotal;
+  assert.match(study, new RegExp(`${weeklyTotal.toLocaleString("en-IE")} dated decisions in the latest weekly reports`));
+  assert.match(study, new RegExp(`${seriesTotal.toLocaleString("en-IE")} rows in the cumulative and snapshot files`));
+  assert.doesNotMatch(study, new RegExp(`${total.toLocaleString("en-IE")} decisions in the latest official files`));
   // The study no longer repeats the site-wide summary cards; the live
   // per-office approval table still carries each office's rate.
   const newDelhi = manifest.offices.find((office) => office.slug === "new-delhi");
@@ -107,6 +117,14 @@ test("build renders the study, schedule, press, embed and community pages from t
   assert.match(press, new RegExp(`${SITE}/data-study`));
   assert.match(press, /DOI/);
   assert.doesNotMatch(press, /official reports through/);
+  // The press kit compares approval shares within a file kind and never sums a
+  // one-week report with a year-long cumulative list into one decision total.
+  assert.match(press, /Latest period reports/);
+  assert.match(press, /Cumulative &amp; snapshot files/);
+  assert.doesNotMatch(press, /Latest-file decisions/);
+  assert.doesNotMatch(press, /The latest files range from/);
+  assert.match(press, /The latest weekly reports run from \d+\.\d% to \d+\.\d% approved/);
+  assert.match(press, /and each describes a whole list rather than one week/);
   assert.match(press, /latest office publications dated [^)]+; (?:data checked|offices last successfully checked) [^)]+/);
 
   const embed = await readFile(path.join(dist, "embed.html"), "utf8");

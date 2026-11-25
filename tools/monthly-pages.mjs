@@ -26,6 +26,7 @@ import {
   loadReportData,
 } from '../functions/report-data.js';
 import { spliceChrome } from './site-chrome.mjs';
+import { OFFICE_SERIES_KIND } from './office-analysis.mjs';
 import { SITE_ORIGIN } from './site-config.mjs';
 import { loadFreshness, timeHTML } from './freshness.mjs';
 import { freshnessFooterHTML } from './freshness-ui.mjs';
@@ -117,9 +118,15 @@ function officeRows(report) {
   if (!report.offices.length) return '<tr><td colspan="5" class="empty">No office data for this month.</td></tr>';
   return report.offices.map((office) => {
     const status = office.status === 'ocr_required' ? ' <span class="pill missing">OCR required</span>' : '';
+    // A cumulative list or a snapshot has no dated rows for the month, so its
+    // dated cells stay empty and the latest-file column carries the figure. A
+    // period office with no report that month keeps its real zero but still
+    // gets no share, because a rate over no rows means nothing.
+    const dated = Number(office.total) || 0;
+    const periodOffice = (OFFICE_SERIES_KIND[office.slug] || 'weekly') === 'weekly';
     return `<tr><td data-label="Office"><strong>${esc(office.name)}</strong>${status}</td>
-          <td class="num" data-label="Dated">${num(office.total)}</td>
-          <td class="num" data-label="Dated approval">${pct(office.approval_rate)}</td>
+          <td class="num" data-label="Dated">${periodOffice ? num(dated) : '&mdash;'}</td>
+          <td class="num" data-label="Dated approval">${dated ? pct(office.approval_rate) : '&mdash;'}</td>
           <td class="num" data-label="Latest report">${num(office.reported_total)}</td>
           <td class="num" data-label="Report date">${esc(office.report_date ? longDate(office.report_date) : '—')}</td></tr>`;
   }).join('\n        ');
@@ -311,7 +318,7 @@ ${monthlySchemaBlock(report, route, title, description)}
           <thead><tr><th>Office</th><th class="num">Dated</th><th class="num">Dated approval</th><th class="num">Latest report</th><th class="num">Report date</th></tr></thead>
           <tbody>${officeRows(report)}</tbody>
         </table></div>
-        <p class="note">Dated approval uses the Dated count in the same row. Dated counts use official report-period dates for Abu Dhabi, Abuja and Ankara. New Delhi tracker additions are observation-dated and excluded from dated monthly totals. New Delhi, Beijing and Dublin are shown under “Latest report” only; that column is the size of each file, not a month count.</p>
+        <p class="note">Dated approval uses the Dated count in the same row. Dated counts use official report-period dates for Abu Dhabi, Abuja and Ankara. New Delhi tracker additions are observation-dated and excluded from dated monthly totals. New Delhi, Beijing and Dublin are shown under “Latest report” only; that column is the size of each file, not a month count. Their dated cells stay empty because a cumulative list or snapshot has no dated rows to divide; a period office with no report that month shows 0 dated and no share.</p>
       </section>
       <section class="panel" aria-labelledby="changes-heading">
         <h2 id="changes-heading">What changed this week</h2>

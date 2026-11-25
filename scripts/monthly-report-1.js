@@ -18,6 +18,9 @@
   }
   function num(value) { return Number(value || 0).toLocaleString('en-IE'); }
   function pct(value) { return Number(value || 0).toFixed(1) + '%'; }
+  // Offices whose latest file is a cumulative list or a snapshot, so they have
+  // no dated rows of their own to total for a month.
+  var UNDATED_OFFICES = { 'new-delhi': true, beijing: true, dublin: true };
   var MONTHS = ['January', 'February', 'March', 'April', 'May', 'June',
     'July', 'August', 'September', 'October', 'November', 'December'];
   function longDate(iso) {
@@ -70,12 +73,17 @@
     }
     officeRows.innerHTML = report.offices.map(function (office) {
       var status = office.status === 'ocr_required' ? ' <span class="pill missing">OCR required</span>' : '';
+      // A cumulative list or snapshot has no dated rows, so its dated cells
+      // stay empty; a period office with no report keeps a real zero but no
+      // share, because a rate over no rows means nothing.
+      var dated = Number(office.total) || 0;
+      var periodOffice = UNDATED_OFFICES[office.slug] !== true;
       return '<tr><td data-label="Office"><strong>' + esc(office.name) + '</strong>' + status + '</td>' +
-        '<td class="num" data-label="Dated">' + num(office.total) + '</td><td class="num" data-label="Dated approval">' + pct(office.approval_rate) + '</td>' +
+        '<td class="num" data-label="Dated">' + (periodOffice ? num(dated) : '—') + '</td><td class="num" data-label="Dated approval">' + (dated ? pct(office.approval_rate) : '—') + '</td>' +
         '<td class="num" data-label="Latest report">' + num(office.reported_total) + '</td><td class="num" data-label="Report date">' + esc(office.report_date ? longDate(office.report_date) : '—') + '</td></tr>';
     }).join('');
     var asOf = report.offices.filter(function (o) { return o.report_date; }).map(function (o) { return o.name + ' ' + longDate(o.report_date); }).join('; ');
-    officeNote.textContent = 'Dated approval uses the Dated count in the same row. Dated counts use official report-period dates for Abu Dhabi, Abuja and Ankara. New Delhi tracker additions are observation-dated and excluded from dated monthly totals. New Delhi, Beijing and Dublin are shown under "Latest report" only; that column is the size of each file, not a month count.' + (asOf ? ' Latest reports: ' + asOf + '.' : '');
+    officeNote.textContent = 'Dated approval uses the Dated count in the same row. Dated counts use official report-period dates for Abu Dhabi, Abuja and Ankara. New Delhi tracker additions are observation-dated and excluded from dated monthly totals. New Delhi, Beijing and Dublin are shown under "Latest report" only; that column is the size of each file, not a month count, and their dated cells stay empty because a cumulative list or snapshot has no dated rows to divide; a period office with no report that month shows 0 dated and no share.' + (asOf ? ' Latest reports: ' + asOf + '.' : '');
   }
 
   function renderDaily(report) {

@@ -21,6 +21,7 @@ import { SITE_ORIGIN } from './site-config.mjs';
 import { loadFreshness, SNAPSHOT_OFFICES, timeHTML } from './freshness.mjs';
 import { expectedAfter, expectedDate } from '../shared/publication-schedule.js';
 import { freshnessFooterHTML, freshnessHistoryHTML } from './freshness-ui.mjs';
+import { OFFICE_SERIES_KIND } from './office-analysis.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const SITE = SITE_ORIGIN;
@@ -329,6 +330,23 @@ export function latestStats(data) {
   const decisions = offices.reduce((sum, office) => sum + (Number(office.decisions) || 0), 0);
   const approved = offices.reduce((sum, office) => sum + (Number(office.approved) || 0), 0);
   const refused = offices.reduce((sum, office) => sum + (Number(office.refused) || 0), 0);
+  // A weekly report covers one period; a cumulative file or snapshot holds every
+  // decision to date. The two are not the same measure, so the press and study
+  // figures are grouped by that basis instead of being summed into one total.
+  const byBasis = (list) => {
+    const listDecisions = list.reduce((sum, office) => sum + (Number(office.decisions) || 0), 0);
+    const listApproved = list.reduce((sum, office) => sum + (Number(office.approved) || 0), 0);
+    const listRefused = list.reduce((sum, office) => sum + (Number(office.refused) || 0), 0);
+    return {
+      offices: list,
+      decisions: listDecisions,
+      approved: listApproved,
+      refused: listRefused,
+      rate: listDecisions ? (listApproved / listDecisions) * 100 : 0,
+    };
+  };
+  const period = byBasis(offices.filter((office) => (OFFICE_SERIES_KIND[office.slug] || 'weekly') === 'weekly'));
+  const series = byBasis(offices.filter((office) => (OFFICE_SERIES_KIND[office.slug] || 'weekly') !== 'weekly'));
   const archive = offices.reduce((sum, office) => sum + (Number(office.archive_decisions) || Number(office.decisions) || 0), 0);
   const dates = offices.map((office) => String(office.report_date || '').slice(0, 10)).filter(Boolean).sort();
   return {
@@ -338,6 +356,8 @@ export function latestStats(data) {
     refused,
     archive,
     rate: decisions ? (approved / decisions) * 100 : 0,
+    period,
+    series,
     latestDate: dates[dates.length - 1] || '',
     earliestDate: dates[0] || '',
   };
@@ -662,7 +682,7 @@ function studyPage(data) {
 
   const body = `    <p class="page-kicker">Data study</p>
     <h1>What the published Irish visa decisions show</h1>
-    <p class="page-meta">2026 edition &bull; ${num(stats.decisions)} decisions in the latest official files &bull; Independent and unofficial</p>
+    <p class="page-meta">2026 edition &bull; ${num(stats.period.decisions)} dated decisions in the latest weekly reports &bull; ${num(stats.series.decisions)} rows in the cumulative and snapshot files &bull; Independent and unofficial</p>
     <p class="page-freshness small-note"><strong>Data freshness:</strong> ${esc(canonicalFreshness(data))}. <a href="/status">All six offices</a>.</p>
 
     <p class="page-lede">Six Irish visa offices publish decision files, each in a different shape: New Delhi a cumulative daily spreadsheet, three embassies weekly PDF reports, Dublin a Tuesday snapshot and Beijing an irregular cumulative file. This study measures what those files actually contain — published decisions, not the probability that any one application will be approved.</p>
@@ -1331,6 +1351,19 @@ function pressPage(data) {
   const asOf = stats.latestDate;
   const citation = `Parth Soni. (2026). Irish Visa Decision Tracker: published visa decisions by office (${publicationDateCopy(data)}) [Data set]. ${SITE}/data-study`;
   const archiveCounts = data.offices.map((office) => `${office.name}: ${num(office.decisions)}`).join('; ');
+  // Approval shares are compared within a basis, never across one week of a
+  // period report and a year of a cumulative list.
+  const shareRange = (list) => {
+    const shares = list
+      .filter((office) => Number(office.decisions) > 0)
+      .map((office) => (Number(office.approved) / Number(office.decisions)) * 100);
+    if (!shares.length) return '';
+    const low = Math.min(...shares);
+    const high = Math.max(...shares);
+    return low === high ? `${low.toFixed(1)}%` : `${low.toFixed(1)}% to ${high.toFixed(1)}%`;
+  };
+  const periodShareRange = shareRange(stats.period.offices);
+  const seriesShareRange = shareRange(stats.series.offices);
 
   const body = `    <p class="page-kicker">Press &amp; citation</p>
     <h1>Press and citation kit</h1>
@@ -1340,9 +1373,9 @@ function pressPage(data) {
     <p class="page-lede">The tracker is an independent, searchable record of the decision files published by six Irish visa offices. It is useful for a story about published decision volume, approval shares or the shape of the official files — never as a prediction for an individual application.</p>
 
     <div class="study-grid">
-      <div class="study-stat"><span class="status-kicker">Latest-file decisions</span><strong>${num(stats.decisions)}</strong><span>${stats.offices.length} offices</span></div>
-      <div class="study-stat"><span class="status-kicker">Approved share</span><strong>${stats.rate.toFixed(1)}%</strong><span>Published rows, not odds</span></div>
-      <div class="study-stat"><span class="status-kicker">Archived dated reports</span><strong>${num(archive.count)}</strong><span>${esc(shortDate(archive.earliest))} to ${esc(shortDate(archive.latest))}</span></div>
+      <div class="study-stat"><span class="status-kicker">Latest period reports</span><strong>${num(stats.period.decisions)}</strong><span>${stats.period.offices.length} weekly offices &middot; ${stats.period.rate.toFixed(1)}% approved</span></div>
+      <div class="study-stat"><span class="status-kicker">Cumulative &amp; snapshot files</span><strong>${num(stats.series.decisions)}</strong><span>Latest file per office, not a period</span></div>
+      <div class="study-stat"><span class="status-kicker">Archived dated reports</span><strong>${num(archive.datedCount)}</strong><span>${esc(shortDate(archive.datedEarliest))} to ${esc(shortDate(archive.datedLatest))}</span></div>
       <div class="study-stat"><span class="status-kicker">Public files</span><strong>JSON</strong><span>No account, no paywall</span></div>
     </div>
 
@@ -1355,7 +1388,7 @@ function pressPage(data) {
     <section>
       <h2>Story angles the data supports</h2>
       <ul class="study-list">
-        <li><strong>Approval shares differ sharply by office.</strong> The latest files range from a weekly report where two-thirds were refused to large cumulative files with four-fifths approved; the <a href="/data-study">data study</a> sets out the figures and caveats.</li>
+        <li><strong>Approval shares differ sharply by office, and by file kind.</strong> The latest weekly reports run from ${periodShareRange} approved; the cumulative and snapshot files sit at ${seriesShareRange} and each describes a whole list rather than one week, so the two sets are not compared as a single range. The <a href="/data-study">data study</a> sets out the figures and caveats.</li>
         <li><strong>Publication volume is not demand.</strong> Weekly reports show how many decisions an office published in a period, not how many people applied.</li>
         <li><strong>New Delhi's cumulative file is measurable day by day.</strong> Archived file dates show how the list grew across the run of file dates in November 2026.</li>
         <li><strong>Gaps are visible.</strong> The tracker records missing reports as gaps rather than estimating them.</li>

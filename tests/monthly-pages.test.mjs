@@ -61,6 +61,40 @@ test("the latest monthly report is static and keeps the interactive shell", asyn
   assert.equal(breadcrumb.itemListElement.length, 2);
 });
 
+test("offices with no dated rows leave their dated cells empty", async (t) => {
+  const { dist } = await build(t);
+  const html = await readFile(path.join(dist, "monthly-report.html"), "utf8");
+  const $ = cheerio.load(html);
+  const cells = (name) => {
+    const row = $('#office-rows tr').filter((_, el) => $(el).find('strong').first().text() === name);
+    return {
+      dated: row.find('td[data-label="Dated"]').text().trim(),
+      approval: row.find('td[data-label="Dated approval"]').text().trim(),
+      latest: row.find('td[data-label="Latest report"]').text().trim(),
+    };
+  };
+
+  // A cumulative list or snapshot has no dated rows this month. Printing 0 and
+  // 0.0% there would be a rate divided by nothing.
+  for (const name of ['New Delhi', 'Beijing', 'Dublin']) {
+    const office = cells(name);
+    assert.equal(office.dated, '—', `${name} has no dated rows`);
+    assert.equal(office.approval, '—', `${name} has no dated share to report`);
+    assert.notEqual(office.latest, '—', `${name} still reports its latest file size`);
+  }
+  const dated = cells('Abu Dhabi');
+  assert.match(dated.dated, /\d/);
+  assert.match(dated.approval, /^\d+\.\d%$/);
+
+  // A period office with no report in a month is a real gap, not a file kind:
+  // it keeps its zero but still has no rows to divide.
+  const january = cheerio.load(await readFile(path.join(dist, "monthly-report", "2026-01.html"), "utf8"));
+  const januaryRow = (name) => january('tr').filter((_, el) => january(el).find('td[data-label="Office"] strong').first().text() === name);
+  assert.equal(januaryRow('Abu Dhabi').find('td[data-label="Dated"]').text().trim(), '0');
+  assert.equal(januaryRow('Abu Dhabi').find('td[data-label="Dated approval"]').text().trim(), '—');
+  assert.notEqual(januaryRow('Abuja').find('td[data-label="Dated approval"]').text().trim(), '—');
+});
+
 test("prior months are self-canonical archive pages without a duplicate current month", async (t) => {
   const { dist } = await build(t);
   const archive = await readFile(path.join(dist, "monthly-report", "2026-10.html"), "utf8");
