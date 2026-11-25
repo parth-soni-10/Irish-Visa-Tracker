@@ -50,7 +50,7 @@ test("a cumulative file is never summed and reports growth between files", () =>
   assert.match(html, /publication output, not demand/);
 });
 
-test("a single snapshot says so instead of inventing a trend", () => {
+test("a single snapshot shows only measures that mean something", () => {
   const analysis = officeAnalysis("beijing", [
     { report_date: "2026-11-01", decisions: 13724, approved: 11373, refused: 2351 },
   ], { checkedDate: "2026-11-21" });
@@ -61,6 +61,45 @@ test("a single snapshot says so instead of inventing a trend", () => {
   assert.match(html, /does not claim a trend across time/);
   assert.match(html, /20 days old/);
   assert.doesNotMatch(html, /Median .* between files/);
+
+  // One list has no spread: a range of 82.9% to 82.9% or a largest file equal
+  // to the smallest is filler, not analysis.
+  assert.doesNotMatch(html, /Approval share range/);
+  assert.doesNotMatch(html, /Largest (file|list)/);
+  assert.doesNotMatch(html, /Smallest (file|list)/);
+  assert.doesNotMatch(html, /% to 82\.9%/);
+  assert.doesNotMatch(html, /Median decisions per/);
+  assert.match(html, /Age at last successful check/);
+  assert.match(html, /Snapshot of one list/);
+  assert.match(html, /82\.9%|<strong>82\.9%<\/strong>|82\.9%<\/strong>/);
+
+  // The cards follow the file kind too: age, not a cadence, for a snapshot.
+  assert.match(html, /Age at last check/);
+  assert.doesNotMatch(html, /Publication cadence/);
+  assert.match(html, /Snapshot, not a series/);
+});
+
+test("a cumulative office compares its files without a median-per-file nonsense", () => {
+  const analysis = officeAnalysis("new-delhi", [
+    { report_date: "2026-11-20", decisions: 43600, approved: 36700, refused: 6900 },
+    { report_date: "2026-11-23", decisions: 43800, approved: 36932, refused: 6868 },
+  ]);
+  const html = officeAnalysisHtml(analysis, { name: "New Delhi" });
+  assert.match(html, /First file in the archive/);
+  assert.match(html, /Latest file/);
+  assert.match(html, /Growth since previous file/);
+  assert.match(html, /200 decisions over 3 days/);
+  // A median of running totals would describe the archive's length, not the office.
+  assert.doesNotMatch(html, /Median decisions per/);
+  assert.doesNotMatch(html, /Largest file|Smallest file/);
+});
+
+test("comparable weekly reports keep the range and the extremes", () => {
+  const html = officeAnalysisHtml(officeAnalysis("abuja", weekly), { name: "Abuja" });
+  assert.match(html, /Approval share range/);
+  assert.match(html, /Median decisions per report/);
+  assert.match(html, /Largest report/);
+  assert.match(html, /Smallest report/);
 });
 
 test("an empty series makes no claim", () => {

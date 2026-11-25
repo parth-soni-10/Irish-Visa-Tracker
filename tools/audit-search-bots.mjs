@@ -12,6 +12,7 @@
  *   node tools/audit-search-bots.mjs --base=https://example.ie
  */
 
+import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -35,6 +36,37 @@ export const BOT_PROFILES = [
   },
 ];
 
+const escapeRegExp = (value) => String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+/** The office list comes from the manifest, so a seventh office is audited
+ *  without a second list to keep in sync. */
+export function officeRoutes(root = ROOT) {
+  try {
+    const manifest = JSON.parse(fs.readFileSync(path.join(root, 'data', 'data_manifest.json'), 'utf8'));
+    return (Array.isArray(manifest.offices) ? manifest.offices : [])
+      .filter((office) => office && office.slug)
+      .map((office) => `/${office.slug}-visa-decisions`);
+  } catch {
+    return [];
+  }
+}
+
+/** Googlebot does not run the site's JavaScript for navigation. The homepage
+ *  has to link every office in the served HTML, and each office page has to
+ *  link its peers and the today page, or those pages depend on the sitemap
+ *  alone for discovery. */
+export function requiredInternalLinks(pathname, routes = []) {
+  if (!Array.isArray(routes) || !routes.length) return [];
+  const route = String(pathname || '/').replace(/\.html$/i, '').replace(/\/$/, '') || '/';
+  if (route === '/') return [...routes];
+  if (routes.includes(route)) return [...routes.filter((item) => item !== route), '/irish-visa-decisions-today'];
+  return [];
+}
+
+export function findMissingLinks(body, required = []) {
+  return required.filter((route) => !new RegExp(`href=["']${escapeRegExp(route)}(?:["'?#])`, 'i').test(String(body || '')));
+}
+
 export function defaultAuditPaths(key = findIndexNowKey()) {
   const paths = [
     '/',
@@ -47,6 +79,7 @@ export function defaultAuditPaths(key = findIndexNowKey()) {
     '/vfs-tracking',
     '/all-pages',
   ];
+  paths.push(...officeRoutes());
   if (key) paths.push(`/${key}.txt`);
   return paths;
 }
@@ -103,6 +136,7 @@ export async function auditSearchBots({
   paths = defaultAuditPaths(),
   bots = BOT_PROFILES,
   key = findIndexNowKey(),
+  routes = [],
   fetchImpl = fetch,
   timeoutMs = 20000,
 } = {}) {
@@ -134,17 +168,26 @@ export async function auditSearchBots({
         });
         const redirected = Boolean(response.redirected && response.url && response.url !== url);
         if (redirected) assessment.issues.push(`redirected to ${response.url}`);
+        const required = /text\/html/i.test(headers.get('content-type') || '')
+          ? requiredInternalLinks(route, routes)
+          : [];
+        const missingLinks = findMissingLinks(body, required);
+        for (const link of missingLinks) assessment.issues.push(`missing crawlable link to ${link}`);
+        // assessBotResponse reports ok from the issues it saw; the redirect and
+        // link checks add issues afterwards, so ok is decided here.
+        const ok = assessment.issues.length === 0 && !redirected;
         results.push({
           bot: bot.name,
           path: route,
           status: response.status,
-          ok: assessment.ok && !redirected,
+          ok,
           issues: assessment.issues,
           contentType: headers.get('content-type') || '',
           cacheControl: headers.get('cache-control') || '',
           cfMitigated: headers.get('cf-mitigated') || '',
           cfCacheStatus: headers.get('cf-cache-status') || '',
           redirected,
+          missingLinks,
           bytes: Buffer.byteLength(body),
           elapsedMs: Date.now() - started,
         });
@@ -190,7 +233,7 @@ if (isMain) {
   const key = findIndexNowKey();
   const base = baseArg ? baseArg.slice('--base='.length) : (process.env.SITE_ORIGIN || SITE_ORIGIN);
   const json = process.argv.includes('--json');
-  const report = await auditSearchBots({ base, key });
+  const report = await auditSearchBots({ base, key, routes: officeRoutes() });
   if (json) {
     console.log(JSON.stringify(report, null, 2));
   } else {

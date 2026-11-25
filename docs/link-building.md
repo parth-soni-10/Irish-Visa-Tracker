@@ -66,6 +66,29 @@ Rules that keep it honest:
 - Offer the badge (`/embed`) or a chart, not a "please link to us" request.
 - If a page already links the site, do not ask again.
 
+## 2a. Verified targets, 25 November 2026
+
+Each page below was opened and seen to cover Irish visa decisions, processing
+queues or international-student visa refusals. None had been contacted on that
+date, and Bing knew of no inbound link from any of them. One email each, with
+the finding that fits that page; do not reuse one paragraph across the list.
+
+| Target | Page | Why it fits | Status |
+| --- | --- | --- | --- |
+| College Tribune | https://www.collegetribune.ie/irish-universities-to-lose-millions-from-student-visa-rejections/ | FOI piece on 2026 refusals at Galway, TU Dublin and MTU; office-level refusal share is the missing denominator | Not contacted |
+| RTÉ | https://www.rte.ie/news/education/2026/1115/1599304-international-students-visa-refusals/ | €8m loss story on the same refusal rise; per-office decision volume shows where it concentrates | Not contacted |
+| ICOS | https://www.internationalstudents.ie/ | Advice and policy body for international students; publishes on visa refusals and refunds | Not contacted |
+| IUA | https://www.iua.ie/for-students/international-students/ | Student-facing visa guidance with no decision-volume data | Not contacted |
+| Stampwise | https://stampwise.ie/processing-times/visas | Publishes ISD queue positions by visa type; the tracker holds the decision side of the same queues | Not contacted |
+| The Mentors Circle | https://thementorscircle.com/blogs/post/ireland-student-visa-processing-time-real-data-2026 | Runs its own analysis of the New Delhi decision files; a peer, so ask for a methodology cross-reference, never a citation request | Not contacted |
+
+Two sites publish the same decision lists as a product —
+`citizenshipcalculator.com/visa-decisions` and `snifox.com/trends-report`. They
+are competitors, not prospects. Do not send them outreach.
+
+Official sources (`irishimmigration.ie`, `ireland.ie`) are the record the tracker
+cites. They do not link out to independent trackers, so they are never targets.
+
 ## 3. Monthly story package
 
 `/monthly-report` carries a package for the current month: a headline finding, a

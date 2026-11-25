@@ -163,8 +163,14 @@ export function officeAnalysis(slug, entries, { checkedDate = '' } = {}) {
     totalApproved = last && Number.isFinite(last.approved) ? last.approved : 0;
     totalRefused = last && Number.isFinite(last.refused) ? last.refused : 0;
     average = totalDecisions;
-    largest = last;
-    smallest = last;
+    if (rows.length > 1) {
+      // Several published lists are comparable even though each one stands alone.
+      largest = rows.reduce((best, row) => (row.decisions > best.decisions ? row : best));
+      smallest = rows.reduce((best, row) => (row.decisions < best.decisions ? row : best));
+    } else {
+      largest = last;
+      smallest = last;
+    }
     if (last && isDate(iso(checkedDate)) && iso(checkedDate) > last.date) {
       staleDays = daysBetween(last.date, iso(checkedDate));
     }
@@ -178,6 +184,8 @@ export function officeAnalysis(slug, entries, { checkedDate = '' } = {}) {
     rows: rows.length,
     first: first ? first.date : '',
     last: last ? last.date : '',
+    firstDecisions: first ? first.decisions : 0,
+    lastDecisions: last ? last.decisions : 0,
     cadenceDays: cadenceInfo.days,
     cadenceLabel: cadenceInfo.label,
     outcomes: outcomes.length,
@@ -235,7 +243,10 @@ function interpretation(analysis) {
     const age = analysis.staleDays > 1
       ? ` The snapshot was ${num(analysis.staleDays)} days old at the last successful tracker check, which is why a missing number may simply be unpublished.`
       : '';
-    return `The tracker holds ${analysis.rows === 1 ? 'one published list' : `${analysis.rows} published lists`}, most recently dated ${longDate(analysis.last)}. A snapshot describes that file only, so this page does not claim a trend across time.${age}`;
+    if (analysis.rows === 1) {
+      return `The tracker holds one published list, dated ${longDate(analysis.last)}. A snapshot describes that file only, so this page does not claim a trend across time.${age}`;
+    }
+    return `The tracker holds ${analysis.rows} published lists, from ${longDate(analysis.first)} to ${longDate(analysis.last)}. Each list replaces the previous one rather than adding to it, so the counts are not summed; the spread between them compares publications, not demand.${age}`;
   }
   return `Across ${analysis.rows} archived report${analysis.rows === 1 ? '' : 's'} (${longDate(analysis.first)} to ${longDate(analysis.last)}, ${analysis.cadenceLabel}) the office published ${num(analysis.totalDecisions)} decisions, an average of ${num(Math.round(analysis.average))} per report. Summing separate reporting periods is valid here because each report covers its own period; the period-end date is still not an individual decision date.`;
 }
@@ -245,24 +256,105 @@ export function officeAnalysisHtml(analysis, { name = '' } = {}) {
     return `<p class="small-note">No archived report is available for ${esc(name || 'this office')} yet, so this section makes no claim about its publication pattern.</p>`;
   }
   const label = name || analysis.slug;
-  const stats = `<div class="study-grid">
-        <div class="study-stat"><span class="status-kicker">Archived report files</span><strong>${num(analysis.rows)}</strong><span>${esc(longDate(analysis.first))} to ${esc(longDate(analysis.last))}</span></div>
-        <div class="study-stat"><span class="status-kicker">${analysis.kind === 'cumulative' ? 'Latest file' : 'Decisions in archive'}</span><strong>${num(analysis.totalDecisions)}</strong><span>${analysis.kind === 'cumulative' ? 'Cumulative, not a daily count' : 'Published rows'}</span></div>
-        <div class="study-stat"><span class="status-kicker">Approved share</span><strong>${pct(analysis.totalApproved, analysis.totalDecisions)}</strong><span>${num(analysis.totalApproved)} approved, ${num(analysis.totalRefused)} refused</span></div>
-        <div class="study-stat"><span class="status-kicker">Publication cadence</span><strong>${esc(analysis.cadenceLabel)}</strong><span>${analysis.cadenceDays ? `Median ${num(analysis.cadenceDays)} day${analysis.cadenceDays === 1 ? '' : 's'} between files` : 'Single file'}</span></div>
-      </div>`;
+  const dayLabel = (days) => `${num(days)} day${days === 1 ? '' : 's'}`;
+  const approvalNote = `${num(analysis.totalApproved)} approved, ${num(analysis.totalRefused)} refused`;
+  const kindLabel = analysis.kind === 'cumulative' ? 'Cumulative list, republished'
+    : analysis.kind === 'snapshot' ? 'Snapshot of one list'
+      : 'Separate reporting periods';
 
-  const rows = [
-    ['File kind', analysis.kind === 'cumulative' ? 'Cumulative list, republished' : analysis.kind === 'snapshot' ? 'Snapshot of one list' : 'Separate reporting periods'],
-    ['Archived report files', `${num(analysis.rows)} (${esc(longDate(analysis.first))} to ${esc(longDate(analysis.last))})`],
-    ['Decisions', `${num(analysis.totalDecisions)}${analysis.kind === 'cumulative' ? ' in the latest file' : ' across the archived reports'}`],
+  // A single list has no spread, no range and no largest-versus-smallest. Those
+  // rows are only written when there is more than one file to compare.
+  const comparable = analysis.rows > 1;
+  const archiveSpan = `${num(analysis.rows)} (${esc(longDate(analysis.first))} to ${esc(longDate(analysis.last))})`;
+  const shareRange = (spread) => (analysis.shareLow == null
+    ? 'Not available in the archived rows'
+    : `${pct(analysis.shareLow, 100)} to ${pct(analysis.shareHigh, 100)} across ${spread}`);
+  const fileSize = (row) => (row ? `${esc(longDate(row.date))}: ${num(row.decisions)} decisions` : 'Not available');
+  const outcomes = [
     ['Approved / refused', `${num(analysis.totalApproved)} / ${num(analysis.totalRefused)}`],
     ['Approval share', pct(analysis.totalApproved, analysis.totalDecisions)],
-    ['Approval share range', analysis.shareLow == null ? 'Not available in the archived rows' : `${pct(analysis.shareLow, 100)} to ${pct(analysis.shareHigh, 100)} across file dates`],
-    ['Median decisions per file', num(Math.round(analysis.average))],
-    ['Largest file', analysis.largest ? `${esc(longDate(analysis.largest.date))}: ${num(analysis.largest.decisions)} decisions` : 'Not available'],
-    ['Smallest file', analysis.smallest ? `${esc(longDate(analysis.smallest.date))}: ${num(analysis.smallest.decisions)} decisions` : 'Not available'],
   ];
+  const extremes = (noun) => [
+    [`Largest ${noun}`, fileSize(analysis.largest)],
+    [`Smallest ${noun}`, fileSize(analysis.smallest)],
+  ];
+  const shareCard = {
+    kicker: 'Approved share',
+    value: pct(analysis.totalApproved, analysis.totalDecisions),
+    note: approvalNote,
+  };
+  const cards = analysis.kind === 'snapshot'
+    ? [
+      {
+        kicker: comparable ? 'Published lists' : 'Published list',
+        value: num(analysis.rows),
+        note: comparable
+          ? `${esc(longDate(analysis.first))} to ${esc(longDate(analysis.last))}`
+          : `Dated ${esc(longDate(analysis.last))}`,
+      },
+      {
+        kicker: 'Decisions in the file',
+        value: num(analysis.totalDecisions),
+        note: comparable ? 'Each list replaces the last' : 'Snapshot, not a series',
+      },
+      shareCard,
+      {
+        kicker: 'Age at last check',
+        value: analysis.staleDays >= 1 ? dayLabel(analysis.staleDays) : 'Same day',
+        note: 'Snapshot date to last successful check',
+      },
+    ]
+    : [
+      { kicker: 'Archived report files', value: num(analysis.rows), note: `${esc(longDate(analysis.first))} to ${esc(longDate(analysis.last))}` },
+      {
+        kicker: analysis.kind === 'cumulative' ? 'Latest file' : 'Decisions in archive',
+        value: num(analysis.totalDecisions),
+        note: analysis.kind === 'cumulative' ? 'Cumulative, not a daily count' : 'Published rows',
+      },
+      shareCard,
+      {
+        kicker: 'Publication cadence',
+        value: esc(analysis.cadenceLabel),
+        note: analysis.cadenceDays ? `Median ${dayLabel(analysis.cadenceDays)} between files` : 'Single file',
+      },
+    ];
+  // Both branches share the approval card, so the object is built once.
+  const stats = `<div class="study-grid">
+${cards.map((card) => `        <div class="study-stat"><span class="status-kicker">${card.kicker}</span><strong>${card.value}</strong><span>${card.note}</span></div>`).join('\n')}
+      </div>`;
+
+  const rows = [['File kind', kindLabel]];
+  if (analysis.kind === 'snapshot') {
+    rows.push(['Snapshot date', esc(longDate(analysis.last))]);
+    if (comparable) rows.push(['Lists in the archive', archiveSpan]);
+    rows.push(['Decisions in the file', num(analysis.totalDecisions)], ...outcomes);
+    if (comparable) {
+      rows.push(['Approval share range', shareRange('published lists')], ...extremes('list'));
+    } else {
+      rows.push(['Age at last successful check', analysis.staleDays >= 1 ? dayLabel(analysis.staleDays) : 'Checked on the snapshot date']);
+    }
+  } else if (analysis.kind === 'cumulative') {
+    rows.push(['Archived report files', archiveSpan], ['Decisions in the latest file', num(analysis.totalDecisions)], ...outcomes);
+    if (comparable) {
+      rows.push(
+        ['First file in the archive', fileSize({ date: analysis.first, decisions: analysis.firstDecisions })],
+        ['Latest file', fileSize({ date: analysis.last, decisions: analysis.lastDecisions })],
+      );
+      if (analysis.change) {
+        rows.push(['Growth since previous file', `${num(analysis.change.added)} decisions over ${dayLabel(analysis.change.days)}`]);
+      }
+      rows.push(['Approval share range', shareRange('file dates')]);
+    }
+  } else {
+    rows.push(['Archived report files', archiveSpan], ['Decisions', `${num(analysis.totalDecisions)} across the archived reports`], ...outcomes);
+    if (comparable) {
+      rows.push(
+        ['Approval share range', shareRange('reporting periods')],
+        ['Median decisions per report', num(Math.round(analysis.average))],
+        ...extremes('report'),
+      );
+    }
+  }
 
   return `${stats}
       <p>${esc(interpretation(analysis))}</p>

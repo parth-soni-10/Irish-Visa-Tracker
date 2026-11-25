@@ -1,0 +1,103 @@
+{
+  "note": "Baseline for comparing the intent split and the office-page indexing work. Pulled from the Search Console and Bing Webmaster APIs on the capture date; Search Console reports final data with a 2-3 day lag, so the last day of the current window is incomplete. Do not replace these numbers with a later estimate: add a new dated block instead.",
+  "capturedOn": "2026-11-25",
+  "site": "https://irishvisaupdatetracker.pages.dev/",
+  "google": {
+    "property": "https://irishvisaupdatetracker.pages.dev/",
+    "current": {
+      "start": "2026-11-19",
+      "end": "2026-11-25",
+      "clicks": 46,
+      "impressions": 1723,
+      "ctr": 0.0267,
+      "position": 11.35
+    },
+    "previous": {
+      "start": "2026-11-05",
+      "end": "2026-11-18",
+      "clicks": 1,
+      "impressions": 121,
+      "ctr": 0.0083,
+      "position": 48.89
+    },
+    "pagesWithImpressions": 1,
+    "dataCompleteness": {
+      "firstIncompleteDate": "2026-11-24",
+      "note": "The 24 November row is partial and 25 November had not been reported when the baseline was pulled."
+    },
+    "crawlRecency": {
+      "homeLastCrawl": "2026-11-07T23:47:31Z",
+      "homeCrawledAs": "MOBILE",
+      "homeVerdict": "Submitted and indexed",
+      "checkedOn": "2026-11-25",
+      "note": "Googlebot had not fetched the homepage for 18 days when this was recorded, while Bing crawled it daily. Every change made after 7 November is therefore invisible to Google, including the office pages, the intent split and the split sitemap. The impressions in the current window come from the 7 November snapshot."
+    },
+    "indexing": {
+      "sitemapRegistered": "https://irishvisaupdatetracker.pages.dev/sitemap.xml",
+      "sitemapSubmittedAt": "2026-11-24T16:38:12Z",
+      "recognisedAsIndexAtCapture": false,
+      "unknownToGoogle": [
+        "/irish-visa-decisions-today",
+        "/daily-summaries",
+        "/new-delhi-visa-decisions"
+      ],
+      "note": "The registered sitemap was still the pre-split urlset, and every sampled non-homepage URL returned 'URL is unknown to Google'. That is a discovery state, not a canonical or ranking problem."
+    },
+    "officeQueries": [
+      { "query": "visa decisions new delhi", "page": "/", "impressions": 40, "clicks": 0, "position": 6.25 },
+      { "query": "irish visa decisions delhi", "page": "/", "impressions": 25, "clicks": 0, "position": 9.88 },
+      { "query": "ireland visa decisions delhi", "page": "/", "impressions": 24, "clicks": 1, "position": 10.96 },
+      { "query": "irish embassy new delhi visa decisions", "page": "/", "impressions": 17, "clicks": 0, "position": 5.35 },
+      { "query": "irish visa decisions new delhi", "page": "/", "impressions": 15, "clicks": 0, "position": 5.8 },
+      { "query": "irish embassy delhi visa tracking", "page": "/", "impressions": 11, "clicks": 0, "position": 8.91 },
+      { "query": "ndvo visa decision", "page": "/", "impressions": 7, "clicks": 0, "position": 8.86 },
+      { "query": "dublin visa decisions", "page": "/", "impressions": 8, "clicks": 0, "position": 22.5 }
+    ],
+    "officeQueryOwnership": {
+      "queryPagePairs": 132,
+      "pagesRanking": ["/"],
+      "note": "Every query/page pair in the window resolved to the homepage. No office URL registered a single impression."
+    }
+  },
+  "bing": {
+    "inIndex": 12,
+    "lastCrawlDate": "2026-11-24",
+    "inboundLinks": 0,
+    "impressions": 0,
+    "clicks": 0,
+    "sitemapUrls": 127,
+    "sitemapLastCrawled": "2026-11-25T00:40:49Z",
+    "note": "Bing crawled 15 pages on 23 November and held 12 in its index on 24 November, with no search performance rows for 11-23 November."
+  },
+  "submissions": {
+    "date": "2026-11-25",
+    "google": {
+      "action": "sitemap resubmission through the Search Console API",
+      "submitted": [
+        "https://irishvisaupdatetracker.pages.dev/sitemap.xml",
+        "https://irishvisaupdatetracker.pages.dev/sitemap-pages.xml",
+        "https://irishvisaupdatetracker.pages.dev/sitemap-offices.xml",
+        "https://irishvisaupdatetracker.pages.dev/sitemap-reports.xml",
+        "https://irishvisaupdatetracker.pages.dev/sitemap-decisions.xml"
+      ]
+    },
+    "indexnow": { "urls": 122, "response": "HTTP 200" },
+    "bingUrlApi": {
+      "urls": 8,
+      "paths": [
+        "/new-delhi-visa-decisions",
+        "/beijing-visa-decisions",
+        "/dublin-visa-decisions",
+        "/abu-dhabi-visa-decisions",
+        "/abuja-visa-decisions",
+        "/ankara-visa-decisions",
+        "/irish-visa-decisions-today",
+        "/daily-summaries"
+      ]
+    },
+    "googleRequestIndexing": {
+      "done": false,
+      "note": "Request indexing is a signed-in Search Console action. The eight-URL queue is listed in docs/search-console.md."
+    }
+  }
+}

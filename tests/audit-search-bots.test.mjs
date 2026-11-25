@@ -1,7 +1,13 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { assessBotResponse, auditSearchBots } from '../tools/audit-search-bots.mjs';
+import {
+  assessBotResponse,
+  auditSearchBots,
+  findMissingLinks,
+  officeRoutes,
+  requiredInternalLinks,
+} from '../tools/audit-search-bots.mjs';
 
 test('a normal HTML response passes the bot check', () => {
   const result = assessBotResponse({
@@ -69,6 +75,50 @@ test('a redirect is reported even when the final response is 200', async () => {
   });
   assert.equal(report.failures.length, 1);
   assert.ok(report.failures[0].issues.some((issue) => issue.includes('redirected to https://elsewhere.test/')));
+});
+
+test('office links must be in the served HTML, not injected later', () => {
+  const routes = ['/new-delhi-visa-decisions', '/beijing-visa-decisions'];
+  assert.deepEqual(requiredInternalLinks('/', routes), routes);
+  assert.deepEqual(
+    requiredInternalLinks('/new-delhi-visa-decisions', routes),
+    ['/beijing-visa-decisions', '/irish-visa-decisions-today'],
+  );
+  assert.deepEqual(requiredInternalLinks('/about', routes), []);
+  assert.deepEqual(requiredInternalLinks('/', []), []);
+
+  const html = '<a href="/new-delhi-visa-decisions">New Delhi</a>';
+  assert.deepEqual(findMissingLinks(html, routes), ['/beijing-visa-decisions']);
+  // The markdown alternate is not the page link Googlebot needs to follow.
+  assert.equal(findMissingLinks('<a href="/new-delhi-visa-decisions.md">md</a>', ['/new-delhi-visa-decisions']).length, 1);
+});
+
+test('a page whose office links only exist after JavaScript fails the audit', async () => {
+  const report = await auditSearchBots({
+    base: 'https://example.test',
+    paths: ['/'],
+    bots: [{ name: 'Googlebot', userAgent: 'test-googlebot' }],
+    key: '',
+    routes: ['/new-delhi-visa-decisions'],
+    fetchImpl: async () => new Response(
+      '<html><body><script>const links=["/new-delhi-visa-decisions"]</script></body></html>',
+      { status: 200, headers: { 'content-type': 'text/html' } },
+    ),
+  });
+  assert.equal(report.failures.length, 1);
+  assert.ok(report.failures[0].issues.some((issue) => issue.includes('missing crawlable link to /new-delhi-visa-decisions')));
+  assert.deepEqual(report.failures[0].missingLinks, ['/new-delhi-visa-decisions']);
+});
+
+test('the audited office list comes from the manifest', () => {
+  assert.deepEqual(officeRoutes(), [
+    '/new-delhi-visa-decisions',
+    '/beijing-visa-decisions',
+    '/abu-dhabi-visa-decisions',
+    '/abuja-visa-decisions',
+    '/ankara-visa-decisions',
+    '/dublin-visa-decisions',
+  ]);
 });
 
 test('the audit checks every bot and path with that bot user agent', async () => {

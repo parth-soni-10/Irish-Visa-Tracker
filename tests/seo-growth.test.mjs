@@ -157,6 +157,35 @@ test("daily summaries is scoped to New Delhi and links the cross-office view", a
   assert.doesNotMatch(html, /<title>Ireland Visa Decisions by Date/);
 });
 
+test("the search baseline records dated, comparable windows", async () => {
+  const baseline = JSON.parse(await readFile(path.join(ROOT, "data", "search-baseline.json"), "utf8"));
+  assert.match(baseline.capturedOn, /^\d{4}-\d{2}-\d{2}$/);
+  const { current, previous } = baseline.google;
+  for (const window of [current, previous]) {
+    assert.match(window.start, /^\d{4}-\d{2}-\d{2}$/);
+    assert.match(window.end, /^\d{4}-\d{2}-\d{2}$/);
+    assert.ok(window.impressions > 0, "a window with no impressions is not a baseline");
+    assert.ok(window.clicks >= 0 && window.clicks <= window.impressions);
+  }
+  assert.ok(current.start > previous.end, "the comparison windows must not overlap");
+  assert.ok(current.impressions > previous.impressions);
+  // The whole point of the baseline: one page carried every impression.
+  assert.equal(baseline.google.pagesWithImpressions, 1);
+  assert.deepEqual(baseline.google.officeQueryOwnership.pagesRanking, ["/"]);
+  assert.ok(baseline.google.officeQueries.length >= 4);
+  for (const row of baseline.google.officeQueries) {
+    assert.match(row.page, /^\//, "office queries must name the page that ranked");
+    assert.ok(row.impressions > 0);
+  }
+  // A crawl gap is the finding that explains every other number, so it is dated.
+  assert.match(baseline.google.crawlRecency.homeLastCrawl, /^\d{4}-\d{2}-\d{2}T/);
+  assert.ok(baseline.google.crawlRecency.homeLastCrawl < `${baseline.capturedOn}T00:00:00Z`);
+  assert.equal(baseline.google.crawlRecency.homeVerdict, "Submitted and indexed");
+  assert.equal(typeof baseline.bing.inboundLinks, "number");
+  assert.equal(typeof baseline.bing.inIndex, "number");
+  assert.equal(baseline.submissions.date, baseline.capturedOn);
+});
+
 test("Help answers the new query gaps and keeps the FAQ schema in sync", async () => {
   const html = await readFile(path.join(ROOT, "help.html"), "utf8");
   for (const [id, text] of [
