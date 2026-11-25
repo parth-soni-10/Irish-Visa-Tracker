@@ -142,6 +142,8 @@ function setStaticCache(headers) {
   return headers;
 }
 
+import { INLINE_STYLE_SHA256 } from './_csp-inline-style.js';
+
 // Security headers
 function addSecurityHeaders(response) {
   const headers = new Headers(response.headers);
@@ -151,7 +153,9 @@ function addSecurityHeaders(response) {
   headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
   // Inline executable scripts and <style> elements are extracted. Inline
   // style attributes remain for generated geometry, so only that attribute
-  // source keeps unsafe-inline; script attributes are disabled entirely.
+  // source keeps unsafe-inline; script attributes are disabled entirely. The
+  // content pages inline one identical stylesheet block, and the build writes
+  // its hash into _csp-inline-style.js so exactly that block is allowed.
   headers.set(
     "Content-Security-Policy",
     "default-src 'self'; " +
@@ -159,7 +163,7 @@ function addSecurityHeaders(response) {
     "script-src-attr 'none'; " +
     "style-src 'self'; " +
     "style-src-attr 'unsafe-inline'; " +
-    "style-src-elem 'self'; " +
+    "style-src-elem 'self' '" + INLINE_STYLE_SHA256 + "'; " +
     "font-src 'self' data:; " +
     "img-src 'self' data: https:; " +
     "connect-src 'self' https://fcm.googleapis.com https://cloudflareinsights.com; " +
