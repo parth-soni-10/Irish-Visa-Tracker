@@ -147,6 +147,11 @@ export function auditDiscovery({ distDir = path.join(ROOT, '.pages-dist'), root 
     const index = read(indexFile);
     if (/rel=["']preload["'][^>]+font/i.test(index)) failures.push('homepage preloads a font again');
     if (/search_fallback\.json/i.test(index)) failures.push('homepage references search_fallback.json on first paint');
+    // The search bundle is ~360 KB and builds the decision index on the main
+    // thread. Loading it before first paint delayed the largest heading to
+    // 2.6 s on a throttled phone; the loader starts it after the first frame.
+    if (!index.includes('/scripts/app-loader.js')) failures.push('homepage loads the search bundle on first paint');
+    if (/src="\/scripts\/app-bundle\.js/i.test(index)) failures.push('homepage requests the deferred app bundle in its HTML');
     if (!index.includes('/all-pages')) failures.push('homepage does not link the all-pages hub');
   }
 

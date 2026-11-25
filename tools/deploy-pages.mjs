@@ -228,10 +228,25 @@ function bundleIndexAssets() {
   }
 
   const scriptFiles = [];
+  const appFiles = [];
   let scriptInserted = false;
+  let appLoaderInserted = false;
+  let lateStarted = false;
   html = html.replace(/<script\b[^>]*\bsrc="([^"]+)"[^>]*>\s*<\/script>/gi, (tag, href) => {
     const file = localDistPath(href);
     if (!file || !fs.existsSync(file)) return tag;
+    // The search bundle builds the decision index on the main thread. It loads
+    // after the first paint so it cannot delay the largest heading; everything
+    // before it in document order stays in the immediate bundle.
+    // Everything from index.js onwards moves together, so the document order
+    // the bundle has always relied on is preserved.
+    if (path.basename(file) === 'index.js') lateStarted = true;
+    if (lateStarted) {
+      appFiles.push(file);
+      if (appLoaderInserted) return '';
+      appLoaderInserted = true;
+      return '<script src="/scripts/app-loader.js" defer></script>';
+    }
     scriptFiles.push(file);
     if (scriptInserted) return '';
     scriptInserted = true;
@@ -243,8 +258,14 @@ function bundleIndexAssets() {
       scriptFiles.map((file) => fs.readFileSync(file, 'utf8')).join('\n;\n')
     );
   }
+  if (appFiles.length) {
+    fs.writeFileSync(
+      path.resolve(distDir, 'scripts', 'app-bundle.js'),
+      appFiles.map((file) => fs.readFileSync(file, 'utf8')).join('\n;\n')
+    );
+  }
   fs.writeFileSync(indexPath, html);
-  console.log(`Bundled ${cssFiles.length} stylesheets and ${scriptFiles.length} scripts for index.html`);
+  console.log(`Bundled ${cssFiles.length} stylesheets, ${scriptFiles.length} scripts and ${appFiles.length} deferred app script(s) for index.html`);
 }
 
 function summarizeByDate(rows) {
