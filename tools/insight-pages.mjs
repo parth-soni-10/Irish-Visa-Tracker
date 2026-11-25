@@ -999,7 +999,7 @@ ${crossOfficeDates.map((date) => `        <li><a href="/decisions/${date}">${esc
       <p>The tracker searches the published files of all six offices. It records decisions only; it cannot see an application that has not been published or tell you when a passport will be returned.</p>
       <p class="study-downloads">
         <a class="btn" href="/?tracker=visa&amp;tab=search">Search an application number</a>
-        <a class="btn" href="/daily-summaries">Daily summaries</a>
+        <a class="btn" href="/daily-summaries">Ireland visa decisions by date</a>
         <a class="btn" href="/when-are-visa-decisions-published">Publication schedule</a>
       </p>
     </section>
@@ -1363,6 +1363,14 @@ function pressPage(data) {
     </section>
 
     <section>
+      <h2>Monthly story package</h2>
+      <p>Each monthly report carries a one-finding package: a headline number, a publication-ready sentence, the method note, a pitch you can send and the CSV files behind it. The latest package sits on the <a href="/monthly-report#story-package">monthly report</a>; each office page carries its own <a href="/data-study">analysis of the published series</a>.</p>
+      <ul class="report-office-list">
+        ${data.offices.map((office) => `<li><a href="${office.route}">${esc(office.name)} visa decisions</a> <span class="small-note">latest file and report series</span></li>`).join('\n        ')}
+      </ul>
+    </section>
+
+    <section>
       <h2>Cite this data</h2>
       <p>Use the study URL and the data date. The citation is stable; the figures behind it are rebuilt from the latest official files.</p>
       <pre class="press-citation" tabindex="0"><code>${esc(citation)}</code></pre>
@@ -1382,8 +1390,9 @@ function pressPage(data) {
     </section>
 
     <section>
-      <h2>DOI-backed snapshots</h2>
+      <h2>DOI-backed snapshots and data catalogs</h2>
       <p>A DOI is minted by depositing a dated snapshot with a repository such as Zenodo; it cannot be created by the site itself. The tracker publishes the snapshot files, <a href="/data/snapshots/${esc(asOf)}/CITATION.cff">CITATION.cff</a> and <a href="/data/snapshots/${esc(asOf)}/zenodo.json">Zenodo deposit metadata</a>, so a deposit can point at an immutable version and the study can cite the DOI once it exists.</p>
+      <p>The office pages already carry Dataset markup with a licence, a landing page and download URLs, which is what Google Dataset Search reads; the <a href="/data-study">data study</a> is the human-readable version of the same definition. The markup gains a DOI identifier when a deposit returns one; the Dataset record is then registrable with DataCite, OpenAIRE and re3data. None of those registrations exist yet, and this page does not claim otherwise.</p>
       <p class="small-note">Publishing the DOI requires the maintainer's Zenodo account. Until then, cite the study URL and the data date above. Corrections are logged in the <a href="/corrections">correction ledger</a>.</p>
     </section>
 
@@ -1672,7 +1681,7 @@ function reportsIndexPage(data) {
         </table>
       </div>
       <p class="small-note">The archive records what each office published. A missing date is a publication gap, never a reconstructed report. Beijing and Dublin publish live snapshots: their dates are the day the tracker checked an unchanged list, not a new dated decision report.</p>
-      <p class="page-nav"><a href="/irish-visa-decisions-today">Latest decisions today</a> &middot; <a href="/data-study">Data study</a> &middot; <a href="/when-are-visa-decisions-published">Publication schedule</a> &middot; <a href="/press">Press &amp; citation</a> &middot; <a href="/status">Data status</a></p>
+      <p class="page-nav"><a href="/irish-visa-decisions-today">Latest Irish visa decisions today</a> &middot; <a href="/irish-visa-decisions-today#changes">What changed since the previous report</a> &middot; <a href="/data-study">Data study</a> &middot; <a href="/when-are-visa-decisions-published">Publication schedule</a> &middot; <a href="/press">Press &amp; citation</a> &middot; <a href="/status">Data status</a></p>
     </section>`;
 
   return shell({
@@ -1820,7 +1829,7 @@ function reportDetailPage(data, office, entry, prior) {
       <h2>How to use this page</h2>
       <p>Use the report counts to verify a published figure, or follow the source file to the office's own document. To check one application number, use <a href="/?tracker=visa&amp;tab=search&amp;office=${office.slug}">office search</a> with the number from your receipt.</p>
       <p>A missing number is not a refusal. The report records decisions, not passport collection, and the official document remains the authority.</p>
-      <p class="page-nav"><a href="/reports/${office.slug}">${esc(office.name)} report archive</a> &middot; <a href="${office.route}">${esc(office.name)} office page</a> &middot; <a href="/reports">All reports</a> &middot; <a href="/irish-visa-decisions-today">Current cross-office view</a> &middot; <a href="/data-study">Data study</a></p>
+      <p class="page-nav"><a href="/reports/${office.slug}">${esc(office.name)} report archive</a> &middot; <a href="${office.route}">${esc(office.name)} office page</a> &middot; <a href="/reports">All reports</a> &middot; <a href="/irish-visa-decisions-today#changes">What changed since the previous report</a> &middot; <a href="/data-study">Data study</a></p>
     </section>`;
 
   return shell({

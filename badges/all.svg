@@ -1,12 +1,12 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="340" height="100" viewBox="0 0 340 100" role="img" aria-labelledby="badge-title badge-desc">
   <title id="badge-title">All six Irish visa offices — latest official files</title>
-  <desc id="badge-desc">All six Irish visa offices: 62,920 decisions in the latest official files, 24 November 2026. Check status. Static snapshot, not a live feed.</desc>
+  <desc id="badge-desc">All six Irish visa offices: 63,057 decisions in the latest official files, 25 November 2026. Check status. Static snapshot, not a live feed.</desc>
   <rect width="340" height="100" rx="10" fill="#ffffff" stroke="#e2e8f0"/>
   <rect x="0" y="0" width="6" height="100" rx="3" fill="#059669"/>
   <text x="22" y="26" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="9.5" font-weight="700" letter-spacing="1.1" fill="#6b7280">IRISH VISA DECISION TRACKER</text>
   <rect x="262" y="14" width="66" height="18" rx="9" fill="#fef3c7"/>
   <text x="295" y="27" text-anchor="middle" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="9" font-weight="700" fill="#92400e">Check status</text>
   <text x="22" y="50" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="18" font-weight="700" fill="#111827">All six offices</text>
-  <text x="22" y="71" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#4b5563">24 Nov 2026 &#183; 62,920 decisions &#183; 82.1% approved</text>
+  <text x="22" y="71" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#4b5563">25 Nov 2026 &#183; 63,057 decisions &#183; 82.1% approved</text>
   <text x="318" y="88" text-anchor="end" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="9.5" fill="#6b7280">Latest official files</text>
 </svg>

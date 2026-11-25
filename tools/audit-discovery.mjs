@@ -35,12 +35,29 @@ export function auditDiscovery({ distDir = path.join(ROOT, '.pages-dist'), root 
     return { failures: [`missing ${path.relative(root, sitemapFile)}; run npm run build first`], warnings, checked: 0 };
   }
   const sitemap = read(sitemapFile);
-  const entries = [...sitemap.matchAll(/<url>\s*<loc>([^<]+)<\/loc>([\s\S]*?)<\/url>/g)]
+  // The build publishes a sitemap index with one child per page family. Read
+  // every child so the crawl-path checks still see the full URL set.
+  const sitemapDocuments = [];
+  if (/<sitemapindex\b/.test(sitemap)) {
+    for (const match of sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)) {
+      const childName = path.basename(pathnameOf(match[1]));
+      const childFile = path.join(distDir, childName);
+      if (!fs.existsSync(childFile)) {
+        failures.push(`sitemap index references a missing child: ${childName}`);
+        continue;
+      }
+      sitemapDocuments.push(read(childFile));
+    }
+    if (!sitemapDocuments.length) failures.push('sitemap index has no readable child sitemap');
+  } else {
+    sitemapDocuments.push(sitemap);
+  }
+  const entries = sitemapDocuments.flatMap((document) => [...document.matchAll(/<url>\s*<loc>([^<]+)<\/loc>([\s\S]*?)<\/url>/g)]
     .map((match) => ({
       loc: match[1],
       pathname: pathnameOf(match[1]),
       lastmod: (match[2].match(/<lastmod>([^<]+)<\/lastmod>/) || [])[1] || '',
-    }));
+    })));
   const seen = new Set();
   for (const entry of entries) {
     if (seen.has(entry.pathname)) failures.push(`sitemap duplicates ${entry.pathname}`);
@@ -145,6 +162,7 @@ export function auditDiscovery({ distDir = path.join(ROOT, '.pages-dist'), root 
     checked: entries.length,
     reportPermalinks,
     datePages,
+    sitemapDocuments: sitemapDocuments.length,
   };
 }
 

@@ -45,7 +45,45 @@
         "@type": "GovernmentOffice",
         "name": "Embassy of Ireland, New Delhi"
       },
-      "dateModified": "2026-11-24"
+      "author": {
+        "@id": "https://irishvisaupdatetracker.pages.dev/#author"
+      },
+      "publisher": {
+        "@id": "https://irishvisaupdatetracker.pages.dev/#organization"
+      },
+      "dateModified": "2026-11-25",
+      "breadcrumb": {
+        "@id": "https://irishvisaupdatetracker.pages.dev/new-delhi-visa-decisions#breadcrumb"
+      }
+    },
+    {
+      "@type": "Person",
+      "@id": "https://irishvisaupdatetracker.pages.dev/#author",
+      "name": "Parth Soni",
+      "url": "https://irishvisaupdatetracker.pages.dev/about",
+      "sameAs": [
+        "https://github.com/parth-soni-10/Irish-Visa-Tracker"
+      ]
+    },
+    {
+      "@type": "Organization",
+      "@id": "https://irishvisaupdatetracker.pages.dev/#organization",
+      "name": "Irish Visa Decision Tracker",
+      "url": "https://irishvisaupdatetracker.pages.dev/",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://irishvisaupdatetracker.pages.dev/icon-512.png",
+        "width": 512,
+        "height": 512
+      },
+      "founder": {
+        "@id": "https://irishvisaupdatetracker.pages.dev/#author"
+      },
+      "sameAs": [
+        "https://github.com/parth-soni-10/Irish-Visa-Tracker"
+      ],
+      "publishingPrinciples": "https://irishvisaupdatetracker.pages.dev/about#method",
+      "correctionsPolicy": "https://irishvisaupdatetracker.pages.dev/corrections"
     },
     {
       "@type": "BreadcrumbList",
@@ -70,10 +108,11 @@
       "@id": "https://irishvisaupdatetracker.pages.dev/new-delhi-visa-decisions#dataset",
       "name": "Irish Visa Decision Tracker — New Delhi visa decisions",
       "description": "Published New Delhi visa decisions, searchable by application number and updated from the office’s official reports.",
-      "url": "https://irishvisaupdatetracker.pages.dev/data/visa_decisions.json",
+      "url": "https://irishvisaupdatetracker.pages.dev/data-study",
+      "sameAs": "https://irishvisaupdatetracker.pages.dev/data-study",
       "encodingFormat": "application/json",
       "isAccessibleForFree": true,
-      "dateModified": "2026-11-24",
+      "dateModified": "2026-11-25",
       "spatialCoverage": [
         "India",
         "Bangladesh",
@@ -82,7 +121,8 @@
       ],
       "variableMeasured": [
         "Approved",
-        "Refused"
+        "Refused",
+        "Report date"
       ],
       "creator": {
         "@type": "Organization",
@@ -90,7 +130,35 @@
         "name": "Irish Visa Decision Tracker",
         "url": "https://irishvisaupdatetracker.pages.dev/"
       },
-      "license": "https://irishvisaupdatetracker.pages.dev/terms"
+      "author": {
+        "@id": "https://irishvisaupdatetracker.pages.dev/#author"
+      },
+      "publisher": {
+        "@id": "https://irishvisaupdatetracker.pages.dev/#organization"
+      },
+      "isBasedOn": "https://www.ireland.ie/en/india/newdelhi/services/visas/processing-times-and-decisions/",
+      "license": "https://irishvisaupdatetracker.pages.dev/terms",
+      "citation": "Parth Soni. Irish Visa Decision Tracker: published visa decisions by office [Data set]. https://irishvisaupdatetracker.pages.dev/data-study",
+      "distribution": [
+        {
+          "@type": "DataDownload",
+          "name": "New Delhi decision rows (JSON)",
+          "contentUrl": "https://irishvisaupdatetracker.pages.dev/data/visa_decisions.json",
+          "encodingFormat": "application/json"
+        },
+        {
+          "@type": "DataDownload",
+          "name": "File metadata for all six offices (JSON)",
+          "contentUrl": "https://irishvisaupdatetracker.pages.dev/data/data_manifest.json",
+          "encodingFormat": "application/json"
+        },
+        {
+          "@type": "DataDownload",
+          "name": "Office summary and monthly volume (CSV)",
+          "contentUrl": "https://irishvisaupdatetracker.pages.dev/data/study/office-summary.csv",
+          "encodingFormat": "text/csv"
+        }
+      ]
     },
     {
       "@type": "FAQPage",
@@ -149,7 +217,7 @@
           "name": "How many decisions are in the latest New Delhi file?",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "The file dated 23 November 2026 contains 43,800 decisions: 36,932 approved and 6,868 refused."
+            "text": "The file dated 24 November 2026 contains 43,937 decisions: 37,019 approved and 6,918 refused."
           }
         }
       ]
@@ -263,15 +331,15 @@
       </div>
       <p class="small-note" id="office-search-new-delhi-note">The 8-digit number on your receipt or decision email. An IRL prefix, spaces and dashes are optional. <a href="/?tracker=visa&amp;tab=search">Search all six offices</a>.</p>
     </form>
-    <p class="office-freshness" data-freshness="new-delhi">New Delhi — latest official report: 23 November 2026 &middot; 43,800 decisions &middot; checked 24 November 2026 &middot; Official <span class="office-freshness-observation">Tracker observed decisions dated through 24 November 2026; these are not in the 23 November 2026 official file.</span></p>
+    <p class="office-freshness" data-freshness="new-delhi">New Delhi — latest official report: 24 November 2026 &middot; 43,937 decisions &middot; checked 25 November 2026 &middot; Official <span class="office-freshness-observation">Tracker observed decisions dated through 25 November 2026; these are not in the 24 November 2026 official file.</span></p>
 
     <p class="page-lede">The Embassy of Ireland in New Delhi — the New Delhi Visa Office, or NDVO — publishes a cumulative list of Irish visa decisions each morning. It covers applicants from India, Bangladesh, Nepal and Sri Lanka. This page tracks the latest file, the office’s published processing times and what the list can and cannot tell you about an application.</p>
 
     <div class="status-grid">
-        <div class="status-card"><span class="status-kicker" data-office="latest-label">Latest official file</span><strong data-office="latest-date">23 November 2026</strong><span data-office="latest-note">Report date</span></div>
-        <div class="status-card"><span class="status-kicker">Decisions</span><strong data-office="decisions">43,800</strong><span>In the latest file</span></div>
-        <div class="status-card"><span class="status-kicker">Approved</span><strong data-office="approved">36,932</strong><span><span data-office="approval-share">84.3%</span> of decisions</span></div>
-        <div class="status-card"><span class="status-kicker">Refused</span><strong data-office="refused">6,868</strong><span><span data-office="refused-share">15.7%</span> of decisions</span></div>
+        <div class="status-card"><span class="status-kicker" data-office="latest-label">Latest official file</span><strong data-office="latest-date">24 November 2026</strong><span data-office="latest-note">Report date</span></div>
+        <div class="status-card"><span class="status-kicker">Decisions</span><strong data-office="decisions">43,937</strong><span>In the latest file</span></div>
+        <div class="status-card"><span class="status-kicker">Approved</span><strong data-office="approved">37,019</strong><span><span data-office="approval-share">84.3%</span> of decisions</span></div>
+        <div class="status-card"><span class="status-kicker">Refused</span><strong data-office="refused">6,918</strong><span><span data-office="refused-share">15.7%</span> of decisions</span></div>
       </div>
     <p class="small-note">The tracker’s searchable history covers <strong data-office="history">132 days with published decisions</strong>, from 12 July 2026.</p>
 
@@ -296,10 +364,10 @@
           <caption>Latest New Delhi file</caption>
           <thead><tr><th>Measure</th><th>Value</th></tr></thead>
           <tbody>
-            <tr><th>Report date</th><td data-office="latest-date">23 November 2026</td></tr>
-            <tr><th>Decisions</th><td data-office="decisions">43,800</td></tr>
-            <tr><th>Approved</th><td><span data-office="approved">36,932</span> (<span data-office="approval-share">84.3%</span>)</td></tr>
-            <tr><th>Refused</th><td><span data-office="refused">6,868</span> (<span data-office="refused-share">15.7%</span>)</td></tr>
+            <tr><th>Report date</th><td data-office="latest-date">24 November 2026</td></tr>
+            <tr><th>Decisions</th><td data-office="decisions">43,937</td></tr>
+            <tr><th>Approved</th><td><span data-office="approved">37,019</span> (<span data-office="approval-share">84.3%</span>)</td></tr>
+            <tr><th>Refused</th><td><span data-office="refused">6,918</span> (<span data-office="refused-share">15.7%</span>)</td></tr>
             <tr><th>Latest official-file day</th><td><span data-office="latest-day">20 November 2026: 65 decisions (58 approved, 7 refused)</span></td></tr>
             <tr><th>Tracker’s latest day</th><td><span data-office="tracker-latest">24 November 2026: 201 decisions (163 approved, 38 refused; partial day, not in the 23 November 2026 official file)</span></td></tr>
             <tr><th>Searchable history</th><td data-office="archive">132 days with published decisions, from 12 July 2026</td></tr>
@@ -308,7 +376,35 @@
         </table>
       </div>
       <p class="small-note">Source: <a href="https://www.ireland.ie/en/india/newdelhi/services/visas/processing-times-and-decisions/" target="_blank" rel="noopener noreferrer">Embassy of Ireland, New Delhi — processing times and decisions</a>. The table links the latest ingested source file.</p>
-      <p class="small-note">The tracker checked the source on <span data-office="checked-date">24 November 2026</span>. The approval share describes the published rows, not the chance that a particular application will be approved.</p>
+      <p class="small-note">The tracker checked the source on <span data-office="checked-date">25 November 2026</span>. The approval share describes the published rows, not the chance that a particular application will be approved.</p>
+    </section>
+
+    <section id="office-analysis">
+      <h2>What the New Delhi file shows over time</h2>
+      <p>Published rows, read as a series: how often this office publishes, how large its files are, what share of the published decisions are approvals, and where the file stops being able to answer a question.</p>
+      <div data-office-analysis="new-delhi">
+        <div class="table-wrap" role="region" aria-label="New Delhi file measures" tabindex="0">
+        <table class="office-table">
+          <caption>Latest published file and how it accumulates</caption>
+          <thead><tr><th scope="col">Measure</th><th scope="col">Value</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">File kind</th><td>Cumulative list, republished each morning</td></tr>
+            <tr><th scope="row">Latest file date</th><td>24 November 2026</td></tr>
+            <tr><th scope="row">Decisions</th><td>43,937</td></tr>
+            <tr><th scope="row">Approval share</th><td>84.3%</td></tr>
+            <tr><th scope="row">Searchable history</th><td>132 days with published decisions, from 12 July 2026</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>The file is cumulative: the latest total is the current published count, not a daily figure. Growth between two files is publication output, not demand.</p>
+      <h3>What this file cannot tell you</h3>
+      <ul>
+        <li>It cannot tell you that your application was decided on a particular day, or why a decision was made. The file carries an outcome, not a reason.</li>
+        <li>It does not publish an application-date queue, nationality, visa category or applicant demographics.</li>
+        <li>A number that is absent is not a refusal. It may be unpublished, in another office’s file, or written differently on your receipt.</li>
+      </ul>
+      <p class="small-note">Approval share is approved published rows divided by published rows: it describes the file, not the chance that a particular application will be approved. <a href="/about#method">Method and sources</a> · <a href="/corrections">Correction ledger</a> · <a href="/data-study">Data study</a></p>
+      </div>
     </section>
 
     <section id="report-history">
@@ -319,7 +415,7 @@
           <caption>Recent reports in the tracker’s public archive, newest first. At most 8 rows are shown; consecutive unchanged snapshots are collapsed into one row.</caption>
           <thead><tr><th scope="col">Report date</th><th scope="col">Decisions</th><th scope="col">Approved</th><th scope="col">Refused</th><th scope="col">Approval rate</th><th scope="col">Official source</th></tr></thead>
           <tbody data-report-history="new-delhi">
-            <tr><td><time datetime="2026-11-23">23 November 2026</time></td><td>43,800</td><td>36,932</td><td>6,868</td><td>84.3%</td><td><a href="https://www.ireland.ie/5351/20261123_NDVO_Visa_Decisions.ods" target="_blank" rel="noopener noreferrer">Official source</a></td></tr>
+            <tr><td><time datetime="2026-11-24">24 November 2026</time></td><td>43,937</td><td>37,019</td><td>6,918</td><td>84.3%</td><td><a href="https://www.ireland.ie/5351/20261123_NDVO_Visa_Decisions.ods" target="_blank" rel="noopener noreferrer">Official source</a></td></tr>
           </tbody>
         </table>
       </div>
@@ -393,7 +489,18 @@
       <p class="small-note">This is an independent, unofficial tracker. It is not affiliated with the Embassy of Ireland, ISD or any Irish government body, and it is not immigration advice. If a row is wrong or missing, report it with the office, report date and source URL through the <a href="/corrections">correction ledger</a>.</p>
     </section>
 
-    <p class="small-note"><strong>Cite this page:</strong> Irish Visa Decision Tracker, “New Delhi visa decisions,” https://irishvisaupdatetracker.pages.dev/new-delhi-visa-decisions. Updated 23 November 2026. <a href="/press">Citation and reuse</a> · <a href="/data-study">Data study</a>.</p>
+    <section id="who-runs-this-page">
+      <h2>Who runs this page and how it is checked</h2>
+      <p>The Irish Visa Decision Tracker is built and maintained by <strong>Parth Soni</strong>. It is an independent, unofficial project: not affiliated with the Embassy of Ireland, the Immigration Service Delivery or any Irish government body, and not immigration advice.</p>
+      <ul>
+        <li><strong>Method and sources</strong> — how each office file is read, what a report date means and where every count comes from: <a href="/about#method">method and sources</a>.</li>
+        <li><strong>Corrections</strong> — a wrong or missing row is logged with its office, report date and source URL in the <a href="/corrections">public correction ledger</a>. Report one through <a href="/contact#feedback">contact and corrections</a>.</li>
+        <li><strong>Freshness</strong> — the data date on this page is the last successful read of the office’s own file, not the build date. <a href="/status">Data status</a> shows every office.</li>
+        <li><strong>Source code</strong> — the generator and the data pipeline are public at <a href="https://github.com/parth-soni-10/Irish-Visa-Tracker" rel="noopener">GitHub</a>.</li>
+      </ul>
+    </section>
+
+    <p class="small-note"><strong>Cite this page:</strong> Irish Visa Decision Tracker, “New Delhi visa decisions,” https://irishvisaupdatetracker.pages.dev/new-delhi-visa-decisions. Updated 24 November 2026. <a href="/press">Citation and reuse</a> · <a href="/data-study">Data study</a>.</p>
 
     <section>
       <h2>Frequently asked questions</h2>
@@ -411,11 +518,11 @@
         <h3>Does an Approved result mean my passport is ready?</h3>
         <p>No. The list records the decision, not the passport’s location. Wait for the official decision letter and the VFS return process.</p>
         <h3>How many decisions are in the latest New Delhi file?</h3>
-        <p>The file dated 23 November 2026 contains 43,800 decisions: 36,932 approved and 6,868 refused.</p>
+        <p>The file dated 24 November 2026 contains 43,937 decisions: 37,019 approved and 6,918 refused.</p>
       </div>
     </section>
 
-    <p class="page-nav"><a href="/beijing-visa-decisions">Beijing visa decisions</a> · <a href="/abu-dhabi-visa-decisions">Abu Dhabi visa decisions</a> · <a href="/abuja-visa-decisions">Abuja visa decisions</a> · <a href="/ankara-visa-decisions">Ankara visa decisions</a> · <a href="/dublin-visa-decisions">Dublin visa decisions</a> · <a href="/irish-visa-decisions-today">Irish visa decisions today</a> · <a href="/visa-processing-times">Processing times</a> · <a href="/daily-summaries">New Delhi decisions by date</a> · <a href="/help">Help</a></p>
+    <p class="page-nav"><a href="/beijing-visa-decisions">Irish visa decisions in Beijing</a> · <a href="/abu-dhabi-visa-decisions">Irish visa decisions in Abu Dhabi</a> · <a href="/abuja-visa-decisions">Irish visa decisions in Abuja</a> · <a href="/ankara-visa-decisions">Irish visa decisions in Ankara</a> · <a href="/dublin-visa-decisions">Irish visa decisions in Dublin</a> · <a href="/irish-visa-decisions-today">Irish visa decisions today</a> · <a href="/visa-processing-times">Processing times</a> · <a href="/daily-summaries">New Delhi decisions by date</a> · <a href="/data-study">Data study</a> · <a href="/monthly-report#story-package">Monthly story package</a> · <a href="/press">Press kit</a> · <a href="/help">Help</a></p>
   </main>
   <!-- site-footer:start -->
   <footer class="sitebar-footer">

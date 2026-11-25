@@ -1,5 +1,6 @@
 {
   "title": "Irish Visa Decision Tracker: published visa decisions by office",
+  "upload_type": "dataset",
   "description": "Published Irish visa decision counts for New Delhi, Beijing, Dublin, Abu Dhabi, Abuja and Ankara, compiled from the offices' official files. The tracker is independent and unofficial; underlying decisions remain the publications of the Irish embassies and the Immigration Service Delivery.",
   "creators": [
     {

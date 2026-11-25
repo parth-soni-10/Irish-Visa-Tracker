@@ -150,7 +150,10 @@ test("daily summaries is scoped to New Delhi and links the cross-office view", a
   assert.match(html, /<h1>New Delhi Ireland visa decisions by date<\/h1>/);
   assert.match(html, /<meta name="description" content="Day-by-day approved and refused counts from the Embassy of Ireland in New Delhi/);
   assert.match(html, /<strong>New Delhi only\.<\/strong>/);
-  assert.match(html, /href="\/irish-visa-decisions-today">Irish visa decisions today<\/a>/);
+  assert.match(html, /href="\/irish-visa-decisions-today">latest Irish visa decisions today<\/a>/);
+  assert.match(html, /href="\/irish-visa-decisions-today#changes">what changed since the previous report<\/a>/);
+  assert.match(html, /<section id="recent-days">/);
+  assert.match(html, /class="office-table stack-table"/);
   assert.doesNotMatch(html, /<title>Ireland Visa Decisions by Date/);
 });
 

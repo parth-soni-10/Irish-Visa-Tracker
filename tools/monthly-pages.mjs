@@ -34,6 +34,16 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const SITE = SITE_ORIGIN;
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July',
   'August', 'September', 'October', 'November', 'December'];
+// The monthly report is one of the places a search visitor lands without ever
+// seeing the homepage, so it links every office page by its descriptive name.
+const OFFICE_PAGES = [
+  ['new-delhi', 'New Delhi visa decisions'],
+  ['beijing', 'Beijing visa decisions'],
+  ['abu-dhabi', 'Abu Dhabi visa decisions'],
+  ['abuja', 'Abuja visa decisions'],
+  ['ankara', 'Ankara visa decisions'],
+  ['dublin', 'Dublin visa decisions'],
+];
 const HTML_ESCAPES = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
 const esc = (value) => String(value == null ? '' : value).replace(/[&<>"']/g, (char) => HTML_ESCAPES[char]);
 const num = (value) => Number(value || 0).toLocaleString('en-IE');
@@ -128,6 +138,66 @@ function changesHtml(changes) {
       <p class="note">Window: ${esc(longDate(changes.window.start))} to ${esc(longDate(changes.window.end))}.</p>
       <p class="note">Headline counts cover dated decisions; office totals are cumulative.</p>
       ${updates.length ? `<h3>Office reports</h3><ul class="feed">${updates.map((office) => `<li><strong>${esc(office.name)}</strong> <span class="pill">latest</span><span class="meta">Report date ${esc(longDate(office.report_date))}</span></li>`).join('')}</ul>` : ''}`;
+}
+
+/**
+ * The press package for a month.
+ *
+ * A reporter does not need another table; they need one defensible finding, a
+ * ready-to-publish sentence, the method behind it and a way to check it. Every
+ * number here comes from the same monthly report rendered on the page, so the
+ * pitch cannot drift from the data.
+ */
+function storyPackage(report, route = '/monthly-report') {
+  const totals = report.totals || {};
+  const change = report.change || {};
+  const total = Number(totals.total) || 0;
+  const approved = Number(totals.approved) || 0;
+  const refused = Number(totals.refused) || 0;
+  const rate = Number(totals.approval_rate) || 0;
+  const changeTotal = Number(change.total) || 0;
+  const partial = isPartialMonth(report);
+  const monthLabelText = partial ? `${monthLabel(report.month)} to date` : monthLabel(report.month);
+  const earlier = monthLabel(report.previous_month);
+  const direction = changeTotal > 0 ? 'rose' : changeTotal < 0 ? 'fell' : 'was unchanged';
+  const changeCopy = changeTotal === 0
+    ? `unchanged from ${earlier}`
+    : `${num(Math.abs(changeTotal))} ${changeTotal > 0 ? 'more' : 'fewer'} dated decisions than ${earlier}`;
+  const offices = Array.isArray(report.offices) ? report.offices : [];
+  const busiest = offices.slice().sort((a, b) => (Number(b.total) || 0) - (Number(a.total) || 0))[0];
+  // The newest month lives at /monthly-report; completed months get their own
+  // permalink. Linking a month page that this build does not emit is a 404.
+  const permalink = `${SITE}${route}`;
+  const summary = `In ${monthLabelText}, the official Irish visa decision files recorded ${num(total)} dated decisions: ${num(approved)} approved (${pct(rate)}) and ${num(refused)} refused. That is ${changeCopy}.`
+    + (busiest && Number(busiest.total) > 0 ? ` ${busiest.name} accounted for the largest published share, with ${num(busiest.total)} dated decisions.` : '')
+    + ' The figures count decisions published in official files, not applications received, and they do not describe any individual application.';
+  const subject = `Data: ${monthLabelText} Irish visa decisions — ${num(total)} decisions, ${pct(rate)} approved`;
+
+  return `<section class="panel" id="story-package" aria-labelledby="story-package-heading">
+      <h2 id="story-package-heading">Story package: ${esc(monthLabelText)}</h2>
+      <p class="note">One finding, one paragraph, the method and the files. Use it in a student paper, a data-journalism class or a newsroom; attribution and a link are the only conditions.</p>
+      <p class="story-headline"><strong>${esc(monthLabelText)}: ${num(total)} dated decisions, ${pct(rate)} approved.</strong>
+        Published volume ${direction} ${changeTotal === 0 ? 'against' : `by ${num(Math.abs(changeTotal))} against`} ${esc(earlier)}.</p>
+      <div class="story-summary">
+        <p>${esc(summary)}</p>
+      </div>
+      <p class="note"><strong>Method.</strong> Counts come from dated official reports: Abu Dhabi, Abuja and Ankara publish reporting periods, New Delhi's cumulative file is tracked by observation date and excluded from dated totals, and Beijing and Dublin publish snapshots shown separately. A correction by an office can change a month after publication. Full method: <a href="/about#method">/about#method</a>. Corrections: <a href="/corrections">correction ledger</a>.</p>
+      <h3>Pitch ready to send</h3>
+      <div class="story-pitch">
+        <p><strong>Subject:</strong> ${esc(subject)}</p>
+        <p>I maintain the Irish Visa Decision Tracker, an independent record of the decision files published by the six Irish visa offices. ${esc(monthLabelText)} recorded ${num(total)} dated decisions, ${pct(rate)} of them approvals — ${esc(changeCopy)}. The month's report, the office breakdown and the underlying CSV are free and linkable: ${permalink}. I can send a chart or a cut of the data for your audience, and I am happy to answer questions about what the files do and do not show.</p>
+      </div>
+      <p class="study-downloads">
+        <a class="button" href="${esc(route)}">Month permalink</a>
+        <a class="button" href="/api/reports/monthly?month=${esc(report.month)}">Monthly JSON</a>
+        <a class="button" href="/data/study/office-summary.csv">Office summary CSV</a>
+        <a class="button" href="/data/study/monthly-volume.csv">Monthly volume CSV</a>
+        <a class="button" href="/embed">Embeddable badge</a>
+        <a class="button" href="/press">Press and citation kit</a>
+      </p>
+      <p class="note"><strong>Office pages:</strong> ${OFFICE_PAGES.map(([slug, label]) => `<a href="/${slug}-visa-decisions">${label}</a>`).join(' · ')}. <a href="/all-pages">All pages</a>.</p>
+      <p class="note">Check the figures against this page before publishing: the month is rebuilt from the latest official files, so a number quoted from an earlier copy can change. The sentence above is safe to reuse verbatim with attribution to the Irish Visa Decision Tracker.</p>
+    </section>`;
 }
 
 function archiveNav(months, current, latest) {
@@ -256,6 +326,7 @@ ${monthlySchemaBlock(report, route, title, description)}
         <tbody>${dailyRows(report)}</tbody>
       </table></div>
     </section>
+    ${storyPackage(report, route)}
     <section class="panel" aria-labelledby="digest-heading">
       <h2 id="digest-heading">Get the monthly report by email</h2>
       <p class="note">One email a month with the report and the week’s change summary. Double opt-in; unsubscribe from every email.</p>
@@ -301,6 +372,10 @@ function injectLatest(shell, report, months, latestMonth, freshness) {
   html = html.replace(/(<tbody id="office-rows">)[\s\S]*?(<\/tbody>)/, `$1${officeRows(report)}$2`);
   html = html.replace(/(<tbody id="daily-rows">)[\s\S]*?(<\/tbody>)/, `$1${dailyRows(report)}$2`);
   html = html.replace(/<div id="changes-body">[\s\S]*?<\/div>/, `<div id="changes-body">${changesHtml(report.changes)}</div>`);
+  // The story package is regenerated each build; drop an earlier copy first so
+  // the checked-in shell cannot accumulate one per month.
+  html = html.replace(/<section class="panel" id="story-package"[\s\S]*?<\/section>\s*/g, '');
+  html = html.replace(/(\s*<section class="panel" aria-labelledby="digest-heading">)/, `\n    ${storyPackage(report)}$1`);
   html = html.replace(/<nav class="month-nav"[\s\S]*?<\/nav>\s*/g, '');
   html = html.replace('  <div class="cards" id="summary-cards"', `  ${archiveNav(months, report.month, latestMonth)}\n\n  <div class="cards" id="summary-cards"`);
   // The interactive shell is also a checked-in generated page, so a previous

@@ -1,0 +1,16 @@
+{
+  "note": "A DOI can only be minted by depositing a dated snapshot with a repository such as Zenodo; the site cannot create one. Leave doi and doiUrl null until a deposit returns them. When both are set, the office Dataset markup emits an identifier and citation. See docs/data-citation.md for the deposit and catalog steps.",
+  "doi": null,
+  "doiUrl": null,
+  "repository": "Zenodo",
+  "title": "Irish Visa Decision Tracker: published visa decisions by office",
+  "creator": "Parth Soni",
+  "citationUrl": "https://irishvisaupdatetracker.pages.dev/data-study",
+  "catalogStatus": {
+    "zenodo": "not deposited",
+    "datacite": "not registered",
+    "openaire": "not registered",
+    "re3data": "not registered",
+    "googleDatasetSearch": "blocked until a DOI or a Dataset-url crawl exists"
+  }
+}

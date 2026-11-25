@@ -1,0 +1,30 @@
+{
+  "title": "Irish Visa Decision Tracker: published visa decisions by office",
+  "description": "Published Irish visa decision counts for New Delhi, Beijing, Dublin, Abu Dhabi, Abuja and Ankara, compiled from the offices' official files. Version 2026-11-25 contains 63,057 decisions in the latest files across 6 offices. The tracker is independent and unofficial; underlying decisions remain the publications of the Irish embassies and the Immigration Service Delivery.",
+  "creators": [
+    {
+      "name": "Soni, Parth"
+    }
+  ],
+  "publication_date": "2026-11-25",
+  "version": "2026-11-25",
+  "access_right": "open",
+  "keywords": [
+    "Irish visa",
+    "visa decisions",
+    "immigration data",
+    "Ireland"
+  ],
+  "related_identifiers": [
+    {
+      "identifier": "https://irishvisaupdatetracker.pages.dev/data-study",
+      "relation": "isDocumentedBy",
+      "scheme": "url"
+    },
+    {
+      "identifier": "https://irishvisaupdatetracker.pages.dev/data/snapshots/2026-11-25/metadata.json",
+      "relation": "isSupplementedBy",
+      "scheme": "url"
+    }
+  ]
+}

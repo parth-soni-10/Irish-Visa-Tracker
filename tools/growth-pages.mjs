@@ -278,7 +278,7 @@ function allPagesPage(data, archives) {
       <h2>Start here</h2>
       <ul class="study-list">
         <li><a href="/">Search the tracker</a> — check an application number across all six offices.</li>
-        <li><a href="/irish-visa-decisions-today">Latest decisions today</a> — the newest file from each office.</li>
+        <li><a href="/irish-visa-decisions-today">Latest Irish visa decisions today</a> — the newest file from each office, and <a href="/irish-visa-decisions-today#changes">what changed since the previous report</a>.</li>
         <li><a href="/find-my-office">Find my visa office</a> — country, category and application date.</li>
         <li><a href="/after-approval">After approval</a> and <a href="/after-refusal">after refusal</a> — what to check next.</li>
         <li><a href="/missing-decision">Missing or changed office</a> — what a missing number does and does not mean.</li>
@@ -289,8 +289,8 @@ function allPagesPage(data, archives) {
     <section>
       <h2>Decisions and data</h2>
       <ul class="study-list">
-        <li><a href="/daily-summaries">Daily summaries</a> — every published day and its counts.</li>
-        <li><a href="/monthly-report">Monthly report</a> — dated decisions by month.</li>
+        <li><a href="/daily-summaries">New Delhi daily counts</a> — every published day and its counts.</li>
+        <li><a href="/monthly-report">Monthly report</a> — dated decisions by month, with a publishable <a href="/monthly-report#story-package">story package</a>.</li>
         <li><a href="/reports">Official report archive</a> — every report and snapshot check.</li>
         <li><a href="/data">Open data</a> — JSON, CSV, definitions and citation terms.</li>
         <li><a href="/data-study">Data study</a> — approval shares, volume and limits.</li>
@@ -397,7 +397,7 @@ function decisionsIndexPage(data, archives) {
     <section>
       <h2>Why some dates are missing</h2>
       <p>A date page is only published for a weekday with at least 10 decisions in the archived reports. That prevents thousands of thin pages for weekends, bank holidays and days when an office did not publish. The absence of a date page is not a statement about any application.</p>
-      <p class="page-nav"><a href="/reports">Official report archive</a> &middot; <a href="/all-pages">All pages</a> &middot; <a href="/daily-summaries">Daily summaries</a></p>
+      <p class="page-nav"><a href="/reports">Official report archive</a> &middot; <a href="/all-pages">All pages</a> &middot; <a href="/daily-summaries">Ireland visa decisions by date</a></p>
     </section>`;
   return shell({
     route: '/decisions',

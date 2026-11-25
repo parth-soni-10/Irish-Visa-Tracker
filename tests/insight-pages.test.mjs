@@ -244,7 +244,7 @@ test("every archived report gets a source-linked permalink and no duplicate snap
   assert.match(page, new RegExp(latest.source_file.replace(/&/g, "&amp;")));
   assert.match(page, new RegExp(`${SITE}/reports/new-delhi/${latest.report_date}`));
   assert.match(page, /BreadcrumbList/);
-  assert.match(page, /href="\/irish-visa-decisions-today">Current cross-office view<\/a>/);
+  assert.match(page, /href="\/irish-visa-decisions-today#changes">What changed since the previous report<\/a>/);
 
   const dublinDates = new Set(
     archive.offices.dublin.map((entry) => `${entry.decisions}|${entry.approved}|${entry.refused}|${entry.source_file}`),
@@ -264,7 +264,8 @@ test("every archived report gets a source-linked permalink and no duplicate snap
   assert.match(reportsIndex, /Tracker observed/);
   assert.match(reportsIndex, /Dates and provenance/);
   assert.match(reportsIndex, /href="\/new-delhi-visa-decisions">New Delhi visa decisions<\/a>/);
-  assert.match(reportsIndex, /href="\/irish-visa-decisions-today">Latest decisions today<\/a>/);
+  assert.match(reportsIndex, /href="\/irish-visa-decisions-today">Latest Irish visa decisions today<\/a>/);
+  assert.match(reportsIndex, /href="\/irish-visa-decisions-today#changes">What changed since the previous report<\/a>/);
 
   // The wide report tables stack on phones, so every value cell needs its
   // column label in the markup and the permalink key/value tables are marked.

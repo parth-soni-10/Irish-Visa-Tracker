@@ -45,7 +45,45 @@
         "@type": "GovernmentOffice",
         "name": "Embassy of Ireland, Beijing"
       },
-      "dateModified": "2026-11-21"
+      "author": {
+        "@id": "https://irishvisaupdatetracker.pages.dev/#author"
+      },
+      "publisher": {
+        "@id": "https://irishvisaupdatetracker.pages.dev/#organization"
+      },
+      "dateModified": "2026-11-21",
+      "breadcrumb": {
+        "@id": "https://irishvisaupdatetracker.pages.dev/beijing-visa-decisions#breadcrumb"
+      }
+    },
+    {
+      "@type": "Person",
+      "@id": "https://irishvisaupdatetracker.pages.dev/#author",
+      "name": "Parth Soni",
+      "url": "https://irishvisaupdatetracker.pages.dev/about",
+      "sameAs": [
+        "https://github.com/parth-soni-10/Irish-Visa-Tracker"
+      ]
+    },
+    {
+      "@type": "Organization",
+      "@id": "https://irishvisaupdatetracker.pages.dev/#organization",
+      "name": "Irish Visa Decision Tracker",
+      "url": "https://irishvisaupdatetracker.pages.dev/",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://irishvisaupdatetracker.pages.dev/icon-512.png",
+        "width": 512,
+        "height": 512
+      },
+      "founder": {
+        "@id": "https://irishvisaupdatetracker.pages.dev/#author"
+      },
+      "sameAs": [
+        "https://github.com/parth-soni-10/Irish-Visa-Tracker"
+      ],
+      "publishingPrinciples": "https://irishvisaupdatetracker.pages.dev/about#method",
+      "correctionsPolicy": "https://irishvisaupdatetracker.pages.dev/corrections"
     },
     {
       "@type": "BreadcrumbList",
@@ -70,7 +108,8 @@
       "@id": "https://irishvisaupdatetracker.pages.dev/beijing-visa-decisions#dataset",
       "name": "Irish Visa Decision Tracker — Beijing visa decisions",
       "description": "Published Beijing visa decisions, searchable by application number and updated from the office’s official reports.",
-      "url": "https://irishvisaupdatetracker.pages.dev/data/embassy-beijing.json",
+      "url": "https://irishvisaupdatetracker.pages.dev/data-study",
+      "sameAs": "https://irishvisaupdatetracker.pages.dev/data-study",
       "encodingFormat": "application/json",
       "isAccessibleForFree": true,
       "dateModified": "2026-11-21",
@@ -82,7 +121,8 @@
       ],
       "variableMeasured": [
         "Approved",
-        "Refused"
+        "Refused",
+        "Report date"
       ],
       "creator": {
         "@type": "Organization",
@@ -90,7 +130,35 @@
         "name": "Irish Visa Decision Tracker",
         "url": "https://irishvisaupdatetracker.pages.dev/"
       },
-      "license": "https://irishvisaupdatetracker.pages.dev/terms"
+      "author": {
+        "@id": "https://irishvisaupdatetracker.pages.dev/#author"
+      },
+      "publisher": {
+        "@id": "https://irishvisaupdatetracker.pages.dev/#organization"
+      },
+      "isBasedOn": "https://www.ireland.ie/en/china/beijing/services/visas/visa-decisions/",
+      "license": "https://irishvisaupdatetracker.pages.dev/terms",
+      "citation": "Parth Soni. Irish Visa Decision Tracker: published visa decisions by office [Data set]. https://irishvisaupdatetracker.pages.dev/data-study",
+      "distribution": [
+        {
+          "@type": "DataDownload",
+          "name": "Beijing decision rows (JSON)",
+          "contentUrl": "https://irishvisaupdatetracker.pages.dev/data/embassy-beijing.json",
+          "encodingFormat": "application/json"
+        },
+        {
+          "@type": "DataDownload",
+          "name": "File metadata for all six offices (JSON)",
+          "contentUrl": "https://irishvisaupdatetracker.pages.dev/data/data_manifest.json",
+          "encodingFormat": "application/json"
+        },
+        {
+          "@type": "DataDownload",
+          "name": "Office summary and monthly volume (CSV)",
+          "contentUrl": "https://irishvisaupdatetracker.pages.dev/data/study/office-summary.csv",
+          "encodingFormat": "text/csv"
+        }
+      ]
     },
     {
       "@type": "FAQPage",
@@ -294,6 +362,34 @@
       <p class="small-note">The tracker checked the source on <span data-office="checked-date">21 November 2026</span>. The approval share describes the published rows, not the chance that a particular application will be approved.</p>
     </section>
 
+    <section id="office-analysis">
+      <h2>What the Beijing file shows over time</h2>
+      <p>Published rows, read as a series: how often this office publishes, how large its files are, what share of the published decisions are approvals, and where the file stops being able to answer a question.</p>
+      <div data-office-analysis="beijing">
+        <div class="table-wrap" role="region" aria-label="Beijing file measures" tabindex="0">
+        <table class="office-table">
+          <caption>Latest published file and how it accumulates</caption>
+          <thead><tr><th scope="col">Measure</th><th scope="col">Value</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">File kind</th><td>Snapshot of one published list</td></tr>
+            <tr><th scope="row">Latest file date</th><td>1 November 2026</td></tr>
+            <tr><th scope="row">Decisions</th><td>13,724</td></tr>
+            <tr><th scope="row">Approval share</th><td>82.9%</td></tr>
+            <tr><th scope="row">Searchable history</th><td>1 snapshot · 13,724 decisions</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>The tracker holds a single published list for Beijing, so this page does not claim a trend across time. A recent decision may not appear until the office publishes a newer file.</p>
+      <h3>What this file cannot tell you</h3>
+      <ul>
+        <li>It cannot tell you that your application was decided on a particular day, or why a decision was made. The file carries an outcome, not a reason.</li>
+        <li>It does not publish an application-date queue, nationality, visa category or applicant demographics.</li>
+        <li>A number that is absent is not a refusal. It may be unpublished, in another office’s file, or written differently on your receipt.</li>
+      </ul>
+      <p class="small-note">Approval share is approved published rows divided by published rows: it describes the file, not the chance that a particular application will be approved. <a href="/about#method">Method and sources</a> · <a href="/corrections">Correction ledger</a> · <a href="/data-study">Data study</a></p>
+      </div>
+    </section>
+
     <section id="report-history">
       <h2>Recent report history</h2>
       <p>Beijing publishes a cumulative decision file rather than dated daily reports. The tracker holds the latest snapshot, so this table has a single row.</p>
@@ -362,6 +458,17 @@
       <p class="small-note">This is an independent, unofficial tracker. It is not affiliated with the Embassy of Ireland, ISD or any Irish government body, and it is not immigration advice. If a row is wrong or missing, report it with the office, report date and source URL through the <a href="/corrections">correction ledger</a>.</p>
     </section>
 
+    <section id="who-runs-this-page">
+      <h2>Who runs this page and how it is checked</h2>
+      <p>The Irish Visa Decision Tracker is built and maintained by <strong>Parth Soni</strong>. It is an independent, unofficial project: not affiliated with the Embassy of Ireland, the Immigration Service Delivery or any Irish government body, and not immigration advice.</p>
+      <ul>
+        <li><strong>Method and sources</strong> — how each office file is read, what a report date means and where every count comes from: <a href="/about#method">method and sources</a>.</li>
+        <li><strong>Corrections</strong> — a wrong or missing row is logged with its office, report date and source URL in the <a href="/corrections">public correction ledger</a>. Report one through <a href="/contact#feedback">contact and corrections</a>.</li>
+        <li><strong>Freshness</strong> — the data date on this page is the last successful read of the office’s own file, not the build date. <a href="/status">Data status</a> shows every office.</li>
+        <li><strong>Source code</strong> — the generator and the data pipeline are public at <a href="https://github.com/parth-soni-10/Irish-Visa-Tracker" rel="noopener">GitHub</a>.</li>
+      </ul>
+    </section>
+
     <p class="small-note"><strong>Cite this page:</strong> Irish Visa Decision Tracker, “Beijing visa decisions,” https://irishvisaupdatetracker.pages.dev/beijing-visa-decisions. Updated 1 November 2026. <a href="/press">Citation and reuse</a> · <a href="/data-study">Data study</a>.</p>
 
     <section>
@@ -380,7 +487,7 @@
       </div>
     </section>
 
-    <p class="page-nav"><a href="/new-delhi-visa-decisions">New Delhi visa decisions</a> · <a href="/abu-dhabi-visa-decisions">Abu Dhabi visa decisions</a> · <a href="/abuja-visa-decisions">Abuja visa decisions</a> · <a href="/ankara-visa-decisions">Ankara visa decisions</a> · <a href="/dublin-visa-decisions">Dublin visa decisions</a> · <a href="/irish-visa-decisions-today">Irish visa decisions today</a> · <a href="/visa-processing-times">Processing times</a> · <a href="/daily-summaries">Daily summaries</a> · <a href="/help">Help</a></p>
+    <p class="page-nav"><a href="/new-delhi-visa-decisions">New Delhi Irish visa decisions</a> · <a href="/abu-dhabi-visa-decisions">Irish visa decisions in Abu Dhabi</a> · <a href="/abuja-visa-decisions">Irish visa decisions in Abuja</a> · <a href="/ankara-visa-decisions">Irish visa decisions in Ankara</a> · <a href="/dublin-visa-decisions">Irish visa decisions in Dublin</a> · <a href="/irish-visa-decisions-today">Irish visa decisions today</a> · <a href="/visa-processing-times">Processing times</a> · <a href="/daily-summaries">New Delhi decisions by date</a> · <a href="/data-study">Data study</a> · <a href="/monthly-report#story-package">Monthly story package</a> · <a href="/press">Press kit</a> · <a href="/help">Help</a></p>
   </main>
   <!-- site-footer:start -->
   <footer class="sitebar-footer">

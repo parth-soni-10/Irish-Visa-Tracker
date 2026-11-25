@@ -24,7 +24,16 @@ test('the growth hub has a plain link path and a quality-gated date archive', as
     assert.ok(allPages.includes(`href="/${slug}-visa-decisions"`), `all-pages links ${slug}`);
   }
   assert.match(allPages, /"@type": "CollectionPage"/);
-  assert.match(allPages, /"dateModified": "2026-11-24"/);
+  // The hub's dateModified is the newest publication across the six offices,
+  // not a fixed date: pinning it made every data commit fail this test.
+  const reports = JSON.parse(await readFile(path.join(ROOT, "data", "reports", "index.json"), "utf8"));
+  const newest = Object.values(reports.offices || {})
+    .flat()
+    .map((entry) => String(entry && entry.report_date || "").slice(0, 10))
+    .filter((date) => /^\d{4}-\d{2}-\d{2}$/.test(date))
+    .sort()
+    .at(-1);
+  assert.match(allPages, new RegExp(`"dateModified": "${newest}"`));
   assert.match(allPages, /"hasPart":/);
   assert.match(allPages, /\/reports\/new-delhi/);
   assert.match(allPages, /\/reports\/new-delhi\/2026-11-23/);

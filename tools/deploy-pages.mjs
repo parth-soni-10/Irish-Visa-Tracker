@@ -14,6 +14,9 @@ import { buildGrowthPages } from './growth-pages.mjs';
 import { buildMonthlyPages } from './monthly-pages.mjs';
 import { buildSocialCards } from './social-cards.mjs';
 import { buildLastmodMap, updateSitemap } from './sitemap-lastmod.mjs';
+import { splitSitemap } from './sitemap-index.mjs';
+import { officeAnalysis, officeAnalysisHtml } from './office-analysis.mjs';
+import { injectDailyRecent } from './daily-recent.mjs';
 import { loadFreshness, writeFreshness, longDate, checkedStamp, timeHTML, SNAPSHOT_OFFICES } from './freshness.mjs';
 import { freshnessFooterHTML, freshnessHistoryHTML } from './freshness-ui.mjs';
 import { versionAssets } from './version-assets.mjs';
@@ -441,13 +444,15 @@ function reportHistoryHtml(office, reports, decisionSummary = new Map()) {
  * figures as the dashboard. The checked-in HTML carries the same sentence as
  * a fallback for local development.
  */
-function injectLiveSummary() {
+export function injectLiveSummary(options = {}) {
+  const assetsRoot = path.resolve(options.assetsRootDir || assetsRootDir);
+  const dist = path.resolve(options.distDir || distDir);
   // visa_meta.fileDate is null on a weekend/holiday run (the scraper
   // deliberately preserves the last file date), which used to leave the
   // checked-in "19 November / checked 20 November" sentence frozen in the
   // build. Read the manifest instead: it carries the report date, the count
   // and the actual fetch time for every office.
-  const freshness = loadFreshness(assetsRootDir);
+  const freshness = loadFreshness(assetsRoot);
   const office = freshness.bySlug['new-delhi'];
   if (!office || !office.report_date) return;
 
@@ -461,7 +466,7 @@ function injectLiveSummary() {
     `). Checked ${checked}.${observation}`;
 
   for (const page of ['index.html', 'daily-summaries.html']) {
-    const file = path.resolve(distDir, page);
+    const file = path.resolve(dist, page);
     if (!fs.existsSync(file)) continue;
     const html = fs.readFileSync(file, 'utf8').replace(
       /(<p[^>]*data-live-summary[^>]*>)[\s\S]*?(<\/p>)/,
@@ -471,7 +476,7 @@ function injectLiveSummary() {
   }
 
   // Keep the daily summaries freshness line fresh for no-JavaScript readers too.
-  const dailyPath = path.resolve(distDir, 'daily-summaries.html');
+  const dailyPath = path.resolve(dist, 'daily-summaries.html');
   if (fs.existsSync(dailyPath)) {
     const iso = String(office.checked_at || office.report_date).slice(0, 10);
     const daily = fs.readFileSync(dailyPath, 'utf8')
@@ -648,6 +653,16 @@ export function injectOfficePages(options = {}) {
     html = replaceFields(html, 'data-report-history', {
       [office.slug]: reportHistoryHtml(office, reports, decisionSummary),
     });
+    // The analysis section is rebuilt from the whole archived series so an
+    // office page never shows a stale cadence or a summed cumulative file.
+    const analysis = officeAnalysis(
+      office.slug,
+      (reports && reports.offices && reports.offices[office.slug]) || [],
+      { checkedDate: String(canonical && (canonical.last_success_at || canonical.checked_at) || '').slice(0, 10) },
+    );
+    html = replaceFields(html, 'data-office-analysis', {
+      [office.slug]: officeAnalysisHtml(analysis, { name: office.name }),
+    });
 
     // Every office page gets a current-fact snippet: the named office query,
     // the latest official publication date, the countries covered and the
@@ -744,6 +759,41 @@ export function injectHomeLatestReports(options = {}) {
   if (updated === html) return;
   fs.writeFileSync(pagePath, updated);
   console.log(`Homepage latest reports: ${rows.length} office links.`);
+}
+
+/** Homepage office cards: the six descriptive anchors already exist, and this
+ *  adds the one fact a reader deciding where to click needs - the size and date
+ *  of that office's latest published file. Built from freshness.json so the
+ *  card cannot disagree with the office page's own header. */
+export function injectHomeOfficeCards(options = {}) {
+  const assetsRoot = path.resolve(options.assetsRootDir || assetsRootDir);
+  const dist = path.resolve(options.distDir || distDir);
+  const pagePath = path.resolve(dist, 'index.html');
+  if (!fs.existsSync(pagePath)) return;
+  const freshness = loadFreshness(assetsRoot);
+  if (!freshness.offices.length) return;
+  let html = fs.readFileSync(pagePath, 'utf8');
+  let changed = 0;
+  for (const office of freshness.offices) {
+    if (!office || !office.slug) continue;
+    const route = `/${office.slug}-visa-decisions`;
+    if (!fs.existsSync(path.resolve(dist, `${office.slug}-visa-decisions.html`))) continue;
+    const decisions = Number(office.decisions) || 0;
+    const date = String(office.report_date || '').slice(0, 10);
+    if (!decisions || !/^\d{4}-\d{2}-\d{2}$/.test(date)) continue;
+    const label = office.snapshot ? 'snapshot' : 'file';
+    const stat = `${decisions.toLocaleString('en-IE')} decisions in the ${longDate(date)} ${label}`;
+    const pattern = new RegExp(
+      `(<li><a href="${route.replace(/[/-]/g, (char) => `\\${char}`)}"><strong>([^<]+)</strong><span>([^<]*)</span>)</a></li>`,
+    );
+    if (!pattern.test(html)) continue;
+    html = html.replace(pattern, (match, open, name, countries) =>
+      `${open}<span class="office-directory-stat">${escapeHtml(stat)}</span></a></li>`);
+    changed += 1;
+  }
+  if (!changed) return;
+  fs.writeFileSync(pagePath, html);
+  console.log(`Homepage office cards: ${changed} latest-file counts.`);
 }
 
 /** The status page's static latest-report table. Kept separate from the
@@ -900,9 +950,11 @@ function writeContentDatesModule() {
   fs.writeFileSync(target, body);
 }
 
-function injectDailyToday() {
-  const decisionsPath = path.resolve(assetsRootDir, 'data', 'visa_decisions.json');
-  const pagePath = path.resolve(distDir, 'daily-summaries.html');
+export function injectDailyToday(options = {}) {
+  const assetsRoot = path.resolve(options.assetsRootDir || assetsRootDir);
+  const dist = path.resolve(options.distDir || distDir);
+  const decisionsPath = path.resolve(assetsRoot, 'data', 'visa_decisions.json');
+  const pagePath = path.resolve(dist, 'daily-summaries.html');
   if (!fs.existsSync(decisionsPath) || !fs.existsSync(pagePath)) return;
   let rows;
   try {
@@ -922,7 +974,7 @@ function injectDailyToday() {
   // newest tracker row: the 20 Nov rows are a partial day that is not in the
   // 19 Nov file, and calling them "latest published" contradicted every other
   // surface on the site.
-  const freshness = loadFreshness(assetsRootDir);
+  const freshness = loadFreshness(assetsRoot);
   const newDelhi = freshness.bySlug['new-delhi'];
   const cutoff = String(newDelhi?.report_date || '').slice(0, 10);
   const eligibleDates = [...byDate.keys()].filter((date) => !cutoff || date <= cutoff).sort();
@@ -1078,6 +1130,8 @@ async function main() {
   injectOfficeFreshness();
   injectLatestReports();
   injectDailyToday();
+  const dailyRecent = injectDailyRecent({ assetsRootDir, distDir });
+  console.log(`Daily recent table: ${dailyRecent.written ? `${dailyRecent.days} day(s)` : dailyRecent.reason}.`);
   injectTodayLine();
   bundleIndexAssets();
   injectHomepageDates();
@@ -1100,6 +1154,7 @@ async function main() {
   // Run after the report permalinks exist so a row never points at a page this
   // build did not emit.
   injectHomeLatestReports();
+  injectHomeOfficeCards();
 
   const monthly = await buildMonthlyPages({ assetsRootDir, distDir });
   console.log(`Monthly report: ${monthly.pages} pages, latest ${monthly.latestMonth}, ${monthly.months.length} archived month(s).`);
@@ -1115,6 +1170,10 @@ async function main() {
     buildLastmodMap(assetsRootDir),
   );
   console.log(`Sitemap lastmod: ${lastmod.updated} URL(s), ${lastmod.removed} static URL(s) without lastmod.`);
+
+  const sitemapIndex = splitSitemap(distDir, { siteOrigin: SITE_ORIGIN });
+  console.log(`Sitemap index: ${sitemapIndex.total} URL(s) — `
+    + `${Object.entries(sitemapIndex.counts).map(([family, count]) => `${family} ${count}`).join(', ')}.`);
 
   rewriteSiteOrigin();
   const assetVersion = versionAssets(distDir);

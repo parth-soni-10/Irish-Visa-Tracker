@@ -29,7 +29,7 @@
   "name": "Embed the latest official file badge",
   "description": "Static SVG badges for the latest Irish visa decision files.",
   "inLanguage": "en",
-  "dateModified": "2026-11-24",
+  "dateModified": "2026-11-25",
   "isPartOf": {
     "@id": "https://irishvisaupdatetracker.pages.dev/#website"
   }
@@ -127,10 +127,10 @@
   <main id="main-content" tabindex="-1" class="page">
     <p class="page-kicker">Embedded badge</p>
     <h1>Embed the latest official file</h1>
-    <p class="page-meta">Static SVG &bull; No tracking &bull; No application data &bull; Six offices</p>
-    <p class="page-freshness small-note"><strong>Data freshness:</strong> six offices — latest publications dated 1 November 2026 to 24 November 2026 · offices last successfully checked 18 November 2026 to 24 November 2026 · New Delhi official decisions through 23 November 2026 · tracker observed through 24 November 2026 (not in the official file) · 2 offices need attention: Beijing, Abuja. <a href="/status">All six offices</a>.</p>
+    <p class="page-meta">Static SVG &bull; No tracking &bull; No application data &bull; One office or all six</p>
+    <p class="page-freshness small-note"><strong>Data freshness:</strong> six offices — latest publications dated 1 November 2026 to 25 November 2026 · offices last successfully checked 18 November 2026 to 25 November 2026 · New Delhi official decisions through 24 November 2026 · tracker observed through 25 November 2026 (not in the official file) · 2 offices need attention: Beijing, Abuja. <a href="/status">All six offices</a>.</p>
 
-    <p class="page-lede">A small badge for a forum post, student page or resource list. It shows one office's latest report date, decision count and approval share, and links back to that office's tracker page. The image is a static SVG: no script, no cookie and no applicant-level data.</p>
+    <p class="page-lede">A small badge for a forum post, student page or resource list. It shows the latest report date, decision count and approval share for one office or all six, with a current/check-status label, and links back to the relevant tracker page. The image is a static SVG: no script, no cookie and no applicant-level data.</p>
 
     <p class="callout"><strong>Keep the alt text.</strong> The snippet below includes a descriptive <code>alt</code> attribute, which is what screen readers and search engines see. Change the office name in the snippet, not the data.</p>
 
@@ -138,14 +138,27 @@
       <h2>Choose a badge</h2>
       <div class="badge-grid">
       <div class="badge-card">
-        <img src="/badges/new-delhi.svg" alt="New Delhi: 43,800 decisions in the latest official file, 23 November 2026" width="340" height="100" loading="lazy">
+        <img src="/badges/all.svg" alt="All six Irish visa offices: 63,057 decisions in the latest official files, 25 November 2026" width="340" height="100" loading="lazy">
+        <p class="badge-card-title">All six offices</p>
+        <p class="small-note">One badge for a resource list, with the latest publication date and combined count.</p>
+        <details class="embed-details">
+          <summary>Copy the all-six snippet</summary>
+          <pre class="embed-code" tabindex="0"><code>&lt;a href=&quot;https://irishvisaupdatetracker.pages.dev/irish-visa-decisions-today&quot; rel=&quot;noopener&quot;&gt;
+  &lt;img src=&quot;https://irishvisaupdatetracker.pages.dev/badges/all.svg&quot;
+       alt=&quot;All six Irish visa offices: 63,057 decisions in the latest official files, 25 November 2026&quot;
+       width=&quot;340&quot; height=&quot;100&quot; loading=&quot;lazy&quot;&gt;
+&lt;/a&gt;</code></pre>
+        </details>
+      </div>
+      <div class="badge-card">
+        <img src="/badges/new-delhi.svg" alt="New Delhi: 43,937 decisions in the latest official file, 24 November 2026" width="340" height="100" loading="lazy">
         <p class="badge-card-title">New Delhi</p>
         <p class="small-note">Updates when the site is rebuilt from the latest official file.</p>
         <details class="embed-details">
           <summary>Copy the New Delhi snippet</summary>
           <pre class="embed-code" tabindex="0"><code>&lt;a href=&quot;https://irishvisaupdatetracker.pages.dev/new-delhi-visa-decisions&quot; rel=&quot;noopener&quot;&gt;
   &lt;img src=&quot;https://irishvisaupdatetracker.pages.dev/badges/new-delhi.svg&quot;
-       alt=&quot;New Delhi: 43,800 decisions in the latest official file, 23 November 2026&quot;
+       alt=&quot;New Delhi: 43,937 decisions in the latest official file, 24 November 2026&quot;
        width=&quot;340&quot; height=&quot;100&quot; loading=&quot;lazy&quot;&gt;
 &lt;/a&gt;</code></pre>
         </details>
@@ -203,14 +216,14 @@
         </details>
       </div>
       <div class="badge-card">
-        <img src="/badges/dublin.svg" alt="Dublin: 4,848 decisions in the latest official file, 24 November 2026" width="340" height="100" loading="lazy">
+        <img src="/badges/dublin.svg" alt="Dublin: 4,848 decisions in the latest official file, 25 November 2026" width="340" height="100" loading="lazy">
         <p class="badge-card-title">Dublin</p>
         <p class="small-note">Updates when the site is rebuilt from the latest official file.</p>
         <details class="embed-details">
           <summary>Copy the Dublin snippet</summary>
           <pre class="embed-code" tabindex="0"><code>&lt;a href=&quot;https://irishvisaupdatetracker.pages.dev/dublin-visa-decisions&quot; rel=&quot;noopener&quot;&gt;
   &lt;img src=&quot;https://irishvisaupdatetracker.pages.dev/badges/dublin.svg&quot;
-       alt=&quot;Dublin: 4,848 decisions in the latest official file, 24 November 2026&quot;
+       alt=&quot;Dublin: 4,848 decisions in the latest official file, 25 November 2026&quot;
        width=&quot;340&quot; height=&quot;100&quot; loading=&quot;lazy&quot;&gt;
 &lt;/a&gt;</code></pre>
         </details>
@@ -222,7 +235,9 @@
       <h2>Markdown version</h2>
       <p>For a README or Markdown post, replace <code>new-delhi</code> with the office slug you need.</p>
       <pre class="embed-code" tabindex="0"><code>[![New Delhi latest official file](https://irishvisaupdatetracker.pages.dev/badges/new-delhi.svg)](https://irishvisaupdatetracker.pages.dev/new-delhi-visa-decisions)</code></pre>
-      <p class="small-note">Badges inherit the site's no-store policy so a deploy's numbers are never stale. They are rebuilt from the public manifest, so the numbers always match the office page at the time of the last deploy.</p>
+      <p class="small-note">For all six offices:</p>
+      <pre class="embed-code" tabindex="0"><code>[![All six Irish visa offices](https://irishvisaupdatetracker.pages.dev/badges/all.svg)](https://irishvisaupdatetracker.pages.dev/irish-visa-decisions-today)</code></pre>
+      <p class="small-note">Badges are rebuilt from the public manifest at deploy time. They are static snapshots, not a live feed; the current/check-status label is the quickest way to see whether the underlying office data is fresh.</p>
     </section>
 
     <section>
@@ -230,15 +245,16 @@
       <ul class="study-list">
         <li><strong>Office and report date</strong> — the latest official file the tracker holds.</li>
         <li><strong>Decisions and approval share</strong> — published rows in that file, not an applicant's odds.</li>
+        <li><strong>Current or check status</strong> — “Current” means the newest official file passed its check; “Check status” means the office is stale, overdue or the last check failed. The label is not a promise that a newer unpublished file does not exist.</li>
         <li><strong>No personal data</strong> — application numbers never appear in the image or its URL.</li>
       </ul>
       <p class="page-nav"><a href="/data-study">Data study</a> &middot; <a href="/press">Press &amp; citation</a> &middot; <a href="/reports">Report archive</a></p>
     </section>
   <section class="freshness-footer" data-freshness-footer aria-labelledby="freshness-footer-title">
       <h2 id="freshness-footer-title">Dates and provenance</h2>
-      <p class="small-note"><strong>Latest office publications:</strong> 1 November 2026 to 24 November 2026 &middot;
-        <strong>Last successful check:</strong> <time datetime="2026-11-24T13:06:49.444Z" data-iv-time="2026-11-24T13:06:49.444Z" data-iv-time-format="full">24 Nov 2026, 13:06 UTC</time> &middot;
-        <strong>Last attempt:</strong> <time datetime="2026-11-24T13:06:51.405Z" data-iv-time="2026-11-24T13:06:51.405Z" data-iv-time-format="full">24 Nov 2026, 13:06 UTC</time>.</p>
+      <p class="small-note"><strong>Latest office publications:</strong> 1 November 2026 to 25 November 2026 &middot;
+        <strong>Last successful check:</strong> <time datetime="2026-11-25T11:31:15.986Z" data-iv-time="2026-11-25T11:31:15.986Z" data-iv-time-format="full">25 Nov 2026, 11:31 UTC</time> &middot;
+        <strong>Last attempt:</strong> <time datetime="2026-11-25T11:31:18.888Z" data-iv-time="2026-11-25T11:31:18.888Z" data-iv-time-format="full">25 Nov 2026, 11:31 UTC</time>.</p>
       <div class="table-wrap" role="region" aria-label="Official publication and check provenance" tabindex="0">
         <table class="office-table stack-table">
           <caption>Each office keeps its report date, official data-through date and tracker observations separate</caption>
@@ -246,50 +262,50 @@
           <tbody>
             <tr>
           <th scope="row"><a href="/new-delhi-visa-decisions">New Delhi</a></th>
-          <td data-label="Latest official report"><time datetime="2026-11-23">23 November 2026</time></td>
-          <td data-label="Official data through"><time datetime="2026-11-23">23 November 2026</time><br><span class="small-note" data-observation="tracker">Tracker observed through 24 November 2026</span></td>
-          <td data-label="Last successful check"><time datetime="2026-11-24T13:06:38.626Z" data-iv-time="2026-11-24T13:06:38.626Z" data-iv-time-format="full">24 Nov 2026, 13:06 UTC</time></td>
-          <td data-label="Last attempt"><time datetime="2026-11-24T13:06:51.405Z" data-iv-time="2026-11-24T13:06:51.405Z" data-iv-time-format="full">24 Nov 2026, 13:06 UTC</time></td>
-          <td data-label="Next expected">Expected 25 November 2026</td>
+          <td data-label="Latest official report"><time datetime="2026-11-24">24 November 2026</time></td>
+          <td data-label="Official data through"><time datetime="2026-11-24">24 November 2026</time><br><span class="small-note" data-observation="tracker">Tracker observed through 25 November 2026</span></td>
+          <td data-label="Last successful check"><time datetime="2026-11-25T11:31:00.925Z" data-iv-time="2026-11-25T11:31:00.925Z" data-iv-time-format="full">25 Nov 2026, 11:31 UTC</time></td>
+          <td data-label="Last attempt"><time datetime="2026-11-25T11:31:18.888Z" data-iv-time="2026-11-25T11:31:18.888Z" data-iv-time-format="full">25 Nov 2026, 11:31 UTC</time></td>
+          <td data-label="Next expected">Expected 26 November 2026</td>
         </tr>
         <tr>
           <th scope="row"><a href="/beijing-visa-decisions">Beijing</a></th>
           <td data-label="Latest official report"><time datetime="2026-11-01">1 November 2026</time></td>
           <td data-label="Official data through"><time datetime="2026-11-01">1 November 2026</time></td>
           <td data-label="Last successful check"><time datetime="2026-11-18T06:01:42.341Z" data-iv-time="2026-11-18T06:01:42.341Z" data-iv-time-format="full">18 Nov 2026, 06:01 UTC</time></td>
-          <td data-label="Last attempt"><time datetime="2026-11-24T13:06:51.405Z" data-iv-time="2026-11-24T13:06:51.405Z" data-iv-time-format="full">24 Nov 2026, 13:06 UTC</time></td>
+          <td data-label="Last attempt"><time datetime="2026-11-25T11:31:18.888Z" data-iv-time="2026-11-25T11:31:18.888Z" data-iv-time-format="full">25 Nov 2026, 11:31 UTC</time></td>
           <td data-label="Next expected">No fixed date</td>
         </tr>
         <tr>
           <th scope="row"><a href="/abu-dhabi-visa-decisions">Abu Dhabi</a></th>
           <td data-label="Latest official report"><time datetime="2026-11-20">20 November 2026</time></td>
           <td data-label="Official data through"><time datetime="2026-11-20">20 November 2026</time></td>
-          <td data-label="Last successful check"><time datetime="2026-11-24T13:06:40.332Z" data-iv-time="2026-11-24T13:06:40.332Z" data-iv-time-format="full">24 Nov 2026, 13:06 UTC</time></td>
-          <td data-label="Last attempt"><time datetime="2026-11-24T13:06:51.405Z" data-iv-time="2026-11-24T13:06:51.405Z" data-iv-time-format="full">24 Nov 2026, 13:06 UTC</time></td>
+          <td data-label="Last successful check"><time datetime="2026-11-25T11:31:03.258Z" data-iv-time="2026-11-25T11:31:03.258Z" data-iv-time-format="full">25 Nov 2026, 11:31 UTC</time></td>
+          <td data-label="Last attempt"><time datetime="2026-11-25T11:31:18.888Z" data-iv-time="2026-11-25T11:31:18.888Z" data-iv-time-format="full">25 Nov 2026, 11:31 UTC</time></td>
           <td data-label="Next expected">Expected 27 November 2026</td>
         </tr>
         <tr>
           <th scope="row"><a href="/abuja-visa-decisions">Abuja</a></th>
           <td data-label="Latest official report"><time datetime="2026-11-07">7 November 2026</time></td>
           <td data-label="Official data through"><time datetime="2026-11-07">7 November 2026</time></td>
-          <td data-label="Last successful check"><time datetime="2026-11-24T13:06:40.551Z" data-iv-time="2026-11-24T13:06:40.551Z" data-iv-time-format="full">24 Nov 2026, 13:06 UTC</time></td>
-          <td data-label="Last attempt"><time datetime="2026-11-24T13:06:51.405Z" data-iv-time="2026-11-24T13:06:51.405Z" data-iv-time-format="full">24 Nov 2026, 13:06 UTC</time></td>
+          <td data-label="Last successful check"><time datetime="2026-11-25T11:31:03.786Z" data-iv-time="2026-11-25T11:31:03.786Z" data-iv-time-format="full">25 Nov 2026, 11:31 UTC</time></td>
+          <td data-label="Last attempt"><time datetime="2026-11-25T11:31:18.888Z" data-iv-time="2026-11-25T11:31:18.888Z" data-iv-time-format="full">25 Nov 2026, 11:31 UTC</time></td>
           <td data-label="Next expected">Due since 14 November 2026; next 28 November 2026</td>
         </tr>
         <tr>
           <th scope="row"><a href="/ankara-visa-decisions">Ankara</a></th>
           <td data-label="Latest official report"><time datetime="2026-11-22">22 November 2026</time></td>
           <td data-label="Official data through"><time datetime="2026-11-22">22 November 2026</time></td>
-          <td data-label="Last successful check"><time datetime="2026-11-24T13:06:40.641Z" data-iv-time="2026-11-24T13:06:40.641Z" data-iv-time-format="full">24 Nov 2026, 13:06 UTC</time></td>
-          <td data-label="Last attempt"><time datetime="2026-11-24T13:06:51.405Z" data-iv-time="2026-11-24T13:06:51.405Z" data-iv-time-format="full">24 Nov 2026, 13:06 UTC</time></td>
+          <td data-label="Last successful check"><time datetime="2026-11-25T11:31:04.135Z" data-iv-time="2026-11-25T11:31:04.135Z" data-iv-time-format="full">25 Nov 2026, 11:31 UTC</time></td>
+          <td data-label="Last attempt"><time datetime="2026-11-25T11:31:18.888Z" data-iv-time="2026-11-25T11:31:18.888Z" data-iv-time-format="full">25 Nov 2026, 11:31 UTC</time></td>
           <td data-label="Next expected">Expected 29 November 2026</td>
         </tr>
         <tr>
           <th scope="row"><a href="/dublin-visa-decisions">Dublin</a></th>
-          <td data-label="Latest official report"><time datetime="2026-11-24">24 November 2026</time></td>
-          <td data-label="Official data through"><time datetime="2026-11-24">24 November 2026</time></td>
-          <td data-label="Last successful check"><time datetime="2026-11-24T13:06:49.444Z" data-iv-time="2026-11-24T13:06:49.444Z" data-iv-time-format="full">24 Nov 2026, 13:06 UTC</time></td>
-          <td data-label="Last attempt"><time datetime="2026-11-24T13:06:51.405Z" data-iv-time="2026-11-24T13:06:51.405Z" data-iv-time-format="full">24 Nov 2026, 13:06 UTC</time></td>
+          <td data-label="Latest official report"><time datetime="2026-11-25">25 November 2026</time></td>
+          <td data-label="Official data through"><time datetime="2026-11-25">25 November 2026</time></td>
+          <td data-label="Last successful check"><time datetime="2026-11-25T11:31:15.986Z" data-iv-time="2026-11-25T11:31:15.986Z" data-iv-time-format="full">25 Nov 2026, 11:31 UTC</time></td>
+          <td data-label="Last attempt"><time datetime="2026-11-25T11:31:18.888Z" data-iv-time="2026-11-25T11:31:18.888Z" data-iv-time-format="full">25 Nov 2026, 11:31 UTC</time></td>
           <td data-label="Next expected">Expected 1 December 2026</td>
         </tr>
           </tbody>

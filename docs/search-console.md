@@ -235,6 +235,45 @@ property yet:
 5. Commit the JSON and HTML with the weekly snapshot. Do not mark the page
    indexable; it is an operations page (`noindex, follow`).
 
+## Split sitemaps (per-family diagnostics)
+
+The build still assembles one URL list, then `tools/sitemap-index.mjs` writes four
+family sitemaps and turns `/sitemap.xml` into a sitemap index:
+
+| File | Contents |
+| --- | --- |
+| `/sitemap-pages.xml` | trust, guide, data and tool pages |
+| `/sitemap-offices.xml` | the six office pages and their report indexes |
+| `/sitemap-reports.xml` | dated report permalinks |
+| `/sitemap-decisions.xml` | `/decisions`, date pages and monthly archives |
+
+robots.txt still names `/sitemap.xml`; a sitemap index is a valid target. In
+Search Console, submit the index once, then read **Sitemaps → the child file**
+for the family you care about. Bing Webmaster shows the same split under
+Sitemaps.
+
+Why it matters: 130 URLs in one file make "office pages indexed, report
+permalinks ignored" invisible. With the split, the family totals are the
+diagnostic. It does not by itself make Google crawl anything; links and content
+do that.
+
+The build refuses to finish if a child sitemap is missing
+(`tools/audit-discovery.mjs`), and `npm run audit:bots` fetches every child so a
+wrong content type or a 404 is caught before it reaches an index.
+
+## Link reclamation
+
+Mentions that never became links are the cheapest links available. Record
+candidate pages in `data/link-reclamation.json`, then run:
+
+```bash
+npm run audit:links
+```
+
+Runbook, outreach rules and the monthly story package are in
+[`docs/link-building.md`](link-building.md). Dataset/DOI and catalog steps are in
+[`docs/data-citation.md`](data-citation.md).
+
 ## Measure the crawl after a change
 
 1. Use URL Inspection for the one URL that changed. Record its coverage state

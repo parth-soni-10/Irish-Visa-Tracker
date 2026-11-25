@@ -22,6 +22,14 @@ import { OFFICE_SEO } from './office-seo.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const SITE = SITE_ORIGIN;
+const REPOSITORY_URL = 'https://github.com/parth-soni-10/Irish-Visa-Tracker';
+// A DOI only exists after a deposit. The markup emits an identifier when the
+// checked-in identity file carries one and stays silent when it does not, so a
+// missing DOI is visible as a pending deposit rather than invented data.
+const DATASET_IDENTITY = (() => {
+  try { return JSON.parse(fs.readFileSync(path.join(ROOT, 'data', 'dataset-identity.json'), 'utf8')); }
+  catch { return {}; }
+})();
 const pct = (part, total) => `${total ? ((part / total) * 100).toFixed(1) : '0.0'}%`;
 const HTML_ESCAPES = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' };
 const esc = (value) => String(value).replace(/[&<>"]/g, (char) => HTML_ESCAPES[char]);
@@ -40,10 +48,10 @@ const OFFICES = [
     latestLabel: 'Latest official file',
     latestNote: 'Report date',
     fallback: {
-      latest: '2026-11-23', checked: '2026-11-24',
-      decisions: 43800, approved: 36932, refused: 6868,
+      latest: '2026-11-24', checked: '2026-11-25',
+      decisions: 43937, approved: 37019, refused: 6918,
       archive: '132 days with published decisions, from 12 July 2026',
-      observation: 'Tracker observed decisions dated through 24 November 2026; these are not in the 23 November 2026 official file.',
+      observation: 'Tracker observed decisions dated through 25 November 2026; these are not in the 24 November 2026 official file.',
     },
     sourceUrl: 'https://www.ireland.ie/en/india/newdelhi/services/visas/processing-times-and-decisions/',
     sourceName: 'Embassy of Ireland, New Delhi — processing times and decisions',
@@ -260,9 +268,9 @@ const OFFICES = [
     latestLabel: 'Latest weekly report',
     latestNote: 'Week ending',
     fallback: {
-      latest: '2026-11-15', checked: '2026-11-21',
-      decisions: 165, approved: 128, refused: 37,
-      archive: '5 weekly reports · 792 decisions',
+      latest: '2026-11-22', checked: '2026-11-25',
+      decisions: 217, approved: 192, refused: 25,
+      archive: '6 weekly reports · 1,008 decisions',
     },
     sourceUrl: 'https://www.ireland.ie/en/turkiye/ankara/services/visas/weekly-decision-report/',
     sourceName: 'Embassy of Ireland, Ankara — weekly decision report',
@@ -311,9 +319,9 @@ const OFFICES = [
     latestLabel: 'Latest snapshot',
     latestNote: 'Report date',
     fallback: {
-      latest: '2026-11-21', checked: '2026-11-21',
-      decisions: 4475, approved: 2624, refused: 1851,
-      archive: '1 snapshot · 4,475 decisions',
+      latest: '2026-11-25', checked: '2026-11-25',
+      decisions: 4848, approved: 2985, refused: 1863,
+      archive: '1 snapshot · 4,848 decisions',
     },
     sourceUrl: 'https://www.irishimmigration.ie/visa-decisions/',
     sourceName: 'Immigration Service Delivery — visa decisions',
@@ -359,6 +367,8 @@ function schemaFor(office) {
     name: question,
     acceptedAnswer: { '@type': 'Answer', text: answer },
   }));
+  const doi = String(DATASET_IDENTITY.doi || '').trim();
+  const doiUrl = String(DATASET_IDENTITY.doiUrl || '').trim();
   const graph = [
     {
       '@type': 'WebPage',
@@ -369,7 +379,33 @@ function schemaFor(office) {
       inLanguage: 'en',
       isPartOf: { '@id': `${SITE}/#website` },
       about: { '@type': 'GovernmentOffice', name: office.aboutName },
+      author: { '@id': `${SITE}/#author` },
+      publisher: { '@id': `${SITE}/#organization` },
       dateModified: f.checked,
+      breadcrumb: { '@id': `${SITE}${office.route}#breadcrumb` },
+    },
+    {
+      '@type': 'Person',
+      '@id': `${SITE}/#author`,
+      name: 'Parth Soni',
+      url: `${SITE}/about`,
+      sameAs: [REPOSITORY_URL],
+    },
+    {
+      '@type': 'Organization',
+      '@id': `${SITE}/#organization`,
+      name: 'Irish Visa Decision Tracker',
+      url: `${SITE}/`,
+      logo: {
+        '@type': 'ImageObject',
+        url: `${SITE}/icon-512.png`,
+        width: 512,
+        height: 512,
+      },
+      founder: { '@id': `${SITE}/#author` },
+      sameAs: [REPOSITORY_URL],
+      publishingPrinciples: `${SITE}/about#method`,
+      correctionsPolicy: `${SITE}/corrections`,
     },
     {
       '@type': 'BreadcrumbList',
@@ -384,19 +420,49 @@ function schemaFor(office) {
       '@id': `${SITE}${office.route}#dataset`,
       name: `Irish Visa Decision Tracker — ${office.name} visa decisions`,
       description: `Published ${office.name} visa decisions, searchable by application number and updated from the office’s official reports.`,
-      url: `${SITE}${office.dataUrl}`,
+      url: `${SITE}/data-study`,
+      sameAs: `${SITE}/data-study`,
       encodingFormat: 'application/json',
       isAccessibleForFree: true,
       dateModified: f.checked,
       spatialCoverage: office.coverage,
-      variableMeasured: ['Approved', 'Refused'],
+      variableMeasured: ['Approved', 'Refused', 'Report date'],
       creator: {
         '@type': 'Organization',
         '@id': `${SITE}/#organization`,
         name: 'Irish Visa Decision Tracker',
         url: `${SITE}/`,
       },
+      author: { '@id': `${SITE}/#author` },
+      publisher: { '@id': `${SITE}/#organization` },
+      isBasedOn: office.sourceUrl,
       license: `${SITE}/terms`,
+      citation: doiUrl
+        ? `${DATASET_IDENTITY.creator || 'Parth Soni'}. Irish Visa Decision Tracker: published visa decisions by office [Data set]. ${doiUrl}`
+        : `Parth Soni. Irish Visa Decision Tracker: published visa decisions by office [Data set]. ${SITE}/data-study`,
+      identifier: doi
+        ? { '@type': 'PropertyValue', propertyID: 'DOI', value: doi, url: doiUrl || `https://doi.org/${doi}` }
+        : undefined,
+      distribution: [
+        {
+          '@type': 'DataDownload',
+          name: `${office.name} decision rows (JSON)`,
+          contentUrl: `${SITE}${office.dataUrl}`,
+          encodingFormat: 'application/json',
+        },
+        {
+          '@type': 'DataDownload',
+          name: 'File metadata for all six offices (JSON)',
+          contentUrl: `${SITE}/data/data_manifest.json`,
+          encodingFormat: 'application/json',
+        },
+        {
+          '@type': 'DataDownload',
+          name: 'Office summary and monthly volume (CSV)',
+          contentUrl: `${SITE}/data/study/office-summary.csv`,
+          encodingFormat: 'text/csv',
+        },
+      ],
     },
     {
       '@type': 'FAQPage',
@@ -454,6 +520,45 @@ function reportHistory(office) {
     </section>`;
 }
 
+/** The checked-in copy of the analysis block. The deploy replaces it with
+ *  figures computed from the whole report archive (tools/office-analysis.mjs),
+ *  so this fallback states the file kind and the limits without inventing a
+ *  series the source tree does not hold. */
+function analysisPlaceholder(office) {
+  const f = office.fallback;
+  const kind = office.slug === 'new-delhi'
+    ? 'Cumulative list, republished each morning'
+    : office.snapshot
+      ? 'Snapshot of one published list'
+      : 'Separate weekly reporting periods';
+  const kindNote = office.slug === 'new-delhi'
+    ? 'The file is cumulative: the latest total is the current published count, not a daily figure. Growth between two files is publication output, not demand.'
+    : office.snapshot
+      ? `The tracker holds a single published list for ${office.name}, so this page does not claim a trend across time. A recent decision may not appear until the office publishes a newer file.`
+      : 'Each archived report covers its own period, and its date is the end of that period, not the date of an individual decision inside it.';
+  return `<div class="table-wrap" role="region" aria-label="${esc(office.name)} file measures" tabindex="0">
+        <table class="office-table">
+          <caption>Latest published file and how it accumulates</caption>
+          <thead><tr><th scope="col">Measure</th><th scope="col">Value</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">File kind</th><td>${kind}</td></tr>
+            <tr><th scope="row">Latest file date</th><td>${longDate(f.latest)}</td></tr>
+            <tr><th scope="row">Decisions</th><td>${f.decisions.toLocaleString('en-IE')}</td></tr>
+            <tr><th scope="row">Approval share</th><td>${pct(f.approved, f.decisions)}</td></tr>
+            <tr><th scope="row">Searchable history</th><td>${esc(f.archive)}</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>${kindNote}</p>
+      <h3>What this file cannot tell you</h3>
+      <ul>
+        <li>It cannot tell you that your application was decided on a particular day, or why a decision was made. The file carries an outcome, not a reason.</li>
+        <li>It does not publish an application-date queue, nationality, visa category or applicant demographics.</li>
+        <li>A number that is absent is not a refusal. It may be unpublished, in another office’s file, or written differently on your receipt.</li>
+      </ul>
+      <p class="small-note">Approval share is approved published rows divided by published rows: it describes the file, not the chance that a particular application will be approved. <a href="/about#method">Method and sources</a> · <a href="/corrections">Correction ledger</a> · <a href="/data-study">Data study</a></p>`;
+}
+
 function faqSection(office) {
   const faq = office.faq(office.fallback);
   return `<section>
@@ -465,11 +570,19 @@ function faqSection(office) {
 }
 
 function related(office) {
+  // One office-qualified anchor per destination. "Beijing decisions" alone is
+  // ambiguous once the anchor is read outside this page; "Irish visa decisions
+  // in Beijing" carries both the head term and the office.
+  const anchorFor = (item) => item.slug === 'new-delhi'
+    ? 'New Delhi Irish visa decisions'
+    : `Irish visa decisions in ${item.name}`;
   const links = OFFICES.filter((item) => item.slug !== office.slug)
-    .map((item) => `<a href="${item.route}">${item.name} visa decisions</a>`)
+    .map((item) => `<a href="${item.route}">${anchorFor(item)}</a>`)
     .join(' · ');
-  const dailyLabel = office.slug === 'new-delhi' ? 'New Delhi decisions by date' : 'Daily summaries';
-  return `<p class="page-nav">${links} · <a href="/irish-visa-decisions-today">Irish visa decisions today</a> · <a href="/visa-processing-times">Processing times</a> · <a href="/daily-summaries">${dailyLabel}</a> · <a href="/help">Help</a></p>`;
+  // The daily page is New Delhi only, so the descriptive label is the same on
+  // every office page; "Daily summaries" stays in the global navigation.
+  const dailyLabel = 'New Delhi decisions by date';
+  return `<p class="page-nav">${links} · <a href="/irish-visa-decisions-today">Irish visa decisions today</a> · <a href="/visa-processing-times">Processing times</a> · <a href="/daily-summaries">${dailyLabel}</a> · <a href="/data-study">Data study</a> · <a href="/monthly-report#story-package">Monthly story package</a> · <a href="/press">Press kit</a> · <a href="/help">Help</a></p>`;
 }
 
 function officeSearch(office) {
@@ -557,6 +670,14 @@ ${schemaFor(office)}
       <p class="small-note">The tracker checked the source on <span data-office="checked-date">${longDate(f.checked)}</span>. The approval share describes the published rows, not the chance that a particular application will be approved.</p>
     </section>
 
+    <section id="office-analysis">
+      <h2>What the ${office.name} file shows over time</h2>
+      <p>Published rows, read as a series: how often this office publishes, how large its files are, what share of the published decisions are approvals, and where the file stops being able to answer a question.</p>
+      <div data-office-analysis="${office.slug}">
+        ${analysisPlaceholder(office)}
+      </div>
+    </section>
+
     ${reportHistory(office)}
 
     <section>
@@ -604,6 +725,17 @@ ${schemaFor(office)}
       <p>Source: <a href="${office.sourceUrl}" target="_blank" rel="noopener noreferrer">${office.sourceName}</a>. Public data: <a href="${office.dataUrl}">${office.dataUrl}</a>.</p>
       ${office.dataNoteHtml}
       <p class="small-note">This is an independent, unofficial tracker. It is not affiliated with the Embassy of Ireland, ISD or any Irish government body, and it is not immigration advice. If a row is wrong or missing, report it with the office, report date and source URL through the <a href="/corrections">correction ledger</a>.</p>
+    </section>
+
+    <section id="who-runs-this-page">
+      <h2>Who runs this page and how it is checked</h2>
+      <p>The Irish Visa Decision Tracker is built and maintained by <strong>Parth Soni</strong>. It is an independent, unofficial project: not affiliated with the Embassy of Ireland, the Immigration Service Delivery or any Irish government body, and not immigration advice.</p>
+      <ul>
+        <li><strong>Method and sources</strong> — how each office file is read, what a report date means and where every count comes from: <a href="/about#method">method and sources</a>.</li>
+        <li><strong>Corrections</strong> — a wrong or missing row is logged with its office, report date and source URL in the <a href="/corrections">public correction ledger</a>. Report one through <a href="/contact#feedback">contact and corrections</a>.</li>
+        <li><strong>Freshness</strong> — the data date on this page is the last successful read of the office’s own file, not the build date. <a href="/status">Data status</a> shows every office.</li>
+        <li><strong>Source code</strong> — the generator and the data pipeline are public at <a href="${REPOSITORY_URL}" rel="noopener">GitHub</a>.</li>
+      </ul>
     </section>
 
     <p class="small-note"><strong>Cite this page:</strong> Irish Visa Decision Tracker, “${office.name} visa decisions,” ${SITE}${office.route}. Updated ${longDate(f.latest)}. <a href="/press">Citation and reuse</a> · <a href="/data-study">Data study</a>.</p>

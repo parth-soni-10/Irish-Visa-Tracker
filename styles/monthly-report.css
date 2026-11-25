@@ -359,3 +359,13 @@ html[data-theme="dark"] input[type=month],
 html[data-theme="dark"] input[type=email] { background: var(--raised); color: var(--ink); }
 html[data-theme="dark"] td { border-bottom-color: var(--line); }
 html[data-theme="dark"] .feed li { border-bottom-color: var(--line); }
+
+/* Story package: the press-ready block on the monthly report. It sits inside a
+   normal panel, so it only needs its own emphasis and a quote-like summary. */
+.story-headline { margin: 12px 0; font-size: 17px; line-height: 1.5; }
+.story-summary { margin: 14px 0; padding: 14px 16px; border-left: 3px solid var(--green); background: var(--raised); }
+.story-summary p { margin: 0; font-size: 15px; line-height: 1.6; }
+.story-pitch { margin: 10px 0 16px; padding: 14px 16px; border: 1px dashed var(--line); border-radius: var(--r-container, 12px); }
+.story-pitch p { margin: 0 0 8px; font-size: 14px; line-height: 1.6; }
+.story-pitch p:last-child { margin-bottom: 0; }
+html[data-theme="dark"] .story-summary { background: var(--raised); }

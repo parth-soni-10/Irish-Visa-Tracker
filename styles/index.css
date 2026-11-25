@@ -4812,6 +4812,7 @@
 .office-directory-list a:hover { border-color: var(--green); }
 .office-directory-list strong { display: block; margin-bottom: 4px; font-size: 15px; color: var(--green-deep); }
 .office-directory-list span { display: block; font-size: 13px; line-height: 1.45; color: var(--ink-soft); }
+.office-directory-list .office-directory-stat { margin-top: 6px; font-size: 12px; color: var(--ink-muted); }
 .office-directory-more { margin: 16px 0 0 !important; font-weight: 500; }
 .office-directory-more a { color: var(--green-deep); }
 @media (max-width: 720px) {

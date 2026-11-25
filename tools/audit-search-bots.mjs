@@ -39,6 +39,9 @@ export function defaultAuditPaths(key = findIndexNowKey()) {
   const paths = [
     '/',
     '/sitemap.xml',
+    '/sitemap-offices.xml',
+    '/sitemap-reports.xml',
+    '/sitemap-decisions.xml',
     '/robots.txt',
     '/irish-visa-decisions-today',
     '/vfs-tracking',
@@ -74,7 +77,14 @@ export function assessBotResponse({ pathname, status, contentType, cfMitigated, 
   if (!body.trim()) issues.push('empty response body');
 
   if (pathname.endsWith('.xml')) {
-    if (!/<urlset\b/i.test(body)) issues.push('not a sitemap urlset');
+    // /sitemap.xml is a sitemap index; each family child must stay a urlset.
+    const isIndex = /<sitemapindex\b/i.test(body);
+    const isUrlset = /<urlset\b/i.test(body);
+    if (!isIndex && !isUrlset) issues.push('not a sitemap urlset');
+    if (isIndex && pathname !== '/sitemap.xml') issues.push('child sitemap is an index, not a urlset');
+    if (isIndex && pathname === '/sitemap.xml' && !/<sitemap>\s*<loc>/i.test(body)) {
+      issues.push('sitemap index has no child <sitemap> entries');
+    }
     if (!/<loc>\s*https?:\/\//i.test(body)) issues.push('sitemap has no absolute <loc>');
   } else if (pathname === '/robots.txt') {
     if (!/^User-agent:\s*\*/im.test(body)) issues.push('robots.txt has no User-agent: *');

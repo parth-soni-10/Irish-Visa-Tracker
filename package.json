@@ -25,6 +25,9 @@
     "deploy": "npm run build && npx wrangler pages deploy && npm run smoke",
     "audit:discovery": "node tools/audit-discovery.mjs",
     "audit:bots": "node tools/audit-search-bots.mjs",
+    "audit:links": "node tools/link-reclamation.mjs",
+    "audit:office": "node tools/office-analysis.mjs",
+    "seo:sitemaps": "node tools/sitemap-index.mjs",
     "coverage:dashboard": "node tools/coverage-dashboard.mjs"
   },
   "dependencies": {

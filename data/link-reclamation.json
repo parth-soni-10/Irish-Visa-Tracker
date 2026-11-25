@@ -1,0 +1,11 @@
+{
+  "note": "Candidate pages that mention the project, the study title or the site host. Add one URL per mention found through a search for those phrases; tools/link-reclamation.mjs reports whether the page already links back. Do not add a URL you have not seen mention the project.",
+  "originHost": "irishvisaupdatetracker.pages.dev",
+  "baseline": {
+    "checkedOn": "2026-11-25",
+    "source": "Bing Webmaster Tools inbound links",
+    "inboundLinksKnown": 0,
+    "note": "Bing knew of no inbound links on this date. That is a starting point, not a failure of the check: it means there is nothing to reclaim yet and new links have to be earned."
+  },
+  "candidates": []
+}

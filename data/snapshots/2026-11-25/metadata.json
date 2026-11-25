@@ -1,0 +1,89 @@
+{
+  "title": "Irish Visa Decision Tracker: published visa decisions by office",
+  "version": "2026-11-25",
+  "data_date": "2026-11-25",
+  "generated_from": [
+    "/data/data_manifest.json",
+    "/data/reports/index.json",
+    "/data/embassy-new-delhi.json",
+    "/data/embassy-beijing.json",
+    "/data/embassy-abu-dhabi.json",
+    "/data/embassy-abuja.json",
+    "/data/embassy-ankara.json",
+    "/data/embassy-dublin.json"
+  ],
+  "totals": {
+    "offices": 6,
+    "decisions": 63057,
+    "approved": 51764,
+    "refused": 11293,
+    "approval_rate": "82.1%"
+  },
+  "offices": [
+    {
+      "slug": "new-delhi",
+      "name": "New Delhi",
+      "report_date": "2026-11-24",
+      "decisions": 43937,
+      "approved": 37019,
+      "refused": 6918,
+      "approval_rate": "84.3%",
+      "source_url": "https://www.ireland.ie/en/india/newdelhi/services/visas/processing-times-and-decisions/"
+    },
+    {
+      "slug": "beijing",
+      "name": "Beijing",
+      "report_date": "2026-11-01",
+      "decisions": 13724,
+      "approved": 11373,
+      "refused": 2351,
+      "approval_rate": "82.9%",
+      "source_url": "https://www.ireland.ie/en/china/beijing/services/visas/visa-decisions/"
+    },
+    {
+      "slug": "abu-dhabi",
+      "name": "Abu Dhabi",
+      "report_date": "2026-11-20",
+      "decisions": 232,
+      "approved": 161,
+      "refused": 71,
+      "approval_rate": "69.4%",
+      "source_url": "https://www.ireland.ie/en/uae/abudhabi/services/visas/weekly-decision-reports/"
+    },
+    {
+      "slug": "abuja",
+      "name": "Abuja",
+      "report_date": "2026-11-07",
+      "decisions": 99,
+      "approved": 34,
+      "refused": 65,
+      "approval_rate": "34.3%",
+      "source_url": "https://www.ireland.ie/en/nigeria/abuja/services/visas/weekly-decision-reports/"
+    },
+    {
+      "slug": "ankara",
+      "name": "Ankara",
+      "report_date": "2026-11-22",
+      "decisions": 217,
+      "approved": 192,
+      "refused": 25,
+      "approval_rate": "88.5%",
+      "source_url": "https://www.ireland.ie/en/turkiye/ankara/services/visas/weekly-decision-report/"
+    },
+    {
+      "slug": "dublin",
+      "name": "Dublin",
+      "report_date": "2026-11-25",
+      "decisions": 4848,
+      "approved": 2985,
+      "refused": 1863,
+      "approval_rate": "61.6%",
+      "source_url": "https://www.irishimmigration.ie/visa-decisions/"
+    }
+  ],
+  "licence": "Charts and compiled tables may be reused with attribution. Underlying decisions remain the publications of the Irish embassies and the Immigration Service Delivery. Source code is MIT licensed.",
+  "citation_file": "/data/snapshots/2026-11-25/CITATION.cff",
+  "zenodo_metadata": "/data/snapshots/2026-11-25/zenodo.json",
+  "doi": null,
+  "doi_note": "A DOI requires deposit with Zenodo using the maintainer's account. This snapshot, CITATION.cff and zenodo.json are the deposit-ready record."
+}

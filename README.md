@@ -4,6 +4,8 @@ A public, unofficial tracker for Irish visa decisions, with a searchable archive
 
 **Live:** https://irishvisaupdatetracker.pages.dev
 
+**Data citation:** https://irishvisaupdatetracker.pages.dev/data-study — the DOI deposit, DataCite/OpenAIRE steps and the Dataset markup fields are in [`docs/data-citation.md`](docs/data-citation.md).
+
 ## What it tracks
 
 - **New Delhi, Beijing, Abu Dhabi, Abuja, Ankara and Dublin** official decision publications.
