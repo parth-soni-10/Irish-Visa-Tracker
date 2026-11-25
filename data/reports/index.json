@@ -3,7 +3,7 @@
     "new-delhi": [
       {
         "report_date": "2026-11-24",
-        "fetched_at": "2026-11-25T11:54:20.566Z",
+        "fetched_at": "2026-11-25T13:21:55.672Z",
         "decisions": 43937,
         "approved": 37019,
         "refused": 6918,
@@ -143,56 +143,15 @@
     "beijing": [
       {
         "report_date": "2026-11-22",
-        "fetched_at": "2026-11-25T13:13:42.058Z",
+        "fetched_at": "2026-11-25T13:21:57.994Z",
         "decisions": 14425,
         "approved": 11993,
         "refused": 2432,
         "source_file": "https://www.ireland.ie/5352/Beijing_Visa_Decisions_01_January_to_22_November_2026.pdf",
         "checksum": "83171c1b4f6a9eb5",
-        "added": 707,
-        "removed": 6,
-        "changed": [
-          {
-            "number": "84684742",
-            "from": "Refused",
-            "to": "Approved"
-          },
-          {
-            "number": "84964332",
-            "from": "Refused",
-            "to": "Approved"
-          },
-          {
-            "number": "85150912",
-            "from": "Refused",
-            "to": "Approved"
-          },
-          {
-            "number": "85405712",
-            "from": "Refused",
-            "to": "Approved"
-          },
-          {
-            "number": "85572642",
-            "from": "Refused",
-            "to": "Approved"
-          },
-          {
-            "number": "85724272",
-            "from": "Refused",
-            "to": "Approved"
-          },
-          {
-            "number": "85871002",
-            "from": "Refused",
-            "to": "Approved"
-          },
-          {
-            "number": "86089472",
-            "from": "Refused",
-            "to": "Approved"
-          }
-        ]
+        "added": 0,
+        "removed": 0,
+        "changed": []
       },
       {
         "report_date": "2026-11-01",
@@ -210,7 +169,7 @@
     "abu-dhabi": [
       {
         "report_date": "2026-11-20",
-        "fetched_at": "2026-11-25T11:54:23.153Z",
+        "fetched_at": "2026-11-25T13:22:00.170Z",
         "decisions": 232,
         "approved": 161,
         "refused": 71,
@@ -352,7 +311,7 @@
     "abuja": [
       {
         "report_date": "2026-11-07",
-        "fetched_at": "2026-11-25T13:13:51.156Z",
+        "fetched_at": "2026-11-25T13:22:00.291Z",
         "decisions": 99,
         "approved": 34,
         "refused": 65,
@@ -715,7 +674,7 @@
     "ankara": [
       {
         "report_date": "2026-11-22",
-        "fetched_at": "2026-11-25T11:54:23.524Z",
+        "fetched_at": "2026-11-25T13:22:01.441Z",
         "decisions": 217,
         "approved": 192,
         "refused": 25,
@@ -753,7 +712,7 @@
     "dublin": [
       {
         "report_date": "2026-11-25",
-        "fetched_at": "2026-11-25T11:54:36.105Z",
+        "fetched_at": "2026-11-25T13:22:13.910Z",
         "decisions": 4848,
         "approved": 2985,
         "refused": 1863,
