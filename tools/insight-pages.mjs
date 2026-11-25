@@ -1119,7 +1119,7 @@ function schedulePage(data) {
       ? `<span class="status-pill${statusClass}">${esc(fresh.status_label || 'Published')}</span>` +
         `<br><span class="small-note">Last successful ${timeHTML(fresh.last_success_at)}</span>` +
         `<br><span class="small-note">Last attempt ${timeHTML(fresh.last_attempt_at)}</span>` +
-        ` <a class="small-note" href="/status#office-coverage">Office coverage</a>`
+        `<br><a class="small-note" href="/status#office-coverage">Office coverage</a>`
       : '<span class="small-note">Not recorded</span>';
     return `<tr data-freshness-slug="${esc(office.slug)}" data-freshness-view="schedule">
           <th scope="row"><a href="${office.route}">${esc(office.name)}</a></th>
@@ -1692,7 +1692,6 @@ function reportsIndexPage(data) {
       <div class="study-stat"><span class="status-kicker">Earliest report</span><strong>${esc(shortDate(archive.earliest))}</strong><span>Archive start</span></div>
       <div class="study-stat"><span class="status-kicker">Latest dated report</span><strong>${esc(shortDate(archive.datedLatest))}</strong><span>Snapshot re-checks excluded</span></div>
       <div class="study-stat"><span class="status-kicker">Latest snapshot</span><strong>${esc(shortDate(archive.snapshotLatest))}</strong><span>Beijing / Dublin check</span></div>
-      <div class="study-stat"><span class="status-kicker">Source links</span><strong>Official</strong><span>Every report page</span></div>
     </div>
 
     <section>

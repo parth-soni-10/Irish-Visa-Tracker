@@ -380,7 +380,6 @@ export function renderCoverageDashboard(data) {
       <div class="study-stat"><span class="status-kicker">CTR</span><strong>${pct(totals.ctr)}</strong><span>Average position ${(Number(totals.position) || 0).toFixed(1)}</span></div>
       <div class="study-stat"><span class="status-kicker">Priority URLs indexed</span><strong>${indexed}/${urls.length}</strong><span>${unknown} unknown to Google</span></div>
       <div class="study-stat"><span class="status-kicker">Sitemap</span><strong>${pending ? 'Pending' : (sitemaps.length ? 'Processed' : 'None')}</strong><span>${sitemaps.length} submitted</span></div>
-      <div class="study-stat"><span class="status-kicker">Lab LCP after</span><strong>${perfAfter.lcp ? `${perfAfter.lcp}s` : '—'}</strong><span>${perfBefore.lcp ? `Was ${perfBefore.lcp}s on the same profile` : 'No baseline recorded'}</span></div>
     </div>
 
     ${issues.length ? `<section class="callout"><h2>Refresh warnings</h2><ul>${issues.map((issue) => `<li>${esc(issue)}</li>`).join('')}</ul><p>The seed data is shown where a request failed. Fix the credential or quota and rerun; do not read a stale dashboard as fresh.</p></section>` : ''}
