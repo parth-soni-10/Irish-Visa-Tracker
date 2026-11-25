@@ -46,14 +46,19 @@ export function stripCloudflareAnalytics(html) {
     .replace(/\r\n?/g, '\n');
 }
 
-/** The status table's generated clock is intentionally the build time, so two
- *  correct builds of the same commit will differ there. Compare the table but
- *  not the moment each environment assembled it. */
+/** Build clocks are intentionally the moment each environment assembled the
+ *  page, so two correct builds of the same commit differ there. Compare the
+ *  content but not the build moment. */
 export function stripGeneratedBuildTime(html) {
-  return html.replace(
-    /<time\b[^>]*\bid="latest-reports-generated"[^>]*>[\s\S]*?<\/time>/gi,
-    '<time id="latest-reports-generated"></time>'
-  );
+  return html
+    .replace(
+      /<time\b[^>]*\bid="latest-reports-generated"[^>]*>[\s\S]*?<\/time>/gi,
+      '<time id="latest-reports-generated"></time>'
+    )
+    .replace(
+      /<strong>Page built:<\/strong>\s*<time\b[^>]*>[\s\S]*?<\/time>/gi,
+      '<strong>Page built:</strong><time></time>'
+    );
 }
 
 export function normaliseAsset(name, bytes) {

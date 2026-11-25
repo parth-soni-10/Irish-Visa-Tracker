@@ -4744,9 +4744,44 @@
   #visa-dash .cards .card:last-child { border-bottom: 0; }
 }
 
-/* The homepage keeps a crawlable office directory outside the hydrating
-   dashboard, so the six topical landing pages are always in the initial HTML
-   and remain visible after the app replaces #visa-dash. */
+/* The homepage keeps a crawlable latest-report block and office directory
+   outside the hydrating dashboard, so the date-specific report permalinks and
+   six topical landing pages are always in the initial HTML. */
+.latest-official {
+  max-width: 1080px;
+  margin: 28px auto 0;
+  padding: 24px 24px 28px;
+  border-top: 1px solid var(--border);
+}
+.latest-official-inner { max-width: 900px; }
+.latest-official h2 { margin: 0 0 6px; font-size: 22px; line-height: 1.25; letter-spacing: -.01em; }
+.latest-official-lede { margin: 0 0 14px; color: var(--ink-soft); font-size: 14px; line-height: 1.6; }
+.latest-official-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 24px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.latest-official-list li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px 14px;
+  flex-wrap: wrap;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+.latest-official-report { color: var(--ink); font-size: 14px; text-decoration: none; }
+.latest-official-report strong { margin-right: 4px; color: var(--green-deep); }
+.latest-official-report time { color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+.latest-official-report:hover time { text-decoration: underline; text-underline-offset: 3px; }
+.latest-official-office { color: var(--green-deep); font-size: 12.5px; text-decoration: none; white-space: nowrap; }
+.latest-official-office:hover { text-decoration: underline; text-underline-offset: 3px; }
+.latest-official-missing { color: var(--ink-muted); font-size: 12.5px; }
+.latest-official-more { margin: 14px 0 0 !important; color: var(--ink-soft); font-size: 13px; line-height: 1.6; }
+.latest-official-more a { color: var(--green-deep); }
 .office-directory {
   max-width: 1080px;
   margin: 28px auto 0;
@@ -4780,6 +4815,8 @@
 .office-directory-more { margin: 16px 0 0 !important; font-weight: 500; }
 .office-directory-more a { color: var(--green-deep); }
 @media (max-width: 720px) {
+  .latest-official { padding: 20px 18px 24px; }
+  .latest-official-list { grid-template-columns: 1fr; }
   .office-directory { padding: 20px 18px 24px; }
   .office-directory-list { grid-template-columns: 1fr; }
   .office-directory-list a { min-height: 0; }

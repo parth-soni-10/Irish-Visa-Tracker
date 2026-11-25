@@ -6,7 +6,7 @@ import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
 import { buildGrowthPages } from '../tools/growth-pages.mjs';
-import { buildIndexNowUrls, eligibleDecisionDates } from '../tools/indexnow.mjs';
+import { buildIndexNowUrls, eligibleDecisionDates, filterIndexNowUrls } from '../tools/indexnow.mjs';
 import { renderCoverageDashboard } from '../tools/coverage-dashboard.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -76,11 +76,29 @@ test('IndexNow covers report permalinks, date pages and growth pages without dup
   assert.ok(urls.some((url) => /\/decisions\/2026-11-23$/.test(url)));
   assert.ok(urls.includes('https://irishvisaupdatetracker.pages.dev/all-pages'));
   assert.ok(urls.includes('https://irishvisaupdatetracker.pages.dev/bulk-tools'));
+  assert.ok(urls.includes('https://irishvisaupdatetracker.pages.dev/irish-visa-decisions-today'));
+  assert.ok(urls.includes('https://irishvisaupdatetracker.pages.dev/vfs-tracking'));
+  assert.ok(urls.includes('https://irishvisaupdatetracker.pages.dev/help'));
   for (const slug of ['new-delhi', 'beijing', 'abu-dhabi', 'abuja', 'ankara', 'dublin']) {
     assert.ok(urls.includes(`https://irishvisaupdatetracker.pages.dev/${slug}-visa-decisions`), `IndexNow includes ${slug}`);
   }
   assert.ok(urls.every((url) => url.startsWith('https://irishvisaupdatetracker.pages.dev/')));
   assert.ok(eligibleDecisionDates(ROOT).every((date) => new Date(`${date}T00:00:00Z`).getUTCDay() !== 0 && new Date(`${date}T00:00:00Z`).getUTCDay() !== 6));
+});
+
+test('IndexNow can announce only the URLs changed in a deploy', () => {
+  const urls = buildIndexNowUrls(ROOT);
+  const filtered = filterIndexNowUrls(urls, [
+    '/irish-visa-decisions-today',
+    '/help.html',
+    'https://irishvisaupdatetracker.pages.dev/daily-summaries',
+    '/not-a-public-page',
+  ]);
+  assert.deepEqual(filtered.sort(), [
+    'https://irishvisaupdatetracker.pages.dev/daily-summaries',
+    'https://irishvisaupdatetracker.pages.dev/help',
+    'https://irishvisaupdatetracker.pages.dev/irish-visa-decisions-today',
+  ]);
 });
 
 test('the coverage dashboard renders the seed without pretending it is fresh', async () => {
@@ -91,6 +109,8 @@ test('the coverage dashboard renders the seed without pretending it is fresh', a
   assert.match(html, /URL is unknown to Google/);
   assert.match(html, /Pending/);
   assert.match(html, /Bing and IndexNow/);
+  assert.match(html, /Indexing scorecard by engine/);
+  assert.match(html, /By page family/);
   assert.match(html, /Request indexing/);
   assert.match(html, /search-coverage/);
 });

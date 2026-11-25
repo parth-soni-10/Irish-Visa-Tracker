@@ -104,13 +104,13 @@
   <main id="main-content" tabindex="-1" class="page">
     <p class="page-kicker">Operations · noindex</p>
     <h1>Search coverage dashboard</h1>
-    <p class="page-meta">Weekly snapshot &bull; 2026-11-24 &bull; Source: seed &bull; This page is not indexed.</p>
+    <p class="page-meta">Weekly snapshot &bull; 2026-11-25 &bull; Source: seed &bull; This page is not indexed.</p>
     <p class="page-lede">The dashboard answers one question: are the pages we published actually discoverable? It separates Google Search Console data from Bing/IndexNow and records the measurement instead of relying on a screenshot or a memory of a dashboard.</p>
 
     <div class="study-grid">
       <div class="study-stat"><span class="status-kicker">Clicks (28d)</span><strong>17</strong><span>940 impressions</span></div>
       <div class="study-stat"><span class="status-kicker">CTR</span><strong>1.81%</strong><span>Average position 16.3</span></div>
-      <div class="study-stat"><span class="status-kicker">Priority URLs indexed</span><strong>0/6</strong><span>6 unknown to Google</span></div>
+      <div class="study-stat"><span class="status-kicker">Priority URLs indexed</span><strong>1/15</strong><span>14 unknown to Google</span></div>
       <div class="study-stat"><span class="status-kicker">Sitemap</span><strong>Pending</strong><span>1 submitted</span></div>
       <div class="study-stat"><span class="status-kicker">Lab LCP after</span><strong>2.656s</strong><span>Was 3.82s on the same profile</span></div>
     </div>
@@ -119,53 +119,236 @@
 
     <section>
       <h2>Priority URLs</h2>
-      <p>The six office pages are the current blocker. New pages are listed so a later crawl does not repeat the same blind spot.</p>
+      <p>The sample covers core pages, all six office hubs, report hubs, the newest report per office and the newest dated views. A page can be submitted without being discovered, crawled or indexed; the scorecard below keeps those states separate.</p>
       <div class="table-wrap" role="region" aria-label="Search Console URL inspection" tabindex="0">
         <table class="office-table stack-table">
           <caption>Search Console URL Inspection, one row per priority URL</caption>
           <thead><tr><th scope="col">URL</th><th scope="col">Coverage</th><th scope="col">Indexing</th><th scope="col">Last crawl</th><th scope="col">Fetch</th><th scope="col">Verdict</th></tr></thead>
           <tbody><tr>
+    <td><a href="/">/</a></td>
+    <td><span class="coverage-pill coverage-good">Submitted and indexed</span></td>
+    <td>INDEXING_ALLOWED</td>
+    <td><time datetime="2026-11-07T23:47:31Z">2026-11-07</time></td>
+    <td>SUCCESSFUL</td>
+    <td>PASS</td>
+  </tr><tr>
+    <td><a href="/irish-visa-decisions-today">/irish-visa-decisions-today</a></td>
+    <td><span class="coverage-pill coverage-bad">URL is unknown to Google</span></td>
+    <td>not indexed</td>
+    <td>—</td>
+    <td>PAGE_FETCH_STATE_UNSPECIFIED</td>
+    <td>NEUTRAL</td>
+  </tr><tr>
+    <td><a href="/vfs-tracking">/vfs-tracking</a></td>
+    <td><span class="coverage-pill coverage-bad">URL is unknown to Google</span></td>
+    <td>not indexed</td>
+    <td>—</td>
+    <td>PAGE_FETCH_STATE_UNSPECIFIED</td>
+    <td>NEUTRAL</td>
+  </tr><tr>
     <td><a href="/new-delhi-visa-decisions">/new-delhi-visa-decisions</a></td>
     <td><span class="coverage-pill coverage-bad">URL is unknown to Google</span></td>
     <td>not indexed</td>
     <td>—</td>
-    <td>—</td>
+    <td>PAGE_FETCH_STATE_UNSPECIFIED</td>
     <td>NEUTRAL</td>
   </tr><tr>
     <td><a href="/beijing-visa-decisions">/beijing-visa-decisions</a></td>
     <td><span class="coverage-pill coverage-bad">URL is unknown to Google</span></td>
     <td>not indexed</td>
     <td>—</td>
-    <td>—</td>
-    <td>NEUTRAL</td>
-  </tr><tr>
-    <td><a href="/dublin-visa-decisions">/dublin-visa-decisions</a></td>
-    <td><span class="coverage-pill coverage-bad">URL is unknown to Google</span></td>
-    <td>not indexed</td>
-    <td>—</td>
-    <td>—</td>
+    <td>PAGE_FETCH_STATE_UNSPECIFIED</td>
     <td>NEUTRAL</td>
   </tr><tr>
     <td><a href="/abu-dhabi-visa-decisions">/abu-dhabi-visa-decisions</a></td>
     <td><span class="coverage-pill coverage-bad">URL is unknown to Google</span></td>
     <td>not indexed</td>
     <td>—</td>
-    <td>—</td>
+    <td>PAGE_FETCH_STATE_UNSPECIFIED</td>
     <td>NEUTRAL</td>
   </tr><tr>
     <td><a href="/abuja-visa-decisions">/abuja-visa-decisions</a></td>
     <td><span class="coverage-pill coverage-bad">URL is unknown to Google</span></td>
     <td>not indexed</td>
     <td>—</td>
-    <td>—</td>
+    <td>PAGE_FETCH_STATE_UNSPECIFIED</td>
     <td>NEUTRAL</td>
   </tr><tr>
     <td><a href="/ankara-visa-decisions">/ankara-visa-decisions</a></td>
     <td><span class="coverage-pill coverage-bad">URL is unknown to Google</span></td>
     <td>not indexed</td>
     <td>—</td>
-    <td>—</td>
+    <td>PAGE_FETCH_STATE_UNSPECIFIED</td>
     <td>NEUTRAL</td>
+  </tr><tr>
+    <td><a href="/dublin-visa-decisions">/dublin-visa-decisions</a></td>
+    <td><span class="coverage-pill coverage-bad">URL is unknown to Google</span></td>
+    <td>not indexed</td>
+    <td>—</td>
+    <td>PAGE_FETCH_STATE_UNSPECIFIED</td>
+    <td>NEUTRAL</td>
+  </tr><tr>
+    <td><a href="/reports">/reports</a></td>
+    <td><span class="coverage-pill coverage-bad">URL is unknown to Google</span></td>
+    <td>not indexed</td>
+    <td>—</td>
+    <td>PAGE_FETCH_STATE_UNSPECIFIED</td>
+    <td>NEUTRAL</td>
+  </tr><tr>
+    <td><a href="/reports/new-delhi">/reports/new-delhi</a></td>
+    <td><span class="coverage-pill coverage-bad">URL is unknown to Google</span></td>
+    <td>not indexed</td>
+    <td>—</td>
+    <td>PAGE_FETCH_STATE_UNSPECIFIED</td>
+    <td>NEUTRAL</td>
+  </tr><tr>
+    <td><a href="/reports/new-delhi/2026-11-23">/reports/new-delhi/2026-11-23</a></td>
+    <td><span class="coverage-pill coverage-bad">URL is unknown to Google</span></td>
+    <td>not indexed</td>
+    <td>—</td>
+    <td>PAGE_FETCH_STATE_UNSPECIFIED</td>
+    <td>NEUTRAL</td>
+  </tr><tr>
+    <td><a href="/monthly-report">/monthly-report</a></td>
+    <td><span class="coverage-pill coverage-bad">URL is unknown to Google</span></td>
+    <td>not indexed</td>
+    <td>—</td>
+    <td>PAGE_FETCH_STATE_UNSPECIFIED</td>
+    <td>NEUTRAL</td>
+  </tr><tr>
+    <td><a href="/decisions/2026-11-24">/decisions/2026-11-24</a></td>
+    <td><span class="coverage-pill coverage-bad">URL is unknown to Google</span></td>
+    <td>not indexed</td>
+    <td>—</td>
+    <td>PAGE_FETCH_STATE_UNSPECIFIED</td>
+    <td>NEUTRAL</td>
+  </tr><tr>
+    <td><a href="/data-study">/data-study</a></td>
+    <td><span class="coverage-pill coverage-bad">URL is unknown to Google</span></td>
+    <td>not indexed</td>
+    <td>—</td>
+    <td>PAGE_FETCH_STATE_UNSPECIFIED</td>
+    <td>NEUTRAL</td>
+  </tr></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="indexing-scorecard">
+      <h2>Indexing scorecard by engine</h2>
+      <p>Checked 2026-11-25. Discovered, crawled and indexed counts come from URL Inspection on a 15-URL sample, not a site-wide index total. Submitted is the live sitemap URL count on 25 November 2026.</p>
+      <div class="table-wrap" role="region" aria-label="Indexing scorecard by engine" tabindex="0">
+        <table class="office-table stack-table">
+          <caption>Submitted, discovered, crawled and indexed by search engine</caption>
+          <thead><tr><th scope="col">Engine</th><th scope="col">Submitted</th><th scope="col">Discovered</th><th scope="col">Crawled</th><th scope="col">Indexed</th><th scope="col">Exclusions</th><th scope="col">Last crawl</th><th scope="col">Sitemap</th></tr></thead>
+          <tbody><tr>
+    <th scope="row">Google</th>
+    <td>127</td>
+    <td>1</td>
+    <td>1</td>
+    <td>1</td>
+    <td>No API exclusion count; /community-timelines is intentionally noindex</td>
+    <td><time datetime="2026-11-07T23:47:31Z">2026-11-07</time></td>
+    <td>Pending — 0 errors, 0 warnings</td>
+  </tr><tr>
+    <th scope="row">Bing</th>
+    <td>127</td>
+    <td>13</td>
+    <td>13</td>
+    <td>Not exposed</td>
+    <td>Not exposed</td>
+    <td><time datetime="2026-11-24T12:54:04Z">2026-11-24</time></td>
+    <td>Success — 127 URLs, last crawled 25 Nov 2026</td>
+  </tr><tr>
+    <th scope="row">Yandex</th>
+    <td>0</td>
+    <td>Unknown</td>
+    <td>Unknown</td>
+    <td>Unknown</td>
+    <td>Unknown</td>
+    <td>—</td>
+    <td>Not submitted — no verified Yandex property</td>
+  </tr></tbody>
+        </table>
+      </div>
+      <p class="small-note">Google Request indexing is a signed-in URL Inspection action. Bing site scan has no API action in this integration; crawl diagnostics are used instead. Yandex Webmaster is not connected.</p>
+      <h3>By page family</h3>
+      <div class="table-wrap" role="region" aria-label="Indexing scorecard by page family" tabindex="0">
+        <table class="office-table stack-table">
+          <caption>Representative URL inspections by page family</caption>
+          <thead><tr><th scope="col">Family</th><th scope="col">Submitted</th><th scope="col">Google inspected</th><th scope="col">Google indexed</th><th scope="col">Google unknown</th><th scope="col">Google last crawl</th><th scope="col">Bing inspected</th><th scope="col">Bing discovered</th><th scope="col">Bing crawled</th><th scope="col">Bing last crawl</th><th scope="col">Yandex</th></tr></thead>
+          <tbody><tr>
+    <th scope="row">Core page</th>
+    <td>25</td>
+    <td>4</td>
+    <td><span class="coverage-pill coverage-good">1</span></td>
+    <td><span class="coverage-pill coverage-bad">3</span></td>
+    <td><time datetime="2026-11-07T23:47:31Z">2026-11-07</time></td>
+    <td>4</td>
+    <td>4</td>
+    <td>4</td>
+    <td><time datetime="2026-11-24T12:52:50Z">2026-11-24</time></td>
+    <td>Unknown</td>
+  </tr><tr>
+    <th scope="row">Office hub</th>
+    <td>6</td>
+    <td>6</td>
+    <td><span class="coverage-pill coverage-bad">0</span></td>
+    <td><span class="coverage-pill coverage-bad">6</span></td>
+    <td>—</td>
+    <td>6</td>
+    <td>6</td>
+    <td>6</td>
+    <td><time datetime="2026-11-21T22:24:10Z">2026-11-21</time></td>
+    <td>Unknown</td>
+  </tr><tr>
+    <th scope="row">Report hub</th>
+    <td>7</td>
+    <td>2</td>
+    <td><span class="coverage-pill coverage-bad">0</span></td>
+    <td><span class="coverage-pill coverage-bad">2</span></td>
+    <td>—</td>
+    <td>2</td>
+    <td>1</td>
+    <td>1</td>
+    <td><time datetime="2026-11-21T22:10:36Z">2026-11-21</time></td>
+    <td>Unknown</td>
+  </tr><tr>
+    <th scope="row">Dated report</th>
+    <td>56</td>
+    <td>1</td>
+    <td><span class="coverage-pill coverage-bad">0</span></td>
+    <td><span class="coverage-pill coverage-bad">1</span></td>
+    <td>—</td>
+    <td>1</td>
+    <td>1</td>
+    <td>1</td>
+    <td><time datetime="2026-11-24T12:54:04Z">2026-11-24</time></td>
+    <td>Unknown</td>
+  </tr><tr>
+    <th scope="row">Monthly report</th>
+    <td>11</td>
+    <td>1</td>
+    <td><span class="coverage-pill coverage-bad">0</span></td>
+    <td><span class="coverage-pill coverage-bad">1</span></td>
+    <td>—</td>
+    <td>1</td>
+    <td>1</td>
+    <td>1</td>
+    <td><time datetime="2026-11-21T22:10:22Z">2026-11-21</time></td>
+    <td>Unknown</td>
+  </tr><tr>
+    <th scope="row">Date view</th>
+    <td>22</td>
+    <td>1</td>
+    <td><span class="coverage-pill coverage-bad">0</span></td>
+    <td><span class="coverage-pill coverage-bad">1</span></td>
+    <td>—</td>
+    <td>1</td>
+    <td>0</td>
+    <td>0</td>
+    <td>—</td>
+    <td>Unknown</td>
   </tr></tbody>
         </table>
       </div>
@@ -258,7 +441,6 @@
           <li><a href="/press">Press &amp; citation</a></li>
           <li><a href="/embed">Embed badge</a></li>
           <li><a href="/decisions">Decisions by date</a></li>
-          <li><a href="/all-pages">All pages</a></li>
         </ul>
       </div>
       <div class="sitebar-footer-col">
@@ -288,6 +470,7 @@
       </div>
     </div>
     <div class="sitebar-footer-bottom">
+      <p class="sitebar-footer-index"><strong>All pages index:</strong> <a href="/all-pages">every office, report and guide</a> &middot; <a href="/sitemap.xml">XML sitemap</a></p>
       <p>&copy; 2026 Parth Soni &middot; Dublin, Ireland</p>
     </div>
   </footer>

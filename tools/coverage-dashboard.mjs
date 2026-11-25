@@ -23,17 +23,62 @@ import { fileURLToPath } from 'node:url';
 
 import { PAGES, spliceChrome } from './site-chrome.mjs';
 import { SITE_ORIGIN } from './site-config.mjs';
+import { eligibleDecisionDates } from './indexnow.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const SITE = SITE_ORIGIN;
 const DATA_FILE = path.join(ROOT, 'data', 'search-coverage.json');
 const HTML_FILE = path.join(ROOT, 'search-coverage.html');
 const GSC_SCOPE = 'https://www.googleapis.com/auth/webmasters.readonly';
-const PRIORITY = [
-  '/', '/new-delhi-visa-decisions', '/beijing-visa-decisions', '/dublin-visa-decisions',
-  '/abu-dhabi-visa-decisions', '/abuja-visa-decisions', '/ankara-visa-decisions',
-  '/all-pages', '/decisions', '/after-approval', '/after-refusal', '/find-my-office', '/bulk-tools',
-];
+const OFFICE_SLUGS = ['new-delhi', 'beijing', 'abu-dhabi', 'abuja', 'ankara', 'dublin'];
+
+/** The weekly sample: core pages, every office hub, report hubs, the newest
+ *  report per office, the newest monthly report and the newest date view. */
+export function priorityRoutes(root = ROOT) {
+  const routes = [
+    '/', '/irish-visa-decisions-today', '/vfs-tracking', '/reports', '/monthly-report',
+    '/all-pages', '/decisions', '/data-study',
+  ];
+  const manifest = readJson(path.join(root, 'data', 'data_manifest.json'), { offices: [] });
+  const slugs = [...new Set([
+    ...OFFICE_SLUGS,
+    ...(Array.isArray(manifest.offices) ? manifest.offices.map((office) => office.slug) : []),
+  ].filter(Boolean))];
+  for (const slug of slugs) {
+    routes.push(`/${slug}-visa-decisions`);
+    routes.push(`/reports/${slug}`);
+  }
+
+  const reports = readJson(path.join(root, 'data', 'reports', 'index.json'), { offices: {} });
+  for (const slug of slugs) {
+    const entries = Array.isArray(reports.offices && reports.offices[slug]) ? reports.offices[slug] : [];
+    const sorted = entries
+      .filter((entry) => entry && /^\d{4}-\d{2}-\d{2}/.test(String(entry.report_date || '')))
+      .slice()
+      .sort((a, b) => String(b.report_date).localeCompare(String(a.report_date)));
+    let previous = '';
+    for (const entry of sorted) {
+      const key = [entry.decisions, entry.approved, entry.refused, entry.source_file].join('|');
+      if (key === previous) continue;
+      previous = key;
+      const date = String(entry.report_date).slice(0, 10);
+      routes.push(`/reports/${slug}/${date}`);
+      break;
+    }
+  }
+
+  try {
+    const monthly = fs.readdirSync(path.join(root, 'monthly-report'))
+      .map((file) => file.match(/^(\d{4}-\d{2})\.html$/)?.[1] || '')
+      .filter(Boolean)
+      .sort()
+      .pop();
+    if (monthly) routes.push(`/monthly-report/${monthly}`);
+  } catch { /* no monthly archive */ }
+  const latestDate = eligibleDecisionDates(root)[0];
+  if (latestDate) routes.push(`/decisions/${latestDate}`);
+  return [...new Set(routes)];
+}
 
 const readJson = (file, fallback) => {
   try { return JSON.parse(fs.readFileSync(file, 'utf8')); } catch { return fallback; }
@@ -98,7 +143,7 @@ async function accessToken() {
   return result.access_token || '';
 }
 
-async function gscSnapshot(site, token) {
+async function gscSnapshot(site, token, priority = []) {
   const period = dayRange(28);
   const base = `https://www.googleapis.com/webmasters/v3/sites/${encodeURIComponent(site)}`;
   const analytics = await requestJson(`${base}/searchAnalytics/query`, {
@@ -149,7 +194,7 @@ async function gscSnapshot(site, token) {
   }));
 
   const priorityUrls = [];
-  for (const route of PRIORITY) {
+  for (const route of priority) {
     const inspectionUrl = `${SITE}${route}`;
     try {
       const inspected = await requestJson('https://searchconsole.googleapis.com/v1/urlInspection/index:inspect', {
@@ -217,7 +262,7 @@ export async function refreshCoverage({ root = ROOT, site = process.env.GSC_SITE
   }
   if (token) {
     try {
-      const gsc = await gscSnapshot(site, token);
+      const gsc = await gscSnapshot(site, token, priorityRoutes(root));
       next.gsc = gsc;
       next.source = 'gsc+bing';
     } catch (error) {
@@ -274,6 +319,57 @@ export function renderCoverageDashboard(data) {
     <td>${num(item.errors)}</td><td>${num(item.warnings)}</td>
   </tr>`).join('');
   const bing = data.bing || {};
+  const scorecard = data.indexing_scorecard || null;
+  const scoreEngines = scorecard && Array.isArray(scorecard.engines) ? scorecard.engines : [];
+  const scoreFamilies = scorecard && Array.isArray(scorecard.families) ? scorecard.families : [];
+  const metric = (value) => value === 0 || value ? (typeof value === 'number' ? num(value) : esc(value)) : '—';
+  const scoreEngineRows = scoreEngines.map((item) => `<tr>
+    <th scope="row">${esc(item.engine)}</th>
+    <td>${metric(item.submitted)}</td>
+    <td>${metric(item.discovered)}</td>
+    <td>${metric(item.crawled)}</td>
+    <td>${metric(item.indexed)}</td>
+    <td>${metric(item.excluded)}</td>
+    <td>${item.last_crawl ? `<time datetime="${esc(item.last_crawl)}">${esc(day(item.last_crawl))}</time>` : '—'}</td>
+    <td>${metric(item.sitemap_status)}</td>
+  </tr>`).join('');
+  const scoreFamilyRows = scoreFamilies.map((item) => {
+    const google = item.google || {};
+    const bingFamily = item.bing || {};
+    return `<tr>
+    <th scope="row">${esc(item.family)}</th>
+    <td>${metric(item.submitted)}</td>
+    <td>${metric(google.inspected)}</td>
+    <td><span class="coverage-pill ${Number(google.indexed) ? 'coverage-good' : 'coverage-bad'}">${metric(google.indexed)}</span></td>
+    <td><span class="coverage-pill ${Number(google.unknown) ? 'coverage-bad' : 'coverage-good'}">${metric(google.unknown)}</span></td>
+    <td>${google.last_crawl ? `<time datetime="${esc(google.last_crawl)}">${esc(day(google.last_crawl))}</time>` : '—'}</td>
+    <td>${metric(bingFamily.inspected)}</td>
+    <td>${metric(bingFamily.discovered)}</td>
+    <td>${metric(bingFamily.crawled)}</td>
+    <td>${bingFamily.last_crawl ? `<time datetime="${esc(bingFamily.last_crawl)}">${esc(day(bingFamily.last_crawl))}</time>` : '—'}</td>
+    <td>${metric(item.yandex)}</td>
+  </tr>`;
+  }).join('');
+  const scorecardSection = scorecard ? `<section id="indexing-scorecard">
+      <h2>Indexing scorecard by engine</h2>
+      <p>Checked ${esc(day(scorecard.checked_at))}. ${esc(scorecard.sample_note || '')}</p>
+      <div class="table-wrap" role="region" aria-label="Indexing scorecard by engine" tabindex="0">
+        <table class="office-table stack-table">
+          <caption>Submitted, discovered, crawled and indexed by search engine</caption>
+          <thead><tr><th scope="col">Engine</th><th scope="col">Submitted</th><th scope="col">Discovered</th><th scope="col">Crawled</th><th scope="col">Indexed</th><th scope="col">Exclusions</th><th scope="col">Last crawl</th><th scope="col">Sitemap</th></tr></thead>
+          <tbody>${scoreEngineRows}</tbody>
+        </table>
+      </div>
+      <p class="small-note">${esc(scorecard.manual_note || '')}</p>
+      ${scoreFamilyRows ? `<h3>By page family</h3>
+      <div class="table-wrap" role="region" aria-label="Indexing scorecard by page family" tabindex="0">
+        <table class="office-table stack-table">
+          <caption>Representative URL inspections by page family</caption>
+          <thead><tr><th scope="col">Family</th><th scope="col">Submitted</th><th scope="col">Google inspected</th><th scope="col">Google indexed</th><th scope="col">Google unknown</th><th scope="col">Google last crawl</th><th scope="col">Bing inspected</th><th scope="col">Bing discovered</th><th scope="col">Bing crawled</th><th scope="col">Bing last crawl</th><th scope="col">Yandex</th></tr></thead>
+          <tbody>${scoreFamilyRows}</tbody>
+        </table>
+      </div>` : ''}
+    </section>` : '';
   const body = `    <p class="page-kicker">Operations · noindex</p>
     <h1>Search coverage dashboard</h1>
     <p class="page-meta">Weekly snapshot &bull; ${esc(day(data.generated_at))} &bull; Source: ${esc(data.source || 'seed')} &bull; This page is not indexed.</p>
@@ -291,7 +387,7 @@ export function renderCoverageDashboard(data) {
 
     <section>
       <h2>Priority URLs</h2>
-      <p>The six office pages are the current blocker. New pages are listed so a later crawl does not repeat the same blind spot.</p>
+      <p>The sample covers core pages, all six office hubs, report hubs, the newest report per office and the newest dated views. A page can be submitted without being discovered, crawled or indexed; the scorecard below keeps those states separate.</p>
       ${priorityRows ? `<div class="table-wrap" role="region" aria-label="Search Console URL inspection" tabindex="0">
         <table class="office-table stack-table">
           <caption>Search Console URL Inspection, one row per priority URL</caption>
@@ -300,6 +396,8 @@ export function renderCoverageDashboard(data) {
         </table>
       </div>` : '<p>No URL inspection rows. Run the refresh with Search Console credentials.</p>'}
     </section>
+
+    ${scorecardSection}
 
     <section>
       <h2>Queries and pages</h2>

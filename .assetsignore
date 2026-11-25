@@ -9,6 +9,8 @@
 .github/
 .freebuff/
 .wrangler/
+.cache/
+.indexnow-state.json
 .vscode/
 .idea/
 .env

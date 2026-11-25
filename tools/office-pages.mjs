@@ -18,6 +18,7 @@ import { fileURLToPath } from 'node:url';
 
 import { SITE_ORIGIN } from './site-config.mjs';
 import { longDate } from './freshness.mjs';
+import { OFFICE_SEO } from './office-seo.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const SITE = SITE_ORIGIN;
@@ -31,9 +32,9 @@ const OFFICES = [
     name: 'New Delhi',
     file: 'new-delhi-visa-decisions.html',
     route: '/new-delhi-visa-decisions',
-    title: 'Ireland Visa Decisions for India, Bangladesh, Nepal & Sri Lanka – New Delhi',
-    description: 'Search Irish visa decisions for applicants from India, Bangladesh, Nepal and Sri Lanka in the latest New Delhi file, with approved and refused counts, processing times and data limits.',
-    h1: 'New Delhi visa decisions',
+    title: OFFICE_SEO['new-delhi'].title,
+    description: OFFICE_SEO['new-delhi'].description,
+    h1: 'New Delhi Irish visa decisions',
     subhead: 'Ireland visa decisions for India, Bangladesh, Nepal and Sri Lanka',
     kicker: 'New Delhi visa office',
     latestLabel: 'Latest official file',
@@ -100,9 +101,9 @@ const OFFICES = [
     snapshot: true,
     file: 'beijing-visa-decisions.html',
     route: '/beijing-visa-decisions',
-    title: 'Ireland Visa Decisions for China, Hong Kong, Macau & Mongolia – Beijing',
-    description: 'Search Irish visa decisions for applicants from China, Hong Kong, Macau and Mongolia in the latest Beijing snapshot, with approved and refused counts and data limits.',
-    h1: 'Beijing visa decisions',
+    title: OFFICE_SEO.beijing.title,
+    description: OFFICE_SEO.beijing.description,
+    h1: 'Beijing Irish visa decisions',
     subhead: 'Ireland visa decisions for China, Hong Kong, Macau and Mongolia',
     kicker: 'Beijing visa office',
     latestLabel: 'Latest snapshot',
@@ -150,9 +151,9 @@ const OFFICES = [
     name: 'Abu Dhabi',
     file: 'abu-dhabi-visa-decisions.html',
     route: '/abu-dhabi-visa-decisions',
-    title: 'Ireland Visa Decisions: UAE, Gulf & North Africa – Abu Dhabi',
-    description: 'Search Irish visa decisions for applicants from the UAE, Afghanistan, Algeria, Bahrain, Jordan, Kuwait, Lebanon, Libya, Morocco, Oman, Qatar, Sudan, Syria and Tunisia in the latest Abu Dhabi report.',
-    h1: 'Abu Dhabi visa decisions',
+    title: OFFICE_SEO['abu-dhabi'].title,
+    description: OFFICE_SEO['abu-dhabi'].description,
+    h1: 'Abu Dhabi Irish visa decisions',
     subhead: 'Ireland visa decisions for the UAE, Gulf and North Africa',
     kicker: 'Abu Dhabi visa office',
     latestLabel: 'Latest weekly report',
@@ -201,9 +202,9 @@ const OFFICES = [
     name: 'Abuja',
     file: 'abuja-visa-decisions.html',
     route: '/abuja-visa-decisions',
-    title: 'Ireland Visa Decisions for Nigeria, Ghana, Côte d’Ivoire & Senegal – Abuja',
-    description: 'Search Irish visa decisions for applicants from Nigeria, Côte d’Ivoire, Ghana and Senegal in the latest Abuja report, with weekly approved and refused counts.',
-    h1: 'Abuja visa decisions',
+    title: OFFICE_SEO.abuja.title,
+    description: OFFICE_SEO.abuja.description,
+    h1: 'Abuja Irish visa decisions',
     subhead: 'Ireland visa decisions for Nigeria, Ghana, Côte d’Ivoire and Senegal',
     kicker: 'Abuja visa office',
     latestLabel: 'Latest weekly report',
@@ -251,9 +252,9 @@ const OFFICES = [
     name: 'Ankara',
     file: 'ankara-visa-decisions.html',
     route: '/ankara-visa-decisions',
-    title: 'Ireland Visa Decisions for Türkiye, Azerbaijan & Saudi Residents – Ankara',
-    description: 'Search Irish visa decisions for applicants from Türkiye, Azerbaijan and visa-required nationals resident in Saudi Arabia in the latest Ankara report, with OCR notes.',
-    h1: 'Ankara visa decisions',
+    title: OFFICE_SEO.ankara.title,
+    description: OFFICE_SEO.ankara.description,
+    h1: 'Ankara Irish visa decisions',
     subhead: 'Ireland visa decisions for Türkiye, Azerbaijan and Saudi residents',
     kicker: 'Ankara visa office',
     latestLabel: 'Latest weekly report',
@@ -302,9 +303,9 @@ const OFFICES = [
     snapshot: true,
     file: 'dublin-visa-decisions.html',
     route: '/dublin-visa-decisions',
-    title: 'Ireland Visa Decisions for Pakistan & Transferred Applications – Dublin',
-    description: 'Search Irish visa decisions for Pakistan and applications transferred from overseas offices, with Tuesday updates, counts and Dublin scope.',
-    h1: 'Dublin visa decisions',
+    title: OFFICE_SEO.dublin.title,
+    description: OFFICE_SEO.dublin.description,
+    h1: 'Dublin Irish visa decisions',
     subhead: 'Ireland visa decisions for Pakistan and transferred applications',
     kicker: 'Dublin visa office',
     latestLabel: 'Latest snapshot',
@@ -467,7 +468,8 @@ function related(office) {
   const links = OFFICES.filter((item) => item.slug !== office.slug)
     .map((item) => `<a href="${item.route}">${item.name} visa decisions</a>`)
     .join(' · ');
-  return `<p class="page-nav">${links} · <a href="/irish-visa-decisions-today">Irish visa decisions today</a> · <a href="/visa-processing-times">Processing times</a> · <a href="/daily-summaries">Daily summaries</a> · <a href="/help">Help</a></p>`;
+  const dailyLabel = office.slug === 'new-delhi' ? 'New Delhi decisions by date' : 'Daily summaries';
+  return `<p class="page-nav">${links} · <a href="/irish-visa-decisions-today">Irish visa decisions today</a> · <a href="/visa-processing-times">Processing times</a> · <a href="/daily-summaries">${dailyLabel}</a> · <a href="/help">Help</a></p>`;
 }
 
 function officeSearch(office) {

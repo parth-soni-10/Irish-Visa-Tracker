@@ -31,7 +31,11 @@ test("office pages carry unique crawl metadata and working schema", async () => 
   for (const page of PAGES) {
     const html = await read(page.file);
     assert.match(html, new RegExp(`<title>[^<]*${page.name}[^<]*</title>`), page.file);
+    assert.match(html, new RegExp(`<title>${page.name} Ireland Visa Decisions`), page.file);
     assert.match(html, new RegExp(`<h1>[^<]*${page.name}[^<]*</h1>`), page.file);
+    assert.match(html, /<h1>[^<]*Irish visa decisions<\/h1>/, page.file);
+    const description = html.match(/<meta name="description" content="([^"]*)"/)?.[1] || "";
+    assert.ok(description.length > 80 && description.length <= 160, `${page.file}: description is ${description.length} chars`);
     assert.match(html, new RegExp(`<link rel="canonical" href="${SITE}${page.route}">`), page.file);
     assert.doesNotMatch(html, /<meta name="robots"[^>]*noindex/i, page.file);
     assert.doesNotMatch(html, /X-Robots-Tag/i, page.file);
@@ -58,6 +62,7 @@ test("office pages carry unique crawl metadata and working schema", async () => 
 
 test("New Delhi separates the official-file day from later tracker rows", async () => {
   const html = await read("new-delhi-visa-decisions.html");
+  assert.match(html, /href="\/daily-summaries">New Delhi decisions by date<\/a>/);
   assert.match(html, /Latest official-file day/);
   assert.match(
     html,

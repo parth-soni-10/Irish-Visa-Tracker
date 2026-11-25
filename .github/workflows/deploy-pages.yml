@@ -75,6 +75,28 @@ jobs:
           name: pages-dist
           path: .pages-dist
 
+      # IndexNow state is a small fingerprint file, not a tracked source file.
+      # Cache it across deploys so an unchanged URL is not announced again.
+      - name: Prepare IndexNow state path
+        run: mkdir -p .cache && touch .cache/indexnow-state.json
+
+      - name: Restore IndexNow state
+        uses: actions/cache@v4
+        with:
+          path: .cache/indexnow-state.json
+          key: indexnow-state-${{ github.ref_name }}-${{ github.sha }}
+          restore-keys: |
+            indexnow-state-${{ github.ref_name }}-
+
+      # The cache is evicted eventually. This checked-in baseline records the
+      # controlled 25 November 2026 sweep, so a cold cache does not resubmit all
+      # 120 URLs on the next deploy.
+      - name: Seed IndexNow state from the checked-in baseline
+        run: |
+          if [ ! -s .cache/indexnow-state.json ] && [ -s .indexnow-state.json ]; then
+            cp .indexnow-state.json .cache/indexnow-state.json
+          fi
+
       - name: Wait for production and compare artifacts
         id: verify
         env:
@@ -104,8 +126,9 @@ jobs:
       # Bing/Copilot and Yandex consume IndexNow. Google does not; its sitemap
       # and Search Console path is separate. The key file is public and copied
       # into the build at /<key>.txt.
-      - name: Submit changed URLs to IndexNow
+      - name: Submit new or changed URLs to IndexNow
         if: steps.verify.outputs.superseded != 'true'
         env:
           SITE_ORIGIN: ${{ vars.SITE_ORIGIN || vars.APP_BASE_URL || 'https://irishvisaupdatetracker.pages.dev' }}
-        run: node tools/indexnow.mjs --send
+          INDEXNOW_STATE_FILE: .cache/indexnow-state.json
+        run: node tools/indexnow.mjs --send --changed

@@ -826,7 +826,77 @@ function todayPage(data) {
     .filter(Boolean)
     .sort()
     .pop() || '';
-  const description = `Latest official Irish visa decisions for all six offices on ${longDate(today)}, with each office’s latest report date, decisions, approved and refused totals, and last successful check.`;
+  const description = 'The newest official Irish visa decision file from each of the six offices, what changed since the previous file, and which offices published nothing new today.';
+
+  // Daily change: compare each office's newest file with its previous distinct
+  // one. Repeated snapshots (same checksum and counts) are skipped, so a
+  // re-check that returns the same list is not presented as a new decision.
+  const reportSignature = (entry) => [entry && entry.checksum, entry && entry.decisions, entry && entry.approved, entry && entry.refused, entry && entry.source_file].join('|');
+  const changeBySlug = new Map();
+  for (const office of fresh) {
+    const entries = (data.reports.offices[office.slug] || [])
+      .filter((entry) => entry && /^\d{4}-\d{2}-\d{2}/.test(String(entry.report_date || '')))
+      .slice()
+      .sort((a, b) => String(b.report_date).localeCompare(String(a.report_date)));
+    const latest = entries[0] || null;
+    const previous = latest ? entries.slice(1).find((entry) => reportSignature(entry) !== reportSignature(latest)) || null : null;
+    changeBySlug.set(office.slug, { latest, previous });
+  }
+  const signed = (value) => value > 0 ? `+${num(value)}` : value < 0 ? `-${num(Math.abs(value))}` : '0';
+  const changeCell = (latest, previous, key) => {
+    if (!latest) return '—';
+    const value = Number(latest[key]) || 0;
+    if (!previous) return `${num(value)} <span class="small-note">(first file)</span>`;
+    const delta = value - (Number(previous[key]) || 0);
+    return `${num(value)} <span class="small-note">(${signed(delta)})</span>`;
+  };
+  const changeRows = fresh.map((office) => {
+    const { latest, previous } = changeBySlug.get(office.slug) || {};
+    if (!latest) {
+      return `<tr>\n            <th scope="row"><a href="/${esc(office.slug)}-visa-decisions">${esc(office.name)} visa decisions</a></th>\n            <td data-label="Latest file">—</td>\n            <td data-label="Previous file">—</td>\n            <td data-label="Decisions">—</td>\n            <td data-label="Approved">—</td>\n            <td data-label="Refused">—</td>\n          </tr>`;
+    }
+    const latestDate = String(latest.report_date || '').slice(0, 10);
+    return `<tr>\n            <th scope="row"><a href="/${esc(office.slug)}-visa-decisions">${esc(office.name)} visa decisions</a></th>\n            <td data-label="Latest file"><time datetime="${latestDate}">${esc(longDate(latestDate))}</time></td>\n            <td data-label="Previous file">${previous ? `<time datetime="${String(previous.report_date || '').slice(0, 10)}">${esc(longDate(previous.report_date))}</time>` : 'No earlier distinct file'}</td>\n            <td data-label="Decisions">${changeCell(latest, previous, 'decisions')}</td>\n            <td data-label="Approved">${changeCell(latest, previous, 'approved')}</td>\n            <td data-label="Refused">${changeCell(latest, previous, 'refused')}</td>\n          </tr>`;
+  }).join('\n');
+  const noNewToday = fresh
+    .map((office) => ({ office, latest: (changeBySlug.get(office.slug) || {}).latest }))
+    .filter((item) => item.latest && String(item.latest.report_date || '').slice(0, 10) !== today);
+  const noNewCopy = noNewToday.length
+    ? `${noNewToday.length === 1 ? 'One office still has' : `${noNewToday.length} offices still have`} an older file: ${noNewToday.map((item) => `${item.office.name} (latest ${longDate(item.latest.report_date)})`).join(', ')}.`
+    : 'Every office has a file dated today.';
+
+  // Previous and next cross-office date views, using the same quality gate as
+  // the /decisions archive: weekdays only and at least 10 published decisions.
+  const crossOfficeDates = (() => {
+    const byDate = new Map();
+    for (const [slug, entries] of Object.entries((data.reports && data.reports.offices) || {})) {
+      const sorted = (Array.isArray(entries) ? entries : [])
+        .filter((entry) => entry && /^\d{4}-\d{2}-\d{2}/.test(String(entry.report_date || '')))
+        .slice()
+        .sort((a, b) => String(b.report_date).localeCompare(String(a.report_date)));
+      let previous = '';
+      for (const entry of sorted) {
+        const key = [entry.checksum, entry.decisions, entry.approved, entry.refused, entry.source_file].join('|');
+        if (key === previous) continue;
+        previous = key;
+        const date = String(entry.report_date || '').slice(0, 10);
+        const day = new Date(`${date}T00:00:00Z`);
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || day.getUTCDay() === 0 || day.getUTCDay() === 6) continue;
+        if (!byDate.has(date)) byDate.set(date, new Map());
+        const offices = byDate.get(date);
+        const decisions = Number(entry.decisions) || 0;
+        if (!offices.has(slug) || decisions > (Number(offices.get(slug)) || 0)) offices.set(slug, decisions);
+      }
+    }
+    return [...byDate.entries()]
+      .map(([date, offices]) => ({ date, total: [...offices.values()].reduce((sum, value) => sum + value, 0) }))
+      .filter((item) => item.total >= 10)
+      .map((item) => item.date)
+      .sort()
+      .reverse();
+  })();
+  const latestCross = crossOfficeDates[0] || '';
+  const previousCross = crossOfficeDates[1] || '';
 
   const rows = fresh.map((office) => {
     const meta = (data.bySlug && data.bySlug.get(office.slug)) || {};
@@ -840,7 +910,7 @@ function todayPage(data) {
     return `<tr>
             <th scope="row"><a href="/${esc(office.slug)}-visa-decisions">${esc(office.name)} visa decisions</a></th>
             <td data-label="Usual pattern">${esc(meta.cadence || '')}</td>
-            <td data-label="Latest publication">${reportDate ? `<time datetime="${reportDate}">${esc(longDate(reportDate))}</time>` : '—'}</td>
+            <td data-label="Latest publication">${reportDate ? `<time datetime="${reportDate}">${esc(longDate(reportDate))}</time><br><span class="small-note">${reportDate === today ? 'New file today' : 'No newer file today'}</span>` : '—'}</td>
             <td data-label="Decisions">${num(office.decisions)}</td>
             <td data-label="Approved">${num(office.approved)}</td>
             <td data-label="Refused">${num(office.refused)}</td>
@@ -849,7 +919,7 @@ function todayPage(data) {
   }).join('\n');
 
   const body = `    <p class="page-kicker">Published decision files</p>
-    <h1>Irish visa decisions today</h1>
+    <h1>Irish visa decisions today — <time datetime="${today}">${esc(longDate(today))}</time></h1>
     <p class="page-meta">Independent and unofficial &bull; Not immigration advice</p>
 
     <p class="page-lede">
@@ -861,15 +931,38 @@ function todayPage(data) {
       ${fresh.map((office) => `<a href="/${esc(office.slug)}-visa-decisions">${esc(office.name)} visa decisions</a>`).join(' · ')}
     </p>
 
+    <p class="page-nav"><strong>Daily cross-office views:</strong>
+      <a href="/decisions">All dates</a> &middot;
+      ${latestCross ? `<a href="/decisions/${latestCross}">Latest published view: ${esc(longDate(latestCross))}</a>` : 'Latest published view: none yet'} &middot;
+      ${previousCross ? `<a href="/decisions/${previousCross}">Previous view: ${esc(longDate(previousCross))}</a>` : 'Previous view: none'} &middot;
+      <span>Newer view: none yet — this page is current.</span>
+    </p>
+
     <p class="page-data-freshness">
       <strong>Today:</strong> <time datetime="${today}">${esc(longDate(today))}</time> &middot;
+      <strong>Newest official file:</strong> ${newest ? `<time datetime="${newest}">${esc(longDate(newest))}</time>` : '—'} &middot;
       <strong>Last checked:</strong> ${lastChecked ? timeHTML(lastChecked) : '—'} &middot;
       <strong>Page built:</strong> <time datetime="${esc(iso)}">${esc(label)}</time> Dublin time
     </p>
 
     <p class="callout"><strong>${esc(todayCopy)}</strong></p>
 
-    <section>
+    <section id="changes">
+      <h2>What changed since the previous report</h2>
+      <p class="small-note">Each office’s newest official file compared with that office’s previous distinct file. New Delhi and Dublin publish cumulative files, so their change is the number of decisions added since the previous file. Abu Dhabi, Abuja and Ankara publish period totals, so their change compares one period with the previous period and can be negative. Beijing publishes snapshots, and a repeated snapshot shows no change.</p>
+      <div class="table-wrap" role="region" aria-label="Change since each office's previous official report" tabindex="0">
+        <table class="office-table stack-table">
+          <caption>Latest distinct file from each office compared with the one before it, as of ${esc(longDate(today))}</caption>
+          <thead><tr><th scope="col">Office</th><th scope="col">Latest file</th><th scope="col">Previous file</th><th scope="col">Decisions</th><th scope="col">Approved</th><th scope="col">Refused</th></tr></thead>
+          <tbody>
+${changeRows}
+          </tbody>
+        </table>
+      </div>
+      <p class="callout"><strong>Nothing new today:</strong> ${esc(noNewCopy)}</p>
+    </section>
+
+    <section id="latest">
       <h2>Latest published decisions by office</h2>
       <div class="table-wrap" role="region" aria-label="Latest official publication by office" tabindex="0">
         <table class="office-table stack-table">
@@ -883,7 +976,15 @@ ${rows}
       <p class="small-note">Each count belongs to that office's own latest file. The files cover different periods, so do not add them together as a daily total.</p>
     </section>
 
-    <section>
+    <section id="dated-views">
+      <h2>Dated cross-office views</h2>
+      <p class="small-note">Every weekday with at least ten published decisions has a permanent dated page. These links are the same quality-gated set used by the <a href="/decisions">date archive</a>; the newest and previous views are also in the navigation above.</p>
+      <ul class="study-list">
+${crossOfficeDates.map((date) => `        <li><a href="/decisions/${date}">${esc(longDate(date))}</a></li>`).join('\n')}
+      </ul>
+    </section>
+
+    <section id="what-today-means">
       <h2>What “today” means here</h2>
       <ul>
         <li><strong>New Delhi</strong> publishes a cumulative file each weekday morning. Its count is the total in the file, not the number added that day.</li>
@@ -893,7 +994,7 @@ ${rows}
       </ul>
     </section>
 
-    <section>
+    <section id="check">
       <h2>Check an application number</h2>
       <p>The tracker searches the published files of all six offices. It records decisions only; it cannot see an application that has not been published or tell you when a passport will be returned.</p>
       <p class="study-downloads">
@@ -908,7 +1009,7 @@ ${rows}
 
   return shell({
     route: page.route,
-    title: page.title,
+    title: `Irish Visa Decisions Today — ${longDate(today)}`,
     description,
     body,
     jsonLd: {
@@ -930,6 +1031,39 @@ ${rows}
             { '@type': 'ListItem', position: 1, name: 'Tracker', item: `${SITE}/` },
             { '@type': 'ListItem', position: 2, name: 'Irish visa decisions today', item: `${SITE}${page.route}` },
           ],
+        },
+        {
+          '@type': 'Dataset',
+          '@id': `${SITE}${page.route}#dataset`,
+          name: 'Irish visa decision totals by office',
+          description,
+          url: `${SITE}${page.route}`,
+          dateModified: today,
+          isAccessibleForFree: true,
+          spatialCoverage: fresh.map((office) => office.name),
+          variableMeasured: ['Official report date', 'Decisions', 'Approved', 'Refused'],
+          distribution: [
+            { '@type': 'DataDownload', contentUrl: `${SITE}/data/data_manifest.json`, encodingFormat: 'application/json' },
+            { '@type': 'DataDownload', contentUrl: `${SITE}/data/reports/index.json`, encodingFormat: 'application/json' },
+          ],
+          creator: {
+            '@type': 'Organization',
+            '@id': `${SITE}/#organization`,
+            name: 'Irish Visa Decision Tracker',
+            url: `${SITE}/`,
+          },
+          license: `${SITE}/terms`,
+        },
+        {
+          '@type': 'ItemList',
+          '@id': `${SITE}${page.route}#offices`,
+          name: 'Six Irish visa offices',
+          itemListElement: fresh.map((office, index) => ({
+            '@type': 'ListItem',
+            position: index + 1,
+            name: office.name,
+            item: `${SITE}/${office.slug}-visa-decisions`,
+          })),
         },
       ],
     },
@@ -1232,7 +1366,7 @@ function pressPage(data) {
       <h2>Cite this data</h2>
       <p>Use the study URL and the data date. The citation is stable; the figures behind it are rebuilt from the latest official files.</p>
       <pre class="press-citation" tabindex="0"><code>${esc(citation)}</code></pre>
-      <p class="small-note">A versioned snapshot of the summary tables and metadata is published at <a href="/data/snapshots/${esc(asOf)}/metadata.json">/data/snapshots/${esc(asOf)}/metadata.json</a>.</p>
+      <p class="small-note">A versioned snapshot of the summary tables, metadata and a deposit-ready <a href="/data/snapshots/${esc(asOf)}/CITATION.cff">CITATION.cff</a> is published at <a href="/data/snapshots/${esc(asOf)}/metadata.json">/data/snapshots/${esc(asOf)}/metadata.json</a>.</p>
     </section>
 
     <section>
@@ -1249,8 +1383,8 @@ function pressPage(data) {
 
     <section>
       <h2>DOI-backed snapshots</h2>
-      <p>A DOI is minted by depositing a dated snapshot with a repository such as Zenodo; it cannot be created by the site itself. The tracker publishes the snapshot files and citation metadata, so a deposit can point at an immutable version and the study can cite the DOI once it exists.</p>
-      <p class="small-note">Publishing the DOI requires the maintainer's repository account. Until then, cite the study URL and the data date above. Corrections are logged in the <a href="/corrections">correction ledger</a>.</p>
+      <p>A DOI is minted by depositing a dated snapshot with a repository such as Zenodo; it cannot be created by the site itself. The tracker publishes the snapshot files, <a href="/data/snapshots/${esc(asOf)}/CITATION.cff">CITATION.cff</a> and <a href="/data/snapshots/${esc(asOf)}/zenodo.json">Zenodo deposit metadata</a>, so a deposit can point at an immutable version and the study can cite the DOI once it exists.</p>
+      <p class="small-note">Publishing the DOI requires the maintainer's Zenodo account. Until then, cite the study URL and the data date above. Corrections are logged in the <a href="/corrections">correction ledger</a>.</p>
     </section>
 
     <section>
@@ -1686,7 +1820,7 @@ function reportDetailPage(data, office, entry, prior) {
       <h2>How to use this page</h2>
       <p>Use the report counts to verify a published figure, or follow the source file to the office's own document. To check one application number, use <a href="/?tracker=visa&amp;tab=search&amp;office=${office.slug}">office search</a> with the number from your receipt.</p>
       <p>A missing number is not a refusal. The report records decisions, not passport collection, and the official document remains the authority.</p>
-      <p class="page-nav"><a href="/reports/${office.slug}">${esc(office.name)} report archive</a> &middot; <a href="${office.route}">${esc(office.name)} office page</a> &middot; <a href="/reports">All reports</a> &middot; <a href="/data-study">Data study</a></p>
+      <p class="page-nav"><a href="/reports/${office.slug}">${esc(office.name)} report archive</a> &middot; <a href="${office.route}">${esc(office.name)} office page</a> &middot; <a href="/reports">All reports</a> &middot; <a href="/irish-visa-decisions-today">Current cross-office view</a> &middot; <a href="/data-study">Data study</a></p>
     </section>`;
 
   return shell({
@@ -1870,9 +2004,51 @@ function snapshotMetadata(data, asOf) {
       source_url: office.source_url || '',
     })),
     licence: 'Charts and compiled tables may be reused with attribution. Underlying decisions remain the publications of the Irish embassies and the Immigration Service Delivery. Source code is MIT licensed.',
+    citation_file: '/data/snapshots/' + asOf + '/CITATION.cff',
+    zenodo_metadata: '/data/snapshots/' + asOf + '/zenodo.json',
     doi: null,
-    doi_note: 'A DOI requires deposit with a repository such as Zenodo using the maintainer\'s account. This snapshot and metadata are the deposit-ready record.',
+    doi_note: 'A DOI requires deposit with Zenodo using the maintainer\'s account. This snapshot, CITATION.cff and zenodo.json are the deposit-ready record.',
   };
+}
+
+function citationCff(data, asOf) {
+  const stats = latestStats(data);
+  return `cff-version: 1.2.0
+message: If you use this dataset, please cite it using the metadata below.
+title: "Irish Visa Decision Tracker: published visa decisions by office"
+type: dataset
+authors:
+  - family-names: Soni
+    given-names: Parth
+version: "${asOf}"
+date-released: "${asOf}"
+url: "${SITE}/data-study"
+repository-code: "https://github.com/parth-soni-10/Irish-Visa-Tracker"
+license-url: "${SITE}/terms"
+abstract: "Published Irish visa decision counts for New Delhi, Beijing, Dublin, Abu Dhabi, Abuja and Ankara, compiled from the offices' official files. Latest files contain ${num(stats.decisions)} decisions across ${stats.offices.length} offices."
+keywords:
+  - Irish visa
+  - visa decisions
+  - immigration data
+  - Ireland
+`;
+}
+
+function zenodoMetadata(data, asOf) {
+  const stats = latestStats(data);
+  return `${JSON.stringify({
+    title: 'Irish Visa Decision Tracker: published visa decisions by office',
+    description: `Published Irish visa decision counts for New Delhi, Beijing, Dublin, Abu Dhabi, Abuja and Ankara, compiled from the offices' official files. Version ${asOf} contains ${num(stats.decisions)} decisions in the latest files across ${stats.offices.length} offices. The tracker is independent and unofficial; underlying decisions remain the publications of the Irish embassies and the Immigration Service Delivery.`,
+    creators: [{ name: 'Soni, Parth' }],
+    publication_date: asOf,
+    version: asOf,
+    access_right: 'open',
+    keywords: ['Irish visa', 'visa decisions', 'immigration data', 'Ireland'],
+    related_identifiers: [
+      { identifier: `${SITE}/data-study`, relation: 'isDocumentedBy', scheme: 'url' },
+      { identifier: `${SITE}/data/snapshots/${asOf}/metadata.json`, relation: 'isSupplementedBy', scheme: 'url' },
+    ],
+  }, null, 2)}\n`;
 }
 
 function writeFile(file, content) {
@@ -1972,6 +2148,8 @@ export function buildInsightPages(options = {}) {
     writeFile(path.join(snapshotDir, 'office-summary.csv'), officeSummaryCsv(data));
     writeFile(path.join(snapshotDir, 'monthly-volume.csv'), monthlyVolumeCsv(monthly));
     writeFile(path.join(snapshotDir, 'metadata.json'), `${JSON.stringify(snapshotMetadata(data, asOf), null, 2)}\n`);
+    writeFile(path.join(snapshotDir, 'CITATION.cff'), citationCff(data, asOf));
+    writeFile(path.join(snapshotDir, 'zenodo.json'), zenodoMetadata(data, asOf));
   }
 
   let sitemapAdded = 0;

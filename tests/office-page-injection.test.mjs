@@ -6,6 +6,7 @@ import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 
 import { injectOfficePages } from "../tools/deploy-pages.mjs";
+import { OFFICE_SEO } from "../tools/office-seo.mjs";
 
 const ROOT = fileURLToPath(new URL("../", import.meta.url));
 
@@ -103,13 +104,13 @@ test("deploy office-page injection writes current manifest data into a temporary
     assert.doesNotMatch(html, /STALE-/, `${file}: injector left a stale field`);
     assert.match(
       html,
-      new RegExp(`<title>${escapeRegExp(office.name)} Visa Decisions — Latest [^<]+<\\/title>`),
-      `${file}: title is missing the office and latest date`,
+      new RegExp(`<title>${escapeRegExp(OFFICE_SEO[office.slug].title.replace(/&/g, "&amp;"))}<\\/title>`),
+      `${file}: title is not the office intent title`,
     );
     assert.match(
       html,
-      new RegExp(`<meta name="description" content="Search Irish visa decisions for [^"]*Latest official (?:report|snapshot): [^"]*Search by application number\\.`),
-      `${file}: description is missing the current snippet`,
+      new RegExp(`<meta name="description" content="${escapeRegExp(OFFICE_SEO[office.slug].description)}"`),
+      `${file}: description is not the office intent description`,
     );
     if (office.slug === "beijing" && office.status === "error") {
       assert.match(html, /The last successful check on [^<]+ found no newer decision-file link than the 1 November 2026 snapshot\./);

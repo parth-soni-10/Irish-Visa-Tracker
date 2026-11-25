@@ -95,9 +95,17 @@ export function buildLastmodMap(assetsRoot = ROOT) {
     .sort((a, b) => b.date.localeCompare(a.date));
 
   const map = new Map();
+  const editorialDates = (contentDates && contentDates.pages) || {};
   for (const office of Array.isArray(manifest.offices) ? manifest.offices : []) {
     const date = officeDates.get(office.slug);
-    if (date) map.set(`/${office.slug}-visa-decisions`, date);
+    if (date) {
+      const route = `/${office.slug}-visa-decisions`;
+      // An office page carries both its report data and the editorial copy
+      // (office facts, hub links). lastmod is the later of the two: a report
+      // date must not hide a copy edit, and a copy edit must not freeze the
+      // date when a newer report arrives.
+      map.set(route, maxDate([date, editorialDates[route]]) || date);
+    }
   }
   for (const [slug, date] of reportDates) {
     map.set(`/reports/${slug}`, date);
@@ -127,8 +135,10 @@ export function buildLastmodMap(assetsRoot = ROOT) {
     }
   }
 
-  for (const [route, date] of Object.entries((contentDates && contentDates.pages) || {})) {
-    if (/^\d{4}-\d{2}-\d{2}$/.test(String(date))) map.set(route, String(date));
+  for (const [route, date] of Object.entries(editorialDates)) {
+    if (/^\d{4}-\d{2}-\d{2}$/.test(String(date))) {
+      map.set(route, maxDate([map.get(route), String(date)]) || String(date));
+    }
   }
   for (const item of decisionDates) map.set(`/decisions/${item.date}`, item.date);
   if (decisionDates.length) map.set('/decisions', decisionDates[0].date);

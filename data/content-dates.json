@@ -1,5 +1,5 @@
 {
-  "note": "Last editorial change to pages whose content is not generated from a dated data file. Update the date when the page copy changes; the sitemap uses this instead of the build clock.",
+  "note": "Last editorial change to a page's copy. Update the date when the page copy changes. The sitemap uses this date, or the page's own data date when that is later, never the build clock.",
   "pages": {
     "/about": "2026-11-21",
     "/help": "2026-11-24",
@@ -14,6 +14,12 @@
     "/missing-decision": "2026-11-24",
     "/find-my-office": "2026-11-24",
     "/bulk-tools": "2026-11-24",
-    "/decisions": "2026-11-24"
+    "/decisions": "2026-11-24",
+    "/new-delhi-visa-decisions": "2026-11-24",
+    "/beijing-visa-decisions": "2026-11-24",
+    "/dublin-visa-decisions": "2026-11-24",
+    "/abu-dhabi-visa-decisions": "2026-11-24",
+    "/abuja-visa-decisions": "2026-11-24",
+    "/ankara-visa-decisions": "2026-11-24"
   }
 }

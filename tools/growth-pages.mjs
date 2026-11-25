@@ -65,7 +65,6 @@ const OFFICE_META = {
 };
 const DATA_FILES = [
   ['/data/search_preview.json', 'Homepage preview rows'],
-  ['/data/search_fallback.json', 'On-demand application-number fallback index'],
   ['/data/data_manifest.json', 'Latest file metadata for every office'],
   ['/data/freshness.json', 'Check times and stale/overdue state'],
   ['/data/reports/index.json', 'Official report archive metadata'],

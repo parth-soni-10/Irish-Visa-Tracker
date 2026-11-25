@@ -112,6 +112,13 @@ test('deploy verifier ignores the status table build clock', () => {
   assert.equal(stripGeneratedBuildTime(first), stripGeneratedBuildTime(second));
 });
 
+test('deploy verifier ignores the today page build clock', () => {
+  const first = '<strong>Page built:</strong> <time datetime="2026-11-17T10:00:00Z">17 November 2026 at 10:00</time> Dublin time';
+  const second = '<strong>Page built:</strong> <time datetime="2026-11-17T11:00:00Z">17 November 2026 at 11:00</time> Dublin time';
+  assert.equal(stripGeneratedBuildTime(first), '<strong>Page built:</strong><time></time> Dublin time');
+  assert.equal(stripGeneratedBuildTime(first), stripGeneratedBuildTime(second));
+});
+
 test('deploy verifier retries a transient edge mismatch', async (t) => {
   const commit = 'a'.repeat(40);
   const dist = makeDist(commit);

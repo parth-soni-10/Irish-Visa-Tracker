@@ -137,13 +137,32 @@ test("the today page lists every office's newest file with a build stamp", async
   const { dist } = await build(t);
   const html = await readFile(path.join(dist, "irish-visa-decisions-today.html"), "utf8");
   const manifest = JSON.parse(await readFile(path.join(ROOT, "data", "data_manifest.json"), "utf8"));
-  assert.match(html, /<h1>Irish visa decisions today<\/h1>/);
-  assert.match(html, /<title>Irish Visa Decisions Today — Latest by Office<\/title>/);
+  assert.match(html, /<h1>Irish visa decisions today — <time datetime="\d{4}-\d{2}-\d{2}">\d{1,2} [A-Z][a-z]+ \d{4}<\/time><\/h1>/);
+  assert.match(html, /<title>Irish Visa Decisions Today — \d{1,2} [A-Z][a-z]+ \d{4}<\/title>/);
+  assert.match(html, /<meta name="description" content="The newest official Irish visa decision file from each of the six offices/);
   assert.match(html, /<strong>Last checked:<\/strong> <time datetime="/);
+  assert.match(html, /<strong>Newest official file:<\/strong> <time datetime="/);
   assert.match(html, /<strong>Page built:<\/strong> <time datetime="[^"]+">[^<]+<\/time> Dublin time/);
   assert.doesNotMatch(html, /<strong>Last updated:<\/strong>/);
-  assert.equal((html.match(/class="office-table/g) || []).length, 1);
-  const mainTable = html.match(/<table class="office-table[^"]*">([\s\S]*?)<\/table>/)?.[1] || "";
+  assert.match(html, /<section id="changes">/);
+  assert.match(html, /<section id="latest">/);
+  assert.match(html, /<section id="what-today-means">/);
+  assert.match(html, /<section id="check">/);
+  assert.match(html, /Daily cross-office views:/);
+  assert.match(html, /href="\/decisions\/\d{4}-\d{2}-\d{2}">Latest published view:/);
+  assert.match(html, /href="\/decisions\/\d{4}-\d{2}-\d{2}">Previous view:/);
+  assert.match(html, /Newer view: none yet/);
+  assert.match(html, /<section id="dated-views">/);
+  const datedLinks = [...html.matchAll(/href="\/decisions\/\d{4}-\d{2}-\d{2}"/g)];
+  assert.ok(datedLinks.length >= 10, `expected the dated-view list, found ${datedLinks.length} links`);
+  assert.match(html, /href="\/decisions\/\d{4}-\d{2}-\d{2}">\d{1,2} [A-Z][a-z]+ \d{4}<\/a>/);
+  assert.match(html, /New file today|No newer file today/);
+  assert.match(html, /"@type": "Dataset"/);
+  assert.match(html, /"@type": "ItemList"/);
+  const tables = [...html.matchAll(/<table class="office-table[^"]*">([\s\S]*?)<\/table>/g)].map((match) => match[1]);
+  assert.equal(tables.length, 2);
+  const mainTable = tables.find((table) => table.includes("Newest official file from each office")) || "";
+  assert.ok(mainTable, "latest-by-office table is missing");
   assert.match(mainTable, /<caption>Newest official file from each office as of \d{1,2} [A-Z][a-z]+ \d{4}<\/caption>/);
   const tbody = mainTable.match(/<tbody>([\s\S]*?)<\/tbody>/)?.[1] || "";
   const rows = [...tbody.matchAll(/<tr>([\s\S]*?)<\/tr>/g)].map((match) => match[1]);
@@ -160,6 +179,51 @@ test("the today page lists every office's newest file with a build stamp", async
     assert.match(row, new RegExp(`data-label="Refused">${office.refused.toLocaleString("en-IE")}</td>`));
     assert.match(row, /data-label="Last successful check"><time datetime="/);
   }
+
+  const changeTable = tables.find((table) => table.includes("Latest distinct file from each office")) || "";
+  assert.ok(changeTable, "daily change table is missing");
+  const changeBody = changeTable.match(/<tbody>([\s\S]*?)<\/tbody>/)?.[1] || "";
+  const changeRows = [...changeBody.matchAll(/<tr>([\s\S]*?)<\/tr>/g)].map((match) => match[1]);
+  assert.equal(changeRows.length, manifest.offices.length);
+  const archive = JSON.parse(await readFile(path.join(ROOT, "data", "reports", "index.json"), "utf8"));
+  const signature = (entry) => [entry.checksum, entry.decisions, entry.approved, entry.refused, entry.source_file].join("|");
+  for (const office of manifest.offices) {
+    const entries = (archive.offices[office.slug] || [])
+      .filter((entry) => entry && /^\d{4}-\d{2}-\d{2}/.test(String(entry.report_date || "")))
+      .slice()
+      .sort((a, b) => String(b.report_date).localeCompare(String(a.report_date)));
+    const latest = entries[0];
+    assert.ok(latest, `${office.slug} has no archived report`);
+    const previous = entries.slice(1).find((entry) => signature(entry) !== signature(latest));
+    const row = changeRows.find((candidate) => candidate.includes(`href="/${office.slug}-visa-decisions"`));
+    assert.ok(row, `${office.slug} row is missing from the change table`);
+    assert.match(row, new RegExp(`data-label="Latest file"><time datetime="${String(latest.report_date).slice(0, 10)}"`));
+    if (previous) {
+      assert.match(row, new RegExp(`data-label="Previous file"><time datetime="${String(previous.report_date).slice(0, 10)}"`));
+      const delta = Number(latest.decisions) - Number(previous.decisions);
+      const formatted = delta > 0
+        ? `+${Math.abs(delta).toLocaleString("en-IE")}`
+        : delta < 0
+          ? `-${Math.abs(delta).toLocaleString("en-IE")}`
+          : "0";
+      assert.ok(row.includes(`(${formatted})`), `${office.slug} decision change is missing`);
+    } else {
+      assert.match(row, /data-label="Previous file">No earlier distinct file/);
+      assert.match(row, /data-label="Decisions">[\d,]+ <span class="small-note">\(first file\)<\/span>/);
+    }
+  }
+  const todayIso = html.match(/<strong>Today:<\/strong> <time datetime="([^"]+)"/)?.[1] || "";
+  assert.ok(todayIso, "today stamp is missing");
+  const noNew = manifest.offices.filter((office) => String(office.report_date || "").slice(0, 10) !== todayIso);
+  const noNewCallout = html.match(/<strong>Nothing new today:<\/strong>([\s\S]*?)<\/p>/)?.[1] || "";
+  if (noNew.length) {
+    for (const office of noNew) {
+      assert.ok(noNewCallout.includes(`${office.name} (latest `), `${office.slug} missing from the nothing-new callout`);
+    }
+  } else {
+    assert.match(noNewCallout, /Every office has a file dated today/);
+  }
+
   assert.match(html, /<link rel="canonical" href="https:\/\/irishvisaupdatetracker\.pages\.dev\/irish-visa-decisions-today">/);
   const sitemap = await readFile(path.join(dist, "sitemap.xml"), "utf8");
   assert.match(sitemap, /<loc>https:\/\/irishvisaupdatetracker\.pages\.dev\/irish-visa-decisions-today<\/loc>/);
@@ -180,6 +244,7 @@ test("every archived report gets a source-linked permalink and no duplicate snap
   assert.match(page, new RegExp(latest.source_file.replace(/&/g, "&amp;")));
   assert.match(page, new RegExp(`${SITE}/reports/new-delhi/${latest.report_date}`));
   assert.match(page, /BreadcrumbList/);
+  assert.match(page, /href="\/irish-visa-decisions-today">Current cross-office view<\/a>/);
 
   const dublinDates = new Set(
     archive.offices.dublin.map((entry) => `${entry.decisions}|${entry.approved}|${entry.refused}|${entry.source_file}`),
@@ -252,6 +317,19 @@ test("badges, study exports, snapshots and sitemap entries are generated", async
   assert.equal(metadata.version, result.asOf);
   assert.equal(metadata.offices.length, manifest.offices.length);
   assert.equal(metadata.doi, null);
+  assert.equal(metadata.citation_file, `/data/snapshots/${result.asOf}/CITATION.cff`);
+  const citation = await readFile(
+    path.join(dist, "data", "snapshots", result.asOf, "CITATION.cff"),
+    "utf8",
+  );
+  assert.match(citation, /^cff-version: 1\.2\.0/);
+  assert.match(citation, /date-released: "\d{4}-\d{2}-\d{2}"/);
+  const zenodo = JSON.parse(await readFile(
+    path.join(dist, "data", "snapshots", result.asOf, "zenodo.json"),
+    "utf8",
+  ));
+  assert.equal(zenodo.version, result.asOf);
+  assert.equal(zenodo.access_right, "open");
 
   const sitemap = await readFile(path.join(dist, "sitemap.xml"), "utf8");
   for (const route of ["/data", "/data-study", "/reports", "/reports/new-delhi", `/reports/new-delhi/${delhi.report_date}`]) {

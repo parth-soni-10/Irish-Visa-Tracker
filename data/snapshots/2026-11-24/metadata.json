@@ -82,6 +82,8 @@
     }
   ],
   "licence": "Charts and compiled tables may be reused with attribution. Underlying decisions remain the publications of the Irish embassies and the Immigration Service Delivery. Source code is MIT licensed.",
+  "citation_file": "/data/snapshots/2026-11-24/CITATION.cff",
+  "zenodo_metadata": "/data/snapshots/2026-11-24/zenodo.json",
   "doi": null,
-  "doi_note": "A DOI requires deposit with a repository such as Zenodo using the maintainer's account. This snapshot and metadata are the deposit-ready record."
+  "doi_note": "A DOI requires deposit with Zenodo using the maintainer's account. This snapshot, CITATION.cff and zenodo.json are the deposit-ready record."
 }

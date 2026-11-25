@@ -34,6 +34,9 @@ test-results/
 /build_log.txt
 /log_output.txt
 
+# IndexNow change-detection state (CI caches this file; local state is disposable)
+.cache/
+
 # Local browser state and downloaded OCR data
 /cookies.txt
 *.traineddata

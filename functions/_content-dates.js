@@ -14,5 +14,11 @@ export const CONTENT_DATES = {
   "/missing-decision": "24 November 2026",
   "/find-my-office": "24 November 2026",
   "/bulk-tools": "24 November 2026",
-  "/decisions": "24 November 2026"
+  "/decisions": "24 November 2026",
+  "/new-delhi-visa-decisions": "24 November 2026",
+  "/beijing-visa-decisions": "24 November 2026",
+  "/dublin-visa-decisions": "24 November 2026",
+  "/abu-dhabi-visa-decisions": "24 November 2026",
+  "/abuja-visa-decisions": "24 November 2026",
+  "/ankara-visa-decisions": "24 November 2026"
 };

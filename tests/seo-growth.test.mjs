@@ -101,8 +101,13 @@ test("the homepage Dataset dates come from their own data files", async (t) => {
 test("sitemap lastmod follows each page's data, not the build date", async () => {
   const map = buildLastmodMap(ROOT);
   const manifest = JSON.parse(await readFile(path.join(ROOT, "data", "data_manifest.json"), "utf8"));
+  const contentDates = JSON.parse(await readFile(path.join(ROOT, "data", "content-dates.json"), "utf8"));
   for (const office of manifest.offices) {
-    assert.equal(map.get(`/${office.slug}-visa-decisions`), office.report_date, office.slug);
+    const route = `/${office.slug}-visa-decisions`;
+    const editorial = contentDates.pages[route];
+    // A copy edit on an office page can be newer than its latest report.
+    const expected = editorial && editorial > office.report_date ? editorial : office.report_date;
+    assert.equal(map.get(route), expected, office.slug);
   }
   assert.equal(map.get("/about"), "2026-11-21");
   assert.equal(map.get("/monthly-report/2026-10"), "2026-10-31");
@@ -136,5 +141,47 @@ test("social cards are 1200x630 PNGs for every office and month", async () => {
     assert.equal(buffer.subarray(1, 4).toString(), "PNG", file);
     assert.equal(buffer.readUInt32BE(16), 1200, file);
     assert.equal(buffer.readUInt32BE(20), 630, file);
+  }
+});
+
+test("daily summaries is scoped to New Delhi and links the cross-office view", async () => {
+  const html = await readFile(path.join(ROOT, "daily-summaries.html"), "utf8");
+  assert.match(html, /<title>New Delhi Ireland Visa Decisions by Date — Daily Counts<\/title>/);
+  assert.match(html, /<h1>New Delhi Ireland visa decisions by date<\/h1>/);
+  assert.match(html, /<meta name="description" content="Day-by-day approved and refused counts from the Embassy of Ireland in New Delhi/);
+  assert.match(html, /<strong>New Delhi only\.<\/strong>/);
+  assert.match(html, /href="\/irish-visa-decisions-today">Irish visa decisions today<\/a>/);
+  assert.doesNotMatch(html, /<title>Ireland Visa Decisions by Date/);
+});
+
+test("Help answers the new query gaps and keeps the FAQ schema in sync", async () => {
+  const html = await readFile(path.join(ROOT, "help.html"), "utf8");
+  for (const [id, text] of [
+    ["passport", "My result says Approved — where is my passport?"],
+    ["refusal", "What should I do after a refusal?"],
+    ["missing-after-report", "My number is still missing after the report date"],
+    ["transfers", "Which office handles transferred applications?"],
+  ]) {
+    assert.match(html, new RegExp(`<section id="${id}">`), id);
+    assert.ok(html.includes(text), `${id} heading is missing`);
+  }
+  assert.match(html, /<strong>Last reviewed:<\/strong> <time datetime="2026-11-24">24 November 2026<\/time>/);
+  assert.match(html, /href="\/after-approval">after approval<\/a>/);
+  assert.match(html, /href="\/after-refusal">after a refusal<\/a>/);
+  assert.match(html, /href="\/find-my-office">find my office<\/a>/);
+  assert.match(html, /href="\/irish-visa-decisions-today">cross-office file dates<\/a>/);
+
+  const block = html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/);
+  assert.ok(block, "Help JSON-LD is missing");
+  const schema = JSON.parse(block[1]);
+  const faq = schema["@graph"].find((node) => node["@type"] === "FAQPage");
+  assert.equal(faq.mainEntity.length, 9);
+  for (const question of [
+    "My result says Approved — where is my passport?",
+    "What should I do after a refusal?",
+    "My number is still missing after the report date",
+    "Which office handles transferred applications?",
+  ]) {
+    assert.ok(faq.mainEntity.some((item) => item.name === question), `${question} schema entry is missing`);
   }
 });

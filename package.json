@@ -24,6 +24,7 @@
     "dev": "npx wrangler pages dev .",
     "deploy": "npm run build && npx wrangler pages deploy && npm run smoke",
     "audit:discovery": "node tools/audit-discovery.mjs",
+    "audit:bots": "node tools/audit-search-bots.mjs",
     "coverage:dashboard": "node tools/coverage-dashboard.mjs"
   },
   "dependencies": {

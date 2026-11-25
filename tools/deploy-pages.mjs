@@ -18,6 +18,7 @@ import { loadFreshness, writeFreshness, longDate, checkedStamp, timeHTML, SNAPSH
 import { freshnessFooterHTML, freshnessHistoryHTML } from './freshness-ui.mjs';
 import { versionAssets } from './version-assets.mjs';
 import { auditDiscovery } from './audit-discovery.mjs';
+import { OFFICE_SEO } from './office-seo.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -660,8 +661,9 @@ export function injectOfficePages(options = {}) {
       ankara: 'Türkiye, Azerbaijan and Saudi residents',
       dublin: 'Pakistan and transferred applications',
     }[office.slug] || 'its published applications';
-    const seoTitle = `${office.name} Visa Decisions — Latest ${latest}`;
-    const seoDescription = `Search Irish visa decisions for ${seoCoverage}. Latest official ${isSnapshot ? 'snapshot' : 'report'}: ${latest} — ${decisions.toLocaleString('en-IE')} decisions. Search by application number.`;
+    const officeSeo = OFFICE_SEO[office.slug];
+    const seoTitle = (officeSeo && officeSeo.title) || `${office.name} Visa Decisions — Latest ${latest}`;
+    const seoDescription = (officeSeo && officeSeo.description) || `Search Irish visa decisions for ${seoCoverage}. Latest official ${isSnapshot ? 'snapshot' : 'report'}: ${latest} — ${decisions.toLocaleString('en-IE')} decisions. Search by application number.`;
     html = html.replace(/<title>[\s\S]*?<\/title>/i, `<title>${escapeHtml(seoTitle)}</title>`);
     html = replaceMetaContent(html, 'property="og:title"', seoTitle);
     html = replaceMetaContent(html, 'name="twitter:title"', seoTitle);
@@ -687,6 +689,61 @@ export function injectOfficePages(options = {}) {
     fs.writeFileSync(pagePath, html);
   }
   console.log('Office pages: injected latest manifest data.');
+}
+
+/** The homepage's compact latest-report block. One newest dated permalink per
+ *  office, next to that office's landing page, outside the hydrating dashboard
+ *  so it stays in the initial HTML for readers and crawlers. */
+export function injectHomeLatestReports(options = {}) {
+  const assetsRoot = path.resolve(options.assetsRootDir || assetsRootDir);
+  const dist = path.resolve(options.distDir || distDir);
+  const pagePath = path.resolve(dist, 'index.html');
+  if (!fs.existsSync(pagePath)) return;
+
+  const manifestPath = path.resolve(assetsRoot, 'data', 'data_manifest.json');
+  let manifest;
+  try {
+    manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+  } catch {
+    console.warn('Warning: data_manifest.json is not valid JSON; keeping homepage latest-report fallbacks');
+    return;
+  }
+  if (!Array.isArray(manifest.offices) || !manifest.offices.length) return;
+
+  const reports = loadReportArchive(assetsRoot);
+  const rows = manifest.offices.map((office) => {
+    const slug = String(office.slug || '');
+    const name = String(office.name || slug);
+    if (!slug || !name) return '';
+    const entries = reports && reports.offices && Array.isArray(reports.offices[slug])
+      ? reports.offices[slug]
+      : [];
+    const dates = entries
+      .map((entry) => String(entry && entry.report_date || '').slice(0, 10))
+      .filter((date) => /^\d{4}-\d{2}-\d{2}$/.test(date))
+      .sort((a, b) => b.localeCompare(a));
+    // Only link a permalink this build actually emitted; otherwise the office
+    // page is still useful and the row must not become a 404.
+    const latest = dates.find((date) =>
+      fs.existsSync(path.resolve(dist, 'reports', slug, `${date}.html`)));
+    const reportLink = latest
+      ? `<a class="latest-official-report" href="/reports/${escapeHtml(slug)}/${latest}"><strong>${escapeHtml(name)}</strong> <time datetime="${latest}">${escapeHtml(longDate(latest))}</time></a>`
+      : `<span class="latest-official-report"><strong>${escapeHtml(name)}</strong> <span class="latest-official-missing">No dated report page yet</span></span>`;
+    const officeLink = fs.existsSync(path.resolve(dist, `${slug}-visa-decisions.html`))
+      ? `<a class="latest-official-office" href="/${escapeHtml(slug)}-visa-decisions">${escapeHtml(name)} decisions</a>`
+      : '';
+    return `<li data-latest-office="${escapeHtml(slug)}">${reportLink}${officeLink}</li>`;
+  }).filter(Boolean);
+
+  if (!rows.length) return;
+  const html = fs.readFileSync(pagePath, 'utf8');
+  const updated = html.replace(
+    /(<ul[^>]*data-latest-official-list[^>]*>)[\s\S]*?(<\/ul>)/i,
+    `$1\n        ${rows.join('\n        ')}\n      $2`,
+  );
+  if (updated === html) return;
+  fs.writeFileSync(pagePath, updated);
+  console.log(`Homepage latest reports: ${rows.length} office links.`);
 }
 
 /** The status page's static latest-report table. Kept separate from the
@@ -1039,6 +1096,10 @@ async function main() {
   const growth = buildGrowthPages({ assetsRootDir, distDir });
   console.log(`Growth pages: ${growth.pages.length} pages, ${growth.datePages} date pages, ${growth.archives} eligible date(s)` +
     (growth.sitemapAdded ? `, ${growth.sitemapAdded} sitemap entries` : '') + '.');
+
+  // Run after the report permalinks exist so a row never points at a page this
+  // build did not emit.
+  injectHomeLatestReports();
 
   const monthly = await buildMonthlyPages({ assetsRootDir, distDir });
   console.log(`Monthly report: ${monthly.pages} pages, latest ${monthly.latestMonth}, ${monthly.months.length} archived month(s).`);

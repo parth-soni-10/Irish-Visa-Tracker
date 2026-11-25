@@ -1,7 +1,7 @@
 {
-  "generated_at": "2026-11-24T16:05:27.335Z",
+  "generated_at": "2026-11-25T00:30:00.000Z",
   "source": "seed",
-  "notes": "Seeded from the signed-in Search Console snapshot available on 24 November 2026. Run npm run coverage:dashboard with GSC/Bing credentials to refresh.",
+  "notes": "Seeded from the signed-in Search Console and Bing Webmaster snapshots on 25 November 2026. The engine scorecard is a 15-URL inspection sample; submitted counts are the live 127-URL sitemap. Run npm run coverage:dashboard with credentials to refresh the Google section.",
   "gsc": {
     "site": "https://irishvisaupdatetracker.pages.dev/",
     "period": {
@@ -26,10 +26,43 @@
     ],
     "priorityUrls": [
       {
+        "url": "/",
+        "coverageState": "Submitted and indexed",
+        "indexingState": "INDEXING_ALLOWED",
+        "lastCrawlTime": "2026-11-07T23:47:31Z",
+        "pageFetchState": "SUCCESSFUL",
+        "googleCanonical": "https://irishvisaupdatetracker.pages.dev/",
+        "userCanonical": "https://irishvisaupdatetracker.pages.dev/",
+        "verdict": "PASS"
+      },
+      {
+        "url": "/irish-visa-decisions-today",
+        "coverageState": "URL is unknown to Google",
+        "indexingState": "not indexed",
+        "lastCrawlTime": "",
+        "pageFetchState": "PAGE_FETCH_STATE_UNSPECIFIED",
+        "googleCanonical": "",
+        "userCanonical": "",
+        "verdict": "NEUTRAL"
+      },
+      {
+        "url": "/vfs-tracking",
+        "coverageState": "URL is unknown to Google",
+        "indexingState": "not indexed",
+        "lastCrawlTime": "",
+        "pageFetchState": "PAGE_FETCH_STATE_UNSPECIFIED",
+        "googleCanonical": "",
+        "userCanonical": "",
+        "verdict": "NEUTRAL"
+      },
+      {
         "url": "/new-delhi-visa-decisions",
         "coverageState": "URL is unknown to Google",
         "indexingState": "not indexed",
         "lastCrawlTime": "",
+        "pageFetchState": "PAGE_FETCH_STATE_UNSPECIFIED",
+        "googleCanonical": "",
+        "userCanonical": "",
         "verdict": "NEUTRAL"
       },
       {
@@ -37,13 +70,9 @@
         "coverageState": "URL is unknown to Google",
         "indexingState": "not indexed",
         "lastCrawlTime": "",
-        "verdict": "NEUTRAL"
-      },
-      {
-        "url": "/dublin-visa-decisions",
-        "coverageState": "URL is unknown to Google",
-        "indexingState": "not indexed",
-        "lastCrawlTime": "",
+        "pageFetchState": "PAGE_FETCH_STATE_UNSPECIFIED",
+        "googleCanonical": "",
+        "userCanonical": "",
         "verdict": "NEUTRAL"
       },
       {
@@ -51,6 +80,9 @@
         "coverageState": "URL is unknown to Google",
         "indexingState": "not indexed",
         "lastCrawlTime": "",
+        "pageFetchState": "PAGE_FETCH_STATE_UNSPECIFIED",
+        "googleCanonical": "",
+        "userCanonical": "",
         "verdict": "NEUTRAL"
       },
       {
@@ -58,6 +90,9 @@
         "coverageState": "URL is unknown to Google",
         "indexingState": "not indexed",
         "lastCrawlTime": "",
+        "pageFetchState": "PAGE_FETCH_STATE_UNSPECIFIED",
+        "googleCanonical": "",
+        "userCanonical": "",
         "verdict": "NEUTRAL"
       },
       {
@@ -65,6 +100,79 @@
         "coverageState": "URL is unknown to Google",
         "indexingState": "not indexed",
         "lastCrawlTime": "",
+        "pageFetchState": "PAGE_FETCH_STATE_UNSPECIFIED",
+        "googleCanonical": "",
+        "userCanonical": "",
+        "verdict": "NEUTRAL"
+      },
+      {
+        "url": "/dublin-visa-decisions",
+        "coverageState": "URL is unknown to Google",
+        "indexingState": "not indexed",
+        "lastCrawlTime": "",
+        "pageFetchState": "PAGE_FETCH_STATE_UNSPECIFIED",
+        "googleCanonical": "",
+        "userCanonical": "",
+        "verdict": "NEUTRAL"
+      },
+      {
+        "url": "/reports",
+        "coverageState": "URL is unknown to Google",
+        "indexingState": "not indexed",
+        "lastCrawlTime": "",
+        "pageFetchState": "PAGE_FETCH_STATE_UNSPECIFIED",
+        "googleCanonical": "",
+        "userCanonical": "",
+        "verdict": "NEUTRAL"
+      },
+      {
+        "url": "/reports/new-delhi",
+        "coverageState": "URL is unknown to Google",
+        "indexingState": "not indexed",
+        "lastCrawlTime": "",
+        "pageFetchState": "PAGE_FETCH_STATE_UNSPECIFIED",
+        "googleCanonical": "",
+        "userCanonical": "",
+        "verdict": "NEUTRAL"
+      },
+      {
+        "url": "/reports/new-delhi/2026-11-23",
+        "coverageState": "URL is unknown to Google",
+        "indexingState": "not indexed",
+        "lastCrawlTime": "",
+        "pageFetchState": "PAGE_FETCH_STATE_UNSPECIFIED",
+        "googleCanonical": "",
+        "userCanonical": "",
+        "verdict": "NEUTRAL"
+      },
+      {
+        "url": "/monthly-report",
+        "coverageState": "URL is unknown to Google",
+        "indexingState": "not indexed",
+        "lastCrawlTime": "",
+        "pageFetchState": "PAGE_FETCH_STATE_UNSPECIFIED",
+        "googleCanonical": "",
+        "userCanonical": "",
+        "verdict": "NEUTRAL"
+      },
+      {
+        "url": "/decisions/2026-11-24",
+        "coverageState": "URL is unknown to Google",
+        "indexingState": "not indexed",
+        "lastCrawlTime": "",
+        "pageFetchState": "PAGE_FETCH_STATE_UNSPECIFIED",
+        "googleCanonical": "",
+        "userCanonical": "",
+        "verdict": "NEUTRAL"
+      },
+      {
+        "url": "/data-study",
+        "coverageState": "URL is unknown to Google",
+        "indexingState": "not indexed",
+        "lastCrawlTime": "",
+        "pageFetchState": "PAGE_FETCH_STATE_UNSPECIFIED",
+        "googleCanonical": "",
+        "userCanonical": "",
         "verdict": "NEUTRAL"
       }
     ],
@@ -106,5 +214,156 @@
   },
   "errors": [
     "No Search Console or Bing credentials were provided; showing the checked-in seed snapshot."
-  ]
+  ],
+  "indexing_scorecard": {
+    "checked_at": "2026-11-25",
+    "next_check": "2026-12-02",
+    "sample_note": "Discovered, crawled and indexed counts come from URL Inspection on a 15-URL sample, not a site-wide index total. Submitted is the live sitemap URL count on 25 November 2026.",
+    "manual_note": "Google Request indexing is a signed-in URL Inspection action. Bing site scan has no API action in this integration; crawl diagnostics are used instead. Yandex Webmaster is not connected.",
+    "engines": [
+      {
+        "engine": "Google",
+        "submitted": 127,
+        "discovered": 1,
+        "crawled": 1,
+        "indexed": 1,
+        "excluded": "No API exclusion count; /community-timelines is intentionally noindex",
+        "last_crawl": "2026-11-07T23:47:31Z",
+        "sitemap_status": "Pending — 0 errors, 0 warnings",
+        "sample": "15 inspected: homepage indexed; 14 other samples unknown"
+      },
+      {
+        "engine": "Bing",
+        "submitted": 127,
+        "discovered": 13,
+        "crawled": 13,
+        "indexed": "Not exposed",
+        "excluded": "Not exposed",
+        "last_crawl": "2026-11-24T12:54:04Z",
+        "sitemap_status": "Success — 127 URLs, last crawled 25 Nov 2026",
+        "sample": "15 inspected; 14 priority URLs submitted through the URL API"
+      },
+      {
+        "engine": "Yandex",
+        "submitted": 0,
+        "discovered": "Unknown",
+        "crawled": "Unknown",
+        "indexed": "Unknown",
+        "excluded": "Unknown",
+        "last_crawl": "",
+        "sitemap_status": "Not submitted — no verified Yandex property",
+        "sample": "No Yandex Webmaster property; 120 URLs sent through IndexNow"
+      }
+    ],
+    "families": [
+      {
+        "family": "Core page",
+        "submitted": 25,
+        "google": {
+          "inspected": 4,
+          "indexed": 1,
+          "unknown": 3,
+          "crawled": 1,
+          "last_crawl": "2026-11-07T23:47:31Z"
+        },
+        "bing": {
+          "inspected": 4,
+          "discovered": 4,
+          "crawled": 4,
+          "last_crawl": "2026-11-24T12:52:50Z"
+        },
+        "yandex": "Unknown"
+      },
+      {
+        "family": "Office hub",
+        "submitted": 6,
+        "google": {
+          "inspected": 6,
+          "indexed": 0,
+          "unknown": 6,
+          "crawled": 0,
+          "last_crawl": ""
+        },
+        "bing": {
+          "inspected": 6,
+          "discovered": 6,
+          "crawled": 6,
+          "last_crawl": "2026-11-21T22:24:10Z"
+        },
+        "yandex": "Unknown"
+      },
+      {
+        "family": "Report hub",
+        "submitted": 7,
+        "google": {
+          "inspected": 2,
+          "indexed": 0,
+          "unknown": 2,
+          "crawled": 0,
+          "last_crawl": ""
+        },
+        "bing": {
+          "inspected": 2,
+          "discovered": 1,
+          "crawled": 1,
+          "last_crawl": "2026-11-21T22:10:36Z"
+        },
+        "yandex": "Unknown"
+      },
+      {
+        "family": "Dated report",
+        "submitted": 56,
+        "google": {
+          "inspected": 1,
+          "indexed": 0,
+          "unknown": 1,
+          "crawled": 0,
+          "last_crawl": ""
+        },
+        "bing": {
+          "inspected": 1,
+          "discovered": 1,
+          "crawled": 1,
+          "last_crawl": "2026-11-24T12:54:04Z"
+        },
+        "yandex": "Unknown"
+      },
+      {
+        "family": "Monthly report",
+        "submitted": 11,
+        "google": {
+          "inspected": 1,
+          "indexed": 0,
+          "unknown": 1,
+          "crawled": 0,
+          "last_crawl": ""
+        },
+        "bing": {
+          "inspected": 1,
+          "discovered": 1,
+          "crawled": 1,
+          "last_crawl": "2026-11-21T22:10:22Z"
+        },
+        "yandex": "Unknown"
+      },
+      {
+        "family": "Date view",
+        "submitted": 22,
+        "google": {
+          "inspected": 1,
+          "indexed": 0,
+          "unknown": 1,
+          "crawled": 0,
+          "last_crawl": ""
+        },
+        "bing": {
+          "inspected": 1,
+          "discovered": 0,
+          "crawled": 0,
+          "last_crawl": ""
+        },
+        "yandex": "Unknown"
+      }
+    ]
+  }
 }
