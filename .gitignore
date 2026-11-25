@@ -45,6 +45,9 @@ test-results/
 /*-debug.png
 /*-check.png
 
+# Local visual-audit screenshots (not part of the site or its build)
+design-audit/
+
 # Ad-hoc root-level repair/check scripts
 /debug_*.js
 /check_*.py

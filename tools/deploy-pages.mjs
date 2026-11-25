@@ -264,6 +264,7 @@ const INLINE_STYLE_PAGES = [
   /^[a-z0-9-]+-visa-decisions\.html$/,
   /^irish-visa-decisions-today\.html$/,
   /^daily-summaries\.html$/,
+  /^(about|contact|privacy|terms)\.html$/,
 ];
 
 const INLINE_STYLE_MODULE = path.resolve(rootDir, 'functions', '_csp-inline-style.js');
@@ -555,6 +556,10 @@ export function injectLiveSummary(options = {}) {
 
   const fileDate = longDate(office.report_date);
   const checked = office.checked_at ? timeHTML(office.checked_at) : fileDate;
+  // Plain text for the <time> element itself: timeHTML() already returns a
+  // complete <time> element, so nesting it inside #visa-as-of appended one
+  // stray </time> per build.
+  const checkedText = office.checked_label || fileDate;
   const count = office.decisions.toLocaleString('en-IE');
   const through = longDate(office.official_data_through);
   const observation = office.observation_note ? ` ${office.observation_note}` : '';
@@ -577,7 +582,7 @@ export function injectLiveSummary(options = {}) {
   if (fs.existsSync(dailyPath)) {
     const iso = String(office.checked_at || office.report_date).slice(0, 10);
     const daily = fs.readFileSync(dailyPath, 'utf8')
-      .replace(/(<time id="visa-as-of" datetime=")[^"]*(">)[\s\S]*?(<\/time>)/, `$1${iso}$2${checked}$3`)
+      .replace(/(<time id="visa-as-of" datetime=")[^"]*(">)[\s\S]*?(<\/time>)/, `$1${iso}$2${checkedText}$3`)
       .replace(/(<span id="visa-rows">)[\s\S]*?(<\/span>)/, `$1${count}$2`);
     fs.writeFileSync(dailyPath, daily);
   }
@@ -1260,7 +1265,8 @@ async function main() {
     assetsRootDir,
     outDir: path.resolve(distDir, 'assets', 'social'),
   });
-  console.log(`Social cards: ${cards.count} PNG(s).`);
+  console.log(`Social cards: ${cards.count} PNG(s)` +
+    (cards.skipped ? `, ${cards.skipped} skipped (canvas not installed)` : '') + '.');
 
   const lastmod = updateSitemap(
     path.resolve(distDir, 'sitemap.xml'),

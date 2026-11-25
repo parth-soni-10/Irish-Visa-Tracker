@@ -75,7 +75,7 @@ export function recentDaysHtml(days, { fileExists = () => false } = {}) {
   }).join('\n        ');
   const newest = days[0];
   const oldest = days[days.length - 1];
-  return `<div class="table-wrap" role="region" aria-label="Recent New Delhi decision days" tabindex="0">
+  return `<div data-daily-recent><div class="table-wrap" role="region" aria-label="Recent New Delhi decision days" tabindex="0">
         <table class="office-table stack-table">
           <caption>Recent tracker-observed New Delhi days, newest first: ${esc(longDate(oldest.date))} to ${esc(longDate(newest.date))}</caption>
           <thead><tr><th scope="col">File date</th><th scope="col">Decisions</th><th scope="col">Approved</th><th scope="col">Refused</th></tr></thead>
@@ -84,7 +84,8 @@ export function recentDaysHtml(days, { fileExists = () => false } = {}) {
           </tbody>
         </table>
       </div>
-      <p class="small-note">These are the days the tracker recorded, not a claim that every application was decided. A date with no official file is a closure or a gap; the newest day can be partial. Full history: <a href="/?tracker=visa&amp;tab=history">the interactive History tab</a>.</p>`;
+      <p class="small-note">These are the days the tracker recorded, not a claim that every application was decided. A date with no official file is a closure or a gap; the newest day can be partial. Full history: <a href="/?tracker=visa&amp;tab=history">the interactive History tab</a>.</p>
+      </div><!-- /data-daily-recent -->`;
 }
 
 export function injectDailyRecent(options = {}) {
@@ -105,9 +106,14 @@ export function injectDailyRecent(options = {}) {
     return fs.existsSync(path.join(assetsRoot, 'reports', 'new-delhi', `${date}.html`));
   };
   const html = fs.readFileSync(pagePath, 'utf8');
-  const pattern = /(<div[^>]*data-daily-recent[^>]*>)[\s\S]*?(<\/div>)/i;
-  if (!pattern.test(html)) return { written: false, reason: 'missing placeholder' };
-  const next = html.replace(pattern, `$1${recentDaysHtml(days, { fileExists })}$2`);
+  // Replace the whole marked block, not up to the first </div>: the table is
+  // wrapped in its own div, so the lazy pattern used to leave the note behind
+  // and append a duplicate every run.
+  const marked = /<div[^>]*data-daily-recent[^>]*>[\s\S]*?<!--\s*\/data-daily-recent\s*-->/i;
+  const legacy = /(<div[^>]*data-daily-recent[^>]*>)[\s\S]*?<\/div>/i;
+  if (!marked.test(html) && !legacy.test(html)) return { written: false, reason: 'missing placeholder' };
+  const block = recentDaysHtml(days, { fileExists });
+  const next = marked.test(html) ? html.replace(marked, block) : html.replace(legacy, block);
   if (next === html) return { written: false, reason: 'unchanged', days: days.length };
   fs.writeFileSync(pagePath, next);
   return { written: true, days: days.length };

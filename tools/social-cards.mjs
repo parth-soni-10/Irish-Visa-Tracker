@@ -15,7 +15,19 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { createCanvas } from 'canvas';
+import { createRequire } from 'node:module';
+
+const require = createRequire(import.meta.url);
+let canvasFactory = null;
+function getCanvasFactory() {
+  if (canvasFactory) return canvasFactory;
+  try {
+    ({ createCanvas: canvasFactory } = require('canvas'));
+  } catch {
+    canvasFactory = null;
+  }
+  return canvasFactory;
+}
 
 import { buildMonthlyReport } from '../functions/report-data.js';
 import { loadMonthlyData } from './monthly-pages.mjs';
@@ -116,6 +128,8 @@ function fitFont(ctx, text, maxWidth, start, weight = '700', family = '"Segoe UI
 }
 
 function drawOfficeCard(office) {
+  const createCanvas = getCanvasFactory();
+  if (!createCanvas) return null;
   const canvas = createCanvas(WIDTH, HEIGHT);
   const ctx = canvas.getContext('2d');
   background(ctx);
@@ -149,6 +163,8 @@ function drawOfficeCard(office) {
 }
 
 function drawMonthCard(report) {
+  const createCanvas = getCanvasFactory();
+  if (!createCanvas) return null;
   const canvas = createCanvas(WIDTH, HEIGHT);
   const ctx = canvas.getContext('2d');
   background(ctx);
@@ -196,6 +212,7 @@ export async function buildSocialCards(options = {}) {
 
   fs.mkdirSync(outRoot, { recursive: true });
   let count = 0;
+  let skipped = 0;
   for (const office of manifest.offices || []) {
     if (!office || !office.slug || !Number(office.decisions)) continue;
     const target = path.join(outRoot, `office-${office.slug}.png`);
@@ -203,7 +220,12 @@ export async function buildSocialCards(options = {}) {
       count += 1;
       continue;
     }
-    fs.writeFileSync(target, drawOfficeCard(office));
+    const png = drawOfficeCard(office);
+    if (!png) {
+      skipped += 1;
+      continue;
+    }
+    fs.writeFileSync(target, png);
     count += 1;
   }
   for (const month of months) {
@@ -213,10 +235,15 @@ export async function buildSocialCards(options = {}) {
       count += 1;
       continue;
     }
-    fs.writeFileSync(target, drawMonthCard(report));
+    const png = drawMonthCard(report);
+    if (!png) {
+      skipped += 1;
+      continue;
+    }
+    fs.writeFileSync(target, png);
     count += 1;
   }
-  return { count, latestMonth, months: months.length, outRoot };
+  return { count, skipped, latestMonth, months: months.length, outRoot };
 }
 
 const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);

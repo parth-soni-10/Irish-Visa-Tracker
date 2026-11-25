@@ -2,11 +2,24 @@ name: Tests
 
 on:
   push:
-    # The scraper commits data/*.json every ~30 min; pushes that touch ONLY
-    # those generated files can't break the code, so don't burn a runner on them.
+    # The scraper rebuilds the derived pages and runs the full Node suite in
+    # the same job. Skip a push that only carries data and the pages generated
+    # from it; anything else runs every check.
     # (paths-ignore skips only when every changed file matches.)
     paths-ignore:
       - 'data/**'
+      - 'status.html'
+      - 'reports/**'
+      - 'monthly-report/**'
+      - 'decisions/**'
+      - '*-visa-decisions.html'
+      - 'irish-visa-decisions-today.html'
+      - 'daily-summaries.html'
+      - 'data-study.html'
+      - 'press.html'
+      - 'all-pages.html'
+      - 'sitemap.xml'
+      - 'sitemap-*.xml'
   pull_request:
   workflow_dispatch: {}
 
@@ -39,30 +52,11 @@ jobs:
         # on ERR_MODULE_NOT_FOUND rather than on a real assertion.
         run: npm ci --ignore-scripts
 
-      - name: Run agent-surface and product tests
-        # Content negotiation, Markdown documents, the 404 contract, metadata,
-        # push, reports and alert delivery.
-        run: node --test tests/agent-docs.test.mjs tests/deploy-verify.test.mjs tests/search-fallback.test.mjs tests/predict.test.mjs tests/predict-feedback.test.mjs tests/predict-calibration.test.mjs tests/reports.test.mjs tests/corrections.test.mjs tests/push.test.mjs tests/email-webhook.test.mjs tests/embassy-pdf-ingestion.test.mjs tests/community-submissions.test.mjs tests/alerts-run.test.mjs tests/telegram.test.mjs tests/digest-schedule.test.mjs
-
-      - name: Run admin, durable rate-limit and conversion tests
-        # The admin metrics/token surface and the D1-backed limiter had no
-        # direct coverage before these suites.
-        run: node --test tests/admin-api.test.mjs tests/rate-limit.test.mjs tests/events.test.mjs
-
-      - name: Run health and monitoring tests
-        run: node --test tests/health.test.mjs tests/monitoring.test.mjs
-
-      - name: Run Ankara ingestion and PDF history tests
-        run: node --test tests/ankara-ocr.test.mjs tests/ankara-checksum.test.mjs tests/decision-history.test.mjs tests/scrape-ocr-guard.test.mjs
-
-      - name: Run weekly PDF backfill fixture tests
-        run: node --test tests/backfill-weekly-history.test.mjs
-
-      - name: Run email delivery tests
-        run: node --test tests/email-send.test.mjs
-
-      - name: Run embassy checksum tests
-        run: node --test tests/embassy-checksums.test.mjs
+      - name: Run the full Node test suite
+        # The hand-picked list missed the CSP-hash and font-loading suites,
+        # so a production styling regression shipped unnoticed. The full
+        # suite takes about ten seconds.
+        run: node --test tests/*.test.mjs
 
       - name: Audit served HTML for inline assets
         # The deployed CSP has no unsafe-inline for scripts or <style> elements;

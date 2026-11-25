@@ -34,7 +34,7 @@
   --r-control: 6px;
   --shadow-sm: none;
 
-  --sans: 'Inter', -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif;
+  --sans: 'Inter', 'Inter Fallback', -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif;
   --mono: ui-monospace, 'SF Mono', Consolas, Menlo, monospace;
 }
 

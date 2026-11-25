@@ -61,11 +61,23 @@ jobs:
       - name: Verify Ankara OCR decisions
         run: node tools/verify-ankara.mjs
 
-      - name: Commit updated data
+      - name: Rebuild derived pages
+        # The pages under status.html, reports/, monthly-report/ and the
+        # freshness line are generated from data/. Rebuild them in the same
+        # commit so a data push can never leave them stale.
+        run: npm run rebuild:pages
+
+      - name: Verify the full site build
+        run: npm run build
+
+      - name: Run the full Node suite against the rebuilt data
+        run: node --test tests/*.test.mjs
+
+      - name: Commit updated data and derived pages
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/
+          git add -A
           git diff --staged --quiet || git commit -m "data: record $(date -u +%F) official decisions"
           # A failed push (e.g. a concurrent run committed first) is safe to
           # ignore: the embassy file is cumulative, so the next run re-derives
