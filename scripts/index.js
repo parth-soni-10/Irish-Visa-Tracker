@@ -3363,11 +3363,13 @@
                 if (!raw) {
                     homeLookupSeq += 1;
                     if (status) status.textContent = 'Choose a number and office. All six offices are searched by default.';
+                    box.classList.remove('is-active');
                     box.innerHTML = '';
                     return;
                 }
                 if (!term) {
                     homeLookupSeq += 1;
+                    box.classList.remove('is-active');
                     if (status) status.textContent = 'Enter the digits from the application number.';
                     box.innerHTML = '<div class="home-lookup-empty home-lookup-empty-small"><h3>Start with your application number</h3>' +
                         '<p>Enter the number on your receipt or decision email. Do not use a VFS reference or passport number. An <strong>IRL</strong> prefix, spaces and dashes are optional.</p></div>';
@@ -3378,6 +3380,7 @@
                 // search that should reach the no-result state.
                 if (raw.replace(/\D/g, '').length < 4) {
                     homeLookupSeq += 1;
+                    box.classList.remove('is-active');
                     if (status) status.textContent = 'Keep typing \u2014 enter at least 4 digits to search.';
                     box.innerHTML = '<div class="home-lookup-empty home-lookup-empty-small"><h3>Add a few more digits</h3>' +
                         '<p>Search needs at least 4 digits. Check the application number on your receipt or decision email; an <strong>IRL</strong> prefix, spaces and dashes are optional.</p></div>';
@@ -3386,6 +3389,9 @@
                 var seq = ++homeLookupSeq;
                 var scope = homeSearchOffice === 'all' ? 'all six offices' : officeName(homeSearchOffice);
                 if (status) status.textContent = 'Searching ' + scope + '\u2026';
+                // Reserve the results panel before the answer lands; see the
+                // is-active rule in index.css (field CLS charged this lookup).
+                box.classList.add('is-active');
                 box.innerHTML = '<div class="home-lookup-loading" role="status">' + searchIcon() +
                     '<span>Searching ' + escapeHtml(scope) + '\u2026</span></div>';
                 var filters = homeSearchOffice === 'all' ? {} : { embassy: homeSearchOffice };

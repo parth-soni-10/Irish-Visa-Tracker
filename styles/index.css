@@ -2666,7 +2666,20 @@
     min-height: 20px;
     margin: 12px 0 4px;
 }
-#visa-dash .home-lookup-loading {
+        /* A lookup answers a second or more after Enter, and up to 100 match
+           cards then landed in normal flow and pushed the whole tracker down;
+           Cloudflare's field CLS charged the lookup 0.19. Once a search is
+           running the results get a fixed viewport-height panel that scrolls
+           inside itself, so nothing below it moves when the answer arrives. */
+        #visa-dash #home-lookup-results.is-active {
+            height: 70vh;
+            overflow-y: auto;
+            overscroll-behavior: contain;
+        }
+        @media (max-width: 700px) {
+            #visa-dash #home-lookup-results.is-active { height: 60vh; }
+        }
+        #visa-dash .home-lookup-loading {
     display: flex;
     align-items: center;
     gap: 8px;
