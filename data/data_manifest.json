@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-26T10:07:47.363Z",
+  "generated_at": "2026-11-26T11:13:47.199Z",
   "offices": [
     {
       "slug": "new-delhi",
@@ -9,7 +9,7 @@
       "source_name": "Embassy of Ireland, New Delhi",
       "report_date": "2026-11-25",
       "as_of": "2026-11-26",
-      "fetched_at": "2026-11-26T10:07:03.154Z",
+      "fetched_at": "2026-11-26T11:13:05.571Z",
       "status": "official",
       "note": null,
       "decisions": 44097,
@@ -24,7 +24,7 @@
       "approved": 37136,
       "refused": 6961,
       "corrections": 0,
-      "added": 161
+      "added": 0
     },
     {
       "slug": "beijing",
@@ -34,7 +34,7 @@
       "source_name": "Embassy of Ireland, Beijing",
       "report_date": "2026-11-22",
       "as_of": "2026-11-26",
-      "fetched_at": "2026-11-26T10:07:05.080Z",
+      "fetched_at": "2026-11-26T11:13:06.929Z",
       "status": "official",
       "note": null,
       "decisions": 14425,
@@ -59,7 +59,7 @@
       "source_name": "Embassy of Ireland, Abu Dhabi",
       "report_date": "2026-11-20",
       "as_of": "2026-11-26",
-      "fetched_at": "2026-11-26T10:07:06.016Z",
+      "fetched_at": "2026-11-26T11:13:07.568Z",
       "status": "official",
       "note": null,
       "decisions": 232,
@@ -124,7 +124,7 @@
       "source_name": "Embassy of Ireland, Abuja",
       "report_date": "2026-11-07",
       "as_of": "2026-11-26",
-      "fetched_at": "2026-11-26T10:07:06.128Z",
+      "fetched_at": "2026-11-26T11:13:08.073Z",
       "status": "official",
       "note": "The newest upload is labelled up to 2026-11-14, but the file itself covers up to 2026-11-07. The office has not published that later week yet.",
       "decisions": 99,
@@ -257,7 +257,7 @@
       "source_name": "Embassy of Ireland, Ankara",
       "report_date": "2026-11-22",
       "as_of": "2026-11-26",
-      "fetched_at": "2026-11-26T10:07:06.295Z",
+      "fetched_at": "2026-11-26T11:13:09.477Z",
       "status": "official",
       "note": "Scanned PDF extracted with poppler+tesseract at 300 DPI (7 pages).",
       "decisions": 217,
@@ -302,7 +302,7 @@
       "source_name": "Immigration Service Delivery, Dublin Visa Office",
       "report_date": "2026-11-26",
       "as_of": "2026-11-26",
-      "fetched_at": "2026-11-26T10:07:15.808Z",
+      "fetched_at": "2026-11-26T11:13:17.026Z",
       "status": "official",
       "note": null,
       "decisions": 4848,
