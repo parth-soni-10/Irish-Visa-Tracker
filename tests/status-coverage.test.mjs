@@ -1,10 +1,14 @@
 import assert from "node:assert/strict";
+import fs from "node:fs";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 
 const ROOT = fileURLToPath(new URL("../", import.meta.url));
+// See tests/freshness.test.mjs: SITE_HTML_BASE lets the scrape job assert on
+// the pages it just built instead of the previous commit's snapshot.
+const PAGES = path.resolve(ROOT, process.env.SITE_HTML_BASE || ".");
 const MONTHS = ["January", "February", "March", "April", "May", "June", "July",
   "August", "September", "October", "November", "December"];
 
@@ -18,6 +22,12 @@ async function read(relativePath) {
   return readFile(path.join(ROOT, relativePath), "utf8");
 }
 
+async function readPage(relativePath) {
+  return readFile(path.join(PAGES, relativePath), "utf8");
+}
+
+assert.ok(fs.existsSync(path.join(PAGES, "status.html")), `missing status.html under ${PAGES}`);
+
 function columns(section) {
   return [...section.matchAll(/<th scope="col">([^<]+)<\/th>/g)]
     .map((match) => match[1].trim());
@@ -25,7 +35,7 @@ function columns(section) {
 
 test("status page answers search freshness and keeps provenance in details", async () => {
   const [html, manifestSource, freshnessSource] = await Promise.all([
-    read("status.html"),
+    readPage("status.html"),
     read("data/data_manifest.json"),
     read("data/freshness.json"),
   ]);

@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import fs from "node:fs";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { test } from "node:test";
@@ -7,6 +8,11 @@ import { fileURLToPath } from "node:url";
 import { loadFreshness } from "../tools/freshness.mjs";
 
 const ROOT = fileURLToPath(new URL("../", import.meta.url));
+// Page assertions read the build output when a caller provides it. The scrape
+// job sets SITE_HTML_BASE=.pages-dist: it rebuilds the data, so the checked-in
+// root pages are a snapshot from before that refresh. Data files always come
+// from the repository root.
+const PAGES = path.resolve(ROOT, process.env.SITE_HTML_BASE || ".");
 const MONTHS = ["January", "February", "March", "April", "May", "June", "July",
   "August", "September", "October", "November", "December"];
 
@@ -19,6 +25,12 @@ function longDate(value) {
 async function read(name) {
   return readFile(path.join(ROOT, name), "utf8");
 }
+
+async function readPage(name) {
+  return readFile(path.join(PAGES, name), "utf8");
+}
+
+assert.ok(fs.existsSync(path.join(PAGES, "status.html")), `missing status.html under ${PAGES}`);
 
 test("freshness.json makes every date role explicit and keeps success separate from attempts", async () => {
   const freshness = loadFreshness(ROOT);
@@ -91,10 +103,10 @@ test("freshness.json makes every date role explicit and keeps success separate f
 
 test("official surfaces keep their data-through separate from tracker observation", async () => {
   const [status, home, office, dataPage] = await Promise.all([
-    read("status.html"),
-    read("index.html"),
-    read("new-delhi-visa-decisions.html"),
-    read("data.html"),
+    readPage("status.html"),
+    readPage("index.html"),
+    readPage("new-delhi-visa-decisions.html"),
+    readPage("data.html"),
   ]);
   const freshness = loadFreshness(ROOT);
   const newDelhi = freshness.bySlug["new-delhi"];
@@ -110,7 +122,13 @@ test("official surfaces keep their data-through separate from tracker observatio
     new RegExp(`${count} New Delhi decisions in the latest official file \\(report ${longDate(newDelhi.report_date)}\\)[\\s\\S]*Tracker observed decisions dated through ${observed}`),
   );
   assert.match(office, new RegExp(`${count} decisions`));
-  assert.match(office, new RegExp(`latest official report: ${longDate(newDelhi.report_date)}`));
+  // The source office page reads "latest official report: <date>"; the build
+  // replaces that line with the canonical "report <date> · N decisions" one.
+  // Both facts are what matters, so accept either rendering.
+  assert.match(
+    office,
+    new RegExp(`(?:latest official report: |report )${longDate(newDelhi.report_date)}`),
+  );
   assert.ok(office.includes(
     `office-freshness-observation">Tracker observed decisions dated through ${observed}; these are not in the ${official} official file.`,
   ));
@@ -152,13 +170,13 @@ test("citation pages use the oldest office check, not the newest build date", as
       ? `offices last successfully checked ${longDate(first)}`
       : `offices last successfully checked ${longDate(first)} to ${longDate(last)}`;
   for (const file of ["data.html", "data-study.html", "press.html"]) {
-    const html = await read(file);
+    const html = await readPage(file);
     assert.ok(html.includes(copy), `${file} should cite the office check date(s)`);
     if (first !== last) {
       assert.doesNotMatch(html, new RegExp(`data checked ${longDate(last)}`), file);
     }
   }
-  const dataPage = await read("data.html");
+  const dataPage = await readPage("data.html");
   const attention = freshness.offices
     .filter((office) => office.status === "error" || office.overdue)
     .map((office) => office.name);
@@ -171,7 +189,7 @@ test("citation pages use the oldest office check, not the newest build date", as
 });
 
 test("the daily page separates official file, observed day and decision date", async () => {
-  const html = await read("daily-summaries.html");
+  const html = await readPage("daily-summaries.html");
   assert.match(html, /<strong>Official file day<\/strong>/);
   assert.match(html, /<strong>Tracker-observed day<\/strong>/);
   assert.match(html, /<strong>Decision date<\/strong>/);
@@ -182,7 +200,7 @@ test("the daily page separates official file, observed day and decision date", a
 });
 
 test("the latest monthly page states its data-through date and partial month", async () => {
-  const html = await read("monthly-report.html");
+  const html = await readPage("monthly-report.html");
   assert.match(html, /id="report-data-through">Data to \d{1,2} [A-Z][a-z]+ \d{4}\./);
   assert.match(html, /November 2026 is a partial month: totals cover dated decisions recorded so far\./);
 });
