@@ -153,20 +153,50 @@ The scorecard is at `/search-coverage` (noindex). It distinguishes a submitted
 URL from a discovered, crawled or indexed one, and breaks the sample down by
 core page, office hub, report hub, dated report, monthly report and date view.
 
+## Crawl and index trend, 26 November 2026
+
+Bing's crawl diagnostics (`GetCrawlDiagnostics`, daily `stats`) show the first
+crawl six days after discovery:
+
+| Date | 2xx responses | Crawled pages | In index |
+| --- | --- | --- | --- |
+| 9–22 Nov | 0 | 0 | 0 |
+| 23 Nov | 8 | 15 | 8 |
+| 24 Nov | 12 | 0 | 12 |
+| 25 Nov | 21 | 11 | 20 |
+
+So `in_index` is exposed after all: a daily count of URLs Bing holds for this
+host. It is a crawl-diagnostics series, not a query series. The site-level
+search-performance report still shows zero impressions for 11–24 November and no
+query rows, and that API returns only a 14-day window, so older Bing traffic
+cannot be re-read from it. URL Inspection still reports a 7 November last crawl
+and `http_status: 0`, so prefer the daily series for questions about indexing.
+
+The submitted `sitemap.xml` (127 URLs) was last crawled 25 November 00:40 UTC
+with status `Success`. On 26 November the three priority pages that had never
+been sent through Bing's URL API — `/daily-summaries`,
+`/stamp-1g-processing-dates` and `/monthly-report` — were submitted once in a
+second controlled sweep (3 of 100 for the day; 17 URLs submitted in total, now
+recorded in `data/bing-submissions.json`). Re-check the crawl series, the sitemap
+status and impressions on **3 December 2026**. Do not resubmit an unchanged URL
+before then.
+
 ## Google priority indexing queue (manual)
 
 URL Inspection can inspect a URL through the API, but Request indexing is a
-button only a signed-in Search Console user can press. After the current deploy,
-inspect and request indexing **one at a time** for these eight URLs:
+button only a signed-in Search Console user can press. The 26 November priority
+set is these five pages, in this order:
 
-1. `https://irishvisaupdatetracker.pages.dev/irish-visa-decisions-today`
-2. `https://irishvisaupdatetracker.pages.dev/vfs-tracking`
-3. `https://irishvisaupdatetracker.pages.dev/new-delhi-visa-decisions`
-4. `https://irishvisaupdatetracker.pages.dev/beijing-visa-decisions`
-5. `https://irishvisaupdatetracker.pages.dev/abu-dhabi-visa-decisions`
-6. `https://irishvisaupdatetracker.pages.dev/abuja-visa-decisions`
-7. `https://irishvisaupdatetracker.pages.dev/ankara-visa-decisions`
-8. `https://irishvisaupdatetracker.pages.dev/dublin-visa-decisions`
+1. `https://irishvisaupdatetracker.pages.dev/new-delhi-visa-decisions`
+2. `https://irishvisaupdatetracker.pages.dev/irish-visa-decisions-today`
+3. `https://irishvisaupdatetracker.pages.dev/daily-summaries`
+4. `https://irishvisaupdatetracker.pages.dev/stamp-1g-processing-dates`
+5. `https://irishvisaupdatetracker.pages.dev/monthly-report`
+
+All five returned HTTP 200 to a Googlebot user agent on 26 November with a
+self-referencing canonical, no `robots` meta tag and a sitemap entry, so the
+manual request is the only remaining step. Request them one at a time. The other
+five office pages and `/vfs-tracking` are the next set, not the first.
 
 For each: open URL Inspection, confirm the live URL and canonical, press
 **Request indexing**, and record the date. Do not request the whole sitemap, do

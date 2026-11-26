@@ -2,8 +2,10 @@
 // build-time injector read this map so the title/description do not drift.
 export const OFFICE_SEO = {
   'new-delhi': {
-    title: 'New Delhi Ireland Visa Decisions — India, Bangladesh, Nepal, Sri Lanka',
-    description: 'Search Irish visa decisions for India, Bangladesh, Nepal and Sri Lanka in the latest New Delhi file, with approved, refused and processing data.',
+    // India carries the largest impression count in Search Console, so the
+    // country leads the snippet instead of trailing four country names.
+    title: 'New Delhi Ireland Visa Decisions — India, Latest File',
+    description: 'Latest New Delhi Irish visa decisions for India, Bangladesh, Nepal and Sri Lanka, with approved and refused counts, processing times and a free number search.',
   },
   beijing: {
     title: 'Beijing Ireland Visa Decisions — China, Hong Kong, Macau, Mongolia',

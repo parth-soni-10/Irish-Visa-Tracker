@@ -631,6 +631,48 @@ export function injectTodayLine(options = {}) {
   console.log(`Today line: ${copy}`);
 }
 
+/**
+ * Homepage search snippet. "ireland visa decisions today" is the query with
+ * the most impressions and it currently lands on `/`, so the snippet has to
+ * state the newest official file date and its decision count; a generic
+ * "search all 6 offices" title gives a searcher nothing to click. The same
+ * figures are also the India-first entry point, because New Delhi is the file
+ * that query is about.
+ */
+export function injectHomepageSeo(options = {}) {
+  const assetsRoot = path.resolve(options.assetsRootDir || assetsRootDir);
+  const dist = path.resolve(options.distDir || distDir);
+  const pagePath = path.resolve(dist, 'index.html');
+  if (!fs.existsSync(pagePath)) return;
+  const office = loadFreshness(assetsRoot).bySlug['new-delhi'];
+  if (!office || !office.report_date) return;
+  const decisions = Number(office.decisions) || 0;
+  if (!decisions) return;
+
+  const reportDate = String(office.report_date).slice(0, 10);
+  const short = checkedStamp(reportDate) || longDate(reportDate);
+  const count = decisions.toLocaleString('en-IE');
+  const approved = (Number(office.approved) || 0).toLocaleString('en-IE');
+  const refused = (Number(office.refused) || 0).toLocaleString('en-IE');
+  const title = `Irish Visa Decisions Today — ${count} in ${short} File`;
+  const description = `Latest official New Delhi file: ${longDate(reportDate)} — ${count} Irish visa decisions (${approved} approved, ${refused} refused). Search any application number.`;
+  const indiaLine = `<strong>India:</strong> <a href="/new-delhi-visa-decisions">New Delhi Irish visa decisions</a> — latest official file ${longDate(reportDate)}, ${count} decisions.`;
+
+  let html = fs.readFileSync(pagePath, 'utf8');
+  html = html.replace(/<title>[\s\S]*?<\/title>/i, `<title>${escapeHtml(title)}</title>`);
+  html = replaceMetaContent(html, 'name="description"', description);
+  html = replaceMetaContent(html, 'property="og:title"', title);
+  html = replaceMetaContent(html, 'property="og:description"', description);
+  html = replaceMetaContent(html, 'name="twitter:title"', title);
+  html = replaceMetaContent(html, 'name="twitter:description"', description);
+  html = html.replace(
+    /(<p[^>]*data-india-line[^>]*>)[\s\S]*?(<\/p>)/,
+    `$1${indiaLine}$2`,
+  );
+  fs.writeFileSync(pagePath, html);
+  console.log(`Homepage snippet: ${title}`);
+}
+
 export function injectOfficePages(options = {}) {
   const assetsRoot = path.resolve(options.assetsRootDir || assetsRootDir);
   const dist = path.resolve(options.distDir || distDir);
@@ -1235,6 +1277,7 @@ async function main() {
   const dailyRecent = injectDailyRecent({ assetsRootDir, distDir });
   console.log(`Daily recent table: ${dailyRecent.written ? `${dailyRecent.days} day(s)` : dailyRecent.reason}.`);
   injectTodayLine();
+  injectHomepageSeo();
   bundleIndexAssets();
   injectHomepageDates();
   

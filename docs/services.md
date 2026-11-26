@@ -18,6 +18,41 @@ never stored in this repository and must not be pasted into chat or committed.
 - Optional monitoring secret: `ALERT_WEBHOOK_URL` (GitHub Actions and the
   separate monitoring Worker).
 
+## Cloudflare analytics (read-only)
+
+Traffic figures for the deployed origin come from Cloudflare Web Analytics
+(RUM) through the GraphQL Analytics API.
+
+- Token name: `freebuff-analytics-readonly`. Permissions
+  **Account → Account Analytics → Read** (the Web Analytics/RUM datasets) and
+  **Account → Account Settings → Read** (required by the Web Analytics site
+  API: without it `/rum/site_info/list` returns `10000 Authentication error`).
+  Account-scoped to this account only, no other permissions.
+- It lives only in the local, gitignored `.dev.vars`
+  (`CLOUDFLARE_API_TOKEN`, plus the non-secret `CLOUDFLARE_ACCOUNT_ID`). It is
+  never a Pages secret, a GitHub secret or a site asset.
+- The GraphQL endpoint accepts API tokens only; the Wrangler OAuth login used
+  for `wrangler pages deploy` is rejected there.
+
+```bash
+node tools/cloudflare-analytics.mjs --check   # token, accounts, Web Analytics sites
+node tools/cloudflare-analytics.mjs --days=7  # daily pageviews, top pages, countries, CWV
+```
+
+`--json` returns the same figures plus a `webVitals` array. Two traps when
+querying the RUM datasets directly: web vitals live in
+`rumWebVitalsEventsAdaptiveGroups`, not the pageload dataset, and their
+`quantiles` arrive in **microseconds** with `-1` meaning "no sample for this
+metric" (shown as `n/a`). The query filters `bot: 0`, so the CWV table is human
+traffic only.
+
+The report also splits human from bot pageviews and homepage `/` from every
+other subpage. Cloudflare does not support excluding an individual IP address
+from Web Analytics, and Web Analytics Rules (hostname/path include-exclude) only
+exist for zones proxied through Cloudflare, so `.pages.dev` has neither. The
+human series plus the subpage share is the supported way to read growth; do not
+read the raw homepage total as demand.
+
 Set or rotate a Pages secret with a local value file. The value is piped to
 Wrangler and is not printed by the command:
 

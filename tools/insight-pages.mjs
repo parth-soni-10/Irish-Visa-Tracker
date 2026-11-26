@@ -846,7 +846,14 @@ function todayPage(data) {
     .filter(Boolean)
     .sort()
     .pop() || '';
-  const description = 'The newest official Irish visa decision file from each of the six offices, what changed since the previous file, and which offices published nothing new today.';
+  // The snippet has to answer the query on its own: the newest file date and
+  // the New Delhi count, not just a description of the page's structure.
+  const snippetOffice = fresh.find((office) => office.slug === 'new-delhi') || null;
+  const snippetCount = snippetOffice ? Number(snippetOffice.decisions) || 0 : 0;
+  const snippetFacts = snippetOffice && snippetOffice.report_date && snippetCount
+    ? ` Latest New Delhi file: ${longDate(snippetOffice.report_date)} — ${snippetCount.toLocaleString('en-IE')} decisions.`
+    : '';
+  const description = 'The newest official Irish visa decision file from each of the six offices, what changed since the previous file, and which offices published nothing new today.' + snippetFacts;
 
   // Daily change: compare each office's newest file with its previous distinct
   // one. Repeated snapshots (same checksum and counts) are skipped, so a

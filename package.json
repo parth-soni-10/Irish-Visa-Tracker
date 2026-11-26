@@ -16,6 +16,7 @@
     "rebuild:pages": "node tools/freshness.mjs --write && node tools/office-pages.mjs --write && node tools/insight-pages.mjs --write && node tools/growth-pages.mjs --write && node tools/daily-recent.mjs --write && node tools/monthly-pages.mjs --write && node tools/sitemap-lastmod.mjs --write",
     "monthly:pages": "node tools/monthly-pages.mjs --write",
     "social:cards": "node tools/social-cards.mjs --write",
+    "analytics:cf": "node tools/cloudflare-analytics.mjs",
     "seo:gsc": "node tools/search-console-review.mjs",
     "seo:indexnow": "node tools/indexnow.mjs",
     "test:e2e": "playwright test --project=chromium",
