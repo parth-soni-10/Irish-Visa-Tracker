@@ -18,6 +18,10 @@ let requestNumber = 0;
 // Must stay in step with the no-store blocks in _headers (asserted by
 // tests/cache-policy.test.mjs) and NO_STORE in functions/_router.js.
 const NO_STORE = 'no-store, no-cache, must-revalidate, max-age=0';
+// The homepage keeps a browser revalidation rule and lets the edge reuse the
+// HTML for a minute; /index.html redirects there with the same policy.
+const SHARED_CACHE = 'no-cache, must-revalidate, max-age=0';
+const SHARED_CDN = 'public, s-maxage=60, stale-while-revalidate=300';
 
 async function get(path, options = {}) {
   // Each probe gets a unique query so an old edge cache entry cannot make a
@@ -59,6 +63,19 @@ function checkNoStore(label, response) {
   check(label + ' is never cached', problems.length === 0, problems.join(', ') || response.cacheControl);
 }
 
+/** The homepage contract: the browser revalidates before reuse, the edge may
+ *  keep a one-minute copy. A no-store or immutable directive here is a bug. */
+function checkSharedCache(label, response) {
+  const problems = [];
+  if (response.cacheControl !== SHARED_CACHE) problems.push('Cache-Control=' + (response.cacheControl || 'missing'));
+  if (response.pragma.toLowerCase() !== 'no-cache') problems.push('Pragma=' + (response.pragma || 'missing'));
+  if (response.expires !== '0') problems.push('Expires=' + (response.expires || 'missing'));
+  if (response.cdnCacheControl !== SHARED_CDN) problems.push('CDN-Cache-Control=' + (response.cdnCacheControl || 'missing'));
+  if (/immutable|no-store/i.test(response.cacheControl)) problems.push('no-store/immutable leaked');
+  check(label + ' revalidates in the browser and may be edge-cached for 60s', problems.length === 0,
+    problems.join(', ') || response.cdnCacheControl);
+}
+
 function check(name, ok, detail) {
   console.log((ok ? 'PASS' : 'FAIL') + '  ' + name + (detail ? '  (' + detail + ')' : ''));
   if (!ok) failures += 1;
@@ -69,7 +86,7 @@ console.log('Smoke-testing ' + BASE + '\n');
 const home = await get('/');
 check('homepage serves', home.status === 200 && /Irish Visa/i.test(home.text), 'HTTP ' + home.status);
 check('homepage is HTML', home.type.includes('text/html'), home.type);
-checkNoStore('homepage', home);
+checkSharedCache('homepage', home);
 
 const comparisonRoute = await get('/comparison', { redirect: 'manual' });
 check('comparison route redirects to method section', comparisonRoute.status === 301 && /\/about#method/.test(comparisonRoute.location), 'HTTP ' + comparisonRoute.status);
@@ -113,7 +130,7 @@ checkNoStore('service worker', sw);
 const indexRoute = await get('/index.html', { redirect: 'manual' });
 const indexTarget = indexRoute.location ? new URL(indexRoute.location, BASE) : null;
 check('index route redirects to the homepage', indexRoute.status === 308 && indexTarget && indexTarget.pathname === '/', 'HTTP ' + indexRoute.status + (indexRoute.location ? ' -> ' + indexTarget.pathname : ''));
-checkNoStore('index route', indexRoute);
+checkSharedCache('index route', indexRoute);
 
 const appScript = await get('/scripts/index-sw.js');
 check('app script serves', appScript.status === 200, 'HTTP ' + appScript.status);

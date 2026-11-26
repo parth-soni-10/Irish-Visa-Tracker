@@ -694,7 +694,7 @@ export const OPEN_DATA_MARKDOWN = lines(
 );
 
 export const DOCUMENTS = new Map([
-  ["/", { markdown: HOME_MARKDOWN, alternate: "/index.md", file: "/index.html", noStore: true }],
+  ["/", { markdown: HOME_MARKDOWN, alternate: "/index.md", file: "/index.html", sharedCache: true }],
   ["/about", { markdown: ABOUT_MARKDOWN, alternate: "/about.md", file: "/about.html" }],
   ["/contact", { markdown: CONTACT_MARKDOWN, alternate: "/contact.md", file: "/contact.html" }],
   ["/privacy", { markdown: PRIVACY_MARKDOWN, alternate: "/privacy.md", file: "/privacy.html" }],

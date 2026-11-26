@@ -85,6 +85,11 @@ const REPO_RAW = "https://raw.githubusercontent.com/parth-soni/irish-visa-tracke
 // CDN, or a stale service worker reuse a response from an earlier build.
 const NO_STORE = "no-store, no-cache, must-revalidate, max-age=0";
 const HTML_CACHE = "no-cache, must-revalidate, max-age=0";
+// The homepage is the one page with enough traffic to benefit from an edge
+// copy. The browser still revalidates, so a deploy is visible on the next
+// navigation; only the CDN may reuse the HTML for a minute.
+const SHARED_HTML_CACHE = "no-cache, must-revalidate, max-age=0";
+const SHARED_HTML_CDN = "public, s-maxage=60, stale-while-revalidate=300";
 const ASSET_CACHE = "public, max-age=31536000, immutable";
 const STATIC_CACHE = "public, max-age=3600, must-revalidate";
 const IMMUTABLE_ROOTS = new Set([
@@ -98,13 +103,23 @@ const IMMUTABLE_ROOTS = new Set([
 ]);
 // These URLs control deployment and service-worker updates. They must never
 // be reused from an HTTP cache, even though /scripts/* is otherwise immutable.
-const NO_STORE_ASSETS = new Set(["/sw.js", "/scripts/index-sw.js", "/index.html"]);
+const NO_STORE_ASSETS = new Set(["/sw.js", "/scripts/index-sw.js"]);
 
 function setNoStore(headers) {
   headers.set("Cache-Control", NO_STORE);
   headers.set("Pragma", "no-cache");
   headers.set("Expires", "0");
   headers.set("CDN-Cache-Control", "no-store");
+  return headers;
+}
+
+/** Homepage only: a browser revalidates a cached copy before using it, while
+ *  the edge may serve its minute-old copy without a round trip. */
+function setSharedHtmlCache(headers) {
+  headers.set("Cache-Control", SHARED_HTML_CACHE);
+  headers.set("Pragma", "no-cache");
+  headers.set("Expires", "0");
+  headers.set("CDN-Cache-Control", SHARED_HTML_CDN);
   return headers;
 }
 
@@ -142,7 +157,7 @@ function setStaticCache(headers) {
   return headers;
 }
 
-import { INLINE_STYLE_SHA256 } from './_csp-inline-style.js';
+import { INLINE_STYLE_SHA256S } from './_csp-inline-style.js';
 
 // Security headers
 function addSecurityHeaders(response) {
@@ -154,8 +169,9 @@ function addSecurityHeaders(response) {
   // Inline executable scripts and <style> elements are extracted. Inline
   // style attributes remain for generated geometry, so only that attribute
   // source keeps unsafe-inline; script attributes are disabled entirely. The
-  // content pages inline one identical stylesheet block, and the build writes
-  // its hash into _csp-inline-style.js so exactly that block is allowed.
+  // content pages inline one identical stylesheet block and the homepage
+  // inlines its own bundle; the build writes both hashes into
+  // _csp-inline-style.js so exactly those blocks are allowed.
   headers.set(
     "Content-Security-Policy",
     "default-src 'self'; " +
@@ -163,7 +179,7 @@ function addSecurityHeaders(response) {
     "script-src-attr 'none'; " +
     "style-src 'self'; " +
     "style-src-attr 'unsafe-inline'; " +
-    "style-src-elem 'self' '" + INLINE_STYLE_SHA256 + "'; " +
+    "style-src-elem 'self'" + INLINE_STYLE_SHA256S.map((hash) => ` '${hash}'`).join("") + "; " +
     "font-src 'self' data:; " +
     "img-src 'self' data: https:; " +
     "connect-src 'self' https://fcm.googleapis.com https://cloudflareinsights.com; " +
@@ -292,7 +308,8 @@ async function fetchDocument(env, request, document) {
   // next build's versioned assets and service-worker registration are visible
   // immediately. Other HTML revalidates; versioned CSS/JS is cached by the
   // asset rules.
-  if (document.noStore) setNoStore(headers);
+  if (document.sharedCache) setSharedHtmlCache(headers);
+  else if (document.noStore) setNoStore(headers);
   else setHtmlCache(headers);
   mergeVary(headers);
   return addSecurityHeaders(new Response(request.method === "HEAD" ? null : response.body, {
@@ -355,7 +372,12 @@ async function agentDocumentResponse(request, env, document, origin = "") {
   if (choice === "markdown") {
     return markdownResponse(document.markdown, 200, request.method, origin);
   }
-  return fetchDocument(env, request, { file: document.file, alternate: document.alternate, noStore: document.noStore });
+  return fetchDocument(env, request, {
+    file: document.file,
+    alternate: document.alternate,
+    noStore: document.noStore,
+    sharedCache: document.sharedCache,
+  });
 }
 
 // Main request handler
@@ -696,7 +718,7 @@ async function handleRequest(request, env) {
 
   // Static assets and SPA fallback
   const documents = [
-    { path: "/", file: "index.html", noStore: true },
+    { path: "/", file: "index.html", sharedCache: true },
     { path: "/about", file: "about.html" },
     { path: "/help", file: "help.html" },
     { path: "/vfs-tracking", file: "vfs-tracking.html" },
@@ -789,7 +811,8 @@ async function handleRequest(request, env) {
   const assetResponse = await env.ASSETS.fetch(request);
   if (assetResponse.status !== 404) {
     const headers = new Headers(assetResponse.headers);
-    if (NO_STORE_ASSETS.has(pathname)) setNoStore(headers);
+    if (pathname === "/index.html") setSharedHtmlCache(headers);
+    else if (NO_STORE_ASSETS.has(pathname)) setNoStore(headers);
     else if (isImmutableAsset(pathname)) setAssetCache(headers);
     else setStaticCache(headers);
     mergeVary(headers);

@@ -13,19 +13,24 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 const read = (relative) => fs.readFileSync(path.join(ROOT, relative), 'utf8');
 
-test('the build writes a single well-formed inline stylesheet hash', () => {
+test('the build writes well-formed inline stylesheet hashes for every inlined page', () => {
   const module = read('functions/_csp-inline-style.js');
-  const hash = module.match(/INLINE_STYLE_SHA256 = "([^"]+)"/);
-  assert.ok(hash, 'the generated module exports INLINE_STYLE_SHA256');
-  assert.match(hash[1], /^sha256-[A-Za-z0-9+/]{43}=$/, 'the value is a base64 SHA-256 digest');
+  const match = module.match(/INLINE_STYLE_SHA256S = (\[[^\]]*\])/);
+  assert.ok(match, 'the generated module exports INLINE_STYLE_SHA256S');
+  const hashes = JSON.parse(match[1]);
+  assert.ok(hashes.length >= 2, 'the homepage and the content pages each have a hash');
+  for (const hash of hashes) {
+    assert.match(hash, /^sha256-[A-Za-z0-9+/]{43}=$/, 'the value is a base64 SHA-256 digest');
+  }
 });
 
-test('the CSP adds that hash as a quoted style-src-elem source', () => {
+test('the CSP adds every hash as a quoted style-src-elem source', () => {
   const router = read('functions/_router.js');
+  assert.match(router, /import \{ INLINE_STYLE_SHA256S \} from '\.\/_csp-inline-style\.js'/);
   assert.match(
     router,
-    /"style-src-elem 'self' '" \+ INLINE_STYLE_SHA256 \+ "'; "/,
-    "a CSP hash source must be single-quoted, or the browser ignores it",
+    /INLINE_STYLE_SHA256S\.map\(\(hash\) => ` '\$\{hash\}'`\)\.join\(""\)/,
+    'a CSP hash source must be single-quoted, or the browser ignores it',
   );
   assert.doesNotMatch(router, /style-src-elem 'self' 'unsafe-inline'/);
 });

@@ -44,8 +44,20 @@ function assetsEnv() {
 const env = assetsEnv();
 const ctx = { waitUntil() {}, passThroughOnException() {} };
 
-test('the homepage and service-worker entry points never cache while other HTML revalidates', async () => {
-  for (const path of ['/', '/index.html', '/sw.js', '/scripts/index-sw.js']) {
+test('the homepage revalidates in the browser but may be edge-cached, while update entry points never cache', async () => {
+  // The browser must revalidate before reuse so a deploy is visible; only the
+  // edge is allowed a one-minute copy to remove the round trip per visitor.
+  for (const path of ['/', '/index.html']) {
+    const response = await router.fetch(new Request('https://tracker.test' + path), env, ctx);
+    assert.equal(response.status, 200, path);
+    assert.equal(response.headers.get('Cache-Control'), 'no-cache, must-revalidate, max-age=0', path);
+    assert.doesNotMatch(response.headers.get('Cache-Control'), /no-store|immutable/, path);
+    assert.match(response.headers.get('Pragma'), /no-cache/, path);
+    assert.equal(response.headers.get('Expires'), '0', path);
+    assert.equal(response.headers.get('CDN-Cache-Control'), 'public, s-maxage=60, stale-while-revalidate=300', path);
+  }
+
+  for (const path of ['/sw.js', '/scripts/index-sw.js']) {
     const response = await router.fetch(new Request('https://tracker.test' + path), env, ctx);
     assert.equal(response.status, 200, path);
     assert.match(response.headers.get('Cache-Control'), /no-store/, path);
@@ -81,12 +93,19 @@ test('static headers revalidate HTML, cache versioned assets and exempt update e
   assert.match(html[0], /Pragma: no-cache/);
   assert.match(html[0], /Expires: 0/);
 
-  for (const [name, path] of [['homepage', '/'], ['index', '/index.html'], ['service worker', '/sw.js']]) {
+  for (const [name, path] of [['homepage', '/'], ['index', '/index.html']]) {
     const block = headers.match(new RegExp('^' + path.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\r?\\n([\\s\\S]*?)(?=\\r?\\n\\r?\\n)', 'm'));
     assert.ok(block, name + ' block is missing');
-    assert.match(block[1], /Cache-Control: no-store/, name);
-    assert.doesNotMatch(block[1], /immutable/, name);
+    assert.match(block[1], /Cache-Control: no-cache, must-revalidate, max-age=0/, name);
+    assert.match(block[1], /CDN-Cache-Control: public, s-maxage=60, stale-while-revalidate=300/, name);
+    assert.doesNotMatch(block[1], /immutable|no-store/, name);
   }
+
+  const serviceWorker = headers.match(/^\/sw\.js\r?\n([\s\S]*?)(?=\r?\n\r?\n)/m);
+  assert.ok(serviceWorker, 'service worker block is missing');
+  assert.match(serviceWorker[1], /Cache-Control: no-store/);
+  assert.match(serviceWorker[1], /CDN-Cache-Control: no-store/);
+  assert.doesNotMatch(serviceWorker[1], /immutable/, 'service worker');
 
   const appScript = headers.match(/\/scripts\/index-sw\.js\r?\n([\s\S]*?)(?=\r?\n\r?\n)/);
   assert.ok(appScript, 'service-worker registration block is missing');
@@ -106,27 +125,28 @@ test('static headers revalidate HTML, cache versioned assets and exempt update e
 });
 
 
-test('the deploy smoke check asserts the same no-store policy as _headers', async () => {
+test('the deploy smoke check asserts the same homepage policy as _headers', async () => {
   const headers = await read('_headers');
   const smoke = await read('tools/smoke-deploy.mjs');
 
-  // The homepage block defines the policy the other entry points repeat.
+  // The homepage block defines the browser and edge policy the smoke check
+  // compares against exactly, not as a substring.
   const homepage = headers.match(/^\/\r?\n([\s\S]*?)(?=\r?\n\r?\n)/m);
   assert.ok(homepage, 'homepage _headers block is missing');
-  const policy = homepage[1].match(/Cache-Control: ([^\r\n]+)/);
-  assert.ok(policy, 'homepage Cache-Control is missing');
-  const cacheControl = policy[1].trim();
-  assert.match(cacheControl, /no-store/);
-  assert.doesNotMatch(cacheControl, /immutable|public/);
+  const browser = (homepage[1].match(/Cache-Control: ([^\r\n]+)/) || [])[1];
+  const edge = (homepage[1].match(/CDN-Cache-Control: ([^\r\n]+)/) || [])[1];
+  assert.equal(browser, 'no-cache, must-revalidate, max-age=0');
+  assert.equal(edge, 'public, s-maxage=60, stale-while-revalidate=300');
 
-  const escaped = cacheControl.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  // The smoke check must compare against this exact value, not a substring.
-  assert.match(smoke, new RegExp("const NO_STORE = '" + escaped + "';"));
+  const escapeRe = (value) => value.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  assert.match(smoke, new RegExp("const SHARED_CACHE = '" + escapeRe(browser) + "';"));
+  assert.match(smoke, new RegExp("const SHARED_CDN = '" + escapeRe(edge) + "';"));
+  assert.match(smoke, /const NO_STORE = 'no-store, no-cache, must-revalidate, max-age=0';/);
 
-  for (const path of ['/', '/sw.js', '/scripts/index-sw.js']) {
-    const block = headers.match(new RegExp('^' + path.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\r?\\n([\\s\\S]*?)(?=\\r?\\n\\r?\\n)', 'm'));
+  for (const path of ['/sw.js', '/scripts/index-sw.js']) {
+    const block = headers.match(new RegExp('^' + escapeRe(path) + '\\r?\\n([\\s\\S]*?)(?=\\r?\\n\\r?\\n)', 'm'));
     assert.ok(block, path + ' block is missing');
-    assert.match(block[1], new RegExp('Cache-Control: ' + escaped), path);
+    assert.match(block[1], /Cache-Control: no-store/, path);
     assert.match(block[1], /Pragma: no-cache/, path);
     assert.match(block[1], /Expires: 0/, path);
     assert.match(block[1], /CDN-Cache-Control: no-store/, path);
@@ -137,15 +157,15 @@ test('the deploy smoke check asserts the same no-store policy as _headers', asyn
   assert.ok(index, '/index.html block is missing');
   assert.match(index[1], /! Cache-Control/);
   assert.match(index[1], /! CDN-Cache-Control/);
-  assert.match(index[1], new RegExp('Cache-Control: ' + escaped));
-  assert.match(index[1], /CDN-Cache-Control: no-store/);
+  assert.match(index[1], new RegExp('Cache-Control: ' + escapeRe(browser)));
+  assert.match(index[1], new RegExp('CDN-Cache-Control: ' + escapeRe(edge)));
 
   // Every entry point covered by that policy is probed on the deploy.
-  assert.match(smoke, /checkNoStore\('homepage', home\)/);
+  assert.match(smoke, /checkSharedCache\('homepage', home\)/);
   assert.match(smoke, /checkNoStore\('service worker', sw\)/);
   assert.match(smoke, /get\('\/index\.html', \{ redirect: 'manual' \}\)/);
   assert.match(smoke, /indexTarget\.pathname === '\/'/);
-  assert.match(smoke, /checkNoStore\('index route', indexRoute\)/);
+  assert.match(smoke, /checkSharedCache\('index route', indexRoute\)/);
   assert.match(smoke, /get\('\/scripts\/index-sw\.js'\)/);
   assert.match(smoke, /checkNoStore\('app script', appScript\)/);
 });
