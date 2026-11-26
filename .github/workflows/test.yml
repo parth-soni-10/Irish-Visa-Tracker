@@ -52,10 +52,20 @@ jobs:
         # on ERR_MODULE_NOT_FOUND rather than on a real assertion.
         run: npm ci --ignore-scripts
 
+      - name: Build static assets
+        # Some suites compare the pages the build produces (injected freshness
+        # lines, generated snippets) rather than the checked-in snapshot. A
+        # data-only commit updates the source data without rewriting every
+        # derived page, so testing the built tree is the same rule the scrape
+        # workflow uses.
+        run: npm run build
+
       - name: Run the full Node test suite
         # The hand-picked list missed the CSP-hash and font-loading suites,
         # so a production styling regression shipped unnoticed. The full
         # suite takes about ten seconds.
+        env:
+          SITE_HTML_BASE: .pages-dist
         run: node --test tests/*.test.mjs
 
       - name: Audit served HTML for inline assets
