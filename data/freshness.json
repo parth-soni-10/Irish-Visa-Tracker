@@ -1,26 +1,26 @@
 {
-  "generated_at": "2026-11-25T15:54:52.985Z",
-  "as_of": "2026-11-25",
+  "generated_at": "2026-11-26T10:07:47.363Z",
+  "as_of": "2026-11-26",
   "offices": [
     {
       "slug": "new-delhi",
       "name": "New Delhi",
-      "published_at": "2026-11-24",
-      "report_date": "2026-11-24",
-      "official_data_through": "2026-11-24",
-      "observed_data_through": "2026-11-25",
+      "published_at": "2026-11-25",
+      "report_date": "2026-11-25",
+      "official_data_through": "2026-11-25",
+      "observed_data_through": "2026-11-26",
       "observation_scope": "tracker",
-      "decisions_through": "2026-11-25",
-      "latest_decision_date": "2026-11-25",
-      "decisions": 43937,
-      "approved": 37019,
-      "refused": 6918,
-      "checked_at": "2026-11-25T15:54:35.458Z",
-      "checked_label": "25 Nov 2026, 15:54 UTC",
-      "last_success_at": "2026-11-25T15:54:35.458Z",
-      "last_attempt_at": "2026-11-25T15:54:52.985Z",
-      "last_success_label": "25 Nov 2026, 15:54 UTC",
-      "last_attempt_label": "25 Nov 2026, 15:54 UTC",
+      "decisions_through": "2026-11-26",
+      "latest_decision_date": "2026-11-26",
+      "decisions": 44097,
+      "approved": 37136,
+      "refused": 6961,
+      "checked_at": "2026-11-26T10:07:03.154Z",
+      "checked_label": "26 Nov 2026, 10:07 UTC",
+      "last_success_at": "2026-11-26T10:07:03.154Z",
+      "last_attempt_at": "2026-11-26T10:07:47.363Z",
+      "last_success_label": "26 Nov 2026, 10:07 UTC",
+      "last_attempt_label": "26 Nov 2026, 10:07 UTC",
       "status": "official",
       "status_label": "Official",
       "status_tone": "",
@@ -37,21 +37,27 @@
         "weekday": null,
         "interval": 1
       },
-      "due_at": "2026-11-25",
-      "next_due_at": "2026-11-26",
+      "due_at": "2026-11-26",
+      "next_due_at": "2026-11-27",
       "overdue_days": 0,
       "overdue": false,
-      "due_label": "Expected 25 November 2026",
+      "due_label": "Expected 26 November 2026",
       "due_short_label": "",
       "next_due_label": "",
       "observation_lag": {
-        "sample_size": 11,
+        "sample_size": 12,
         "min_days": 1,
         "max_days": 5,
         "median_days": 2,
-        "latest_report_date": "2026-11-24",
-        "latest_observed_at": "2026-11-25T15:54:35.458Z",
+        "latest_report_date": "2026-11-25",
+        "latest_observed_at": "2026-11-26T10:07:03.154Z",
         "history": [
+          {
+            "report_date": "2026-11-25",
+            "observed_at": "2026-11-26T10:07:03.154Z",
+            "backfilled": false,
+            "lag_days": 1
+          },
           {
             "report_date": "2026-11-24",
             "observed_at": "2026-11-25T15:54:35.458Z",
@@ -81,19 +87,13 @@
             "observed_at": "2026-11-19T04:01:49.587Z",
             "backfilled": false,
             "lag_days": 2
-          },
-          {
-            "report_date": "2026-11-16",
-            "observed_at": "2026-11-18T04:31:32.754Z",
-            "backfilled": false,
-            "lag_days": 2
           }
         ]
       },
-      "observation_note": "Tracker observed decisions dated through 25 November 2026; these are not in the 24 November 2026 official file.",
-      "summary_at_build": "New Delhi — report 24 November 2026 · 43,937 decisions · 1 day old at last build · checked 25 Nov 2026, 15:54 UTC",
+      "observation_note": "Tracker observed decisions dated through 26 November 2026; these are not in the 25 November 2026 official file.",
+      "summary_at_build": "New Delhi — report 25 November 2026 · 44,097 decisions · 1 day old at last build · checked 26 Nov 2026, 10:07 UTC",
       "warning_at_build": "",
-      "summary": "New Delhi — report 24 November 2026 · 43,937 decisions · 1 day old at last build · checked 25 Nov 2026, 15:54 UTC",
+      "summary": "New Delhi — report 25 November 2026 · 44,097 decisions · 1 day old at last build · checked 26 Nov 2026, 10:07 UTC",
       "warning": ""
     },
     {
@@ -109,12 +109,12 @@
       "decisions": 14425,
       "approved": 11993,
       "refused": 2432,
-      "checked_at": "2026-11-25T15:54:37.124Z",
-      "checked_label": "25 Nov 2026, 15:54 UTC",
-      "last_success_at": "2026-11-25T15:54:37.124Z",
-      "last_attempt_at": "2026-11-25T15:54:52.985Z",
-      "last_success_label": "25 Nov 2026, 15:54 UTC",
-      "last_attempt_label": "25 Nov 2026, 15:54 UTC",
+      "checked_at": "2026-11-26T10:07:05.080Z",
+      "checked_label": "26 Nov 2026, 10:07 UTC",
+      "last_success_at": "2026-11-26T10:07:05.080Z",
+      "last_attempt_at": "2026-11-26T10:07:47.363Z",
+      "last_success_label": "26 Nov 2026, 10:07 UTC",
+      "last_attempt_label": "26 Nov 2026, 10:07 UTC",
       "status": "official",
       "status_label": "Snapshot",
       "status_tone": "",
@@ -122,9 +122,9 @@
       "note": "",
       "snapshot": true,
       "stale": false,
-      "age_days": 3,
-      "age_label": "3 days old",
-      "age_label_at_build": "3 days old at last build",
+      "age_days": 4,
+      "age_label": "4 days old",
+      "age_label_at_build": "4 days old at last build",
       "cadence_days": 35,
       "expected_rule": {
         "kind": "irregular",
@@ -140,17 +140,17 @@
       "next_due_label": "",
       "observation_lag": {
         "sample_size": 2,
-        "min_days": 3,
+        "min_days": 4,
         "max_days": 17,
-        "median_days": 10,
+        "median_days": 11,
         "latest_report_date": "2026-11-22",
-        "latest_observed_at": "2026-11-25T15:54:37.124Z",
+        "latest_observed_at": "2026-11-26T10:07:05.080Z",
         "history": [
           {
             "report_date": "2026-11-22",
-            "observed_at": "2026-11-25T15:54:37.124Z",
+            "observed_at": "2026-11-26T10:07:05.080Z",
             "backfilled": false,
-            "lag_days": 3
+            "lag_days": 4
           },
           {
             "report_date": "2026-11-01",
@@ -161,9 +161,9 @@
         ]
       },
       "observation_note": "",
-      "summary_at_build": "Beijing — snapshot 22 November 2026 · 14,425 decisions · 3 days old at last build · checked 25 Nov 2026, 15:54 UTC",
+      "summary_at_build": "Beijing — snapshot 22 November 2026 · 14,425 decisions · 4 days old at last build · checked 26 Nov 2026, 10:07 UTC",
       "warning_at_build": "",
-      "summary": "Beijing — snapshot 22 November 2026 · 14,425 decisions · 3 days old at last build · checked 25 Nov 2026, 15:54 UTC",
+      "summary": "Beijing — snapshot 22 November 2026 · 14,425 decisions · 4 days old at last build · checked 26 Nov 2026, 10:07 UTC",
       "warning": ""
     },
     {
@@ -179,12 +179,12 @@
       "decisions": 232,
       "approved": 161,
       "refused": 71,
-      "checked_at": "2026-11-25T15:54:38.243Z",
-      "checked_label": "25 Nov 2026, 15:54 UTC",
-      "last_success_at": "2026-11-25T15:54:38.243Z",
-      "last_attempt_at": "2026-11-25T15:54:52.985Z",
-      "last_success_label": "25 Nov 2026, 15:54 UTC",
-      "last_attempt_label": "25 Nov 2026, 15:54 UTC",
+      "checked_at": "2026-11-26T10:07:06.016Z",
+      "checked_label": "26 Nov 2026, 10:07 UTC",
+      "last_success_at": "2026-11-26T10:07:06.016Z",
+      "last_attempt_at": "2026-11-26T10:07:47.363Z",
+      "last_success_label": "26 Nov 2026, 10:07 UTC",
+      "last_attempt_label": "26 Nov 2026, 10:07 UTC",
       "status": "official",
       "status_label": "Official",
       "status_tone": "",
@@ -192,9 +192,9 @@
       "note": "",
       "snapshot": false,
       "stale": false,
-      "age_days": 5,
-      "age_label": "5 days old",
-      "age_label_at_build": "5 days old at last build",
+      "age_days": 6,
+      "age_label": "6 days old",
+      "age_label_at_build": "6 days old at last build",
       "cadence_days": 14,
       "expected_rule": {
         "kind": "weekly",
@@ -210,17 +210,17 @@
       "next_due_label": "",
       "observation_lag": {
         "sample_size": 3,
-        "min_days": 5,
+        "min_days": 6,
         "max_days": 10,
         "median_days": 7,
         "latest_report_date": "2026-11-20",
-        "latest_observed_at": "2026-11-25T15:54:38.243Z",
+        "latest_observed_at": "2026-11-26T10:07:06.016Z",
         "history": [
           {
             "report_date": "2026-11-20",
-            "observed_at": "2026-11-25T15:54:38.243Z",
+            "observed_at": "2026-11-26T10:07:06.016Z",
             "backfilled": false,
-            "lag_days": 5
+            "lag_days": 6
           },
           {
             "report_date": "2026-11-13",
@@ -255,9 +255,9 @@
         ]
       },
       "observation_note": "",
-      "summary_at_build": "Abu Dhabi — report 20 November 2026 · 232 decisions · 5 days old at last build · checked 25 Nov 2026, 15:54 UTC",
+      "summary_at_build": "Abu Dhabi — report 20 November 2026 · 232 decisions · 6 days old at last build · checked 26 Nov 2026, 10:07 UTC",
       "warning_at_build": "",
-      "summary": "Abu Dhabi — report 20 November 2026 · 232 decisions · 5 days old at last build · checked 25 Nov 2026, 15:54 UTC",
+      "summary": "Abu Dhabi — report 20 November 2026 · 232 decisions · 6 days old at last build · checked 26 Nov 2026, 10:07 UTC",
       "warning": ""
     },
     {
@@ -273,12 +273,12 @@
       "decisions": 99,
       "approved": 34,
       "refused": 65,
-      "checked_at": "2026-11-25T15:54:39.095Z",
-      "checked_label": "25 Nov 2026, 15:54 UTC",
-      "last_success_at": "2026-11-25T15:54:39.095Z",
-      "last_attempt_at": "2026-11-25T15:54:52.985Z",
-      "last_success_label": "25 Nov 2026, 15:54 UTC",
-      "last_attempt_label": "25 Nov 2026, 15:54 UTC",
+      "checked_at": "2026-11-26T10:07:06.128Z",
+      "checked_label": "26 Nov 2026, 10:07 UTC",
+      "last_success_at": "2026-11-26T10:07:06.128Z",
+      "last_attempt_at": "2026-11-26T10:07:47.363Z",
+      "last_success_label": "26 Nov 2026, 10:07 UTC",
+      "last_attempt_label": "26 Nov 2026, 10:07 UTC",
       "status": "official",
       "status_label": "Report overdue",
       "status_tone": "warn",
@@ -286,9 +286,9 @@
       "note": "The newest upload is labelled up to 2026-11-14, but the file itself covers up to 2026-11-07. The office has not published that later week yet.",
       "snapshot": false,
       "stale": true,
-      "age_days": 18,
-      "age_label": "18 days old",
-      "age_label_at_build": "18 days old at last build",
+      "age_days": 19,
+      "age_label": "19 days old",
+      "age_label_at_build": "19 days old at last build",
       "cadence_days": 14,
       "expected_rule": {
         "kind": "weekly",
@@ -297,24 +297,24 @@
       },
       "due_at": "2026-11-14",
       "next_due_at": "2026-11-28",
-      "overdue_days": 11,
+      "overdue_days": 12,
       "overdue": true,
       "due_label": "Due since 14 November 2026 — not yet published",
       "due_short_label": "Due since 14 Nov 2026",
       "next_due_label": "Next expected 28 November 2026",
       "observation_lag": {
         "sample_size": 3,
-        "min_days": 18,
+        "min_days": 19,
         "max_days": 67,
         "median_days": 32,
         "latest_report_date": "2026-11-07",
-        "latest_observed_at": "2026-11-25T15:54:39.095Z",
+        "latest_observed_at": "2026-11-26T10:07:06.128Z",
         "history": [
           {
             "report_date": "2026-11-07",
-            "observed_at": "2026-11-25T15:54:39.095Z",
+            "observed_at": "2026-11-26T10:07:06.128Z",
             "backfilled": false,
-            "lag_days": 18
+            "lag_days": 19
           },
           {
             "report_date": "2026-10-18",
@@ -349,9 +349,9 @@
         ]
       },
       "observation_note": "",
-      "summary_at_build": "Abuja — report 7 November 2026 · 99 decisions · 18 days old at last build · checked 25 Nov 2026, 15:54 UTC",
+      "summary_at_build": "Abuja — report 7 November 2026 · 99 decisions · 19 days old at last build · checked 26 Nov 2026, 10:07 UTC",
       "warning_at_build": "This office report is overdue: expected since 14 November 2026. Next expected 28 November 2026.",
-      "summary": "Abuja — report 7 November 2026 · 99 decisions · 18 days old at last build · checked 25 Nov 2026, 15:54 UTC",
+      "summary": "Abuja — report 7 November 2026 · 99 decisions · 19 days old at last build · checked 26 Nov 2026, 10:07 UTC",
       "warning": "This office report is overdue: expected since 14 November 2026. Next expected 28 November 2026."
     },
     {
@@ -367,12 +367,12 @@
       "decisions": 217,
       "approved": 192,
       "refused": 25,
-      "checked_at": "2026-11-25T15:54:40.438Z",
-      "checked_label": "25 Nov 2026, 15:54 UTC",
-      "last_success_at": "2026-11-25T15:54:40.438Z",
-      "last_attempt_at": "2026-11-25T15:54:52.985Z",
-      "last_success_label": "25 Nov 2026, 15:54 UTC",
-      "last_attempt_label": "25 Nov 2026, 15:54 UTC",
+      "checked_at": "2026-11-26T10:07:06.295Z",
+      "checked_label": "26 Nov 2026, 10:07 UTC",
+      "last_success_at": "2026-11-26T10:07:06.295Z",
+      "last_attempt_at": "2026-11-26T10:07:47.363Z",
+      "last_success_label": "26 Nov 2026, 10:07 UTC",
+      "last_attempt_label": "26 Nov 2026, 10:07 UTC",
       "status": "official",
       "status_label": "Official",
       "status_tone": "",
@@ -380,9 +380,9 @@
       "note": "Scanned PDF extracted with poppler+tesseract at 300 DPI (7 pages).",
       "snapshot": false,
       "stale": false,
-      "age_days": 3,
-      "age_label": "3 days old",
-      "age_label_at_build": "3 days old at last build",
+      "age_days": 4,
+      "age_label": "4 days old",
+      "age_label_at_build": "4 days old at last build",
       "cadence_days": 14,
       "expected_rule": {
         "kind": "weekly",
@@ -398,17 +398,17 @@
       "next_due_label": "",
       "observation_lag": {
         "sample_size": 3,
-        "min_days": 3,
+        "min_days": 4,
         "max_days": 15,
         "median_days": 9,
         "latest_report_date": "2026-11-22",
-        "latest_observed_at": "2026-11-25T15:54:40.438Z",
+        "latest_observed_at": "2026-11-26T10:07:06.295Z",
         "history": [
           {
             "report_date": "2026-11-22",
-            "observed_at": "2026-11-25T15:54:40.438Z",
+            "observed_at": "2026-11-26T10:07:06.295Z",
             "backfilled": false,
-            "lag_days": 3
+            "lag_days": 4
           },
           {
             "report_date": "2026-11-15",
@@ -425,30 +425,30 @@
         ]
       },
       "observation_note": "",
-      "summary_at_build": "Ankara — report 22 November 2026 · 217 decisions · 3 days old at last build · checked 25 Nov 2026, 15:54 UTC",
+      "summary_at_build": "Ankara — report 22 November 2026 · 217 decisions · 4 days old at last build · checked 26 Nov 2026, 10:07 UTC",
       "warning_at_build": "",
-      "summary": "Ankara — report 22 November 2026 · 217 decisions · 3 days old at last build · checked 25 Nov 2026, 15:54 UTC",
+      "summary": "Ankara — report 22 November 2026 · 217 decisions · 4 days old at last build · checked 26 Nov 2026, 10:07 UTC",
       "warning": ""
     },
     {
       "slug": "dublin",
       "name": "Dublin",
-      "published_at": "2026-11-25",
-      "report_date": "2026-11-25",
-      "official_data_through": "2026-11-25",
-      "observed_data_through": "2026-11-25",
+      "published_at": "2026-11-26",
+      "report_date": "2026-11-26",
+      "official_data_through": "2026-11-26",
+      "observed_data_through": "2026-11-26",
       "observation_scope": "official",
-      "decisions_through": "2026-11-25",
-      "latest_decision_date": "2026-11-25",
+      "decisions_through": "2026-11-26",
+      "latest_decision_date": "2026-11-26",
       "decisions": 4848,
       "approved": 2985,
       "refused": 1863,
-      "checked_at": "2026-11-25T15:54:50.053Z",
-      "checked_label": "25 Nov 2026, 15:54 UTC",
-      "last_success_at": "2026-11-25T15:54:50.053Z",
-      "last_attempt_at": "2026-11-25T15:54:52.985Z",
-      "last_success_label": "25 Nov 2026, 15:54 UTC",
-      "last_attempt_label": "25 Nov 2026, 15:54 UTC",
+      "checked_at": "2026-11-26T10:07:15.808Z",
+      "checked_label": "26 Nov 2026, 10:07 UTC",
+      "last_success_at": "2026-11-26T10:07:15.808Z",
+      "last_attempt_at": "2026-11-26T10:07:47.363Z",
+      "last_success_label": "26 Nov 2026, 10:07 UTC",
+      "last_attempt_label": "26 Nov 2026, 10:07 UTC",
       "status": "official",
       "status_label": "Snapshot",
       "status_tone": "",
@@ -473,13 +473,19 @@
       "due_short_label": "",
       "next_due_label": "",
       "observation_lag": {
-        "sample_size": 15,
+        "sample_size": 16,
         "min_days": 0,
         "max_days": 0,
         "median_days": 0,
-        "latest_report_date": "2026-11-25",
-        "latest_observed_at": "2026-11-25T15:54:50.053Z",
+        "latest_report_date": "2026-11-26",
+        "latest_observed_at": "2026-11-26T10:07:15.808Z",
         "history": [
+          {
+            "report_date": "2026-11-26",
+            "observed_at": "2026-11-26T10:07:15.808Z",
+            "backfilled": false,
+            "lag_days": 0
+          },
           {
             "report_date": "2026-11-25",
             "observed_at": "2026-11-25T15:54:50.053Z",
@@ -509,19 +515,13 @@
             "observed_at": "2026-11-21T14:54:02.591Z",
             "backfilled": false,
             "lag_days": 0
-          },
-          {
-            "report_date": "2026-11-20",
-            "observed_at": "2026-11-20T14:15:34.471Z",
-            "backfilled": false,
-            "lag_days": 0
           }
         ]
       },
       "observation_note": "",
-      "summary_at_build": "Dublin — snapshot 25 November 2026 · 4,848 decisions · 0 days old at last build · checked 25 Nov 2026, 15:54 UTC",
+      "summary_at_build": "Dublin — snapshot 26 November 2026 · 4,848 decisions · 0 days old at last build · checked 26 Nov 2026, 10:07 UTC",
       "warning_at_build": "",
-      "summary": "Dublin — snapshot 25 November 2026 · 4,848 decisions · 0 days old at last build · checked 25 Nov 2026, 15:54 UTC",
+      "summary": "Dublin — snapshot 26 November 2026 · 4,848 decisions · 0 days old at last build · checked 26 Nov 2026, 10:07 UTC",
       "warning": ""
     }
   ]

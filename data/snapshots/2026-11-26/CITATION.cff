@@ -1,0 +1,18 @@
+cff-version: 1.2.0
+message: If you use this dataset, please cite it using the metadata below.
+title: "Irish Visa Decision Tracker: published visa decisions by office"
+type: dataset
+authors:
+  - family-names: Soni
+    given-names: Parth
+version: "2026-11-26"
+date-released: "2026-11-26"
+url: "https://irishvisaupdatetracker.pages.dev/data-study"
+repository-code: "https://github.com/parth-soni-10/Irish-Visa-Tracker"
+license-url: "https://irishvisaupdatetracker.pages.dev/terms"
+abstract: "Published Irish visa decision counts for New Delhi, Beijing, Dublin, Abu Dhabi, Abuja and Ankara, compiled from the offices' official files. Latest files contain 63,918 decisions across 6 offices."
+keywords:
+  - Irish visa
+  - visa decisions
+  - immigration data
+  - Ireland
