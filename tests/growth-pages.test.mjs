@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 
 import { buildGrowthPages } from '../tools/growth-pages.mjs';
 import { buildIndexNowUrls, eligibleDecisionDates, filterIndexNowUrls } from '../tools/indexnow.mjs';
-import { renderCoverageDashboard } from '../tools/coverage-dashboard.mjs';
+import { refreshCoverage, renderCoverageDashboard } from '../tools/coverage-dashboard.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -118,8 +118,27 @@ test('the coverage dashboard renders the seed without pretending it is fresh', a
   assert.match(html, /URL is unknown to Google/);
   assert.match(html, /Pending/);
   assert.match(html, /Bing and IndexNow/);
+  assert.match(html, /Cloudflare Web Analytics/);
+  assert.match(html, /Mobile LCP \(p75\)/);
+  assert.match(html, /Core Web Vitals \(p75, human traffic\)/);
   assert.match(html, /Indexing scorecard by engine/);
   assert.match(html, /By page family/);
   assert.match(html, /Request indexing/);
   assert.match(html, /search-coverage/);
+});
+
+test('the coverage refresh keeps seeded sections when a source has no credentials', async () => {
+  const seed = JSON.parse(await readFile(path.join(ROOT, 'data', 'search-coverage.json'), 'utf8'));
+  // No env, and no .dev.vars/.env lookup, so every source is unreachable and
+  // nothing is measured against a live API.
+  const refreshed = await refreshCoverage({ root: ROOT, env: {}, envFiles: false });
+  assert.equal(refreshed.source, 'seed');
+  assert.equal(refreshed.generated_at, seed.generated_at, 'a run that measured nothing must not look fresh');
+  assert.deepEqual(refreshed.gsc, seed.gsc);
+  assert.deepEqual(refreshed.bing, seed.bing);
+  assert.deepEqual(refreshed.cloudflare, seed.cloudflare);
+  const warnings = refreshed.errors.join('\n');
+  assert.match(warnings, /Search Console credentials were not provided/);
+  assert.match(warnings, /Bing Webmaster credentials were not provided/);
+  assert.match(warnings, /CLOUDFLARE_API_TOKEN is not set/);
 });

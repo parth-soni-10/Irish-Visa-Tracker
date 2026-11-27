@@ -252,9 +252,16 @@ or noise to the static site.
 
 ## Refresh the weekly scorecard
 
-The dashboard is generated from `data/search-coverage.json`. The Google
-inspection rows refresh when `npm run coverage:dashboard` has Search Console
-credentials. The cross-engine `indexing_scorecard` object is a small manual
+The dashboard is generated from `data/search-coverage.json`. Each source is
+measured independently: Search Console (Search Analytics, URL Inspection,
+sitemaps), Bing Webmaster crawl stats and Cloudflare Web Analytics (RUM
+traffic and Core Web Vitals). A source whose credential is missing keeps the
+previously committed section and adds a warning, so a run with only one
+credential still produces a fresh snapshot. Credentials come from the
+environment, then from the gitignored `.dev.vars`/`.env`; `--sources=gsc,bing,cloudflare`
+restricts a run and `--days=N` sets the Cloudflare RUM window (default 28).
+
+The cross-engine `indexing_scorecard` object is a small manual
 snapshot because Bing does not expose an indexed count and Yandex has no
 property yet:
 

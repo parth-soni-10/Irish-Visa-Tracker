@@ -31,7 +31,7 @@ const GRAPHQL = `${API}/graphql`;
 const USAGE = 'Usage: node tools/cloudflare-analytics.mjs [--check] [--days=7] [--host=host] [--site-tag=tag] [--json]';
 
 /** Local secret files, in precedence order; `.dev.vars` wins over `.env`. */
-function readLocalEnv() {
+export function readLocalEnv() {
   const values = {};
   for (const name of ['.dev.vars', '.env']) {
     const file = path.join(ROOT, name);
@@ -289,10 +289,23 @@ function webVitalsOf(body) {
   return (account && account.rumWebVitalsEventsAdaptiveGroups) || [];
 }
 
-async function runReport(token, accountId, host, days, asJson) {
+/**
+ * Build the RUM report without printing it, so the weekly coverage snapshot can
+ * reuse the same queries. The account is resolved from the token when only the
+ * token is configured.
+ */
+export async function buildReport(token, accountId, host, days) {
+  let account = accountId;
+  if (!account) {
+    const accounts = await listAccounts(token);
+    if (accounts.length !== 1) {
+      throw new Error(`CLOUDFLARE_ACCOUNT_ID is required: the token can read ${accounts.length} account(s).`);
+    }
+    account = accounts[0].id;
+  }
   const until = new Date().toISOString().slice(0, 10);
   const since = new Date(Date.now() - days * 86400000).toISOString().slice(0, 10);
-  const variables = { account: accountId, host, since: `${since}T00:00:00Z`, until: `${until}T00:00:00Z` };
+  const variables = { account, host, since: `${since}T00:00:00Z`, until: `${until}T00:00:00Z` };
 
   const [dailyBody, pagesBody, countryBody, vitalsBody, mixBody] = await Promise.all([
     graphql(token, PAGE_QUERY, variables),
@@ -303,11 +316,6 @@ async function runReport(token, accountId, host, days, asJson) {
     graphql(token, WEB_VITALS_QUERY, variables).catch(() => null),
     graphql(token, PATH_MIX_QUERY, variables).catch(() => null),
   ]);
-  const groupsOf = (body) => {
-    const accounts = body && body.data && body.data.viewer ? body.data.viewer.accounts : null;
-    const account = Array.isArray(accounts) ? accounts[0] : null;
-    return (account && account.rumPageloadEventsAdaptiveGroups) || [];
-  };
 
   const daily = groupsOf(dailyBody).map((group) => ({
     date: group.dimensions ? group.dimensions.date : '',
@@ -353,9 +361,9 @@ async function runReport(token, accountId, host, days, asJson) {
     };
   });
 
-  const report = {
+  return {
     host,
-    account_id: accountId,
+    account_id: account,
     window: { since, until, days },
     totals: {
       pageviews: totalPageviews,
@@ -367,11 +375,17 @@ async function runReport(token, accountId, host, days, asJson) {
     countries,
     webVitals,
   };
+}
 
+async function runReport(token, accountId, host, days, asJson) {
+  const report = await buildReport(token, accountId, host, days);
   if (asJson) {
     console.log(JSON.stringify(report, null, 2));
     return report;
   }
+  const { daily, topPages, countries, webVitals, traffic } = report;
+  const { since, until } = report.window;
+  const totalPageviews = report.totals.pageviews;
 
   console.log(`Cloudflare Web Analytics: ${host}, ${since} to ${until} (${days} day(s))`);
   console.log(`Totals: ${report.totals.pageviews.toLocaleString('en-IE')} pageviews, ${report.totals.visits.toLocaleString('en-IE')} visits`);
@@ -452,4 +466,5 @@ async function main() {
   }
 }
 
-await main();
+const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+if (isMain) await main();

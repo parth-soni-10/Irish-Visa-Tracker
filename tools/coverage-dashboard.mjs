@@ -3,17 +3,23 @@
  * Weekly search-coverage snapshot.
  *
  * Reads Search Console Search Analytics, URL Inspection and sitemap status,
- * plus Bing Webmaster crawl/URL data when credentials are present. Writes a
- * noindex dashboard and a small JSON snapshot. Without credentials it keeps
- * the checked-in seed and still renders, so the weekly workflow never silently
- * turns a missing secret into a green dashboard.
+ * Bing Webmaster crawl data and Cloudflare Web Analytics (RUM) traffic when the
+ * matching credentials are reachable. Writes a noindex dashboard and a small
+ * JSON snapshot. Each source is measured independently: a source without
+ * credentials keeps its seeded section and records a warning, so one reachable
+ * credential still produces a fresh snapshot instead of discarding the rest.
  *
- * Credentials (never checked in):
+ * Credentials (never checked in) come from the environment first, then the
+ * gitignored `.dev.vars` / `.env` files used by the other tools:
  *   GSC_ACCESS_TOKEN                 short-lived OAuth token, or
  *   GSC_SERVICE_ACCOUNT_JSON         service-account JSON, or
  *   GSC_SERVICE_ACCOUNT_JSON_FILE    path to that JSON
  *   GSC_SITE_URL                     default https://irishvisaupdatetracker.pages.dev/
  *   BING_WEBMASTER_API_KEY
+ *   CLOUDFLARE_API_TOKEN             Account -> Account Analytics -> Read
+ *   CLOUDFLARE_ACCOUNT_ID            required when the token is account-scoped
+ *
+ *   node tools/coverage-dashboard.mjs [--sources=gsc,bing,cloudflare] [--days=28]
  */
 
 import crypto from 'node:crypto';
@@ -24,6 +30,7 @@ import { fileURLToPath } from 'node:url';
 import { PAGES, spliceChrome } from './site-chrome.mjs';
 import { SITE_ORIGIN } from './site-config.mjs';
 import { eligibleDecisionDates } from './indexnow.mjs';
+import { buildReport as cloudflareReport, readLocalEnv } from './cloudflare-analytics.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const SITE = SITE_ORIGIN;
@@ -107,20 +114,20 @@ async function requestJson(url, options = {}) {
   return body ? JSON.parse(body) : {};
 }
 
-function serviceAccount() {
-  const raw = String(process.env.GSC_SERVICE_ACCOUNT_JSON || '').trim();
+function serviceAccount(credential) {
+  const raw = credential('GSC_SERVICE_ACCOUNT_JSON');
   if (raw) {
     try { return JSON.parse(raw); } catch { return null; }
   }
-  const file = String(process.env.GSC_SERVICE_ACCOUNT_JSON_FILE || '').trim();
+  const file = credential('GSC_SERVICE_ACCOUNT_JSON_FILE');
   if (file && fs.existsSync(file)) return readJson(file, null);
   return null;
 }
 
-async function accessToken() {
-  const direct = String(process.env.GSC_ACCESS_TOKEN || '').trim();
+async function accessToken(credential) {
+  const direct = credential('GSC_ACCESS_TOKEN');
   if (direct) return direct;
-  const account = serviceAccount();
+  const account = serviceAccount(credential);
   if (!account || !account.client_email || !account.private_key) return '';
   const now = Math.floor(Date.now() / 1000);
   const header = Buffer.from(JSON.stringify({ alg: 'RS256', typ: 'JWT' })).toString('base64url');
@@ -245,38 +252,102 @@ async function bingSnapshot(key, site) {
   return { configured: true, status: 'Connected', crawlStats, issues };
 }
 
-export async function refreshCoverage({ root = ROOT, site = process.env.GSC_SITE_URL || `${SITE}/` } = {}) {
+const SOURCE_NAMES = ['gsc', 'bing', 'cloudflare'];
+
+/** Map the RUM report onto the snapshot section. The keys here are the
+ *  snapshot schema; the renderer and the checked-in seed both read them. */
+function cloudflareSnapshot(report) {
+  return {
+    source: 'Cloudflare Web Analytics (RUM)',
+    window: report.window,
+    totals: report.totals,
+    traffic: report.traffic,
+    // The seeded snapshot records the ten busiest paths; keep that shape.
+    top_pages: report.topPages.slice(0, 10),
+    countries: report.countries,
+    web_vitals: report.webVitals,
+  };
+}
+
+export async function refreshCoverage({
+  root = ROOT,
+  site,
+  env,
+  envFiles = true,
+  sources,
+  days = 28,
+} = {}) {
   const seed = readJson(path.join(root, 'data', 'search-coverage.json'), {});
-  const next = { ...seed, generated_at: new Date().toISOString(), source: 'seed', errors: [] };
-  const bingKey = String(process.env.BING_WEBMASTER_API_KEY || '').trim();
-  const token = await accessToken().catch((error) => {
-    next.errors.push(`Search Console token: ${error.message}`);
-    return '';
-  });
-  if (!token && !bingKey) {
-    // Keep the seed's timestamp: a weekly run without credentials did not
-    // measure anything, so it must not look like a fresh snapshot.
-    next.generated_at = seed.generated_at || '';
-    next.errors.push('No Search Console or Bing credentials were provided; showing the checked-in seed snapshot.');
-    return next;
-  }
-  if (token) {
-    try {
-      const gsc = await gscSnapshot(site, token, priorityRoutes(root));
-      next.gsc = gsc;
-      next.source = 'gsc+bing';
-    } catch (error) {
-      next.errors.push(`Search Console: ${error.message}`);
+  const runtime = env || process.env;
+  const local = envFiles ? readLocalEnv() : {};
+  const credential = (name) => String(runtime[name] || local[name] || '').trim();
+  const resolvedSite = site || credential('GSC_SITE_URL') || `${SITE}/`;
+  const host = new URL(SITE).host;
+  const wanted = new Set((sources && sources.length ? sources : SOURCE_NAMES)
+    .filter((name) => SOURCE_NAMES.includes(name)));
+  const next = { ...seed, generated_at: seed.generated_at || '', source: 'seed', errors: [] };
+  const measured = [];
+
+  if (wanted.has('gsc')) {
+    const token = await accessToken(credential).catch((error) => {
+      next.errors.push(`Search Console token: ${error.message}`);
+      return '';
+    });
+    if (token) {
+      try {
+        next.gsc = await gscSnapshot(resolvedSite, token, priorityRoutes(root));
+        measured.push('gsc');
+      } catch (error) {
+        next.errors.push(`Search Console: ${error.message}`);
+      }
+    } else if (seed.gsc) {
+      next.errors.push('Search Console credentials were not provided; the seeded Search Console section was kept.');
+    } else {
+      next.errors.push('Search Console credentials were not provided and no seed exists.');
     }
-  } else if (!next.gsc) {
-    next.errors.push('Search Console credentials were not provided and no seed exists.');
   }
-  try {
-    const bing = await bingSnapshot(String(process.env.BING_WEBMASTER_API_KEY || '').trim(), site);
-    next.bing = bing;
-    if (bing.configured) next.source = token ? 'gsc+bing' : 'bing';
-  } catch (error) {
-    next.errors.push(`Bing: ${error.message}`);
+
+  if (wanted.has('bing')) {
+    const key = credential('BING_WEBMASTER_API_KEY');
+    if (key) {
+      try {
+        next.bing = await bingSnapshot(key, resolvedSite);
+        measured.push('bing');
+      } catch (error) {
+        next.errors.push(`Bing: ${error.message}`);
+      }
+    } else if (seed.bing && seed.bing.configured) {
+      next.errors.push('Bing Webmaster credentials were not provided; the seeded Bing section was kept.');
+    } else {
+      next.bing = { configured: false, status: 'BING_WEBMASTER_API_KEY is not set.', crawlStats: null, urlInfo: [], issues: [] };
+      next.errors.push('Bing Webmaster credentials were not provided and no seed exists.');
+    }
+  }
+
+  if (wanted.has('cloudflare')) {
+    const token = credential('CLOUDFLARE_API_TOKEN');
+    if (token) {
+      try {
+        const report = await cloudflareReport(token, credential('CLOUDFLARE_ACCOUNT_ID'), host, days);
+        next.cloudflare = cloudflareSnapshot(report);
+        measured.push('cloudflare');
+      } catch (error) {
+        next.errors.push(`Cloudflare Web Analytics: ${error.message}`);
+      }
+    } else if (seed.cloudflare) {
+      next.errors.push('CLOUDFLARE_API_TOKEN is not set; the seeded Cloudflare section was kept.');
+    } else {
+      next.errors.push('CLOUDFLARE_API_TOKEN is not set and no seeded Cloudflare section exists.');
+    }
+  }
+
+  // A run that measured nothing keeps the seed's timestamp: it did not produce
+  // a fresh snapshot, and the dashboard and workflow both read this field.
+  if (measured.length) {
+    next.source = measured.join('+');
+    next.generated_at = new Date().toISOString();
+  } else if (!next.errors.length) {
+    next.errors.push('No source was reachable; showing the checked-in seed snapshot.');
   }
   return next;
 }
@@ -319,6 +390,70 @@ export function renderCoverageDashboard(data) {
     <td>${num(item.errors)}</td><td>${num(item.warnings)}</td>
   </tr>`).join('');
   const bing = data.bing || {};
+  const cloudflare = data.cloudflare || null;
+  const cfTotals = (cloudflare && cloudflare.totals) || {};
+  const cfTraffic = (cloudflare && cloudflare.traffic) || null;
+  const cfWindow = (cloudflare && cloudflare.window) || null;
+  const cfPages = cloudflare && Array.isArray(cloudflare.top_pages) ? cloudflare.top_pages : [];
+  const cfCountries = cloudflare && Array.isArray(cloudflare.countries) ? cloudflare.countries : [];
+  const cfVitals = cloudflare && Array.isArray(cloudflare.web_vitals) ? cloudflare.web_vitals : [];
+  const mobileVitals = cfVitals.find((item) => /mobile/i.test(String(item.device || ''))) || null;
+  const count = (value) => (value == null ? '—' : num(value));
+  const ms = (value) => (value == null ? '—' : `${num(value)} ms`);
+  const humanShare = (value) => (cfTraffic && cfTraffic.humanPageviews
+    ? pct(Number(value || 0) / cfTraffic.humanPageviews)
+    : '—');
+  const cfPageRows = cfPages.map((item) => `<tr>
+    <td><a href="${esc(item.path)}">${esc(item.path)}</a></td>
+    <td>${num(item.pageviews)}</td><td>${num(item.visits)}</td>
+  </tr>`).join('');
+  const cfCountryRows = cfCountries.map((item) => `<tr>
+    <th scope="row">${esc(item.country)}</th><td>${num(item.pageviews)}</td>
+  </tr>`).join('');
+  const cfVitalRows = cfVitals.map((item) => `<tr>
+    <th scope="row">${esc(item.device)}</th>
+    <td>${num(item.samples)}</td>
+    <td>${ms(item.lcp_ms)}</td><td>${ms(item.inp_ms)}</td><td>${item.cls == null ? '—' : esc(item.cls)}</td>
+    <td>${ms(item.fcp_ms)}</td><td>${ms(item.ttfb_ms)}</td>
+  </tr>`).join('');
+  const cloudflareSection = cloudflare ? `<section id="cloudflare-analytics">
+      <h2>Cloudflare Web Analytics</h2>
+      <p><strong>${esc(cloudflare.source || 'Cloudflare Web Analytics (RUM)')}</strong>${cfWindow ? `, ${esc(cfWindow.since)} to ${esc(cfWindow.until)} (${num(cfWindow.days)} days)` : ''}. These are sampled browser beacons, not server logs: visitors who block the beacon are missing, so read them as trends.</p>
+      <div class="study-grid">
+        <div class="study-stat"><span class="status-kicker">Pageviews</span><strong>${num(cfTotals.pageviews)}</strong><span>${num(cfTotals.visits)} visits</span></div>
+        <div class="study-stat"><span class="status-kicker">Human pageviews</span><strong>${count(cfTraffic && cfTraffic.humanPageviews)}</strong><span>${count(cfTraffic && cfTraffic.botPageviews)} from bots</span></div>
+        <div class="study-stat"><span class="status-kicker">Subpage share</span><strong>${humanShare(cfTraffic && cfTraffic.subpagePageviews)}</strong><span>${count(cfTraffic && cfTraffic.homepagePageviews)} homepage pageviews</span></div>
+        <div class="study-stat"><span class="status-kicker">Mobile LCP (p75)</span><strong>${ms(mobileVitals && mobileVitals.lcp_ms)}</strong><span>${count(mobileVitals && mobileVitals.samples)} samples</span></div>
+      </div>
+      ${cfPageRows ? `<h3>Top pages</h3>
+      <div class="table-wrap" role="region" aria-label="Cloudflare pageviews by path" tabindex="0">
+        <table class="office-table stack-table">
+          <caption>Pageviews and visits by path, RUM window</caption>
+          <thead><tr><th scope="col">Path</th><th scope="col">Pageviews</th><th scope="col">Visits</th></tr></thead>
+          <tbody>${cfPageRows}</tbody>
+        </table>
+      </div>` : '<p class="small-note">No top-page rows in this snapshot.</p>'}
+      ${cfVitalRows ? `<h3>Core Web Vitals (p75, human traffic)</h3>
+      <div class="table-wrap" role="region" aria-label="Cloudflare Core Web Vitals" tabindex="0">
+        <table class="office-table stack-table">
+          <caption>Field p75 by device; — means too few samples</caption>
+          <thead><tr><th scope="col">Device</th><th scope="col">Samples</th><th scope="col">LCP</th><th scope="col">INP</th><th scope="col">CLS</th><th scope="col">FCP</th><th scope="col">TTFB</th></tr></thead>
+          <tbody>${cfVitalRows}</tbody>
+        </table>
+      </div>
+      <p class="small-note">Google "good" thresholds: LCP &le; 2500 ms, INP &le; 200 ms, CLS &le; 0.1.</p>` : '<p class="small-note">No Web Vitals samples in this snapshot.</p>'}
+      ${cfCountryRows ? `<h3>Top countries</h3>
+      <div class="table-wrap" role="region" aria-label="Cloudflare pageviews by country" tabindex="0">
+        <table class="office-table stack-table">
+          <caption>Pageviews by country</caption>
+          <thead><tr><th scope="col">Country</th><th scope="col">Pageviews</th></tr></thead>
+          <tbody>${cfCountryRows}</tbody>
+        </table>
+      </div>` : ''}
+    </section>` : `<section id="cloudflare-analytics">
+      <h2>Cloudflare Web Analytics</h2>
+      <p>No Cloudflare RUM section in this snapshot. Set <code>CLOUDFLARE_API_TOKEN</code> and <code>CLOUDFLARE_ACCOUNT_ID</code>, then run the refresh.</p>
+    </section>`;
   const scorecard = data.indexing_scorecard || null;
   const scoreEngines = scorecard && Array.isArray(scorecard.engines) ? scorecard.engines : [];
   const scoreFamilies = scorecard && Array.isArray(scorecard.families) ? scorecard.families : [];
@@ -373,7 +508,7 @@ export function renderCoverageDashboard(data) {
   const body = `    <p class="page-kicker">Operations · noindex</p>
     <h1>Search coverage dashboard</h1>
     <p class="page-meta">Weekly snapshot &bull; ${esc(day(data.generated_at))} &bull; Source: ${esc(data.source || 'seed')} &bull; This page is not indexed.</p>
-    <p class="page-lede">The dashboard answers one question: are the pages we published actually discoverable? It separates Google Search Console data from Bing/IndexNow and records the measurement instead of relying on a screenshot or a memory of a dashboard.</p>
+    <p class="page-lede">The dashboard answers one question: are the pages we published actually discoverable, and does anyone arrive? It separates Google Search Console indexing and query data from Bing/IndexNow crawl data and Cloudflare Web Analytics traffic, and records the measurement instead of relying on a screenshot or a memory of a dashboard.</p>
 
     <div class="study-grid">
       <div class="study-stat"><span class="status-kicker">Clicks (28d)</span><strong>${num(totals.clicks)}</strong><span>${num(totals.impressions)} impressions</span></div>
@@ -427,6 +562,8 @@ export function renderCoverageDashboard(data) {
 ${bing.issues && bing.issues.error ? `<p class="small-note">Bing crawl issues request: ${esc(bing.issues.error)}</p>` : ''}
     </section>
 
+    ${cloudflareSection}
+
     <section>
       <h2>Performance scorecard</h2>
       <p><strong>${esc(perf.profile || 'Lab profile not recorded')}</strong></p>
@@ -444,13 +581,14 @@ ${bing.issues && bing.issues.error ? `<p class="small-note">Bing crawl issues re
         <li><strong>Request indexing</strong> is a signed-in Search Console action under URL Inspection. The API can inspect a URL; it cannot press the button.</li>
         <li><strong>Search Console sitemap processing</strong> can remain pending for days. Use the status column rather than assuming submission equals indexing.</li>
         <li><strong>Bing</strong> needs a verified site and API key. If that key is absent, the dashboard says so instead of showing an empty success.</li>
+        <li><strong>Cloudflare RUM</strong> is sampled field data from browsers that load the beacon; it excludes visitors who block it, so use it for trends rather than absolute totals.</li>
         <li><strong>Core Web Vitals</strong> need field data; the lab number here is a regression guard, not a field measurement.</li>
       </ul>
     </section>
 
     <section>
       <h2>Refresh</h2>
-      <p>Run <code>npm run coverage:dashboard</code> with the credentials listed in the script header. The weekly workflow does the same and commits the snapshot. This page is deliberately excluded from the sitemap and carries <code>noindex, follow</code>.</p>
+      <p>Run <code>npm run coverage:dashboard</code> with the credentials listed in the script header, or restrict a run to the sources you have (<code>--sources=cloudflare</code>). Credentials are read from the environment, then from the gitignored <code>.dev.vars</code>/<code>.env</code>. A source without credentials keeps its seeded section and adds a warning above. The weekly workflow does the same and commits the snapshot. This page is deliberately excluded from the sitemap and carries <code>noindex, follow</code>.</p>
       <p class="page-nav"><a href="/status">Data status</a> &middot; <a href="/all-pages">All pages</a> &middot; <a href="/reports">Report archive</a></p>
     </section>`;
   const descriptor = pageDescriptor('/search-coverage');
@@ -484,8 +622,8 @@ ${body}
 `, descriptor);
 }
 
-export async function writeCoverageDashboard({ root = ROOT } = {}) {
-  const data = await refreshCoverage({ root });
+export async function writeCoverageDashboard({ root = ROOT, ...options } = {}) {
+  const data = await refreshCoverage({ root, ...options });
   const dataFile = path.join(root, 'data', 'search-coverage.json');
   fs.mkdirSync(path.dirname(dataFile), { recursive: true });
   fs.writeFileSync(dataFile, JSON.stringify(data, null, 2) + '\n');
@@ -493,9 +631,20 @@ export async function writeCoverageDashboard({ root = ROOT } = {}) {
   return data;
 }
 
+function cliOptions(argv = process.argv.slice(2)) {
+  const value = (name) => {
+    const prefix = `--${name}=`;
+    const found = argv.find((arg) => arg.startsWith(prefix));
+    return found ? found.slice(prefix.length) : '';
+  };
+  const days = Math.max(1, Math.min(90, Number(value('days')) || 28));
+  const sources = value('sources').split(',').map((name) => name.trim()).filter(Boolean);
+  return { days, ...(sources.length ? { sources } : {}) };
+}
+
 const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
 if (isMain) {
-  writeCoverageDashboard().then((data) => {
+  writeCoverageDashboard(cliOptions()).then((data) => {
     console.log(`Coverage snapshot written: source=${data.source}, errors=${data.errors.length}.`);
     if (data.errors.length) for (const error of data.errors) console.warn(`Warning: ${error}`);
   }).catch((error) => {

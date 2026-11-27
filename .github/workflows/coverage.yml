@@ -30,11 +30,15 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Refresh Search Console and Bing snapshot
+      # Every source is optional: one that has no credential keeps its seeded
+      # section and adds a warning instead of blocking the others.
+      - name: Refresh Search Console, Bing and Cloudflare snapshot
         env:
           GSC_SERVICE_ACCOUNT_JSON: ${{ secrets.GSC_SERVICE_ACCOUNT_JSON }}
           GSC_SITE_URL: ${{ vars.GSC_SITE_URL || 'https://irishvisaupdatetracker.pages.dev/' }}
           BING_WEBMASTER_API_KEY: ${{ secrets.BING_WEBMASTER_API_KEY }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
         run: node tools/coverage-dashboard.mjs
 
       - name: Commit the snapshot and dashboard
