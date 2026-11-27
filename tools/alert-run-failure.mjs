@@ -1,5 +1,5 @@
 /**
- * Alert when a scheduled GitHub Actions workflow fails.
+ * Alert when a watched GitHub Actions workflow fails, whatever triggered it.
  *
  * The alert workflow supplies the failed run's metadata in environment
  * variables. No token, secret or request body is included in the message.
@@ -10,11 +10,13 @@ import { sendAlert } from './alert-webhook.mjs';
 
 const workflow = process.env.WORKFLOW_NAME || 'unknown workflow';
 const conclusion = process.env.WORKFLOW_CONCLUSION || 'failure';
+const event = process.env.WORKFLOW_EVENT || '';
 const runUrl = process.env.WORKFLOW_RUN_URL || '';
 const branch = process.env.WORKFLOW_BRANCH || '';
 const message = [
-  `Irish Visa Tracker cron failed: ${workflow}`,
+  `Irish Visa Tracker workflow failed: ${workflow}`,
   `Conclusion: ${conclusion}`,
+  event ? `Triggered by: ${event}` : '',
   branch ? `Branch: ${branch}` : '',
   runUrl ? `Run: ${runUrl}` : ''
 ].filter(Boolean).join('\n');
