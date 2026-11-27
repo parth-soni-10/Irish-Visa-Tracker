@@ -57,6 +57,16 @@ test('refuses to run without its configuration', async () => {
   assert.equal(noKey.status, 503);
 });
 
+test('accepts a sender with a display name', async (t) => {
+  const { response, payload } = await withFetch(
+    t,
+    () => new Response(JSON.stringify({ id: 'mail_2' }), { status: 200 }),
+    () => handleFailureAlert(post(), { ...ENV, EMAIL_FROM: 'Irish Visa Tracker <alerts@example.test>' })
+  );
+  assert.equal(response.status, 200);
+  assert.equal(payload.from, 'Irish Visa Tracker <alerts@example.test>');
+});
+
 test('only accepts POST', async () => {
   assert.equal((await handleFailureAlert(post({ method: 'GET' }), ENV)).status, 405);
 });

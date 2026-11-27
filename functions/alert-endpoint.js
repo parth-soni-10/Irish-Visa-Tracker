@@ -16,6 +16,12 @@ const MAX_BODY = 8 * 1024;
 const MAX_TEXT = 4000;
 const EMAIL = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 
+/** `Name <address>` is a valid sender; validate the address, keep the label. */
+function addressOf(value) {
+  const text = String(value || '').trim();
+  return text.match(/<([^>]+)>$/)?.[1] || text;
+}
+
 function json(body, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
@@ -47,7 +53,7 @@ export async function handleFailureAlert(request, env) {
   const to = String(env.ALERT_EMAIL_TO || '').trim();
   const from = String(env.EMAIL_FROM || '').trim();
   if (!expected) return json({ error: 'Failure alerts are not configured' }, 503);
-  if (!env.RESEND_API_KEY || !EMAIL.test(to) || !EMAIL.test(from)) {
+  if (!env.RESEND_API_KEY || !EMAIL.test(addressOf(to)) || !EMAIL.test(addressOf(from))) {
     return json({ error: 'Email delivery for failure alerts is not configured' }, 503);
   }
 
