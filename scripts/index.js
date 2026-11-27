@@ -5536,21 +5536,6 @@ async function renderLandingPage() {
                     '<div id="recent-decisions-section" class="landing-recent"></div>' +
                     '<p class="note2 landing-overview-foot">Newest rows in the New Delhi tracker, including observations after the latest official file. <a href="/status">See every office’s latest report and check time</a>.</p>' +
                     '</section>' +
-                    '<section class="landing-overview" aria-labelledby="landing-offices-title">' +
-                    '<div class="landing-overview-head"><div>' +
-                    '<h2 id="landing-offices-title">Visa decisions by office</h2>' +
-                    '<p class="note2">The same decision files grouped by the office that published them, each with its latest report date and counts.</p>' +
-                    '</div><a href="/irish-visa-decisions-today">Irish visa decisions today</a></div>' +
-                    '<p class="note2">' +
-                    '<a href="/new-delhi-visa-decisions">New Delhi visa decisions</a> &middot; ' +
-                    '<a href="/beijing-visa-decisions">Beijing visa decisions</a> &middot; ' +
-                    '<a href="/abu-dhabi-visa-decisions">Abu Dhabi visa decisions</a> &middot; ' +
-                    '<a href="/abuja-visa-decisions">Abuja visa decisions</a> &middot; ' +
-                    '<a href="/ankara-visa-decisions">Ankara visa decisions</a> &middot; ' +
-                    '<a href="/dublin-visa-decisions">Dublin visa decisions</a>' +
-                    '</p>' +
-                    '<p class="note2"><a href="/daily-summaries">Daily approved and refused summaries</a> &middot; <a href="/monthly-report">Monthly report</a> &middot; <a href="/reports">Report archive</a></p>' +
-                    '</section>' +
                     '<div class="landing-foot">Source: official Irish visa office reports. Updated when the offices publish.</div></div>';
                 wireChrome();
                 loadOfficeLookupMeta().then(function(map) {
