@@ -59,10 +59,9 @@ const ALERTS_PATH = "/api/alerts/run";
 
 const CONFIG_PATH = "/api/config";
 const EVENTS_PATH = "/api/events";
-const EMAIL_WEBHOOK_PATH = "/api/email/send";
 const REPORT_PATHS = new Set([
   "/api/reports/monthly", "/api/reports/changes", "/api/reports/corrections", "/api/digest/preview",
-  "/api/digest/subscribe", "/api/digest/verify", "/api/digest/unsubscribe", "/api/digest/send"
+  "/api/digest/send"
 ]);
 
 const MAX_BODY = 16 * 1024;
@@ -459,14 +458,6 @@ async function handleRequest(request, env) {
     }
     const { officesCalendarResponse } = await import('./calendar.js');
     return officesCalendarResponse(env, request);
-  }
-
-  // The email bridge is called by the worker itself for every outbound mail.
-  // Exempt it from the per-client limiter (a digest can legitimately send many
-  // messages) and authenticate it with the dedicated webhook secret instead.
-  if (pathname === EMAIL_WEBHOOK_PATH && request.method === 'POST') {
-    const { handleEmailWebhook } = await import('./email-webhook.js');
-    return handleEmailWebhook(request, env);
   }
 
   // Rate limiting for API endpoints. D1 is the shared counter, so one client

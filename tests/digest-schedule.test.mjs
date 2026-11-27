@@ -3,22 +3,25 @@
  *
  *   node --test tests/digest-schedule.test.mjs
  *
- * The digest workflow runs from both its monthly cron and every scrape run, so
- * the endpoint must be idempotent per calendar month. Without this guard a
- * fallback trigger would mail every subscriber again.
+ * The digest workflow runs from its monthly cron, a next-day retry and every
+ * scrape run, so the endpoint must announce a month at most once. Without this
+ * guard a fallback trigger would post the monthly report again.
  */
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { handleReports } from '../functions/reports.js';
 
-function stubDB(rows = []) {
+/** D1 stand-in: `announced` lists the months already in digest_broadcasts. */
+function stubDB({ announced = [] } = {}) {
   return {
-    prepare() {
+    prepare(sql) {
       const statement = {
         bind: () => statement,
-        all: async () => ({ results: rows }),
-        first: async () => null,
+        all: async () => ({ results: [] }),
+        first: async () => (String(sql).includes('digest_broadcasts') && announced.length
+          ? { month: announced[0] }
+          : null),
         run: async () => ({ success: true })
       };
       return statement;
@@ -42,18 +45,28 @@ test('digest rejects a wrong cron secret', async () => {
   assert.equal(response.status, 401);
 });
 
-test('digest skips subscribers already sent this month', async () => {
+test('digest stays green and says why without a Telegram channel', async () => {
   const response = await handleReports(sendRequest('secret'), {
-    DB: stubDB([]),
-    SCRAPER_CRON_SECRET: 'secret',
-    EMAIL_WEBHOOK_URL: 'https://tracker.test/api/email/send',
-    EMAIL_WEBHOOK_SECRET: 'webhook-secret',
-    EMAIL_FROM: 'reports@tracker.test'
+    DB: stubDB(),
+    SCRAPER_CRON_SECRET: 'secret'
   });
   assert.equal(response.status, 200);
   const body = await response.json();
   assert.equal(body.success, true);
   assert.equal(body.sent, 0);
-  assert.equal(body.recipients, 0);
+  assert.equal(body.skipped, 'telegram_channel_not_configured');
+});
+
+test('digest announces a month at most once', async () => {
+  const response = await handleReports(sendRequest('secret'), {
+    DB: stubDB({ announced: ['2026-10'] }),
+    SCRAPER_CRON_SECRET: 'secret',
+    TELEGRAM_BOT_TOKEN: 'bot-token',
+    TELEGRAM_CHANNEL_ID: '-1001234567890'
+  });
+  assert.equal(response.status, 200);
+  const body = await response.json();
+  assert.equal(body.success, true);
+  assert.equal(body.sent, 0);
   assert.equal(body.skipped, 'already_sent_this_month');
 });

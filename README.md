@@ -39,12 +39,11 @@ The app degrades explicitly when a service is absent. See [`docs/services.md`](d
 The important variables are:
 
 - `APP_BASE_URL`, `SCRAPER_CRON_SECRET`
-- `EMAIL_WEBHOOK_URL`, `EMAIL_WEBHOOK_SECRET`, `EMAIL_FROM`
 - `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`
 - `TELEGRAM_BOT_TOKEN`, `TELEGRAM_WEBHOOK_SECRET`; optional `TELEGRAM_BOT_USERNAME`, `TELEGRAM_CHANNEL_ID`, `TELEGRAM_CHANNEL_URL`
 - Optional shared monitoring alert destination: `ALERT_WEBHOOK_URL`
 
-The email path is provider-neutral: the app posts to `EMAIL_WEBHOOK_URL`, and this deployment’s secret-protected `/api/email/send` bridge translates that contract to the existing Resend account. No mail credential ever reaches the browser.
+The tracker sends no email. The monthly report is announced as one post in the Telegram channel, and per-application alerts go to Telegram or browser push, so there is no address to collect, verify or unsubscribe.
 
 ## Development and verification
 

@@ -85,6 +85,6 @@ property. Those steps need the maintainer's accounts.
   tag is a hint, not a redirect.
 - Social cards live at `/assets/social/`; the generated URLs follow the new
   origin automatically.
-- `TELEGRAM_CHANNEL_URL`, `EMAIL_FROM` and other service variables are
-  independent of the domain, but any callback or unsubscribe link uses
-  `APP_BASE_URL`. Update it before the first post-cutover digest.
+- `TELEGRAM_CHANNEL_URL` and the other service variables are independent of
+  the domain, but every link the digest and alerts build uses `APP_BASE_URL`.
+  Update it before the first post-cutover digest.

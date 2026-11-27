@@ -165,35 +165,6 @@
   monthInput.addEventListener('change', function () {
     if (monthInput.value) loadReport(monthInput.value);
   });
-  document.getElementById('digest-form').addEventListener('submit', async function (event) {
-    event.preventDefault();
-    var button = document.getElementById('digest-button');
-    var status = document.getElementById('digest-status');
-    var email = document.getElementById('digest-email').value.trim();
-    if (!email) return;
-    button.disabled = true;
-    status.textContent = 'Requesting confirmation…';
-    status.style.color = 'var(--muted)';
-    try {
-      var response = await fetch('/api/digest/subscribe', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email })
-      });
-      var data = await response.json().catch(function () { return {}; });
-      if (response.ok) {
-        status.textContent = data.message || 'Check your inbox to confirm the subscription.';
-        status.style.color = 'var(--green)';
-        document.getElementById('digest-email').value = '';
-      } else {
-        status.textContent = data.error || 'Could not subscribe.';
-        status.style.color = 'var(--red)';
-      }
-    } catch (error) {
-      status.textContent = 'Could not subscribe.';
-      status.style.color = 'var(--red)';
-    } finally { button.disabled = false; }
-  });
-
   var params = new URLSearchParams(location.search);
   var requested = params.get('month') || '';
   loadReport(requested);

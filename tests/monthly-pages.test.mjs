@@ -81,7 +81,7 @@ test("the latest monthly report is static and keeps the interactive shell", asyn
   } else {
     assert.doesNotMatch(html, /is a partial month/);
   }
-  assert.match(html, /id="digest-form"/);
+  assert.doesNotMatch(html, /id="digest-form"|type="email"/, "the report page offers no email subscription");
   assert.match(html, /src="\/scripts\/monthly-report-1\.js"/);
   assert.doesNotMatch(html, /Loading the official files/);
   assert.doesNotMatch(html, /Loading this week's changes/);

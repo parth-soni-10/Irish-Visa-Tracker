@@ -8,11 +8,11 @@ never stored in this repository and must not be pasted into chat or committed.
 - Project: `irishvisaupdatetracker`
 - Production origin: `https://irishvisaupdatetracker.pages.dev`
 - D1 binding: `DB`
-- Existing production secrets (names only): `APP_BASE_URL`, `RESEND_API_KEY`,
-  `EMAIL_WEBHOOK_URL`, `EMAIL_WEBHOOK_SECRET`, `EMAIL_FROM`,
+- Existing production secrets (names only): `APP_BASE_URL`,
   `SCRAPER_CRON_SECRET`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_WEBHOOK_SECRET`,
-  `VAPID_PRIVATE_KEY`, `VAPID_PUBLIC_KEY`, `VAPID_SUBJECT`. Optional channel
-  announcement settings: `TELEGRAM_CHANNEL_ID`, `TELEGRAM_CHANNEL_URL`.
+  `VAPID_PRIVATE_KEY`, `VAPID_PUBLIC_KEY`, `VAPID_SUBJECT`. Channel settings:
+  `TELEGRAM_CHANNEL_ID` (monthly digest and official-file announcements),
+  `TELEGRAM_CHANNEL_URL`.
   Optional custom-domain cutover setting: `PAGES_DEV_REDIRECT_ORIGIN` (the new
   `https://` origin; absent means no old-host redirect).
 - Optional monitoring secret: `ALERT_WEBHOOK_URL` (GitHub Actions and the
@@ -79,10 +79,6 @@ D1 also stores the operational counters and the activation funnel:
 | `PAGES_DEV_REDIRECT_ORIGIN` | Optional until a custom domain is live | The old `pages.dev` host returns no redirect |
 | `ALERT_WEBHOOK_URL` | Optional shared alert destination | External uptime and cron-failure alerts have no out-of-band delivery |
 | `SCRAPER_CRON_SECRET` | Configured | `/api/alerts/run` and `/api/digest/send` return 503 |
-| `EMAIL_WEBHOOK_URL` | Configured to the deployment’s `/api/email/send` bridge | Email delivery is disabled |
-| `EMAIL_WEBHOOK_SECRET` | Configured (deployment secret) | Email bridge rejects requests |
-| `EMAIL_FROM` | Configured from the existing Resend sender | Resend bridge cannot choose a sender |
-| `RESEND_API_KEY` | Existing production secret | Resend bridge returns 503 |
 | `TELEGRAM_BOT_TOKEN` | Configured (deployment secret) | Telegram alerts report disabled |
 | `TELEGRAM_WEBHOOK_SECRET` | Configured (deployment secret) | The Telegram webhook rejects every update with 503 |
 | `TELEGRAM_BOT_USERNAME` | Optional | The worker calls `getMe` to resolve the bot handle |
@@ -168,29 +164,23 @@ The feed covers eight weeks of expected windows and recent published reports
 `webcal://irishvisaupdatetracker.pages.dev/api/calendar/offices.ics`; the older
 `/api/calendar/next-update.ics` remains as a single New Delhi event.
 
-## Email bridge
+## Monthly digest
 
-The app deliberately speaks one provider-neutral webhook contract. The bridge at
-`POST /api/email/send` validates `EMAIL_WEBHOOK_SECRET` and sends through Resend
-using the server-side `RESEND_API_KEY`. `EMAIL_WEBHOOK_URL` therefore points at:
+The monthly report is announced in the Telegram channel, not by email.
+`POST /api/digest/send` builds one message from the same figures the report
+page uses and posts it with the bot token; a reader opts in by following the
+channel, so there is no address to collect, verify or unsubscribe.
 
-```
-https://irishvisaupdatetracker.pages.dev/api/email/send
-```
+`digest_broadcasts` records the month once the post succeeds, so the workflow's
+monthly cron, its next-day retry and the per-scrape fallback can all call the
+endpoint without a second announcement. When `TELEGRAM_CHANNEL_ID` is not set
+the endpoint returns `{"success": true, "skipped":
+"telegram_channel_not_configured"}` and the workflow stays green: a missing
+channel is a configuration gap, not a failed delivery.
 
-The bridge is exempt from the public per-IP API limiter because a digest may
-legitimately send more than 60 messages; the high-entropy webhook secret is its
-authentication boundary. It pins the sender to `EMAIL_FROM` when that value is
-set and never returns provider details or credentials.
-
-`onboarding@resend.dev` can only deliver to the Resend account owner. For
-arbitrary recipients, verify a sending domain in Resend and update `EMAIL_FROM`
-before relying on production mail.
-
-The production bridge was exercised on 2026-11-11: missing/wrong secrets
-returned 401, an invalid recipient returned 400, and a real message returned
-200 with a Resend message id. Pages binds secrets at deployment time, so after
-adding or changing one, redeploy the Functions bundle before testing.
+`GET /api/digest/preview?month=YYYY-MM` returns the same text (add
+`&format=text` for the message alone), so the wording can be checked before a
+month is announced.
 
 ## Monitoring
 
