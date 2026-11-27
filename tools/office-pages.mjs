@@ -655,7 +655,8 @@ ${schemaFor(office)}
     <p class="office-actions">
       <a class="btn" href="${office.sourceUrl}" target="_blank" rel="noopener noreferrer">Official ${office.name} page</a>
       <a class="btn" href="/monthly-report?utm_source=office_page&amp;utm_medium=referral&amp;utm_campaign=monthly_report">Monthly report</a>
-      <a class="btn" data-public-channel href="#" hidden>Follow the public Telegram channel</a>
+      <a class="btn" data-office-alerts="${office.slug}" href="#" hidden>Get ${office.name} publication updates</a>
+      <a class="btn secondary" data-public-channel href="#" hidden>Follow the public Telegram channel</a>
     </p>
 
     <section>

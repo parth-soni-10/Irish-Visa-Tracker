@@ -29,6 +29,8 @@ import {
   DOCUMENTS,
   MARKDOWN_ALIASES,
   NOT_ACCEPTABLE_MARKDOWN,
+  OFFICE_MARKDOWN_PATHS,
+  liveOfficeMarkdown,
   markdownResponse,
   negotiate,
   notFoundMarkdown,
@@ -422,12 +424,19 @@ async function handleRequest(request, env) {
   // VAPID private key and every mail secret stay server-side.
   if (pathname === CONFIG_PATH && (request.method === 'GET' || request.method === 'HEAD')) {
     const channel = String(env.TELEGRAM_CHANNEL_URL || '').trim();
+    // A configured handle wins; otherwise resolve it once per isolate through
+    // getMe, so the office deep links work without a second deployment secret.
+    const configuredBot = String(env.TELEGRAM_BOT_USERNAME || '').replace(/^@/, '').trim();
+    const botUsername = /^[A-Za-z0-9_]{3,64}$/.test(configuredBot)
+      ? configuredBot
+      : await (await import('./telegram.js')).telegramBotUsername(env);
     return json({
       vapid_public_key: env.VAPID_PUBLIC_KEY || '',
       brand_name: env.BRAND_NAME || 'Irish Visa Decision Tracker',
       brand_color: env.BRAND_COLOR || '#047857',
       support_email: env.SUPPORT_EMAIL || '',
       telegram_channel_url: /^https:\/\/t\.me\/[A-Za-z0-9_]{3,64}\/?$/.test(channel) ? channel : '',
+      telegram_bot_username: botUsername,
       official_feed_url: '/feed.xml',
       official_feed_json_url: '/official-file-feed.json',
       offices_calendar_url: '/api/calendar/offices.ics'
@@ -694,6 +703,19 @@ async function handleRequest(request, env) {
   // and the status-carrying 404 page.
   if (request.method === "GET" || request.method === "HEAD") {
     const requestOrigin = String(env.APP_BASE_URL || new URL(request.url).origin).replace(/\/+$/, "");
+    const officeSlug = OFFICE_MARKDOWN_PATHS.get(pathname);
+    if (officeSlug) {
+      const choice = negotiate(request.headers.get("Accept"));
+      if (pathname.endsWith(".md") || choice === "markdown") {
+        // Office Markdown is built from the current manifest so its counts and
+        // report date match the HTML page, not a constant frozen at authoring.
+        const body = await liveOfficeMarkdown(env, officeSlug, request, requestOrigin);
+        return markdownResponse(body, 200, request.method, requestOrigin);
+      }
+      if (choice === "not-acceptable") {
+        return markdownResponse(NOT_ACCEPTABLE_MARKDOWN, 406, request.method, requestOrigin);
+      }
+    }
     const alias = MARKDOWN_ALIASES.get(pathname);
     if (alias) return markdownResponse(alias, 200, request.method, requestOrigin);
 

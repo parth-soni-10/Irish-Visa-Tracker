@@ -829,7 +829,7 @@ function bulkToolsPage() {
   return shell({
     route: '/bulk-tools',
     title: 'Bulk application check for agents and advisers | Tracker',
-    description: 'Paste multiple Irish visa application numbers, check them against the published decision files in one browser session, filter the results and export a dated CSV. Nothing is uploaded.',
+    description: 'Check up to 100 Irish visa application numbers against the published decision files in one browser session, then export a dated CSV. Nothing is uploaded.',
     body,
     extraHead: '  <link rel="stylesheet" href="/styles/bulk.css">\n',
     extraScripts: '  <script src="/scripts/bulk.js" defer></script>\n',

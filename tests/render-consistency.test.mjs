@@ -72,6 +72,45 @@ test('the homepage summary, status table and office pages use the same latest da
   }
 });
 
+test('the status table names each office searchable window', async () => {
+  const html = await page('status.html');
+  assert.ok(html.includes('Searchable in tracker'));
+  for (const office of freshness.offices) {
+    const from = longDate(office.search_from);
+    assert.ok(
+      html.includes(from),
+      `${office.slug} search window missing from status.html (${from})`,
+    );
+  }
+});
+
+test('office pages offer the office-publication link and the today page its snapshot marker', async () => {
+  for (const office of freshness.offices) {
+    const html = await page(`${office.slug}-visa-decisions.html`);
+    assert.ok(
+      html.includes(`data-office-alerts="${office.slug}"`),
+      `${office.slug} has no new-file update link`,
+    );
+  }
+  const today = await page('irish-visa-decisions-today.html');
+  assert.match(today, /data-snapshot-day="\d{4}-\d{2}-\d{2}"/);
+  assert.ok(today.includes('Snapshot day:'));
+});
+
+test('every page keeps its meta description within a search result', async () => {
+  const { readdir } = await import('node:fs/promises');
+  const names = (await readdir(PAGES)).filter((name) => name.endsWith('.html'));
+  for (const name of names) {
+    const html = await page(name);
+    const match = /<meta name="description" content="([^"]*)"/.exec(html);
+    if (!match) continue;
+    assert.ok(
+      match[1].length <= 170,
+      `${name} description is ${match[1].length} characters`,
+    );
+  }
+});
+
 test('freshness.json publishes the searchable window for every office', async () => {
   const saved = JSON.parse(await readFile(path.join(ROOT, 'data', 'freshness.json'), 'utf8'));
   for (const office of saved.offices) {

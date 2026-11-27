@@ -178,7 +178,8 @@ test("the today page lists every office's newest file with a build stamp", async
   const manifest = JSON.parse(await readFile(path.join(ROOT, "data", "data_manifest.json"), "utf8"));
   assert.match(html, /<h1>Irish visa decisions today — <time datetime="\d{4}-\d{2}-\d{2}">\d{1,2} [A-Z][a-z]+ \d{4}<\/time><\/h1>/);
   assert.match(html, /<title>Irish Visa Decisions Today — \d{1,2} [A-Z][a-z]+ \d{4}<\/title>/);
-  assert.match(html, /<meta name="description" content="The newest official Irish visa decision file from each of the six offices/);
+  assert.match(html, /<meta name="description" content="Newest official Irish visa decision file from each of the six offices/);
+  assert.match(html, /data-snapshot-day="\d{4}-\d{2}-\d{2}"/);
   assert.match(html, /<strong>Last checked:<\/strong> <time datetime="/);
   assert.match(html, /<strong>Newest official file:<\/strong> <time datetime="/);
   assert.match(html, /<strong>Page built:<\/strong> <time datetime="[^"]+">[^<]+<\/time> Dublin time/);
@@ -251,7 +252,7 @@ test("the today page lists every office's newest file with a build stamp", async
       assert.match(row, /data-label="Decisions">[\d,]+ <span class="small-note">\(first file\)<\/span>/);
     }
   }
-  const todayIso = html.match(/<strong>Today:<\/strong> <time datetime="([^"]+)"/)?.[1] || "";
+  const todayIso = html.match(/<strong>Snapshot day:<\/strong> <time datetime="([^"]+)"/)?.[1] || "";
   assert.ok(todayIso, "today stamp is missing");
   const noNew = manifest.offices.filter((office) => String(office.report_date || "").slice(0, 10) !== todayIso);
   const noNewCallout = html.match(/<strong>Nothing new today:<\/strong>([\s\S]*?)<\/p>/)?.[1] || "";

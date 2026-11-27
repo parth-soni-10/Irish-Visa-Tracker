@@ -81,7 +81,7 @@ D1 also stores the operational counters and the activation funnel:
 | `SCRAPER_CRON_SECRET` | Configured | `/api/alerts/run` and `/api/digest/send` return 503 |
 | `TELEGRAM_BOT_TOKEN` | Configured (deployment secret) | Telegram alerts report disabled |
 | `TELEGRAM_WEBHOOK_SECRET` | Configured (deployment secret) | The Telegram webhook rejects every update with 503 |
-| `TELEGRAM_BOT_USERNAME` | Optional | The worker calls `getMe` to resolve the bot handle |
+| `TELEGRAM_BOT_USERNAME` | Optional | The worker calls `getMe` to resolve the bot handle; `/api/config` publishes it for office deep links |
 | `TELEGRAM_CHANNEL_ID` | Optional | `/api/telegram/broadcast` skips without posting to a public channel |
 | `TELEGRAM_CHANNEL_URL` | Optional | The Data status page does not show a public channel link |
 | `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` / `VAPID_SUBJECT` | Configured | Browser push reports disabled |

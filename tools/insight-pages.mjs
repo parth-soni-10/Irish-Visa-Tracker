@@ -159,7 +159,7 @@ const CONTENT_PAGES = [
     file: 'bulk-tools.html',
     route: '/bulk-tools',
     title: 'Bulk application check for agents and advisers | Tracker',
-    description: 'Paste multiple Irish visa application numbers, check them against the published decision files in one browser session, filter the results and export a dated CSV. Nothing is uploaded.',
+    description: 'Check up to 100 Irish visa application numbers against the published decision files in one browser session, then export a dated CSV. Nothing is uploaded.',
   },
   {
     file: 'decisions.html',
@@ -853,7 +853,7 @@ function todayPage(data) {
   const snippetFacts = snippetOffice && snippetOffice.report_date && snippetCount
     ? ` Latest New Delhi file: ${longDate(snippetOffice.report_date)} — ${snippetCount.toLocaleString('en-IE')} decisions.`
     : '';
-  const description = 'The newest official Irish visa decision file from each of the six offices, what changed since the previous file, and which offices published nothing new today.' + snippetFacts;
+  const description = 'Newest official Irish visa decision file from each of the six offices.' + snippetFacts;
 
   // Daily change: compare each office's newest file with its previous distinct
   // one. Repeated snapshots (same checksum and counts) are skipped, so a
@@ -966,11 +966,13 @@ function todayPage(data) {
     </p>
 
     <p class="page-data-freshness">
-      <strong>Today:</strong> <time datetime="${today}">${esc(longDate(today))}</time> &middot;
+      <strong>Snapshot day:</strong> <time datetime="${today}">${esc(longDate(today))}</time> &middot;
       <strong>Newest official file:</strong> ${newest ? `<time datetime="${newest}">${esc(longDate(newest))}</time>` : '—'} &middot;
       <strong>Last checked:</strong> ${lastChecked ? timeHTML(lastChecked) : '—'} &middot;
       <strong>Page built:</strong> <time datetime="${esc(iso)}">${esc(label)}</time> Dublin time
     </p>
+
+    <p class="small-note" data-snapshot-day="${today}" hidden></p>
 
     <p class="callout"><strong>${esc(todayCopy)}</strong></p>
 
@@ -1247,6 +1249,9 @@ function dataPage(data) {
     ['/data/embassy-ankara.json', 'Ankara office file', 'Latest Ankara weekly report; some rows are OCR-extracted.', 'Weekly'],
     ['/data/embassy-dublin.json', 'Dublin office file', 'Latest Dublin decision snapshot.', 'Tuesday publication'],
     ['/data/data_manifest.json', 'Coverage manifest', 'One record per office: status, report date, counts, archive dates and source links.', 'Each data refresh'],
+    ['/data/freshness.json', 'Freshness and search window', 'Per office: report date, status, and the earliest and latest date a search can match, with the scope of that history.', 'Each data refresh'],
+    ['/data/search_index.json', 'Compact search index', 'Trimmed rows used by /api/search: office, application number, decision date, outcome, report date and source. The office archives remain authoritative.', 'Each deploy'],
+    ['/data/search_fallback.json', 'Browser fallback index', 'The compact index the tracker falls back to when the live search endpoint is unavailable.', 'Each deploy'],
     ['/data/reports/index.json', 'Official report archive', 'Dated official reports with counts, approval shares, checksums and source files.', 'Each data refresh'],
     ['/data/study/office-summary.csv', 'Office summary CSV', 'Latest-file totals by office for the data study.', 'Each deploy'],
     ['/data/study/monthly-volume.csv', 'Monthly volume CSV', 'Dated publication volume by office and month.', 'Each deploy'],

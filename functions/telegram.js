@@ -232,6 +232,26 @@ async function botUsername(env) {
   return cachedUsername;
 }
 
+/** The public bot handle for site deep links, or '' when alerts are off. */
+export async function telegramBotUsername(env) {
+  if (!isTelegramConfigured(env)) return '';
+  let timer = null;
+  try {
+    // /api/config must not wait on a slow Telegram API; the link simply stays
+    // hidden when the handle cannot be resolved quickly.
+    const username = await Promise.race([
+      botUsername(env),
+      new Promise((resolve) => { timer = setTimeout(() => resolve(''), 2500); })
+    ]);
+    return /^[A-Za-z0-9_]{3,64}$/.test(String(username || '')) ? String(username) : '';
+  } catch (error) {
+    console.warn('Telegram bot username lookup failed:', error.message);
+    return '';
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
+
 async function chatPreferences(env, chatId) {
   try {
     return await env.DB.prepare(

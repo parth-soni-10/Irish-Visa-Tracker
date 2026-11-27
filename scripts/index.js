@@ -688,7 +688,9 @@
                         (m.newRows ? ' \u00b7 <strong>' + m.newRows + ' new</strong> rows' : ' \u00b7 no new rows');
                 } else {
                     dot = 'stale';
-                    health = 'Last updated: <strong>' + fmtISTStamp(m.lastRunAt) + '</strong>. Nothing recorded today yet.';
+                    const weekend = newDelhiNowValue && (newDelhiNowValue.weekdayIndex === 0 || newDelhiNowValue.weekdayIndex === 6);
+                    health = 'Last updated: <strong>' + fmtISTStamp(m.lastRunAt) + '</strong>. ' +
+                        (weekend ? 'The office is closed today (weekend).' : 'Nothing recorded today yet.');
                 }
                 health += ' \u00b7 Next expected New Delhi update: a weekday around ' +
                     scheduleTimeNode(NEW_DELHI_UPDATE_HOUR, NEW_DELHI_UPDATE_MINUTE) + '.';
@@ -2500,7 +2502,7 @@
                     '<select id="home-office" name="office" aria-label="Visa office to search">' + officeOptionsHTML(homeSearchOffice) + '</select></div>' +
                     '<button class="btn home-lookup-submit" type="submit" id="home-lookup-submit">Search</button>' +
                     '</form>' +
-                    '<p class="home-lookup-coverage"><strong>Coverage:</strong> New Delhi: daily decisions &middot; Beijing and Dublin: latest snapshot &middot; Abu Dhabi, Abuja and Ankara: dated reports.</p>' +
+                    '<p class="home-lookup-coverage" data-lookup-coverage-line><strong>Coverage:</strong> New Delhi: daily decisions &middot; Beijing and Dublin: latest snapshot &middot; Abu Dhabi, Abuja and Ankara: dated reports.</p>' +
                     '<div class="home-lookup-tools">' +
                     '<div id="recent-searches">' + recentSearchesHTML() + '</div>' +
                     '<button type="button" class="export-btn tu-btn" id="home-search-clear" title="Clear the search and show every result" hidden>Clear search</button>' +
@@ -2936,9 +2938,14 @@
                     escapeHtml(decision) + '</span></div>' +
                     '<dl class="lookup-result-facts">' +
                     '<div class="lookup-result-fact"><dt>Office</dt><dd>' + escapeHtml(officeName(office)) + '</dd></div>' +
-                    '<div class="lookup-result-fact"><dt>Coverage</dt><dd>' + escapeHtml(OFFICE_COVERAGE[office] || 'Published report') +
+                    '<div class="lookup-result-fact"><dt>Coverage</dt><dd>' +
+                    escapeHtml(lookupCoverageLabel(meta.freshness) || OFFICE_COVERAGE[office] || 'Published report') +
                     (meta.freshness && meta.freshness.search_from
                         ? ' \u00b7 searchable from ' + escapeHtml(lookupFormatDate(meta.freshness.search_from))
+                        : '') +
+                    (meta.freshness && meta.freshness.search_through &&
+                        meta.freshness.search_through !== meta.freshness.search_from
+                        ? ' through ' + escapeHtml(lookupFormatDate(meta.freshness.search_through))
                         : '') + '</dd></div>' +
                     '<div class="lookup-result-fact"><dt>Decision date</dt><dd>' +
                     (decisionDate ? '<time datetime="' + escapeHtml(row.date) + '">' + decisionDate + '</time>' : 'Not listed') + '</dd></div>' +
@@ -3025,6 +3032,48 @@
                     if (day !== 0 && day !== 6) break;
                 }
                 return date.toISOString().slice(0, 10);
+            }
+
+            // The coverage wording follows data/freshness.json instead of a
+            // constant, so an office that starts keeping history stops being
+            // described as "latest snapshot" the day that changes.
+            var LOOKUP_SCOPE_LABELS = {
+                'daily tracker': 'daily decisions',
+                'dated reports': 'dated reports',
+                'latest snapshot only': 'latest snapshot',
+                'snapshot plus earlier files': 'snapshot + earlier files'
+            };
+
+            function lookupCoverageLabel(fresh) {
+                return fresh && LOOKUP_SCOPE_LABELS[fresh.search_scope]
+                    ? LOOKUP_SCOPE_LABELS[fresh.search_scope]
+                    : '';
+            }
+
+            function lookupCoverageLineHTML(metas) {
+                var labels = [];
+                var grouped = Object.create(null);
+                WATCH_OFFICES.forEach(function(office) {
+                    var meta = metas && metas[office];
+                    var label = meta && lookupCoverageLabel(meta.freshness);
+                    if (!label) return;
+                    if (!grouped[label]) {
+                        grouped[label] = [];
+                        labels.push(label);
+                    }
+                    grouped[label].push(officeName(office));
+                });
+                if (!labels.length) return '';
+                return '<strong>Coverage:</strong> ' + labels.map(function(label) {
+                    return escapeHtml(grouped[label].join(' and ')) + ': ' + escapeHtml(label);
+                }).join(' \u00b7 ') + '.';
+            }
+
+            function paintLookupCoverageLine(metas) {
+                var el = document.querySelector('[data-lookup-coverage-line]');
+                if (!el) return;
+                var html = lookupCoverageLineHTML(metas || officeLookupMeta);
+                if (html) el.innerHTML = html;
             }
 
             function lookupCoverageSummaryHTML(metas) {
@@ -3376,6 +3425,7 @@
                         ? Number(payload.pagination.total)
                         : matches.length;
                     paintHomeLookup(term, matches.slice(0, 100), total, metas);
+                    paintLookupCoverageLine(metas);
                 }).catch(function(error) {
                     if (seq !== homeLookupSeq) return;
                     console.warn('Live office lookup failed, trying fallback:', error);
@@ -5469,6 +5519,7 @@ async function renderLandingPage() {
                     paintLandingFreshness();
                     paintLandingVisitDelta(_embassyManifest);
                     paintLandingCoverageSummary(_embassyManifest);
+                    paintLookupCoverageLine(map);
                 }).catch(function() {
                     paintLandingFreshnessUnavailable();
                     var meta = document.getElementById('landing-overview-meta');
@@ -5582,10 +5633,11 @@ async function renderLandingPage() {
                 await loadPreview();
                 if (!dataComplete && (activeTab === 'history' || activeTab === 'saved')) await loadData();
                 loadMeta(); // health card / reconciliation / closures (non-blocking)
-                loadOfficeLookupMeta().then(function() {
+                loadOfficeLookupMeta().then(function(map) {
                     paintHomeFreshness();
                     paintSiteFreshnessBanner();
                     refreshOfficeSelects();
+                    paintLookupCoverageLine(map);
                 }).catch(function() { /* the coverage line falls back to raw rows */ });
 
                 root.innerHTML =

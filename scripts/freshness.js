@@ -417,8 +417,35 @@
     return map;
   }
 
+  // A page generated for "today" is only today on the day it was built. The
+  // daily pages are rebuilt when the data changes, not on a clock, so say
+  // plainly when the reader is looking at an older snapshot.
+  function dublinToday() {
+    try {
+      return new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'Europe/Dublin', year: 'numeric', month: '2-digit', day: '2-digit'
+      }).format(new Date());
+    } catch (error) {
+      return todayKey(new Date());
+    }
+  }
+
+  function initSnapshotNote() {
+    var el = document.querySelector('[data-snapshot-day]');
+    if (!el) return;
+    var built = String(el.getAttribute('data-snapshot-day') || '').slice(0, 10);
+    var today = dublinToday();
+    if (!built || !today || built === today) return;
+    el.innerHTML = 'This page is a snapshot for ' + escapeHtml(longDate(built)) +
+      '. Today is ' + escapeHtml(longDate(today)) +
+      ' — open <a href="/status">Data status</a> for the newest checks.';
+    el.hidden = false;
+  }
+
   function init() {
-    if (typeof document === 'undefined' || typeof fetch !== 'function') return;
+    if (typeof document === 'undefined') return;
+    initSnapshotNote();
+    if (typeof fetch !== 'function') return;
     if (!document.querySelector('[data-freshness], [data-freshness-slug]')) return;
     fetch('/data/freshness.json', { cache: 'no-store' })
       .then(function (response) {

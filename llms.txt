@@ -75,9 +75,17 @@ All are public, read-only and same-origin:
   `["YYYY-MM-DD", "application-number", "Approved" | "Refused"]`. The file grows as the scraper
   commits new days.
 - `GET /data/visa_meta.json` - scraper health, for example
-  `{ "lastRunAt": "...", "sheetRows": 42382, "newRows": 0, "fileDate": null, "fileRows": null,
+  `{ "lastRunAt": "...", "sheetRows": 44284, "newRows": 0, "fileDate": "...", "fileRows": null,
   "ok": true, "closureDates": [] }`. Read `lastRunAt` and `ok` before treating the data as
   current.
+- `GET /data/freshness.json` - per office: report date, status, and `search_from`,
+  `search_through` and `search_scope`, the window a search can actually match.
+- `GET /data/search_index.json` - trimmed rows used by `/api/search`:
+  `[office, number, date, "A" | "R", report date, source]`. The office archives remain the
+  authoritative files; this is a lookup index.
+- `POST /api/search` - `{ "query": "86826162", "filters": { "embassy": "new-delhi" },
+  "limit": 20 }` returns published rows with their office and source. It is a same-origin public
+  endpoint with rate limiting, not an authenticated developer API.
 - `GET /data/stamp_1g.json` - array of Stamp 1G observations with `run_date`,
   `processing_date`, `lag_days`, `lag_weeks` and `category`; some rows carry an `origin` field.
 - `GET /data/work_permits.json` - array of employment-permit observations with `run_date`,
@@ -102,7 +110,7 @@ All are public, read-only and same-origin:
 
 ### Watchlists and alerts
 
-There are no accounts, sign-in screens or private workspaces, and no public developer API. A
+There are no accounts, sign-in screens or private workspaces, and no keyed developer API. A
 watchlist is a `visa-watchlist` entry in the visitor's own browser, not a server-side account.
 Telegram and browser-push alerts are anonymous, per-application subscriptions. The site never
 exposes private case data. To answer "what happened to application X", use the published decision

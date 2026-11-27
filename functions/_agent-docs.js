@@ -374,8 +374,8 @@ const DAILY_SUMMARIES_MARKDOWN = lines(
   "visa decisions, drawn from the tracker's running record of those decisions.",
   "",
   "- **Data freshness:** read `/data/visa_meta.json` for the current `lastRunAt` - this text describes the page, it is not a dated snapshot",
-  "- **Decisions on record:** 42,382 at that build - read `/data/visa_meta.json` for the current",
-  "  count",
+  "- **Decisions on record:** read `/data/visa_meta.json` for the current `sheetRows`; this page",
+  "  describes the views rather than repeating a count that changes",
   "- **Source data:** `/data/visa_decisions.json`, rows shaped `[date, application number, decision]`",
   "- **Unofficial:** not affiliated with the Embassy of Ireland, ISD or DETE, and not immigration",
   "  advice",
@@ -562,7 +562,7 @@ const PROCESSING_TIMES_MARKDOWN = lines(
   ""
 );
 
-function officeMarkdown({ title, route, latest, decisions, approved, refused, countries, source, data, note }) {
+function officeMarkdown({ title, route, latest, decisions, approved, refused, countries, source, data, note, extra }) {
   return lines(
     `# ${title}`,
     "",
@@ -579,6 +579,7 @@ function officeMarkdown({ title, route, latest, decisions, approved, refused, co
     "## Read the counts correctly",
     "",
     note,
+    ...(extra && extra.length ? ["", ...extra] : []),
     "",
     "A missing application number is not a refusal. It may be unpublished, handled by another",
     "office, absent from a snapshot, or misread by OCR where the office publishes scanned files.",
@@ -673,6 +674,129 @@ const DUBLIN_MARKDOWN = officeMarkdown({
   note: "The Dublin Visa Office publishes decisions every Tuesday and a separate processing queue by category. The tracker holds the latest decision snapshot; the queue is shown on the processing-times page and is not an individual decision list.",
 });
 
+// The static documents above are a fallback for a deployment whose assets are
+// unavailable. The served Markdown is built from data/data_manifest.json, so a
+// reader never sees last week's count on a page whose HTML shows this week's.
+const OFFICE_MARKDOWN_META = {
+  "new-delhi": {
+    title: "New Delhi visa decisions for India, Bangladesh, Nepal and Sri Lanka",
+    route: "/new-delhi-visa-decisions",
+    countries: "India, Bangladesh, Nepal and Sri Lanka",
+    source: "https://www.ireland.ie/en/india/newdelhi/services/visas/processing-times-and-decisions/",
+    data: "/data/visa_decisions.json",
+    note: "New Delhi publishes a cumulative file each business morning. The count is the total in that file, not the number added that day. Read `/data/visa_meta.json` for the current `fileDate`, `sheetRows` and `lastRunAt`. The tracker’s dated rows are observation-dated, so they are excluded from official dated monthly totals.",
+    fallback: NEW_DELHI_MARKDOWN,
+  },
+  beijing: {
+    title: "Beijing visa decisions for China, Hong Kong, Macau and Mongolia",
+    route: "/beijing-visa-decisions",
+    countries: "China, Hong Kong, Macau and Mongolia",
+    source: "https://www.ireland.ie/en/china/beijing/services/visas/visa-decisions/",
+    data: "/data/embassy-beijing.json",
+    note: "Beijing publishes a cumulative decision file rather than a dated daily history. The tracker holds the latest snapshot it could find; a newer official file may exist. Read `/data/data_manifest.json` before describing this snapshot as current.",
+    fallback: BEIJING_MARKDOWN,
+  },
+  "abu-dhabi": {
+    title: "Abu Dhabi visa decisions for the UAE, Gulf and North Africa",
+    route: "/abu-dhabi-visa-decisions",
+    countries: "United Arab Emirates, Afghanistan, Algeria, Bahrain, Jordan, Kuwait, Lebanon, Libya, Morocco, Oman, Qatar, Sudan, Syria and Tunisia",
+    source: "https://www.ireland.ie/en/uae/abudhabi/services/visas/weekly-decision-reports/",
+    data: "/data/embassy-abu-dhabi.json",
+    note: "Abu Dhabi publishes weekly PDF reports. The report date is the end of the reporting period, not the date of an individual decision. The tracker keeps each dated report it has ingested; read the report archive for earlier periods. Abu Dhabi's published country list does not include Pakistan; join-family applications from residents of Pakistan are considered by the [Dublin Visa Office](https://irishvisaupdatetracker.pages.dev/dublin-visa-decisions).",
+    fallback: ABU_DHABI_MARKDOWN,
+    weekly: true,
+  },
+  abuja: {
+    title: "Abuja visa decisions for Nigeria, Ghana, Côte d’Ivoire and Senegal",
+    route: "/abuja-visa-decisions",
+    countries: "Nigeria, Ghana, Côte d’Ivoire, Senegal",
+    source: "https://www.ireland.ie/en/nigeria/abuja/services/visas/visa-decisions/",
+    data: "/data/embassy-abuja.json",
+    note: "Abuja publishes weekly PDF reports. The report date is the end of the reporting period, and the decisions are period totals, not a cumulative file. Some rows are OCR-extracted, so a character can be missed or misread; the official PDF remains the authority.",
+    fallback: ABUJA_MARKDOWN,
+    weekly: true,
+  },
+  ankara: {
+    title: "Ankara visa decisions for Türkiye, Azerbaijan and Saudi residents",
+    route: "/ankara-visa-decisions",
+    countries: "Türkiye, Azerbaijan and residents of Saudi Arabia",
+    source: "https://www.ireland.ie/en/turkiye/ankara/services/visas/visa-decisions/",
+    data: "/data/embassy-ankara.json",
+    note: "Ankara publishes weekly PDF reports; some are scanned. Rows are OCR-extracted at 300 DPI, so a character can be missed or misread. The official PDF remains the authority. The report date is the end of the reporting period.",
+    fallback: ANKARA_MARKDOWN,
+    weekly: true,
+  },
+  dublin: {
+    title: "Dublin visa decisions for Pakistan and transferred applications",
+    route: "/dublin-visa-decisions",
+    countries: "Join-family applications from Pakistan, applications transferred from overseas offices and specified categories, including EU Free Movement family, certain Join Family categories, Minister of Religion and Volunteer",
+    source: "https://www.irishimmigration.ie/visa-decisions/",
+    data: "/data/embassy-dublin.json",
+    note: "The Dublin Visa Office publishes decisions every Tuesday and a separate processing queue by category. The tracker holds the latest decision snapshot; the queue is shown on the processing-times page and is not an individual decision list.",
+    fallback: DUBLIN_MARKDOWN,
+  },
+};
+
+/** Both the canonical route and its .md alias, mapped to the office slug. */
+export const OFFICE_MARKDOWN_PATHS = new Map();
+for (const [slug, meta] of Object.entries(OFFICE_MARKDOWN_META)) {
+  OFFICE_MARKDOWN_PATHS.set(meta.route, slug);
+  OFFICE_MARKDOWN_PATHS.set(`${meta.route}.md`, slug);
+}
+
+function formatLongDate(value) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(value || ""));
+  if (!match) return "";
+  const months = ["January", "February", "March", "April", "May", "June", "July",
+    "August", "September", "October", "November", "December"];
+  return `${Number(match[3])} ${months[Number(match[2]) - 1]} ${match[1]}`;
+}
+
+async function readJsonAsset(env, request, pathname) {
+  try {
+    const base = request && request.url ? request.url : "https://irishvisaupdatetracker.pages.dev/";
+    const response = await env.ASSETS.fetch(new Request(new URL(pathname, base).toString()));
+    if (!response || !response.ok) return null;
+    return await response.json();
+  } catch {
+    return null;
+  }
+}
+
+/** Office Markdown computed from the current manifest, not frozen constants. */
+export async function liveOfficeMarkdown(env, slug, request, origin) {
+  const meta = OFFICE_MARKDOWN_META[slug];
+  if (!meta) return "";
+  const manifest = await readJsonAsset(env, request, "/data/data_manifest.json");
+  const office = manifest && Array.isArray(manifest.offices)
+    ? manifest.offices.find((item) => item && item.slug === slug)
+    : null;
+  if (!office || !office.report_date) return meta.fallback;
+  const freshness = await readJsonAsset(env, request, "/data/freshness.json");
+  const fresh = freshness && Array.isArray(freshness.offices)
+    ? freshness.offices.find((item) => item && item.slug === slug) || {}
+    : {};
+  const through = String(fresh.search_through || "").slice(0, 10);
+  const from = String(fresh.search_from || "").slice(0, 10);
+  const window = from
+    ? `${formatLongDate(from)}${through && through !== from ? ` to ${formatLongDate(through)}` : ""}` +
+      (fresh.search_scope ? ` (${fresh.search_scope})` : "")
+    : "the latest published file only";
+  return officeMarkdown({
+    title: meta.title,
+    route: meta.route,
+    latest: `${formatLongDate(office.report_date)}${meta.weekly ? " (week ending)" : ""}`,
+    decisions: (Number(office.decisions) || 0).toLocaleString("en-IE"),
+    approved: (Number(office.approved) || 0).toLocaleString("en-IE"),
+    refused: (Number(office.refused) || 0).toLocaleString("en-IE"),
+    countries: meta.countries,
+    source: meta.source,
+    data: meta.data,
+    note: meta.note,
+    extra: [`- **Searchable in this tracker:** ${window}`],
+  });
+}
+
 const OPEN_DATA_MARKDOWN = lines(
   "# Irish visa decision open data",
   "",
@@ -684,6 +808,8 @@ const OPEN_DATA_MARKDOWN = lines(
   "- **Office snapshots:** `/data/embassy-<office>.json` for new-delhi, beijing, abu-dhabi, abuja, ankara and dublin",
   "- **Coverage:** `/data/data_manifest.json`",
   "- **Report archive:** `/data/reports/index.json`",
+  "- **Freshness and search window:** `/data/freshness.json` gives each office's report date and the earliest and latest date a search can match.",
+  "- **Search index:** `/data/search_index.json` is the trimmed index behind `/api/search`; `/data/search_fallback.json` is the browser fallback.",
   "- **Study tables:** `/data/study/office-summary.csv`, `/data/study/monthly-volume.csv` and `/data/study/new-delhi-file-growth.csv`",
   "- **Feeds:** `/official-file-feed.json` and `/feed.xml`",
   "",
