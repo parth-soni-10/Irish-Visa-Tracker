@@ -6,7 +6,7 @@ import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 import * as cheerio from "cheerio";
 
-import { buildMonthlyPages, loadMonthlyData } from "../tools/monthly-pages.mjs";
+import { buildMonthlyPages, datedMonths, loadMonthlyData } from "../tools/monthly-pages.mjs";
 import { buildMonthlyReport } from "../functions/report-data.js";
 
 const ROOT = fileURLToPath(new URL("../", import.meta.url));
@@ -20,10 +20,6 @@ function longDate(value) {
   return `${Number(day)} ${MONTHS[Number(month) - 1]} ${year}`;
 }
 
-function monthKey(value) {
-  return String(value).slice(0, 7);
-}
-
 function monthLabel(month) {
   const [year, index] = month.split("-");
   return `${MONTHS[Number(index) - 1]} ${year}`;
@@ -35,11 +31,12 @@ function shiftMonth(month, delta) {
   return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}`;
 }
 
-// The current month is the month of the newest dated decision, never a literal:
-// on the first of a month the page must follow the data, not the calendar.
+// The report month is the newest month with dated decisions, never a literal.
+// It must also ignore New Delhi's observation-dated rows, which can run into a
+// new month before any dated report does.
 async function monthly() {
   const data = await loadMonthlyData(ROOT);
-  const latestMonth = monthKey(data.latestDate);
+  const latestMonth = datedMonths(data.rows)[0];
   return {
     data,
     latestMonth,

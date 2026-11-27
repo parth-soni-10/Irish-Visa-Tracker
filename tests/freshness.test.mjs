@@ -6,7 +6,7 @@ import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 
 import { loadFreshness } from "../tools/freshness.mjs";
-import { loadMonthlyData } from "../tools/monthly-pages.mjs";
+import { datedMonths, loadMonthlyData } from "../tools/monthly-pages.mjs";
 import { buildMonthlyReport } from "../functions/report-data.js";
 
 const ROOT = fileURLToPath(new URL("../", import.meta.url));
@@ -220,7 +220,7 @@ test("the latest monthly page states its data-through date and partial month", a
   // as soon as the first December decision lands. Read it from the data instead
   // of pinning a calendar month, which would freeze this gate the same way.
   const data = await loadMonthlyData(ROOT);
-  const month = String(data.latestDate).slice(0, 7);
+  const month = datedMonths(data.rows)[0];
   const report = buildMonthlyReport(data.rows, month, data.officeList);
   if (report.partial_month) {
     const label = longDate(`${month}-01`).replace(/^1 /, "");

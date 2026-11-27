@@ -104,6 +104,22 @@ export async function loadMonthlyData(assetsRootDir = ROOT) {
   return loadReportData(localAssets(assetsRootDir), new Request('https://local.invalid/'));
 }
 
+/**
+ * Months with at least one dated official decision, newest first.
+ *
+ * New Delhi's tracker rows are observation-dated (`dated: false`) and are
+ * excluded from monthly totals, so they must not create a month either: on the
+ * first weekday of a month the newest observation runs ahead of the newest
+ * dated report, and a page for the observation month would have no totals.
+ */
+export function datedMonths(rows) {
+  return [...new Set((rows || [])
+    .filter((row) => row.dated !== false && /^\d{4}-\d{2}/.test(String(row.date || '')))
+    .map((row) => String(row.date).slice(0, 7)))]
+    .sort()
+    .reverse();
+}
+
 function summaryCards(report) {
   const change = report.change;
   const sign = change.total > 0 ? '+' : '';
@@ -366,8 +382,11 @@ function injectLatest(shell, report, months, latestMonth, freshness) {
   html = html.replace(/(<meta name="description" content=")[^"]*(">)/, `$1${esc(description)}$2`);
   html = html.replace(/\n\s*<meta (?:property="og:[^"]+"|name="twitter:[^"]+")[^>]*>/g, '');
   html = html.replace('</head>', `  <meta property="og:type" content="article">\n  <meta property="og:title" content="${esc(title)}">\n  <meta property="og:description" content="${esc(description)}">\n  <meta property="og:url" content="${SITE}/monthly-report">\n  <meta property="og:image" content="${SITE}/assets/social/month-${report.month}.png">\n  <meta property="og:image:width" content="1200">\n  <meta property="og:image:height" content="630">\n  <meta name="twitter:card" content="summary_large_image">\n  <meta name="twitter:title" content="${esc(title)}">\n  <meta name="twitter:description" content="${esc(description)}">\n  <meta name="twitter:image" content="${SITE}/assets/social/month-${report.month}.png">\n${monthlySchemaBlock(report, '/monthly-report', title, description)}\n</head>`);
-  html = html.replace('<input id="report-month" type="month" aria-label="Report month">', `<input id="report-month" type="month" aria-label="Report month" value="${report.month}">`);
-  html = html.replace('id="download-json" href="/api/reports/monthly"', `id="download-json" href="/api/reports/monthly?month=${report.month}"`);
+  // The checked-in shell already carries last month's value, so replace the
+  // whole tag: a literal match without value= would leave the picker and the
+  // download link pointing at the previous month after a rollover.
+  html = html.replace(/<input id="report-month"[^>]*>/, `<input id="report-month" type="month" aria-label="Report month" value="${report.month}">`);
+  html = html.replace(/id="download-json" href="\/api\/reports\/monthly[^"]*"/, `id="download-json" href="/api/reports/monthly?month=${report.month}"`);
   const dataThrough = report.latest_date ? longDate(report.latest_date) : '';
   const latestCheck = (freshness.offices || []).map((office) => office.last_success_at).filter(Boolean).sort().at(-1) || '';
   const dataThroughCopy = dataThrough
@@ -402,17 +421,14 @@ export async function buildMonthlyPages(options = {}) {
   const outDir = writeSource ? ROOT : distDir;
   const data = await loadMonthlyData(assetsRoot);
   const freshness = loadFreshness(assetsRoot);
-  if (!data.latestDate) {
+  // The latest report month follows the newest dated decision, not the newest
+  // observation: data.latestDate can be in a month that has no dated rows yet.
+  const months = datedMonths(data.rows);
+  const latestMonth = months[0];
+  if (!data.latestDate || !latestMonth) {
     console.warn('Monthly pages skipped: no dated decisions in the public files.');
     return { latestMonth: '', months: [], pages: 0 };
   }
-
-  const latestMonth = data.latestDate.slice(0, 7);
-  const months = [...new Set(data.rows
-    .filter((row) => row.dated !== false && /^\d{4}-\d{2}/.test(row.date))
-    .map((row) => row.date.slice(0, 7)))]
-    .sort()
-    .reverse();
   const reports = new Map();
   for (const month of months) {
     const report = buildMonthlyReport(data.rows, month, data.officeList);
