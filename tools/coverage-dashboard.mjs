@@ -423,7 +423,7 @@ export function renderCoverageDashboard(data) {
     <section>
       <h2>Bing and IndexNow</h2>
       <p><strong>Status:</strong> ${esc(bing.status || (bing.configured ? 'Connected' : 'Not configured'))}. IndexNow submits new report permalinks, monthly pages and date pages; Google does not consume IndexNow, so this is a complement, not a substitute.</p>
-      ${bing.crawlStats ? `<pre class="coverage-json">${esc(JSON.stringify(bing.crawlStats, null, 2))}</pre>` : '<p class="small-note">No Bing crawl statistics in this snapshot.</p>'}
+      ${bing.crawlStats ? `<pre class="coverage-json" tabindex="0" role="region" aria-label="Bing crawl statistics">${esc(JSON.stringify(bing.crawlStats, null, 2))}</pre>` : '<p class="small-note">No Bing crawl statistics in this snapshot.</p>'}
 ${bing.issues && bing.issues.error ? `<p class="small-note">Bing crawl issues request: ${esc(bing.issues.error)}</p>` : ''}
     </section>
 
