@@ -52,6 +52,9 @@ const OFFICES = {
     page: 'https://www.ireland.ie/en/china/beijing/services/visas/visa-decisions/',
     // Spreadsheet until November 2026, a cumulative PDF since.
     kind: 'cumulative',
+    // A new cumulative file replaces the previous list. Keep the earlier rows
+    // so a decision does not disappear from search when the office republishes.
+    preserveHistory: true,
     official: 'Embassy of Ireland, Beijing',
   },
   'abu-dhabi': {
@@ -87,6 +90,10 @@ const OFFICES = {
     name: 'Dublin',
     page: 'https://www.irishimmigration.ie/visa-decisions/',
     kind: 'html',
+    // The published table is a live snapshot with no report date. Keep rows
+    // that later drop off it; their `date` is the day they were first seen,
+    // which the page already labels as a fetched snapshot.
+    preserveHistory: true,
     official: 'Immigration Service Delivery, Dublin Visa Office',
   },
 };

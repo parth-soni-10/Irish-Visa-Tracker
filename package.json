@@ -2,7 +2,7 @@
   "name": "irish-visa-tracker",
   "type": "module",
   "scripts": {
-    "build": "node tools/site-chrome.mjs --check && node tools/deploy-pages.mjs",
+    "build": "node tools/site-chrome.mjs --check && node tools/build-search-index.mjs --write && node tools/deploy-pages.mjs",
     "chrome:sync": "node tools/site-chrome.mjs --write",
     "check:chrome": "node tools/site-chrome.mjs --check",
     "check:links": "node tools/check-links.mjs",
@@ -13,7 +13,7 @@
     "lint:js": "node tools/check-js-syntax.mjs",
     "test": "node --test tests/*.test.mjs",
     "smoke": "node tools/smoke-deploy.mjs",
-    "rebuild:pages": "node tools/freshness.mjs --write && node tools/office-pages.mjs --write && node tools/insight-pages.mjs --write && node tools/growth-pages.mjs --write && node tools/daily-recent.mjs --write && node tools/monthly-pages.mjs --write && node tools/sitemap-lastmod.mjs --write",
+    "rebuild:pages": "node tools/freshness.mjs --write && node tools/build-search-index.mjs --write && node tools/office-pages.mjs --write && node tools/insight-pages.mjs --write && node tools/growth-pages.mjs --write && node tools/daily-recent.mjs --write && node tools/monthly-pages.mjs --write && node tools/sitemap-lastmod.mjs --write",
     "monthly:pages": "node tools/monthly-pages.mjs --write",
     "social:cards": "node tools/social-cards.mjs --write",
     "analytics:cf": "node tools/cloudflare-analytics.mjs",

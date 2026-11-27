@@ -219,6 +219,75 @@ async function runTelegramAlerts(env, report, dryRun) {
   return { checked: rows.length, matched, sent, skipped, failed, would_send: wouldSend };
 }
 
+// One message per office publication, not per application. This is the
+// subscription for the long wait: the office has published a new file, even
+// when the reader's own number is not in it yet.
+async function runOfficeAlerts(env, report, dryRun) {
+  if (!isTelegramConfigured(env)) return emptyCounters();
+  await ensureTelegramSchema(env);
+  let rows = [];
+  try {
+    rows = await readRowsPaged(async (offset) => {
+      const result = await env.DB.prepare(`
+        SELECT chat_id, office, last_report_date FROM office_subscriptions
+        ORDER BY chat_id, office LIMIT ? OFFSET ?
+      `).bind(PAGE_SIZE, offset).all();
+      return result.results || [];
+    });
+  } catch (error) {
+    console.warn('Office subscription query failed:', error.message);
+    return emptyCounters();
+  }
+  if (!rows.length) return emptyCounters();
+
+  const latestByOffice = new Map();
+  for (const office of report.offices || []) {
+    if (!office || !office.slug) continue;
+    const date = String(office.report_date || '').slice(0, 10);
+    if (date) latestByOffice.set(office.slug, date);
+  }
+  const base = String(env.APP_BASE_URL || DEFAULT_BASE).replace(/\/+$/, '');
+  let checked = 0;
+  let sent = 0;
+  let skipped = 0;
+  let failed = 0;
+  let wouldSend = 0;
+
+  for (const row of rows) {
+    const office = String(row.office || '');
+    const latest = latestByOffice.get(office);
+    if (!latest) {
+      skipped += 1;
+      continue;
+    }
+    checked += 1;
+    if (row.last_report_date && latest <= String(row.last_report_date)) {
+      skipped += 1;
+      continue;
+    }
+    if (dryRun) {
+      wouldSend += 1;
+      continue;
+    }
+    const result = await sendTelegram(
+      env,
+      row.chat_id,
+      'New ' + office + ' decisions file published (' + latest + ').\n' +
+        'Open the updated office page: ' + base + '/' + office + '-visa-decisions\n\n' +
+        'Send /office off ' + office + ' to stop these office updates.'
+    );
+    if (!result.sent) {
+      failed += 1;
+      continue;
+    }
+    sent += 1;
+    await env.DB.prepare(
+      'UPDATE office_subscriptions SET last_report_date = ? WHERE chat_id = ? AND office = ?'
+    ).bind(latest, row.chat_id, office).run().catch(() => {});
+  }
+  return { checked, matched: sent, sent, skipped, failed, would_send: wouldSend };
+}
+
 async function runTelegramDigests(env, report, dryRun) {
   if (!isTelegramConfigured(env)) return emptyCounters();
   await ensureTelegramSchema(env);
@@ -344,19 +413,22 @@ export async function handleAlertsRun(request, env) {
     const report = await loadReportData(env, request);
     const push = await runPushAlerts(env, report, dryRun);
     const telegram = await runTelegramAlerts(env, report, dryRun);
+    const offices = await runOfficeAlerts(env, report, dryRun);
     const digests = await runTelegramDigests(env, report, dryRun);
     return json({
-      ok: push.failed === 0 && telegram.failed === 0 && digests.failed === 0,
-      checked: push.checked + telegram.checked + digests.checked,
-      matched: push.matched + telegram.matched + digests.matched,
-      sent: push.sent + telegram.sent + digests.sent,
-      skipped: push.skipped + telegram.skipped + digests.skipped,
-      failed: push.failed + telegram.failed + digests.failed,
-      would_send: push.would_send + telegram.would_send + digests.would_send,
+      ok: push.failed === 0 && telegram.failed === 0 && offices.failed === 0 && digests.failed === 0,
+      checked: push.checked + telegram.checked + offices.checked + digests.checked,
+      matched: push.matched + telegram.matched + offices.matched + digests.matched,
+      sent: push.sent + telegram.sent + offices.sent + digests.sent,
+      skipped: push.skipped + telegram.skipped + offices.skipped + digests.skipped,
+      failed: push.failed + telegram.failed + offices.failed + digests.failed,
+      would_send: push.would_send + telegram.would_send + offices.would_send + digests.would_send,
       push_checked: push.checked,
       push_sent: push.sent,
       telegram_checked: telegram.checked,
       telegram_sent: telegram.sent,
+      office_checked: offices.checked,
+      office_sent: offices.sent,
       digest_checked: digests.checked,
       digest_sent: digests.sent,
       dry_run: dryRun

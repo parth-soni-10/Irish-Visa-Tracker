@@ -128,7 +128,16 @@ against the application. The hourly alert runner then sends one message per
 published decision date, updating `last_alert_sent` so retries are idempotent.
 New links store the application's currently published decision date as their
 baseline, so an already-published decision does not alert; only a later report
-does. `/stop` disables the chat and `/status` lists its linked applications.
+does. `/stop` disables the chat and `/status` lists its linked applications and
+any office updates.
+
+`/office <office>` subscribes the chat to one message each time that office
+publishes a new decisions file, even when the reader's own number is not in it —
+the common case during a long wait. The first subscription records the office's
+current report date as its baseline, so an already-published file does not
+alert; `/office off <office>` removes it and `/office` lists what is on. A deep
+link of the form `t.me/<bot>?start=office_new-delhi` does the same from a site
+button.
 Chat members can switch to `/digest daily`, `/digest weekly` or `/digest off`; a
 digest groups the linked applications by office and includes a no-change line
 for each office. Add an optional preferred hour and IANA timezone, for example

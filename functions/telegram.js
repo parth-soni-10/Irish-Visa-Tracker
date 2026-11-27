@@ -37,6 +37,14 @@ const DIGEST_FREQUENCIES = new Set(['off', 'daily', 'weekly']);
 // The six official offices and the JSON envelope every Telegram route answers
 // with. Both live here because nothing else in the Pages Functions uses them.
 const EMBASSIES = new Set(['new-delhi', 'beijing', 'dublin', 'abu-dhabi', 'abuja', 'ankara']);
+const OFFICE_NAMES = {
+  'new-delhi': 'New Delhi',
+  beijing: 'Beijing',
+  dublin: 'Dublin',
+  'abu-dhabi': 'Abu Dhabi',
+  abuja: 'Abuja',
+  ankara: 'Ankara'
+};
 
 function json(body, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -68,6 +76,13 @@ CREATE TABLE IF NOT EXISTS telegram_links (
   expires_at TEXT NOT NULL,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
+CREATE TABLE IF NOT EXISTS office_subscriptions (
+  chat_id TEXT NOT NULL,
+  office TEXT NOT NULL,
+  last_report_date TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  PRIMARY KEY (chat_id, office)
+);
 CREATE TABLE IF NOT EXISTS telegram_preferences (
   chat_id TEXT PRIMARY KEY,
   digest_frequency TEXT NOT NULL DEFAULT 'off',
@@ -94,6 +109,8 @@ const HELP_TEXT = [
   '/immediate 12345678 - keep one application immediate while the chat is in digest mode',
   '/digest 12345678 - put one application back into digest mode',
   '/remove 12345678 - stop alerts for one linked application',
+  '/office new-delhi - one message when that office publishes a new file, even if your number is not in it',
+  '/office off new-delhi - stop updates for that office',
   '/stop - turn off every Telegram alert for this chat'
 ].join('\n');
 
@@ -317,6 +334,17 @@ async function buildDigestPreview(env, request, chatId, preference) {
     });
 }
 
+async function currentReportDate(env, request, office) {
+  try {
+    const report = await loadReportData(env, request);
+    const entry = (report.offices || []).find((item) => item.slug === office);
+    return entry && entry.report_date ? String(entry.report_date).slice(0, 10) : null;
+  } catch (error) {
+    console.warn('Telegram office baseline lookup failed:', error.message);
+    return new Date().toISOString().slice(0, 10);
+  }
+}
+
 async function currentDecisionDate(env, request, applicationNumber, embassy) {
   try {
     const report = await loadReportData(env, request);
@@ -411,6 +439,29 @@ export async function handleTelegramWebhook(request, env) {
       await reply(env, id, HELP_TEXT);
       return json({ ok: true });
     }
+    // Deep link from a site button: t.me/<bot>?start=office_new-delhi
+    if (argument.indexOf('office_') === 0) {
+      const office = argument.slice('office_'.length).toLowerCase();
+      if (!EMBASSIES.has(office)) {
+        await reply(env, id, 'That office link is not recognised. Use /office new-delhi, /office beijing, /office dublin, /office abu-dhabi, /office abuja or /office ankara.');
+        return json({ ok: true });
+      }
+      const baseline = await currentReportDate(env, request, office);
+      await env.DB.prepare(`
+        INSERT INTO office_subscriptions (chat_id, office, last_report_date)
+        VALUES (?, ?, ?)
+        ON CONFLICT(chat_id, office) DO UPDATE SET
+          last_report_date = COALESCE(office_subscriptions.last_report_date, excluded.last_report_date)
+      `).bind(id, office, baseline).run();
+      await reply(
+        env,
+        id,
+        'Office updates on for ' + OFFICE_NAMES[office] + '.\n' +
+          'You will get one message each time that office publishes a new decisions file.\n' +
+          'Send /office off ' + office + ' to stop these updates.'
+      );
+      return json({ ok: true });
+    }
     const link = await env.DB.prepare(
       "SELECT application_number, embassy FROM telegram_links WHERE token = ? AND datetime(expires_at) > datetime('now')"
     ).bind(argument).first();
@@ -445,6 +496,61 @@ export async function handleTelegramWebhook(request, env) {
         'This chat uses ' + digestStatus(frequency, current.hour, current.timeZone) + '.\n' +
         'Only decisions published after this link was created will alert.\n' +
         'Send /status to see every linked application.'
+    );
+    return json({ ok: true });
+  }
+
+  if (command === '/office') {
+    const action = String(argument || '').toLowerCase();
+    const rest = parts[2] ? String(parts[2]).toLowerCase() : '';
+
+    if (action === 'off') {
+      if (!EMBASSIES.has(rest)) {
+        await reply(env, id, 'Use /office off followed by an office, for example:\n/office off new-delhi');
+        return json({ ok: true });
+      }
+      await env.DB.prepare('DELETE FROM office_subscriptions WHERE chat_id = ? AND office = ?')
+        .bind(id, rest).run();
+      await reply(env, id, 'Office updates off for ' + OFFICE_NAMES[rest] + '.');
+      return json({ ok: true });
+    }
+
+    if (!action || action === 'list') {
+      const rows = (await env.DB.prepare(
+        'SELECT office, last_report_date FROM office_subscriptions WHERE chat_id = ? ORDER BY office'
+      ).bind(id).all()).results || [];
+      await reply(
+        env,
+        id,
+        rows.length
+          ? 'Office updates:\n' + rows.map((row) =>
+              '- ' + (OFFICE_NAMES[row.office] || row.office) +
+              (row.last_report_date ? ' (last file ' + row.last_report_date + ')' : '')
+            ).join('\n') +
+            '\n\nAdd: /office new-delhi\nStop one: /office off new-delhi'
+          : 'No office updates. Send /office new-delhi to be told when that office publishes a new decisions file, even if your application number is not in it.'
+      );
+      return json({ ok: true });
+    }
+
+    if (!EMBASSIES.has(action)) {
+      await reply(env, id, 'Choose an office: new-delhi, beijing, dublin, abu-dhabi, abuja or ankara.\nExample: /office new-delhi');
+      return json({ ok: true });
+    }
+    const baseline = await currentReportDate(env, request, action);
+    await env.DB.prepare(`
+      INSERT INTO office_subscriptions (chat_id, office, last_report_date)
+      VALUES (?, ?, ?)
+      ON CONFLICT(chat_id, office) DO UPDATE SET
+        last_report_date = COALESCE(office_subscriptions.last_report_date, excluded.last_report_date)
+    `).bind(id, action, baseline).run();
+    await reply(
+      env,
+      id,
+      'Office updates on for ' + OFFICE_NAMES[action] + '.\n' +
+        'You will get one message each time that office publishes a new decisions file' +
+        (baseline ? '; the current file is ' + baseline + '.' : '.') + '\n' +
+        'Send /office off ' + action + ' to stop these updates.'
     );
     return json({ ok: true });
   }
@@ -621,6 +727,7 @@ export async function handleTelegramWebhook(request, env) {
 
   if (command === '/stop') {
     await env.DB.prepare('UPDATE telegram_subscriptions SET active = 0 WHERE chat_id = ?').bind(id).run();
+    await env.DB.prepare('DELETE FROM office_subscriptions WHERE chat_id = ?').bind(id).run().catch(() => {});
     await env.DB.prepare("UPDATE telegram_preferences SET digest_frequency = 'off', last_digest_sent = NULL, digest_started_at = NULL WHERE chat_id = ?")
       .bind(id).run().catch(() => {});
     await reply(env, id, 'Telegram alerts are off for this chat.');
@@ -631,18 +738,25 @@ export async function handleTelegramWebhook(request, env) {
     const rows = (await env.DB.prepare(
       'SELECT application_number, embassy, COALESCE(immediate, 1) AS immediate FROM telegram_subscriptions WHERE chat_id = ? AND active = 1 ORDER BY created_at'
     ).bind(id).all()).results || [];
+    const offices = (await env.DB.prepare(
+      'SELECT office, last_report_date FROM office_subscriptions WHERE chat_id = ? ORDER BY office'
+    ).bind(id).all().catch(() => ({ results: [] }))).results || [];
     const preference = await chatPreferences(env, id);
     const current = preferenceParts(preference);
+    const officeLine = offices.length
+      ? '\n\nOffice updates: ' + offices.map((row) => OFFICE_NAMES[row.office] || row.office).join(', ')
+      : '\n\nOffice updates: none. Send /office new-delhi to add one.';
     await reply(
       env,
       id,
-      rows.length
+      (rows.length
         ? 'Linked applications:\n' + rows.map((row) => {
             const mode = Number(row.immediate) === 0 ? 'digest' : 'immediate';
             return '- ' + row.application_number + ' (' + row.embassy + ') — ' + mode;
           }).join('\n') + '\n\nChat mode: ' + digestStatus(current.frequency, current.hour, current.timeZone) +
           '\nDelivery hour: ' + formatDigestHour(current.hour) + ' ' + current.timeZone
-        : 'No applications linked. Open the tracker and press “Get alerts on Telegram”.'
+        : 'No applications linked. Open the tracker and press “Get alerts on Telegram”.') +
+        officeLine
     );
     return json({ ok: true });
   }

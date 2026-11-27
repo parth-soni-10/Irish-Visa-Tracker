@@ -119,10 +119,84 @@ function decorateResult(row, office) {
   return row;
 }
 
+// The compact index is built from the same office files at deploy time. It
+// keeps the fields a lookup needs (office, number, date, decision, report date
+// and source) so a cold isolate reads one small file instead of every archive.
+// If the index is missing, the full-file path below remains the fallback.
+async function loadIndexedDecisions(request, env) {
+  const index = await loadJson(env, request, '/data/search_index.json');
+  if (!index || !Array.isArray(index.offices) || !Array.isArray(index.rows) || !index.rows.length) {
+    return null;
+  }
+  const [manifest, freshness] = await Promise.all([
+    loadJson(env, request, '/data/data_manifest.json'),
+    loadJson(env, request, '/data/freshness.json')
+  ]);
+  if (!manifest || !Array.isArray(manifest.offices)) return null;
+
+  const freshBySlug = Object.create(null);
+  for (const office of (freshness && freshness.offices) || []) {
+    if (office && office.slug) freshBySlug[office.slug] = office;
+  }
+  const offices = Object.create(null);
+  for (const entry of manifest.offices) {
+    if (!entry || !entry.slug) continue;
+    const fresh = freshBySlug[entry.slug] || {};
+    offices[entry.slug] = {
+      slug: entry.slug,
+      name: entry.name || '',
+      source_url: entry.source_url || '',
+      source_file: entry.source_file || '',
+      source_name: entry.source_name || '',
+      report_date: entry.report_date || fresh.report_date || null,
+      official_data_through: fresh.official_data_through || entry.report_date || null,
+      observed_data_through: fresh.observed_data_through || null,
+      last_success_at: fresh.last_success_at || entry.fetched_at || entry.as_of || null,
+      last_success_label: fresh.last_success_label || '',
+      stale: Boolean(fresh.stale),
+      attention: Boolean(fresh.attention || fresh.status === 'error'),
+      status: fresh.status || entry.status || entry.data_status || '',
+      status_label: fresh.status_label || '',
+      warning: fresh.warning || '',
+      freshness: Object.keys(fresh).length ? fresh : null
+    };
+  }
+  if (!Object.keys(offices).length) return null;
+
+  const decisions = [];
+  for (const row of index.rows) {
+    if (!Array.isArray(row) || row.length < 6) continue;
+    const slug = index.offices[row[0]];
+    if (!slug) continue;
+    const decision = {
+      date: isoDate(row[2]),
+      number: String(row[1] || ''),
+      decision: row[3] === 'A' ? 'Approved' : row[3] === 'R' ? 'Refused' : null,
+      embassy: slug,
+      source: row[5] === 2 ? 'tracker' : row[5] === 1 ? 'unverified' : 'official',
+      report_date: row[4] || null
+    };
+    if (!decision.date || !decision.number || !decision.decision) continue;
+    decorateResult(decision, offices[slug] || {});
+    decisions.push(decision);
+  }
+  if (!decisions.length) return null;
+  decisions.sort((a, b) => new Date(b.date) - new Date(a.date));
+  return { decisions, offices };
+}
+
 async function loadAllDecisions(request, env) {
   const now = Date.now();
   if (decisionsCache && (now - cacheTimestamp) < CACHE_TTL) {
     return { decisions: decisionsCache, offices: officesCache };
+  }
+
+  const indexed = await loadIndexedDecisions(request, env);
+  if (indexed) {
+    decisionsCache = indexed.decisions;
+    officesCache = indexed.offices;
+    cacheTimestamp = Date.now();
+    return indexed;
   }
 
   const byKey = new Map();
