@@ -39,7 +39,7 @@ The Abuja **31 August–6 September 2026** report is present in the archive
 | Pages deployment | **Production** on `main`; latest `712d1e8f` |
 | Post-deploy smoke | **16/16 passed** |
 | Live archive comparison | **8/8 files byte-identical** |
-| Production email bridge | **HTTP 200** through Resend (verified in the prior release; path unchanged) |
+| Monthly digest announcement | One Telegram channel post; no mail provider is involved |
 
 ## Local engineering pass (2026-11-12, not deployed)
 
@@ -89,23 +89,21 @@ are committed and redeployed.
 - Live archive counts: Abu Dhabi **2,386** rows (2,136 historical) and Abuja **2,284** rows (2,232 historical); the status page renders an archive total of **65,977**.
 
 The live `data_manifest.json`, New Delhi tracker and all six office archives
-matched the committed files byte for byte. The email bridge was exercised with
-missing and wrong secrets (401), an invalid recipient (400), and a real Resend
-delivery (200). The post-deploy smoke check covers the homepage, comparison,
+matched the committed files byte for byte. The digest endpoint was exercised with a
+missing and a wrong cron secret (401), and the channel post was verified with a
+dry run. The post-deploy smoke check covers the homepage, comparison,
 status, manifest, service worker, icon, search, monthly report, digest preview,
 the removed-route 404s and the data manifest.
 
-Pages binds secrets at deployment time. Email secrets were added and the
-Functions bundle redeployed; an existing deployment does not automatically see
-a newly added secret.
+Pages binds secrets at deployment time, so a newly added secret is only visible
+to the Functions bundle after a redeploy.
 
 ## Shipped product surfaces
 
 - Six-office official decision archives and the New Delhi daily tracker.
 - Browser-local multiple-application watchlists with no account.
 - Anonymous decision alerts by Telegram and browser push.
-- Provider-neutral email with the new secret-protected Resend bridge.
-- Monthly report, email digest and double opt-in/unsubscribe.
+- Monthly report, announced as one Telegram channel post.
 - Public analytics, document checklist, fee estimator and document field extraction.
 - Advanced search, community timelines and admin endpoints.
 - ML predictor served from the committed XGBoost tree ensemble; training data,
@@ -116,14 +114,14 @@ a newly added secret.
 
 ## External services
 
-Configured: `APP_BASE_URL`, `SCRAPER_CRON_SECRET`, VAPID keys, `RESEND_API_KEY`,
-plus the email bridge URL/secret and `EMAIL_FROM`. The production email bridge
-was verified with a real delivery on 2026-11-11.
+Configured: `APP_BASE_URL`, `SCRAPER_CRON_SECRET`, the VAPID keys and the
+Telegram bot token plus webhook secret. There is no mail provider: the monthly
+report is one post to the Telegram channel.
 
 SMS and WhatsApp delivery is not part of this release. The Twilio code, phone
 number UI and channel endpoints were removed by product decision; browser push
-and Telegram remain the supported alert channels, while email is used only for
-the monthly report digest. Existing production rows were left untouched.
+and Telegram remain the supported alert channels, and the monthly report digest
+is a single Telegram channel post. Existing production rows were left untouched.
 
 Structured Pages Function logs, the `/api/health` readiness probe, the separate
 Workers Logs/Logpush monitor and the admin error endpoint are the supported
@@ -153,5 +151,4 @@ need.
 
 1. VFS Ireland-India slots remain behind VFS sign-in; the tracker now hands off
    to the official portal and does not claim or monitor availability.
-2. The Resend key exposed in an earlier terminal session should be rotated.
-3. Native mobile is deliberately out of scope.
+2. Native mobile is deliberately out of scope.

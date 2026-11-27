@@ -4117,7 +4117,6 @@
   font-weight: 400;
 }
 #visa-dash input[type=text],
-#visa-dash input[type=email],
 #visa-dash input[type=date],
 #visa-dash select,
 #visa-dash textarea {
@@ -4129,7 +4128,6 @@
 }
 #visa-dash input[type=text] { max-width: 100%; }
 #visa-dash input[type=text]:focus,
-#visa-dash input[type=email]:focus,
 #visa-dash input[type=date]:focus,
 #visa-dash select:focus,
 #visa-dash textarea:focus {
@@ -4139,7 +4137,6 @@
   box-shadow: none;
 }
 #visa-dash input[type=text]:focus-visible,
-#visa-dash input[type=email]:focus-visible,
 #visa-dash select:focus-visible,
 #visa-dash textarea:focus-visible {
   outline: 2px solid var(--ink);
@@ -4737,8 +4734,7 @@
   #visa-dash .coverage-table td { padding: 9px 7px; }
   #visa-dash .scroll-top-btn { width: 44px; height: 44px; }
   #visa-dash input[type=text],
-  #visa-dash input[type=email],
-  #visa-dash input[type=date],
+    #visa-dash input[type=date],
   #visa-dash select,
   #visa-dash textarea { font-size: 16px; }
 }

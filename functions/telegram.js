@@ -12,7 +12,7 @@
  * as soon as it is published.
  */
 
-import { EMBASSIES, json } from './email-utils.js';
+import { EMBASSIES, json } from './shared.js';
 import { loadReportData } from './report-data.js';
 import {
   DEFAULT_BASE_URL,

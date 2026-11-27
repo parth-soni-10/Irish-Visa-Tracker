@@ -88,8 +88,7 @@ h1 {
   font-weight: 500;
 }
 input, select, button { font: inherit; }
-input[type=month],
-input[type=email] {
+input[type=month] {
   min-height: 42px;
   padding: 9px 11px;
   border: 1px solid var(--line);
@@ -99,8 +98,7 @@ input[type=email] {
   font-size: 14px;
   box-shadow: none;
 }
-input[type=month]:hover,
-input[type=email]:hover { border-color: #d4d4d4; }
+input[type=month]:hover { border-color: #d4d4d4; }
 button, .button {
   display: inline-flex;
   align-items: center;
@@ -351,8 +349,7 @@ html[data-theme="dark"] button:hover,
 html[data-theme="dark"] .button:hover { border-color: #fff; background: #fff; color: #0a0a0a; }
 html[data-theme="dark"] button.secondary,
 html[data-theme="dark"] .button.secondary { border-color: var(--line); background: transparent; color: var(--ink); }
-html[data-theme="dark"] input[type=month],
-html[data-theme="dark"] input[type=email] { background: var(--raised); color: var(--ink); }
+html[data-theme="dark"] input[type=month] { background: var(--raised); color: var(--ink); }
 html[data-theme="dark"] td { border-bottom-color: var(--line); }
 html[data-theme="dark"] .feed li { border-bottom-color: var(--line); }
 

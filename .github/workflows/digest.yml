@@ -6,8 +6,8 @@ name: Send Monthly Digest
 #   - a retry on the 2nd in case the 1st is dropped, and
 #   - every completed scrape run, because GitHub treats scheduled events as
 #     best-effort and a missed monthly slot would otherwise skip a month.
-# The endpoint only messages subscribers whose last_sent_at is before the
-# current month, so extra triggers are no-ops rather than duplicate mail.
+# The endpoint records the announced month in `digest_broadcasts`, so extra
+# triggers are no-ops rather than a second channel post.
 on:
   workflow_dispatch:
     inputs:

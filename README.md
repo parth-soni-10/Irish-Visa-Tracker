@@ -26,7 +26,7 @@ The Abuja **31 August–6 September 2026** report, long listed as missing, was r
   call to action, a persisted three-step checklist, and privacy-light
   conversion events (`/api/events`) that record only a fixed event vocabulary
   and surface name.
-- Monthly email digest with double opt-in and one-click unsubscribe.
+- The monthly report announced as one Telegram channel post, with no address to collect or verify.
 - Document checklist, public analytics and a transparent decision-time baseline.
 - A model card with a minimum-sample calibration gate and anonymous finished-application feedback verified against shared community timelines; the synthetic-data ML tree is paused until it can beat the baseline on real outcomes.
 - A public RSS/JSON feed of new official office files, optional Telegram channel announcements, a rolling all-office webcal subscription at `/api/calendar/offices.ics` with explicit expected and published events, and a source-linked correction ledger at `/corrections` with a structured error-report form.

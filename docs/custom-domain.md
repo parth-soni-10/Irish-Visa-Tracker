@@ -10,7 +10,7 @@ SITE_ORIGIN=https://visa.example.ie npm run build
 
 `tools/site-config.mjs` validates the origin and `tools/deploy-pages.mjs`
 rewrites the generated `.html`, `.xml`, `.txt`, `.js`, `.css` and `.md` files.
-The runtime base for `/api` and email is separately controlled by
+The runtime base for `/api` links is separately controlled by
 `APP_BASE_URL`; set both to the same origin.
 
 This repository cannot buy a domain, change DNS or verify a Search Console

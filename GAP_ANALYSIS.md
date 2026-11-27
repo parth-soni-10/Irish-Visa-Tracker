@@ -13,7 +13,7 @@ only gaps that still exist after the current tree and release checks.
   Telegram and browser-push delivery are per-application and anonymous.
 - SMS/WhatsApp delivery was removed by product decision; no channel code,
   credentials or UI remain. Existing production rows were left untouched.
-- Monthly report, email digest and double opt-in: implemented.
+- Monthly report announced in the Telegram channel, with no email path: implemented.
 - Search, fuzzy/nearest filters, sorting, pagination, checklist, fee estimator
   and document field extraction: implemented.
 - Archived and latest report row counts are exposed in the data manifest and
@@ -49,7 +49,6 @@ only gaps that still exist after the current tree and release checks.
 
 | Gap | Impact | Resolution |
 |---|---|---|
-| Resend key was exposed in an earlier terminal session | The key should be treated as compromised | Rotate it in Resend, update the Pages `RESEND_API_KEY` secret, and redeploy |
 | Monitoring Worker and Logpush job are not deployed | Persisted Workers Logs and Logpush export stay inactive until the Worker is deployed and an account-level Logpush job is created | Run the commands in `docs/monitoring.md`; Logpush needs the Workers Paid plan and a destination |
 | VFS Ireland-India slots are behind VFS sign-in | The tracker cannot see or monitor the calendar; it only hands off to the official portal | Keep the official sign-in/waitlist path; revisit only if VFS offers a supported feed |
 
