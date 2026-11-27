@@ -22,9 +22,12 @@ const message = [
 ].filter(Boolean).join('\n');
 
 if (!process.env.ALERT_WEBHOOK_URL) {
-  console.error('::error::ALERT_WEBHOOK_URL is not configured; this failure has no out-of-band alert.');
-  console.error(message);
-  process.exit(1);
+  // A missing channel must not become a second failed run: the original run is
+  // already red and visible, so warn and keep this job green until the secret
+  // is configured.
+  console.log('::warning::ALERT_WEBHOOK_URL is not configured; this failure has no out-of-band alert.');
+  console.log(message);
+  process.exit(0);
 }
 
 try {
