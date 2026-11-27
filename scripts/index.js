@@ -20,6 +20,11 @@
             const DATA_MANIFEST_URL = 'data/data_manifest.json';
             const FRESHNESS_URL = 'data/freshness.json';
             const OFFLINE_INDEX_URL = 'data/search_fallback.json';
+            // The build injects the homepage <title> with the newest official file
+            // date and its decision count. Keep that value: the landing page must
+            // not swap a data-rich snippet for a generic one when it renders,
+            // because the title a search engine shows is the rendered DOM's.
+            const LANDING_TITLE = document.title;
             const OFFICE_SOURCE_URLS = {
                 'new-delhi': 'https://www.ireland.ie/en/india/newdelhi/services/visas/processing-times-and-decisions/',
                 beijing: 'https://www.ireland.ie/en/china/beijing/services/visas/visa-decisions/',
@@ -5491,6 +5496,10 @@
 
 async function renderLandingPage() {
                 document.title = 'Irish Visa Decisions — Search All 6 Offices';
+                // The build serves the homepage with a data-rich title (newest
+                // official file date and decision count). Restore it after the
+                // generic fallback so a return to the landing tab keeps it.
+                if (LANDING_TITLE) document.title = LANDING_TITLE;
                 // Paint the cards IMMEDIATELY with placeholder stats - never
                 // block on the network. Each card's meta line fills in as its
                 // own fetch resolves (both are small static files, so this is
@@ -5526,6 +5535,21 @@ async function renderLandingPage() {
                     '</div><a href="/?tracker=visa&amp;tab=history&amp;view=daily">Daily summaries</a></div>' +
                     '<div id="recent-decisions-section" class="landing-recent"></div>' +
                     '<p class="note2 landing-overview-foot">Newest rows in the New Delhi tracker, including observations after the latest official file. <a href="/status">See every office’s latest report and check time</a>.</p>' +
+                    '</section>' +
+                    '<section class="landing-overview" aria-labelledby="landing-offices-title">' +
+                    '<div class="landing-overview-head"><div>' +
+                    '<h2 id="landing-offices-title">Visa decisions by office</h2>' +
+                    '<p class="note2">The same decision files grouped by the office that published them, each with its latest report date and counts.</p>' +
+                    '</div><a href="/irish-visa-decisions-today">Irish visa decisions today</a></div>' +
+                    '<p class="note2">' +
+                    '<a href="/new-delhi-visa-decisions">New Delhi visa decisions</a> &middot; ' +
+                    '<a href="/beijing-visa-decisions">Beijing visa decisions</a> &middot; ' +
+                    '<a href="/abu-dhabi-visa-decisions">Abu Dhabi visa decisions</a> &middot; ' +
+                    '<a href="/abuja-visa-decisions">Abuja visa decisions</a> &middot; ' +
+                    '<a href="/ankara-visa-decisions">Ankara visa decisions</a> &middot; ' +
+                    '<a href="/dublin-visa-decisions">Dublin visa decisions</a>' +
+                    '</p>' +
+                    '<p class="note2"><a href="/daily-summaries">Daily approved and refused summaries</a> &middot; <a href="/monthly-report">Monthly report</a> &middot; <a href="/reports">Report archive</a></p>' +
                     '</section>' +
                     '<div class="landing-foot">Source: official Irish visa office reports. Updated when the offices publish.</div></div>';
                 wireChrome();

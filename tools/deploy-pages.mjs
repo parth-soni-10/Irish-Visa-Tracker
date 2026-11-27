@@ -686,8 +686,13 @@ export function injectHomepageSeo(options = {}) {
   const count = decisions.toLocaleString('en-IE');
   const approved = (Number(office.approved) || 0).toLocaleString('en-IE');
   const refused = (Number(office.refused) || 0).toLocaleString('en-IE');
-  const title = `Irish Visa Decisions Today — ${count} in ${short} File`;
-  const description = `Latest official New Delhi file: ${longDate(reportDate)} — ${count} Irish visa decisions (${approved} approved, ${refused} refused). Search any application number.`;
+  // "ireland visa decisions", "ireland visa decisions today" and "ireland visa
+  // decision new delhi" already sit on page one at a ~2% CTR, so the snippet
+  // leads with the query word ("Ireland", not only "Irish"), keeps the count
+  // and file date that no official page states, and stays inside the ~60
+  // characters a desktop result shows before it truncates.
+  const title = `Ireland Visa Decisions Today: ${count} Decided (${short})`;
+  const description = `Ireland visa decisions, ${longDate(reportDate)}: ${count} decided in the latest New Delhi file — ${approved} approved, ${refused} refused. Search an application number.`;
   const indiaLine = `<strong>India:</strong> <a href="/new-delhi-visa-decisions">New Delhi Irish visa decisions</a> — latest official file ${longDate(reportDate)}, ${count} decisions.`;
 
   let html = fs.readFileSync(pagePath, 'utf8');
