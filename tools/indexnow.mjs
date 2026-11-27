@@ -263,6 +263,18 @@ export async function submitIndexNow({ urls, key, site = DEFAULT_SITE, fetchImpl
   return { status: response.status, body };
 }
 
+/**
+ * IndexNow is a third party: a rate limit, an outage or a rejected submission
+ * says nothing about this build, and the state file is only written on success,
+ * so the next deploy submits the same URLs again. A build that cannot even
+ * fingerprint its own output stays fatal.
+ */
+export function isProviderHiccup(error) {
+  const message = String((error && error.message) || error);
+  return /^HTTP \d{3}/.test(message)
+    || /fetch failed|network|timed out|timeout|aborted|ECONN|ENOTFOUND|EAI_AGAIN|socket/i.test(message);
+}
+
 const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
 if (isMain) {
   const key = findIndexNowKey() || String(process.env.INDEXNOW_KEY || '').trim();
@@ -311,7 +323,12 @@ if (isMain) {
       console.log(`IndexNow accepted ${changed.length} new/changed URL(s) (${reportCount} report, ${changed.length - reportCount} priority; HTTP ${result.status}).`);
       console.log(`IndexNow state: ${path.relative(process.cwd(), stateFile)} (${Object.keys(nextUrls).length} URL(s)).`);
     } catch (error) {
-      console.error('IndexNow change submission failed:', error.message);
+      const message = String((error && error.message) || error);
+      if (isProviderHiccup(error)) {
+        console.log('::warning::IndexNow submission postponed for this deploy: ' + message);
+        process.exit(0);
+      }
+      console.error('IndexNow change submission failed:', message);
       process.exit(1);
     }
   } else if (!send) {
@@ -323,7 +340,12 @@ if (isMain) {
       const result = await submitIndexNow({ urls, key });
       console.log(`IndexNow accepted ${urls.length} URL(s) (HTTP ${result.status}).`);
     } catch (error) {
-      console.error('IndexNow request failed:', error.message);
+      const message = String((error && error.message) || error);
+      if (isProviderHiccup(error)) {
+        console.log('::warning::IndexNow submission postponed for this deploy: ' + message);
+        process.exit(0);
+      }
+      console.error('IndexNow request failed:', message);
       process.exit(1);
     }
   }

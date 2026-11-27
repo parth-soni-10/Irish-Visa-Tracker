@@ -9,11 +9,21 @@ import {
   emptyIndexNowState,
   fingerprintIndexNowHtml,
   indexNowFilePath,
+  isProviderHiccup,
   loadIndexNowState,
   normalizeIndexNowHtml,
   saveIndexNowState,
   selectChangedIndexNowUrls,
 } from "../tools/indexnow.mjs";
+
+test("an IndexNow provider hiccup is a warning, not a build failure", () => {
+  assert.equal(isProviderHiccup(new Error("HTTP 429 Too Many Requests")), true);
+  assert.equal(isProviderHiccup(new Error("HTTP 502 Bad Gateway")), true);
+  assert.equal(isProviderHiccup(new Error("fetch failed")), true);
+  assert.equal(isProviderHiccup(new Error("The operation was aborted due to timeout")), true);
+  assert.equal(isProviderHiccup(new Error("Cannot fingerprint 3 URL(s) from the build: /a, /b, /c")), false);
+  assert.equal(isProviderHiccup(new Error("no key file or INDEXNOW_KEY configured")), false);
+});
 
 const HTML = (asset, asOf, checked, buildTime, ivTime, modified) => `<!doctype html>
 <link rel="stylesheet" href="/styles/index-bundle.css?v=${asset}">
