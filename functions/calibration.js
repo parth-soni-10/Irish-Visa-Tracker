@@ -30,7 +30,7 @@ export function emptyCalibration(modelVersion = '') {
   };
 }
 
-export function formatCalibration(row, modelVersion = '') {
+function formatCalibration(row, modelVersion = '') {
   const samples = Math.max(0, Number(row && row.samples) || 0);
   const meetsGate = samples >= MINIMUM_SAMPLES;
   const lastAt = row && row.last_at ? String(row.last_at) : null;

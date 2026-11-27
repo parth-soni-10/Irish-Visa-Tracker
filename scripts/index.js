@@ -454,12 +454,6 @@
                 return DATE_LOCALES[lang] || 'en-IE';
             }
             function humanDate(value) { return lookupFormatDate(value) || String(value || ''); }
-            function sampleSizeText(n, suffix) {
-                var count = Number(n || 0).toLocaleString();
-                var noun = n === 1 ? 'published decision' : 'published decisions';
-                return (n ? 'Based on ' + count + ' ' + noun : 'No published decisions') +
-                    (suffix ? ' ' + suffix : '');
-            }
             // Localised short month names for the hero date ranges (no hardcoded
             // month arrays - Intl.DateTimeFormat owns locale + format).
             function shortMonth(d) { return new Intl.DateTimeFormat(displayLocale(), { month: 'short' }).format(d); }
@@ -1072,166 +1066,6 @@
                 el.innerHTML = 'Report freshness is unavailable — <a href="/status">open data status</a>.';
             }
 
-            // ===== hero builder (Mockup C) - per-tab hero with real data =====
-            function buildHeroHTML(tabId, rows) {
-                const model = getDatasetModel(rows);
-                const byDate = model.byDate;
-                const total = model.total;
-                const accepted = model.accepted;
-                const rejected = model.rejected;
-                const accPct = total ? accepted / total : 0;
-                const rejPct = total ? rejected / total : 0;
-                const avg = model.averageDaily;
-                // The newest day on record may be a placeholder notice; the
-                // snapshot therefore comes from the newest day with real data.
-                const latestPlaceholder = model.latestPlaceholder;
-                const latestCount = model.latestCount;
-                const dayDiff = model.latestRealDay ? latestCount - model.previousRealCount : 0;
-                const officialMeta = officeLookupMeta && officeLookupMeta['new-delhi'];
-                const officialDate = officialMeta && officialMeta.report_date
-                    ? lookupFormatDate(officialMeta.report_date)
-                    : '';
-
-                const states = {
-                    search: {
-                        title: 'One number. Six offices.',
-                        sub: 'Search the published reports, then check the decision date, report date and official source.',
-                        visual: '<div class="ring"></div><div class="ring"></div><div class="ring"></div><div class="ring-core"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></div>'
-                    },
-                    history: {
-                        title: 'Every tracker-observed day, in one place.',
-                        sub: (function() {
-                            return byDate.length + ' days on record, ' + fmtPct(accPct) + ' approved across ' + total.toLocaleString() + ' decisions.';
-                        })(),
-                        visual: '<div class="wave">' + byDate.slice(0, 7).reverse().map(function(d) {
-                            var n = (model.realByDate.get(d[0]) || []).length;
-                            return '<div class="wave-bar" style="height:' + Math.max(8, Math.min(120, n)) + 'px"></div>';
-                        }).join('') + '</div>'
-                    },
-                    saved: {
-                        title: 'Your applications, on this device.',
-                        sub: 'Save a number, choose browser or Telegram alerts, and restore a backup on a new device.',
-                        visual: '<div class="paper"><div class="paper-title">My applications</div><div class="paper-text">No account. No server-side watchlist.</div></div>'
-                    },
-                    tools: {
-                        title: 'Guides for the next step.',
-                        sub: 'Build a document checklist, print it, or open the official VFS handoff.',
-                        visual: '<div class="paper"><div class="paper-title">Guides</div><div class="paper-text">Plan before you apply. This page cannot book a VFS slot.</div></div>'
-                    },
-                    home: {
-                        title: latestPlaceholder
-                            ? 'No new rows recorded yet.'
-                            : latestCount + ' new rows recorded today.',
-                        sub: latestPlaceholder
-                            ? (latestPlaceholder.decision || 'No new file published yet.')
-                            : (dayDiff >= 0 ? '+' : '') + dayDiff + ' vs. yesterday, ' + fmtPct(accPct) +
-                              ' approved. Tracker rows, not official decision dates.' +
-                              (officialDate ? ' Official file dated ' + officialDate + '.' : ''),
-                        visual: latestPlaceholder
-                            ? '<div class="ring"></div><div class="ring"></div><div class="ring"></div><div class="ring-core">-</div>'
-                            : '<div class="ring"></div><div class="ring"></div><div class="ring"></div><div class="ring-core' + (String(latestCount).length > 3 ? ' big' : '') + '">' + latestCount + '</div>'
-                    },
-                    daily: {
-                        title: byDate.length + ' days on record.',
-                        sub: (function() {
-                            // Mirror the Past hero: sub-text shows the actual
-                            // date range so the user sees both totals AND the
-                            // dates covered. Week boundary Sun -> Sat.
-                            var _t = new Date();
-                            var _ws = new Date(_t.getFullYear(), _t.getMonth(), _t.getDate() - _t.getDay());
-                            var _we = new Date(_ws); _we.setDate(_ws.getDate() + 6);
-                            return 'Avg ' + avg.toFixed(1) + ' applications/day, ' + fmtPct(accPct) + ' approved, week of ' +
-                                   shortMonth(_ws) + ' ' + _ws.getDate() + '-' + shortMonth(_we) + ' ' + _we.getDate() + '.';
-                        })(),
-                        visual: (function() {
-                            // Current calendar week (Sun -> Sat) containing
-                            // today, matching the Past hero's window. weekStart
-                            // is the most-recent Sunday on or before today; we
-                            // look each of 7 days up in a byDate Map. Missing
-                            // days render as zero-height bars.
-                            var today = new Date();
-                            var weekStart = new Date(today.getFullYear(), today.getMonth(), today.getDate() - today.getDay());
-                            var byDateMap = new Map(byDate);
-                            var weekDays = [];
-                            for (var wi = 0; wi < 7; wi++) {
-                                var d = new Date(weekStart);
-                                d.setDate(weekStart.getDate() + wi);
-                                var ds = d.getFullYear() + '-' +
-                                         String(d.getMonth() + 1).padStart(2, '0') + '-' +
-                                         String(d.getDate()).padStart(2, '0');
-                                weekDays.push([ds, byDateMap.get(ds) || []]);
-                            }
-                            var counts = weekDays.map(function(d) { return (model.realByDate.get(d[0]) || []).length; });
-                            var maxApps = Math.max.apply(null, counts.concat([1]));
-                            return '<div class="wave">' + counts.map(function(count, i) {
-                                return '<div class="wave-bar" style="height:' + Math.max(8, (count / maxApps) * 120) + 'px; animation-delay:' + (i * 0.07) + 's"></div>';
-                            }).join('') + '</div>';
-                        })()
-                    },
-                    past: {
-                        title: 'Approved and refused, side by side.',
-                        sub: (function() {
-                            // Sub-text mirrors the chart's week range so the user
-                            // sees both the totals AND the exact dates covered.
-                            // Week boundary is Sunday -> Saturday (matches the
-                            // Sun-first days[] array elsewhere in this file).
-                            var _t = new Date();
-                            var _ws = new Date(_t.getFullYear(), _t.getMonth(), _t.getDate() - _t.getDay());
-                            var _we = new Date(_ws); _we.setDate(_ws.getDate() + 6);
-                            return fmtPct(accPct) + ' approved, ' + fmtPct(rejPct) + ' refused, ' + total.toLocaleString() + ' total, ' +
-                                   'week of ' + shortMonth(_ws) + ' ' + _ws.getDate() + '-' + shortMonth(_we) + ' ' + _we.getDate() + '.';
-                        })(),
-                        visual: (function() {
-                            // Current calendar week (Sun -> Sat) containing today,
-                            // not the rolling last 7 calendar days. weekStart is
-                            // the most-recent Sunday on or before today; iterate
-                            // 7 days forward and look each one up in a byDate
-                            // Map. Missing days (no decisions yet, or future
-                            // days in this week) render as empty bars.
-                            var today = new Date();
-                            var weekStart = new Date(today.getFullYear(), today.getMonth(), today.getDate() - today.getDay());
-                            var byDateMap = new Map(byDate);
-                            var last7 = [];
-                            for (var wi = 0; wi < 7; wi++) {
-                                var d = new Date(weekStart);
-                                d.setDate(weekStart.getDate() + wi);
-                                var ds = d.getFullYear() + '-' +
-                                         String(d.getMonth() + 1).padStart(2, '0') + '-' +
-                                         String(d.getDate()).padStart(2, '0');
-                                last7.push([ds, byDateMap.get(ds) || []]);
-                            }
-                            var maxVal = Math.max.apply(null, last7.map(function(d) {
-                                return (model.acceptedByDate.get(d[0]) || 0) + (model.rejectedByDate.get(d[0]) || 0);
-                            }).concat([1]));
-                            var scale = Math.min(1, 104 / Math.max(maxVal, 1));
-                            var days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-                            return '<div class="wf">' + last7.map(function(d, i) {
-                                var acc = model.acceptedByDate.get(d[0]) || 0;
-                                var rej = model.rejectedByDate.get(d[0]) || 0;
-                                var total = acc + rej;
-                                var accPct = total ? Math.round(acc / total * 100) : 0;
-                                var parts = d[0].split('-');
-                                var dateObj = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
-                                var dateLabel = days[dateObj.getDay()] + ' ' + (dateObj.getDate() < 10 ? '0' + dateObj.getDate() : dateObj.getDate());
-                                return '<div class="wf-col" style="--d:' + (i * 0.07).toFixed(2) + 's" title="' + d[0] + ', ' + acc + ' approved, ' + rej + ' refused, ' + accPct + '%">' +
-                                    '<div class="wf-date">' + escapeHtml(dateLabel) + '</div>' +
-                                    '<div class="wf-bars">' +
-                                        '<div class="wf-seg a" style="height:' + Math.max(3, acc * scale) + 'px"></div>' +
-                                        '<div class="wf-seg r" style="height:' + Math.max(3, rej * scale) + 'px"></div>' +
-                                    '</div>' +
-                                '</div>';
-                            }).join('') + '</div>';
-                        })()
-                    },
-                    alerts: {
-                        title: 'Decisions, delivered.',
-                        sub: 'Choose Telegram or browser push when a decision is published.',
-                        visual: '<div class="paper"><div class="paper-title">Alerts</div><div class="paper-text">One message per published decision.</div></div>'
-                    }
-                };
-                return states[tabId] || states.home;
-            }
-
             function morphHero() {
                 var hero = document.getElementById('hero');
                 if (!hero || window._heroHasRendered) return;
@@ -1244,25 +1078,6 @@
                 requestAnimationFrame(function() {
                     requestAnimationFrame(function() {
                         hero.style.opacity = '1';
-                    });
-                });
-            }
-
-            function animateHeroSwitch(tabId, rows) {
-                var hero = document.getElementById('hero');
-                if (!hero) return;
-                var state = buildHeroHTML(tabId, rows);
-                var token = (hero._switchToken || 0) + 1;
-                hero._switchToken = token;
-                hero.setAttribute('data-id', tabId);
-                hero.querySelector('.hero-title').innerHTML = state.title;
-                hero.querySelector('.hero-sub').textContent = state.sub;
-                hero.querySelector('.visual').innerHTML = state.visual;
-                hero.style.transition = 'opacity 0.12s ease';
-                hero.style.opacity = '0.65';
-                requestAnimationFrame(function() {
-                    requestAnimationFrame(function() {
-                        if (token === hero._switchToken) hero.style.opacity = '1';
                     });
                 });
             }

@@ -367,7 +367,7 @@ export function negotiate(header) {
   return "not-acceptable";
 }
 
-export const DAILY_SUMMARIES_MARKDOWN = lines(
+const DAILY_SUMMARIES_MARKDOWN = lines(
   "# Daily visa decision summaries",
   "",
   "Approved and refused counts for each day the Embassy of Ireland in New Delhi has published",
@@ -424,7 +424,7 @@ export const DAILY_SUMMARIES_MARKDOWN = lines(
   ""
 );
 
-export const STAMP_1G_MARKDOWN = lines(
+const STAMP_1G_MARKDOWN = lines(
   "# Stamp 1G processing dates - Ireland",
   "",
   "The Stamp 1G application date that ISD (Immigration Service Delivery) is currently processing,",
@@ -468,7 +468,7 @@ export const STAMP_1G_MARKDOWN = lines(
   ""
 );
 
-export const EMPLOYMENT_PERMITS_MARKDOWN = lines(
+const EMPLOYMENT_PERMITS_MARKDOWN = lines(
   "# Employment permit processing dates - Ireland",
   "",
   "The processing date reached in each employment-permit category published by DETE",
@@ -514,7 +514,7 @@ export const EMPLOYMENT_PERMITS_MARKDOWN = lines(
   ""
 );
 
-export const PROCESSING_TIMES_MARKDOWN = lines(
+const PROCESSING_TIMES_MARKDOWN = lines(
   "# Irish visa processing times - what the published data shows",
   "",
   "There is no single processing time for an Irish visa. What the official publishers release,",
@@ -595,7 +595,7 @@ function officeMarkdown({ title, route, latest, decisions, approved, refused, co
   );
 }
 
-export const NEW_DELHI_MARKDOWN = officeMarkdown({
+const NEW_DELHI_MARKDOWN = officeMarkdown({
   title: "New Delhi visa decisions for India, Bangladesh, Nepal and Sri Lanka",
   route: "/new-delhi-visa-decisions",
   latest: "19 November 2026",
@@ -608,7 +608,7 @@ export const NEW_DELHI_MARKDOWN = officeMarkdown({
   note: "New Delhi publishes a cumulative file each business morning. The count is the total in that file, not the number added that day. Read `/data/visa_meta.json` for the current `fileDate`, `sheetRows` and `lastRunAt`. The tracker’s dated rows are observation-dated, so they are excluded from official dated monthly totals.",
 });
 
-export const BEIJING_MARKDOWN = officeMarkdown({
+const BEIJING_MARKDOWN = officeMarkdown({
   title: "Beijing visa decisions for China, Hong Kong, Macau and Mongolia",
   route: "/beijing-visa-decisions",
   latest: "1 November 2026",
@@ -647,7 +647,7 @@ export const ABUJA_MARKDOWN = officeMarkdown({
   note: "Abuja publishes weekly PDF reports. The report date is the end of the reporting period, not the date of an individual decision. A number may appear in an earlier or later report, so search the office history before treating a missing row as unpublished.",
 });
 
-export const ANKARA_MARKDOWN = officeMarkdown({
+const ANKARA_MARKDOWN = officeMarkdown({
   title: "Ankara visa decisions for Türkiye, Azerbaijan and Saudi residents",
   route: "/ankara-visa-decisions",
   latest: "15 November 2026 (week ending)",
@@ -660,7 +660,7 @@ export const ANKARA_MARKDOWN = officeMarkdown({
   note: "Ankara publishes weekly PDF reports; some are scanned. Rows are OCR-extracted at 300 DPI, so a character can be missed or misread. The official PDF remains the authority. The report date is the end of the reporting period.",
 });
 
-export const DUBLIN_MARKDOWN = officeMarkdown({
+const DUBLIN_MARKDOWN = officeMarkdown({
   title: "Dublin visa decisions for Pakistan and transferred applications",
   route: "/dublin-visa-decisions",
   latest: "20 November 2026",
@@ -673,7 +673,7 @@ export const DUBLIN_MARKDOWN = officeMarkdown({
   note: "The Dublin Visa Office publishes decisions every Tuesday and a separate processing queue by category. The tracker holds the latest decision snapshot; the queue is shown on the processing-times page and is not an individual decision list.",
 });
 
-export const OPEN_DATA_MARKDOWN = lines(
+const OPEN_DATA_MARKDOWN = lines(
   "# Irish visa decision open data",
   "",
   "The tracker publishes the public JSON and CSV files behind its pages. Read",

@@ -1,11 +1,11 @@
 # Implementation Plan: ML Timeline Predictor + Native Mobile
 
 > **Status — 2026-11-13.** The tracker has no accounts, sign-in, saved searches,
-private exports or workspace. Tracking, browser-local watchlists and email,
-Telegram and browser-push alerts are public and anonymous. The ML predictor
-(section 5) is implemented. Native mobile (section 6) is **deferred**: the
-installable PWA is the supported mobile product. See `COMPLETION_REPORT.md` and
-`GAP_ANALYSIS.md` for the live record.
+private exports or workspace. Tracking, browser-local watchlists and Telegram and
+browser-push alerts are public and anonymous. The ML predictor (section 5) is
+implemented. Native mobile (section 6) is **deferred**: the installable PWA is
+the supported mobile product. See `README.md` for the current product surface
+and `docs/services.md` for the operational record.
 
 ## 5. ML Timeline Predictor (High)
 

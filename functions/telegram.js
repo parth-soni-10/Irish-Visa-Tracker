@@ -12,7 +12,6 @@
  * as soon as it is published.
  */
 
-import { EMBASSIES, json } from './shared.js';
 import { loadReportData } from './report-data.js';
 import {
   DEFAULT_BASE_URL,
@@ -34,6 +33,17 @@ const API_BASE = 'https://api.telegram.org/bot';
 const LINK_TTL_MS = 15 * 60 * 1000;
 const MAX_TEXT = 4000;
 const DIGEST_FREQUENCIES = new Set(['off', 'daily', 'weekly']);
+
+// The six official offices and the JSON envelope every Telegram route answers
+// with. Both live here because nothing else in the Pages Functions uses them.
+const EMBASSIES = new Set(['new-delhi', 'beijing', 'dublin', 'abu-dhabi', 'abuja', 'ankara']);
+
+function json(body, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
+  });
+}
 
 // One getMe per worker isolate is enough; the username never changes.
 let cachedUsername = null;

@@ -62,7 +62,6 @@ html[data-theme="dark"] .callout,
 html[data-theme="dark"] .page .callout,
 html[data-theme="dark"] .freshness-chip,
 html[data-theme="dark"] .status-pill,
-html[data-theme="dark"] .compare-table .is-us,
 html[data-theme="dark"] .notfound-links a {
   background: var(--raised);
   color: var(--ink);
@@ -595,8 +594,6 @@ a:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; border-rad
 }
 .compare-table tbody tr:last-child th,
 .compare-table tbody tr:last-child td { border-bottom: 0; }
-.compare-table .is-us { background: #f0fdf4; }
-.compare-table .is-us strong { color: var(--green-deep); }
 .compare-table .yes { color: var(--green-deep); font-weight: 650; }
 .compare-table .note {
   display: block;
@@ -635,15 +632,6 @@ a:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; border-rad
   .page { padding-top: 44px; }
   .page-lede { font-size: 17px; }
 }
-
-/* Breadcrumb trail: matches the BreadcrumbList JSON-LD on the data pages, which
-   search engines expect to be visible content rather than markup alone. */
-.breadcrumbs { margin: 0 0 12px; font-size: 12.5px; line-height: 1.4; }
-.breadcrumbs ol { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
-.breadcrumbs li { display: flex; align-items: center; gap: 6px; color: var(--muted, #5a6b62); }
-.breadcrumbs li + li::before { content: "/"; color: var(--border, #c9d3cd); }
-.breadcrumbs a { color: inherit; text-decoration: none; }
-.breadcrumbs a:hover { color: var(--green-deep, #0a6b3d); text-decoration: underline; }
 
 /* Data status page */
 .status-grid {
@@ -690,11 +678,6 @@ a:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; border-rad
   font-weight: 650;
   line-height: 1.6;
   white-space: nowrap;
-}
-.status-pill.is-thin {
-  border-color: #fde68a;
-  background: #fffbeb;
-  color: #92400e;
 }
 .status-pill.is-error { border-color: #fecaca; background: #fef2f2; color: #991b1b; }
 .status-pill.is-warn { border-color: #fde68a; background: #fffbeb; color: #92400e; }
@@ -821,10 +804,6 @@ a:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; border-rad
     text-transform: uppercase;
   }
   .compare-table tbody td[colspan]::before { display: none; }
-  .comparison-page .compare-table tbody td:nth-child(2)::before { content: "This tracker"; }
-  .comparison-page .compare-table tbody td:nth-child(3)::before { content: "VisaRelay"; }
-  .comparison-page .compare-table tbody td:nth-child(4)::before { content: "Snifox / Visastat"; }
-  .comparison-page .compare-table tbody td:nth-child(5)::before { content: "Official sources"; }
   .compare-table .note { font-size: 12px; }
 
   /* The archive can contain dozens of report dates. Keep each one compact:
@@ -999,7 +978,7 @@ a:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; border-rad
 .page p { margin: 12px 0 0; }
 .page ul, .page ol { margin: 10px 0 0; }
 .page .page-lede + section { margin-top: 24px; }
-.page-kicker, .kicker, .eyebrow, .breadcrumbs { display: none; }
+.page-kicker, .kicker { display: none; }
 
 /* Structural labels are sentence case throughout, including table heads. */
 .page .office-table thead th,
@@ -1028,7 +1007,6 @@ a:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; border-rad
 }
 .compare-table tbody th { font-weight: 700; color: var(--ink); }
 .compare-table .note { display: block; margin-top: 3px; font-size: 12px; }
-.compare-table .is-us { background: transparent; }
 .source-table td:nth-child(2) { min-width: 200px; }
 
 /* Three primary status metrics, then the detail tables. */
@@ -1494,7 +1472,6 @@ body { letter-spacing: -.005em; }
   font-size: 12.5px;
   color: var(--ink-muted);
 }
-.page .compare-table .is-us { background: transparent; }
 .page .compare-table .yes { color: var(--ink); font-weight: 500; }
 .page .callout,
 .page .office-search,
@@ -1595,7 +1572,6 @@ body { letter-spacing: -.005em; }
   border-radius: 50%;
   background: currentColor;
 }
-.status-pill.is-thin,
 .status-pill.is-warn,
 .freshness-chip.is-warn,
 .model-card .model-gate { color: #92400e; }
@@ -1691,7 +1667,6 @@ html[data-theme="dark"] {
 html[data-theme="dark"] body { background: var(--surface); color: var(--ink); }
 html[data-theme="dark"] .btn.primary { border-color: var(--ink); background: var(--ink); color: #0a0a0a; }
 html[data-theme="dark"] .btn.primary:hover { border-color: #fff; background: #fff; color: #0a0a0a; }
-html[data-theme="dark"] .status-pill.is-thin,
 html[data-theme="dark"] .status-pill.is-warn,
 html[data-theme="dark"] .freshness-chip.is-warn,
 html[data-theme="dark"] .model-card .model-gate { color: #fbbf24; }

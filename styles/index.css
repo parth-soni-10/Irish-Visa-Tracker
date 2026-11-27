@@ -109,15 +109,6 @@
             outline: 2px solid var(--green);
             outline-offset: 2px;
         }
-        #visa-dash .eyebrow {
-            font-size: 12px;
-            line-height: 16px;
-            letter-spacing: .18em;
-            text-transform: uppercase;
-            color: var(--green);
-            font-weight: 500;
-            margin-bottom: 4px;
-        }
         #visa-dash h1 {
             font-size: 28px;
             margin: 0 0 2px;
@@ -3309,7 +3300,6 @@
    link/button/badge language. The dashboard is a reference tool, not a
    component showcase, so decorative motion and card chrome are removed. */
 
-#visa-dash .eyebrow,
 #visa-dash .titlerow > div,
 #visa-dash .theme-switch,
 #visa-dash .lang-selector,

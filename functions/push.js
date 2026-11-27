@@ -11,7 +11,7 @@ export function isPushConfigured(env) {
   return Boolean(env && env.VAPID_PUBLIC_KEY && env.VAPID_PRIVATE_KEY);
 }
 
-export function configureVapid(env) {
+function configureVapid(env) {
   if (vapidConfigured) return true;
   if (!isPushConfigured(env)) {
     console.warn('[WebPush] VAPID keys not configured, push notifications disabled');
