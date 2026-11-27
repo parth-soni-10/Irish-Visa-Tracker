@@ -231,6 +231,6 @@ absent. Add that repository secret (Actions → Secrets and variables → Action
 with the same value as the Pages secret, then run each workflow once with
 `workflow_dispatch` to verify it.
 
-Scheduled failures are forwarded to the shared alert webhook by
-`cron-failure-alerts.yml`. The external uptime and freshness check does not use
+Failed runs of those workflows are forwarded to the shared alert webhook by
+`cron-failure-alerts.yml`, whatever triggered them. The external uptime and freshness check does not use
 `SCRAPER_CRON_SECRET`; it only reads public endpoints.

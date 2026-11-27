@@ -82,14 +82,18 @@ service (for example, an HTTP monitor every five minutes with the expected body
 
 ## Failed cron runs
 
-`.github/workflows/cron-failure-alerts.yml` listens for failed scheduled runs of
-the scraper, alerts, digest, exports, ML retraining, community timeline, Stamp
-1G and permit workflows. It posts the workflow name and run URL to
-`ALERT_WEBHOOK_URL`; if the secret is absent it fails deliberately rather than
-silently skipping the alert.
+`.github/workflows/cron-failure-alerts.yml` listens for failed runs of the
+scraper, alerts, digest, exports, ML retraining, community timeline, Stamp 1G
+and permit workflows, whatever triggered them (schedule, workflow_dispatch or
+push). It posts the workflow name, conclusion, trigger and run URL to
+`ALERT_WEBHOOK_URL`. If the secret is absent the job emits a `::warning::` and
+stays green: the original run is already red, so a missing channel must not
+turn one failure into two. A configured endpoint that rejects the POST still
+fails the alert job, so a broken alerting path stays visible.
 
 GitHub's native scheduled-workflow notification goes only to the person who
-last changed the cron syntax, so the webhook is the shared team alert path.
+last changed the cron syntax, and a manual dispatch notifies only the account
+that started it, so the webhook is the shared team alert path.
 GitHub does not emit a failure event when a scheduled run is skipped entirely;
 the external health and data-freshness probe covers that case.
 

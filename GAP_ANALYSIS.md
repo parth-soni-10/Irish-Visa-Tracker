@@ -40,7 +40,7 @@ only gaps that still exist after the current tree and release checks.
   request/error logs and expose a D1+asset readiness endpoint; a separate
   cron-only Worker provides Workers Logs/Logpush eligibility for persisted
   uptime checks; an external GitHub Actions probe checks health and data
-  freshness; failed scheduled runs forward to the shared alert webhook.
+  freshness; failed runs forward to the shared alert webhook.
 - Schedulers for decisions, digest and exports: workflows added. The release
   commit is on `origin/main`, and the repository `SCRAPER_CRON_SECRET` Actions
   secret is configured.

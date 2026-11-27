@@ -72,7 +72,7 @@ have not been committed or redeployed:
   structured JSON request/error logs and `/api/health` now verifies D1 plus a
   real static asset. A separate cron-only Worker enables Workers
   Logs/Logpush, `uptime.yml` checks health and data freshness from outside
-  Cloudflare, and `cron-failure-alerts.yml` forwards failed scheduled runs to
+  Cloudflare, and `cron-failure-alerts.yml` forwards every failed run to
   `ALERT_WEBHOOK_URL`.
 
 Local verification after these changes: **115 Node tests pass**, the HTML and
@@ -135,8 +135,8 @@ need a deployment; the application changes remain local to this working tree.
 - Decision alerts: hourly GitHub Actions workflow.
 - Monthly digest: first of the month.
 - External uptime and data freshness: every 15 minutes from GitHub Actions.
-- Failed scheduled runs: forwarded to `ALERT_WEBHOOK_URL`; without it the
-  companion alert workflow fails visibly instead of skipping.
+- Failed runs: forwarded to `ALERT_WEBHOOK_URL`; without it the companion
+  alert workflow warns on the run summary instead of adding a second failure.
 - The delivery jobs require the repository `SCRAPER_CRON_SECRET` Actions secret.
 - Monthly ML retraining now regenerates both `models/` and the served
   `functions/api/model-trees.js`; the training scripts, synthetic data and model
