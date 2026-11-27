@@ -232,6 +232,19 @@ export function loadFreshness(assetsRoot = ROOT) {
     const observedDates = trackerRows(assetsRoot, slug).filter(isDecisionRow).map(rowDate).filter(Boolean).sort();
     const officialThrough = officialDates[officialDates.length - 1] || reportDate;
     const observedThrough = observedDates[observedDates.length - 1] || officialThrough;
+    // What a number search can actually reach. Snapshot offices used to hold
+    // only the newest list, so a decision from an earlier week was absent even
+    // though the office had published it. The no-result state must say where
+    // the searchable window starts instead of implying "not decided yet".
+    const searchDates = (slug === 'new-delhi' ? observedDates : officialDates).filter(Boolean);
+    const searchFrom = searchDates[0] || reportDate;
+    const searchThrough = searchDates[searchDates.length - 1] || officialThrough;
+    const snapshotOffice = SNAPSHOT_OFFICES.has(slug);
+    const searchScope = slug === 'new-delhi'
+      ? 'daily tracker'
+      : snapshotOffice
+        ? (searchFrom && searchFrom < reportDate ? 'snapshot plus earlier files' : 'latest snapshot only')
+        : 'dated reports';
     // Keep the historical decisions-through fields on the tracker-observed
     // date for API compatibility. Official-facing tables use
     // official_data_through instead.
@@ -303,6 +316,9 @@ export function loadFreshness(assetsRoot = ROOT) {
       due_short_label: overdue ? `Due since ${shortDate(dueAt)}` : '',
       next_due_label: nextDueLabel,
       observation_lag: observationHistory(assetsRoot, slug),
+      search_from: searchFrom,
+      search_through: searchThrough,
+      search_scope: searchScope,
     };
   });
 

@@ -964,12 +964,17 @@ export function injectHomeOfficeCards(options = {}) {
     if (!decisions || !/^\d{4}-\d{2}-\d{2}$/.test(date)) continue;
     const label = office.snapshot ? 'snapshot' : 'file';
     const stat = `${decisions.toLocaleString('en-IE')} decisions in the ${longDate(date)} ${label}`;
+    // The anchor already carries the stat span after the first build, so the
+    // pattern has to accept an existing one. Requiring the anchor to end right
+    // after the country span is what froze every card at its 24 November value:
+    // the second build could no longer match, and the old numbers stayed.
     const pattern = new RegExp(
-      `(<li><a href="${route.replace(/[/-]/g, (char) => `\\${char}`)}"><strong>([^<]+)</strong><span>([^<]*)</span>)</a></li>`,
+      `(<li><a href="${route.replace(/[/-]/g, (char) => `\\${char}`)}"><strong>([^<]+)</strong><span>([^<]*)</span>)` +
+      `(?:<span class="office-directory-stat">[^<]*</span>)?(</a></li>)`,
     );
     if (!pattern.test(html)) continue;
-    html = html.replace(pattern, (match, open, name, countries) =>
-      `${open}<span class="office-directory-stat">${escapeHtml(stat)}</span></a></li>`);
+    html = html.replace(pattern, (match, open, name, countries, close) =>
+      `${open}<span class="office-directory-stat">${escapeHtml(stat)}</span>${close}`);
     changed += 1;
   }
   if (!changed) return;

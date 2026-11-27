@@ -1,0 +1,83 @@
+import assert from 'node:assert/strict';
+import { existsSync } from 'node:fs';
+import { readFile } from 'node:fs/promises';
+import path from 'node:path';
+import { test } from 'node:test';
+import { fileURLToPath } from 'node:url';
+
+import { loadFreshness } from '../tools/freshness.mjs';
+
+const ROOT = fileURLToPath(new URL('../', import.meta.url));
+const PAGES = path.resolve(ROOT, process.env.SITE_HTML_BASE || '.pages-dist');
+
+const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July',
+  'August', 'September', 'October', 'November', 'December'];
+
+function longDate(value) {
+  const raw = String(value).slice(0, 10);
+  const [year, month, day] = raw.split('-');
+  return `${Number(day)} ${MONTHS[Number(month) - 1]} ${year}`;
+}
+
+const freshness = loadFreshness(ROOT);
+
+async function page(name) {
+  const file = path.join(PAGES, name);
+  assert.ok(existsSync(file), `missing ${name} under ${PAGES}; run npm run build first`);
+  return readFile(file, 'utf8');
+}
+
+test('the homepage office cards agree with data/freshness.json', async () => {
+  const html = await page('index.html');
+  for (const office of freshness.offices) {
+    const label = office.snapshot ? 'snapshot' : 'file';
+    const expected = `${office.decisions.toLocaleString('en-IE')} decisions in the ${longDate(office.report_date)} ${label}`;
+    assert.ok(
+      html.includes(expected),
+      `${office.slug} card says something else; expected "${expected}"`,
+    );
+  }
+});
+
+test('the homepage summary, status table and office pages use the same latest dates', async () => {
+  const index = await page('index.html');
+  const delhi = freshness.bySlug['new-delhi'];
+  assert.ok(
+    index.includes(`${delhi.decisions.toLocaleString('en-IE')} New Delhi decisions`),
+    'homepage summary count disagrees with freshness.json',
+  );
+  assert.ok(
+    index.includes(longDate(delhi.report_date)),
+    'homepage summary report date disagrees with freshness.json',
+  );
+
+  const status = await page('status.html');
+  for (const office of freshness.offices) {
+    assert.ok(
+      status.includes(`datetime="${office.report_date}"`),
+      `${office.slug} is missing its latest report date on status.html`,
+    );
+  }
+
+  for (const office of freshness.offices) {
+    const html = await page(`${office.slug}-visa-decisions.html`);
+    assert.ok(
+      html.includes(`data-office="decisions">${office.decisions.toLocaleString('en-IE')}<`),
+      `${office.slug} office page count disagrees with freshness.json`,
+    );
+    assert.ok(
+      html.includes(`data-office="latest-date">${longDate(office.report_date)}<`),
+      `${office.slug} office page report date disagrees with freshness.json`,
+    );
+  }
+});
+
+test('freshness.json publishes the searchable window for every office', async () => {
+  const saved = JSON.parse(await readFile(path.join(ROOT, 'data', 'freshness.json'), 'utf8'));
+  for (const office of saved.offices) {
+    assert.match(office.search_from, /^\d{4}-\d{2}-\d{2}$/, `${office.slug} search_from`);
+    assert.match(office.search_through, /^\d{4}-\d{2}-\d{2}$/, `${office.slug} search_through`);
+    assert.ok(office.search_from <= office.search_through, `${office.slug} window order`);
+    assert.ok(office.search_scope, `${office.slug} search_scope`);
+  }
+});

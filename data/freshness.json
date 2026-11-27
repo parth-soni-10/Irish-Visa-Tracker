@@ -90,6 +90,9 @@
           }
         ]
       },
+      "search_from": "2026-07-12",
+      "search_through": "2026-11-27",
+      "search_scope": "daily tracker",
       "observation_note": "Tracker observed decisions dated through 27 November 2026; these are not in the 26 November 2026 official file.",
       "summary_at_build": "New Delhi — report 26 November 2026 · 44,284 decisions · 1 day old at last build · checked 27 Nov 2026, 12:10 UTC",
       "warning_at_build": "",
@@ -160,6 +163,9 @@
           }
         ]
       },
+      "search_from": "2026-11-22",
+      "search_through": "2026-11-22",
+      "search_scope": "latest snapshot only",
       "observation_note": "",
       "summary_at_build": "Beijing — snapshot 22 November 2026 · 14,425 decisions · 5 days old at last build · checked 27 Nov 2026, 12:10 UTC",
       "warning_at_build": "",
@@ -254,6 +260,9 @@
           }
         ]
       },
+      "search_from": "2026-09-11",
+      "search_through": "2026-11-27",
+      "search_scope": "dated reports",
       "observation_note": "",
       "summary_at_build": "Abu Dhabi — report 27 November 2026 · 182 decisions · 0 days old at last build · checked 27 Nov 2026, 12:10 UTC",
       "warning_at_build": "",
@@ -348,6 +357,9 @@
           }
         ]
       },
+      "search_from": "2026-01-04",
+      "search_through": "2026-11-21",
+      "search_scope": "dated reports",
       "observation_note": "",
       "summary_at_build": "Abuja — report 21 November 2026 · 216 decisions · 6 days old at last build · checked 27 Nov 2026, 12:10 UTC",
       "warning_at_build": "",
@@ -424,6 +436,9 @@
           }
         ]
       },
+      "search_from": "2026-10-11",
+      "search_through": "2026-11-22",
+      "search_scope": "dated reports",
       "observation_note": "",
       "summary_at_build": "Ankara — report 22 November 2026 · 217 decisions · 5 days old at last build · checked 27 Nov 2026, 12:10 UTC",
       "warning_at_build": "",
@@ -518,6 +533,9 @@
           }
         ]
       },
+      "search_from": "2026-11-27",
+      "search_through": "2026-11-27",
+      "search_scope": "latest snapshot only",
       "observation_note": "",
       "summary_at_build": "Dublin — snapshot 27 November 2026 · 4,848 decisions · 0 days old at last build · checked 27 Nov 2026, 12:10 UTC",
       "warning_at_build": "",

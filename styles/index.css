@@ -3028,6 +3028,20 @@
 #visa-dash .home-lookup-stale ul { margin: 6px 0; padding-left: 18px; }
 #visa-dash .home-lookup-stale li + li { margin-top: 5px; }
 #visa-dash .home-lookup-stale p { margin: 0; font-size: 12px; }
+#visa-dash .home-lookup-coverage {
+    margin: 12px 0 0;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--r-container);
+    background: var(--surface);
+    color: var(--ink-soft);
+    font-size: 12.5px;
+    line-height: 1.55;
+}
+#visa-dash .home-lookup-coverage strong { color: var(--ink); }
+#visa-dash .home-lookup-coverage ul { margin: 6px 0; padding-left: 18px; }
+#visa-dash .home-lookup-coverage li + li { margin-top: 4px; }
+#visa-dash .home-lookup-coverage p { margin: 0; font-size: 12px; }
 #visa-dash .home-noresult-controls .lookup-result-btn { min-height: 40px; }
 #visa-dash .home-lookup-link {
     font-size: 13px;
@@ -3494,6 +3508,46 @@
   line-height: 1.5;
 }
 #visa-dash .landing-alert-line strong { color: var(--ink); font-weight: 700; }
+#visa-dash .landing-guides {
+  max-width: 1080px;
+  margin: 0 auto 18px;
+  padding: 14px 0 0;
+  border-top: 1px solid var(--border);
+}
+#visa-dash .landing-guides h2 {
+  margin: 0 0 10px;
+  font-size: 15px;
+  font-weight: 650;
+  color: var(--ink);
+}
+#visa-dash .landing-guides ul {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+#visa-dash .landing-guides a {
+  display: block;
+  height: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-container);
+  background: var(--surface);
+  color: var(--ink);
+  text-decoration: none;
+}
+#visa-dash .landing-guides a:hover,
+#visa-dash .landing-guides a:focus-visible { border-color: var(--accent); }
+#visa-dash .landing-guides strong { display: block; font-size: 13px; font-weight: 650; }
+#visa-dash .landing-guides span {
+  display: block;
+  margin-top: 3px;
+  color: var(--ink-soft);
+  font-size: 12px;
+  line-height: 1.4;
+}
 #visa-dash .landing-publications {
   max-width: 1080px;
   margin: 0 auto;

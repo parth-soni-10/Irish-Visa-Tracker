@@ -513,7 +513,7 @@
                 const wd = newDelhiNowValue.weekdayIndex;
                 if (wd === 0 || wd === 6) {
                     return '<div class="status-line">New Delhi office closed today (' + weekdayLong(newDelhiDate) +
-                        '). The next file is expected Monday after <strong>' +
+                        ', New Delhi time). The next file is expected Monday after <strong>' +
                         scheduleTimeNode(NEW_DELHI_UPDATE_HOUR, NEW_DELHI_UPDATE_MINUTE) + '</strong>.</div>';
                 }
                 const todayReal = rows.filter(r => !r._placeholder && r.date === newDelhiDate);
@@ -711,8 +711,23 @@
                     // The scraper meta can lag the decisions file by a run. Show
                     // the actual newest row rather than pairing a stale file date
                     // with a newer sheet count.
-                    html.push('<div class="meta-line">Tracker contains <strong>' + Number(dataRows).toLocaleString('en-IE') +
-                        '</strong> published decisions, latest dated <strong>' + humanDate(latestDataDate) + '</strong>.</div>');
+                    // Pair each count with the file that actually contains it:
+                    // the official file count and any newer tracker-only rows
+                    // are different things and must not read as one total.
+                    var officialCount = previewMeta && previewMeta.total
+                        ? Number(previewMeta.total) : Number(dataRows);
+                    var officialDate = m.fileDate || '';
+                    var observedDay = previewMeta && previewMeta.latest_day ? String(previewMeta.latest_day) : '';
+                    var observedCount = previewMeta && previewMeta.latest_day_total
+                        ? Number(previewMeta.latest_day_total) : 0;
+                    var line = officialDate && observedDay && observedDay > officialDate && observedCount
+                        ? 'Official file: <strong>' + officialCount.toLocaleString('en-IE') + '</strong> decisions (dated ' +
+                            humanDate(officialDate) + '). Tracker observations: <strong>' +
+                            observedCount.toLocaleString('en-IE') + '</strong> rows dated ' + humanDate(observedDay) +
+                            ', not yet in an official file.'
+                        : 'Tracker contains <strong>' + officialCount.toLocaleString('en-IE') +
+                            '</strong> published decisions, latest dated <strong>' + humanDate(latestDataDate) + '</strong>.';
+                    html.push('<div class="meta-line">' + line + '</div>');
                 }
                 if (m.closureDates && m.closureDates.length) {
                     const chips = fmtClosureDates(m.closureDates).split(', ').map(c =>
@@ -2921,7 +2936,10 @@
                     escapeHtml(decision) + '</span></div>' +
                     '<dl class="lookup-result-facts">' +
                     '<div class="lookup-result-fact"><dt>Office</dt><dd>' + escapeHtml(officeName(office)) + '</dd></div>' +
-                    '<div class="lookup-result-fact"><dt>Coverage</dt><dd>' + escapeHtml(OFFICE_COVERAGE[office] || 'Published report') + '</dd></div>' +
+                    '<div class="lookup-result-fact"><dt>Coverage</dt><dd>' + escapeHtml(OFFICE_COVERAGE[office] || 'Published report') +
+                    (meta.freshness && meta.freshness.search_from
+                        ? ' \u00b7 searchable from ' + escapeHtml(lookupFormatDate(meta.freshness.search_from))
+                        : '') + '</dd></div>' +
                     '<div class="lookup-result-fact"><dt>Decision date</dt><dd>' +
                     (decisionDate ? '<time datetime="' + escapeHtml(row.date) + '">' + decisionDate + '</time>' : 'Not listed') + '</dd></div>' +
                     (provenance.isTracker
@@ -2929,6 +2947,7 @@
                         : '<div class="lookup-result-fact"><dt>Report date</dt><dd>' +
                             (reportDate ? '<time datetime="' + escapeHtml(row.report_date || meta.report_date || '') + '">' + reportDate + '</time>' : 'Not listed') + '</dd></div>') +
                     '<div class="lookup-result-fact"><dt>Last successful check</dt><dd>' + checkState + checked + '</dd></div>' +
+                    lookupNextReportFactHTML(meta) +
                     '</dl>' +
                     '<p class="lookup-result-source"><span class="lookup-result-source-label">' +
                     (provenance.isTracker ? 'Tracker observation' : 'Official source') + '</span>' + source +
@@ -2957,6 +2976,42 @@
                     '</div>' + lookupNextStepsHTML(row) + '</article>';
             }
 
+            // A user's next question after "not found" is whether the number is
+            // too old for this search or too new to be published. Both windows
+            // are derived in data/freshness.json, so show them here rather than
+            // letting "not found" imply "not decided yet".
+            function lookupNextReportFactHTML(meta) {
+                var fresh = meta && meta.freshness;
+                if (!fresh) return '';
+                var parts = [];
+                if (fresh.cadence_days) parts.push('about every ' + Number(fresh.cadence_days) + ' days');
+                var expected = fresh.due_label || fresh.next_due_label ||
+                    (fresh.due_at ? 'Expected ' + lookupFormatDate(fresh.due_at) : '');
+                if (expected) parts.push(expected);
+                if (!parts.length) return '';
+                return '<div class="lookup-result-fact"><dt>Next report</dt><dd>' +
+                    escapeHtml(parts.join(' \u00b7 ')) + '</dd></div>';
+            }
+
+            function lookupCoverageSummaryHTML(metas) {
+                var items = WATCH_OFFICES.map(function(office) {
+                    var fresh = lookupOfficeMeta(office, metas).freshness;
+                    if (!fresh || !fresh.search_from) return '';
+                    var from = lookupFormatDate(fresh.search_from);
+                    var through = lookupFormatDate(fresh.search_through || fresh.report_date);
+                    if (!from) return '';
+                    var scope = fresh.search_scope ? ' (' + fresh.search_scope + ')' : '';
+                    return '<li>' + escapeHtml(officeName(office)) + ': ' + escapeHtml(from) +
+                        (through && through !== from ? ' \u2013 ' + escapeHtml(through) : '') +
+                        escapeHtml(scope) + '</li>';
+                }).filter(Boolean);
+                if (!items.length) return '';
+                return '<div class="home-lookup-coverage" role="note">' +
+                    '<strong>What this search covers:</strong><ul>' + items.join('') + '</ul>' +
+                    '<p>Older decisions are outside this window. <a href="/reports">Open the official report archive</a> ' +
+                    'or the office page for the period you need.</p></div>';
+            }
+
             function homeLookupReportDatesHTML(metas) {
                 var rows = WATCH_OFFICES.map(function(office) {
                     var meta = lookupOfficeMeta(office, metas);
@@ -2966,7 +3021,12 @@
                     if (meta.source_url) {
                         label = '<a href="' + escapeHtml(meta.source_url) + '" target="_blank" rel="noopener noreferrer">' + label + '</a>';
                     }
-                    return '<li>' + label + ': ' + date + '</li>';
+                    var fresh = meta.freshness || {};
+                    var from = lookupFormatDate(fresh.search_from);
+                    var next = lookupFormatDate(fresh.next_due_at || fresh.due_at);
+                    return '<li>' + label + ': ' + date +
+                        (from ? ' \u00b7 searchable from ' + escapeHtml(from) : '') +
+                        (next ? ' \u00b7 next expected ' + escapeHtml(next) : '') + '</li>';
                 }).filter(Boolean);
                 if (!rows.length) return '';
                 return '<details class="home-lookup-report-dates"><summary>Latest report dates by office</summary>' +
@@ -3005,6 +3065,7 @@
                     '<p class="home-lookup-empty-tip">' + (homeSearchOffice === 'all'
                         ? 'Try another number format, or check that the application is under the office on your receipt. We already searched all six offices.'
                         : 'Try another office in the selector above, or choose <strong>All six offices</strong>.') + '</p>' +
+                    lookupCoverageSummaryHTML(metas) +
                     staleSearchNoticeHTML(metas, homeSearchOffice) +
                     notify +
                     '<div class="lookup-steps home-lookup-check-next"><h4>What to check next</h4><ol>' +
@@ -5343,6 +5404,14 @@ async function renderLandingPage() {
                     trackerCardHTML('permits', 'briefcase', 'Employment permits',
                         'DETE queue by permit category, with the current lag.', 'Loading…', 'permits-meta', 'permits') +
                     '</div>' +
+                    '<nav class="landing-guides" aria-label="Help and next steps">' +
+                    '<h2>Not sure what happens next?</h2>' +
+                    '<ul>' +
+                    '<li><a href="/after-approval"><strong>I was approved</strong><span>Passport, visa dates and what to check</span></a></li>' +
+                    '<li><a href="/after-refusal"><strong>I was refused</strong><span>What the decision does and does not say</span></a></li>' +
+                    '<li><a href="/missing-decision"><strong>My number is not listed</strong><span>Why a decision may be absent, and when to check again</span></a></li>' +
+                    '<li><a href="/find-my-office"><strong>Which office handled it?</strong><span>Match your receipt to the right office</span></a></li>' +
+                    '</ul></nav>' +
                     '<p class="landing-alert-line"><strong>Free decision alerts.</strong> Get a free Telegram message the day your number is published. No account, no fee. <a href="/?tracker=visa&amp;tab=alerts">Set up alerts</a>.</p>' +
                     '<section class="landing-overview" aria-labelledby="landing-overview-title">' +
                     '<div class="landing-overview-head"><div>' +
