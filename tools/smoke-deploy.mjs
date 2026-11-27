@@ -10,7 +10,6 @@
  */
 
 const BASE = String(process.env.SMOKE_BASE_URL || 'https://irishvisaupdatetracker.pages.dev').replace(/\/+$/, '');
-const MONTH = process.env.SMOKE_MONTH || '2026-11';
 const EXPECT_COMMIT = String(process.env.SMOKE_EXPECT_COMMIT || '').trim();
 let failures = 0;
 let requestNumber = 0;
@@ -110,7 +109,17 @@ check('custom 404 does not redirect', !missing.location, missing.location || 'no
 const reserved404 = await get('/404.html');
 check('reserved 404 path still returns the custom body', reserved404.status === 404 && /Page not found/i.test(reserved404.text), 'HTTP ' + reserved404.status + ', ' + reserved404.text.length + ' bytes');
 
-const buildInfo = await get('/build-info.json');
+// A new Pages deployment can be live at one edge and not yet at another, so a
+// single read of the marker fails good deploys (the 2322601 run did exactly
+// that). Poll the marker for a bounded window before calling it wrong.
+let buildInfo = await get('/build-info.json');
+if (EXPECT_COMMIT) {
+  const deadline = Date.now() + 90_000;
+  while ((!buildInfo.json || buildInfo.json.commit !== EXPECT_COMMIT) && Date.now() < deadline) {
+    await new Promise((resolve) => setTimeout(resolve, 5000));
+    buildInfo = await get('/build-info.json');
+  }
+}
 check('build marker serves', buildInfo.status === 200 && buildInfo.json && typeof buildInfo.json.commit === 'string', 'HTTP ' + buildInfo.status);
 if (EXPECT_COMMIT) {
   check('build marker matches this commit', buildInfo.json && buildInfo.json.commit === EXPECT_COMMIT, buildInfo.json && buildInfo.json.commit);
@@ -139,6 +148,12 @@ checkNoStore('app script', appScript);
 const icon = await get('/icon-192.png');
 check('manifest icon serves', icon.status === 200 && icon.type.includes('image/png'), 'HTTP ' + icon.status + ' ' + icon.type);
 
+// The month the APIs should answer for follows the deployed page. A pinned
+// month starts failing the first post-deploy smoke check after a rollover.
+const monthly = await get('/monthly-report');
+const monthFromPage = (monthly.text.match(/id="report-month"[^>]*value="(\d{4}-\d{2})"/) || [])[1];
+const MONTH = process.env.SMOKE_MONTH || monthFromPage || '2026-11';
+
 const search = await get('/api/search');
 check('search API serves', search.status === 200 && search.json && Array.isArray(search.json.modes), 'HTTP ' + search.status);
 check('search API is never cached', /no-store/i.test(search.cacheControl), search.cacheControl);
@@ -156,7 +171,6 @@ check('data manifest is never cached', /no-store/i.test(data.cacheControl), data
 const openData = await get('/data');
 check('open data landing page serves', openData.status === 200 && /Reuse and citation/i.test(openData.text) && /"@type": "Dataset"/.test(openData.text), 'HTTP ' + openData.status);
 
-const monthly = await get('/monthly-report');
 check('monthly report serves static figures', monthly.status === 200 && /id="summary-cards"/.test(monthly.text) && !/Loading the official files/.test(monthly.text), 'HTTP ' + monthly.status);
 
 const archive = await get('/monthly-report/2026-10');
