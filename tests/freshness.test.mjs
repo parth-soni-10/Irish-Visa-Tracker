@@ -143,12 +143,24 @@ test("official surfaces keep their data-through separate from tracker observatio
 
 test("missed publication windows stay visible instead of rolling forward", () => {
   const freshness = loadFreshness(ROOT);
-  const abuja = freshness.bySlug.abuja;
-  assert.equal(abuja.due_at, "2026-11-14");
-  assert.equal(abuja.overdue, true);
-  assert.match(abuja.due_label, /Due since 14 November 2026 — not yet published/);
-  assert.match(abuja.next_due_label, /Next expected 28 November 2026/);
-  assert.equal(abuja.status_tone, "warn");
+  // A closed window names the window that was missed and the one it waits for
+  // next; it must never advance quietly to the newer date. Assert the rule for
+  // whichever offices the data leaves overdue, so a fresh file cannot fail the
+  // scrape gate just by closing a gap.
+  for (const office of freshness.offices) {
+    if (!office.due_at) continue;
+    if (office.overdue) {
+      assert.ok(office.due_at < freshness.as_of, `${office.slug}: a missed window closed before the data date`);
+      assert.equal(office.due_label, `Due since ${longDate(office.due_at)} — not yet published`, office.slug);
+      assert.ok(office.next_due_at > office.due_at, office.slug);
+      assert.equal(office.next_due_label, `Next expected ${longDate(office.next_due_at)}`, office.slug);
+      assert.equal(office.status_tone, "warn", office.slug);
+    } else {
+      assert.doesNotMatch(office.due_label, /Due since/, office.slug);
+      assert.equal(office.next_due_label, "", office.slug);
+      assert.match(office.due_label, /^Expected \d{1,2} [A-Z][a-z]+ \d{4}$/, office.slug);
+    }
+  }
 
   const newDelhi = freshness.bySlug["new-delhi"];
   assert.ok(newDelhi.due_at >= newDelhi.report_date);

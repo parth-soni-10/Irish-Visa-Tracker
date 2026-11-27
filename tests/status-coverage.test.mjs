@@ -93,7 +93,13 @@ test("status page answers search freshness and keeps provenance in details", asy
   const abuja = freshness.offices.find((office) => office.slug === "abuja");
   const abujaRow = rows.find((row) => row.includes(">Abuja<"));
   assert.ok(abujaRow, "Abuja row should render");
-  assert.ok(abujaRow.includes("Report overdue"), "Abuja reports the overdue state plainly");
-  assert.ok(abujaRow.includes("may not appear in a search yet"), "Abuja explains the search impact");
   assert.ok(abujaRow.includes(abuja.last_success_label), "Abuja last successful check");
+  if (abuja.overdue) {
+    assert.ok(abujaRow.includes("Report overdue"), "Abuja reports the overdue state plainly");
+    assert.ok(abujaRow.includes("may not appear in a search yet"), "Abuja explains the search impact");
+  } else {
+    // A file that closed the window must clear the overdue copy, not leave it.
+    assert.doesNotMatch(abujaRow, /Report overdue/, "Abuja is no longer overdue");
+    assert.ok(abujaRow.includes(abuja.status_label), "Abuja shows its published status");
+  }
 });

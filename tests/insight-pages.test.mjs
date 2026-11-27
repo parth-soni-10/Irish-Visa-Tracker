@@ -20,6 +20,13 @@ function longDate(value) {
   return `${Number(day)} ${MONTHS[Number(month) - 1]} ${year}`;
 }
 
+function weekdayLongDate(value) {
+  const raw = String(value).slice(0, 10);
+  const day = new Date(`${raw}T00:00:00Z`);
+  const names = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+  return `${names[day.getUTCDay()]} ${longDate(raw)}`;
+}
+
 function escapeRegExp(value) {
   return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
@@ -103,8 +110,17 @@ test("build renders the study, schedule, press, embed and community pages from t
   const schedule = await readFile(path.join(dist, "when-are-visa-decisions-published.html"), "utf8");
   assert.match(schedule, /Expected next publication by office/);
   assert.match(schedule, /Expected, not guaranteed/);
-  assert.match(schedule, /Due since Saturday 14 November 2026 — not yet published/);
-  assert.match(schedule, /Next expected Saturday 28 November 2026/);
+  // The page renders the windows the freshness model derives, so check the copy
+  // against the data this build read instead of a date that moves with it.
+  for (const office of freshness.offices) {
+    if (!office.due_at) continue;
+    const expected = office.due_at >= freshness.as_of ? office.due_at : office.next_due_at;
+    assert.ok(schedule.includes(weekdayLongDate(expected)), `${office.slug} expected window`);
+    if (office.overdue) {
+      assert.ok(schedule.includes(`Due since ${weekdayLongDate(office.due_at)} — not yet published`), `${office.slug} missed window`);
+      assert.ok(schedule.includes(`Next expected ${weekdayLongDate(office.next_due_at)}`), `${office.slug} next window`);
+    }
+  }
   assert.match(schedule, /Check health/);
   assert.match(schedule, /Last successful/);
   assert.match(schedule, /Observation history/);

@@ -6,10 +6,19 @@ import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 import * as cheerio from "cheerio";
 
-import { buildMonthlyPages } from "../tools/monthly-pages.mjs";
+import { buildMonthlyPages, loadMonthlyData } from "../tools/monthly-pages.mjs";
+import { buildMonthlyReport } from "../functions/report-data.js";
 
 const ROOT = fileURLToPath(new URL("../", import.meta.url));
 const SITE = "https://irishvisaupdatetracker.pages.dev";
+const MONTHS = ["January", "February", "March", "April", "May", "June", "July",
+  "August", "September", "October", "November", "December"];
+
+function longDate(value) {
+  const raw = String(value).slice(0, 10);
+  const [year, month, day] = raw.split("-");
+  return `${Number(day)} ${MONTHS[Number(month) - 1]} ${year}`;
+}
 
 async function build(t) {
   const temp = await mkdtemp(path.join(os.tmpdir(), "monthly-pages-"));
@@ -24,15 +33,21 @@ async function build(t) {
 test("the latest monthly report is static and keeps the interactive shell", async (t) => {
   const { dist, result } = await build(t);
   assert.equal(result.latestMonth, "2026-11");
+  // The cards print the selected month's totals, so read them from the same
+  // builder the page uses rather than pinning one day's figure.
+  const monthlyData = await loadMonthlyData(ROOT);
+  const latestReport = buildMonthlyReport(monthlyData.rows, result.latestMonth, monthlyData.officeList);
+  const datedTotal = latestReport.totals.total.toLocaleString("en-IE");
+  const dataThrough = longDate(latestReport.latest_date);
   assert.ok(result.pages >= 10, "expected the latest page and prior months");
 
   const html = await readFile(path.join(dist, "monthly-report.html"), "utf8");
   assert.match(html, /class="cards" id="summary-cards"/);
-  assert.match(html, /<div class="value">1,417<\/div>/);
+  assert.ok(html.includes(`<div class="value">${datedTotal}</div>`), `the dated-decisions card shows ${datedTotal}`);
   assert.match(html, /class="month-nav"/);
   assert.match(html, /href="\/monthly-report\/2026-10"/);
   assert.match(html, /id="report-month"[^>]*value="2026-11"/);
-  assert.match(html, /id="report-data-through">Data to 22 November 2026\. November 2026 is a partial month/);
+  assert.ok(html.includes(`id="report-data-through">Data to ${dataThrough}. November 2026 is a partial month`), "the report states the data-through date it was built from");
   assert.match(html, /id="digest-form"/);
   assert.match(html, /src="\/scripts\/monthly-report-1\.js"/);
   assert.doesNotMatch(html, /Loading the official files/);

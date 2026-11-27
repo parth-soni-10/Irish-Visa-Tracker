@@ -10,6 +10,7 @@ import {
   nextNewDelhiUpdate,
   officesCalendarResponse
 } from '../functions/calendar.js';
+import { loadFreshness } from '../tools/freshness.mjs';
 
 test('calendar uses the next weekday 11:00 IST window before the update', () => {
   // Monday 16 Nov 2026, 04:00 UTC = 09:30 IST.
@@ -43,6 +44,19 @@ test('calendar export is a valid one-event ICS with a caveat', () => {
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const NOW = new Date('2026-11-16T04:00:00Z');
+const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July',
+  'August', 'September', 'October', 'November', 'December'];
+function longDate(value) {
+  const raw = String(value).slice(0, 10);
+  const [year, month, day] = raw.split('-');
+  return `${Number(day)} ${MONTHS[Number(month) - 1]} ${year}`;
+}
+function weekdayLongDate(value) {
+  const raw = String(value).slice(0, 10);
+  const day = new Date(`${raw}T00:00:00Z`);
+  const names = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+  return `${names[day.getUTCDay()]} ${longDate(raw)}`;
+}
 const OFFICE_SLUGS = ['new-delhi', 'beijing', 'dublin', 'abu-dhabi', 'abuja', 'ankara'];
 const MANIFEST = {
   offices: [
@@ -131,14 +145,24 @@ test('Abuja calendar expected and due dates match the publication schedule page'
   const reports = JSON.parse(await readFile(path.join(ROOT, 'data/reports/index.json'), 'utf8'));
   const manifest = JSON.parse(await readFile(path.join(ROOT, 'data/data_manifest.json'), 'utf8'));
   const schedulePage = await readFile(path.join(ROOT, 'when-are-visa-decisions-published.html'), 'utf8');
-  const ics = buildOfficeCalendar(new Date('2026-11-21T14:54:06Z'), { reports, manifest });
+  const freshness = loadFreshness(ROOT);
+  const abuja = freshness.bySlug.abuja;
+  // Build at the data date, not a pasted clock, so the feed and the page
+  // describe the same windows however far the data has moved.
+  const ics = buildOfficeCalendar(new Date(`${freshness.as_of}T00:01:00Z`), { reports, manifest });
+  const dueKey = abuja.due_at.replace(/-/g, '');
+  const windowDate = abuja.due_at >= freshness.as_of ? abuja.due_at : abuja.next_due_at;
+  const windowKey = windowDate.replace(/-/g, '');
 
-  assert.match(schedulePage, /Due since Saturday 14 November 2026/);
-  assert.match(schedulePage, /Next expected Saturday 28 November 2026/);
-  assert.match(ics, /X-IRISH-VISA-DUE-DATE:20261114/);
-  assert.match(ics, /X-IRISH-VISA-NEXT-DUE-DATE:20261128/);
-  assert.match(ics, /UID:expected-abuja-20261128@irishvisaupdatetracker\.pages\.dev/);
-  assert.doesNotMatch(ics, /UID:expected-abuja-2026112[12]@/);
+  if (abuja.overdue) {
+    assert.ok(schedulePage.includes(`Due since ${weekdayLongDate(abuja.due_at)}`), 'the page names the missed window');
+    assert.ok(schedulePage.includes(`Next expected ${weekdayLongDate(abuja.next_due_at)}`), 'the page names the next window');
+  } else {
+    assert.ok(schedulePage.includes(weekdayLongDate(windowDate)), 'the page names the expected window');
+  }
+  assert.match(ics, new RegExp(`X-IRISH-VISA-DUE-DATE:${dueKey}`));
+  assert.match(ics, new RegExp(`X-IRISH-VISA-NEXT-DUE-DATE:${windowKey}`));
+  assert.match(ics, new RegExp(`UID:expected-abuja-${windowKey}@irishvisaupdatetracker\\.pages\\.dev`));
 });
 
 test('all-office calendar still has expected events for every fixed-schedule office without report data', () => {
