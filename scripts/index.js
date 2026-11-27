@@ -2984,13 +2984,47 @@
                 var fresh = meta && meta.freshness;
                 if (!fresh) return '';
                 var parts = [];
-                if (fresh.cadence_days) parts.push('about every ' + Number(fresh.cadence_days) + ' days');
-                var expected = fresh.due_label || fresh.next_due_label ||
-                    (fresh.due_at ? 'Expected ' + lookupFormatDate(fresh.due_at) : '');
-                if (expected) parts.push(expected);
+                var due = fresh.due_at ? String(fresh.due_at).slice(0, 10) : '';
+                // New Delhi publishes on weekdays, and the visitor's UTC date
+                // can still be the previous day while the office has already
+                // opened. Judge "not yet published" in the office's own day so
+                // the card never says "expected" about a date that has passed.
+                var today = lookupNewDelhiToday();
+                if (due && today && due < today) {
+                    parts.push('due since ' + lookupFormatDate(due) + ' \u2014 not yet published');
+                    if (fresh.slug === 'new-delhi') {
+                        parts.push('next expected ' + lookupFormatDate(lookupNextWeekday(today)));
+                    } else if (fresh.next_due_label) {
+                        parts.push(fresh.next_due_label);
+                    }
+                } else {
+                    if (fresh.cadence_days) parts.push('about every ' + Number(fresh.cadence_days) + ' days');
+                    var expected = due || (fresh.next_due_at ? String(fresh.next_due_at).slice(0, 10) : '');
+                    if (expected) parts.push('expected ' + lookupFormatDate(expected));
+                }
                 if (!parts.length) return '';
                 return '<div class="lookup-result-fact"><dt>Next report</dt><dd>' +
                     escapeHtml(parts.join(' \u00b7 ')) + '</dd></div>';
+            }
+
+            function lookupNewDelhiToday() {
+                try {
+                    return new Intl.DateTimeFormat('en-CA', {
+                        timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit'
+                    }).format(new Date());
+                } catch (error) {
+                    return new Date().toISOString().slice(0, 10);
+                }
+            }
+
+            function lookupNextWeekday(value) {
+                var date = new Date(String(value) + 'T00:00:00Z');
+                for (var i = 0; i < 8; i += 1) {
+                    date.setUTCDate(date.getUTCDate() + 1);
+                    var day = date.getUTCDay();
+                    if (day !== 0 && day !== 6) break;
+                }
+                return date.toISOString().slice(0, 10);
             }
 
             function lookupCoverageSummaryHTML(metas) {
