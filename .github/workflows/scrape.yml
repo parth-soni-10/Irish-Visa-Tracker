@@ -2,16 +2,15 @@ name: Scrape Visa Decisions
 
 on:
   workflow_dispatch: {}   # manual "Run workflow" button - still available for on-demand runs
+  # One poll per publication window, just after it closes, so a file that
+  # lands anywhere in its office's window is caught the same day. Windows come
+  # from shared/publication-schedule.js; the old 30-minute ladder polled mostly
+  # before New Delhi's window and multiplied no-file runs, commit races and
+  # notifications.
   schedule:
-    - cron: '30 2 * * 1-5'  # Mon–Fri 08:00 IST
-    - cron: '0 3 * * 1-5'   # Mon–Fri 08:30 IST
-    - cron: '30 3 * * 1-5'  # Mon–Fri 09:00 IST
-    - cron: '0 4 * * 1-5'   # Mon–Fri 09:30 IST
-    - cron: '30 4 * * 1-5'  # Mon–Fri 10:00 IST
-    - cron: '0 5 * * 1-5'   # Mon–Fri 10:30 IST
-    - cron: '30 5 * * 1-5'  # Mon–Fri 11:00 IST
-    - cron: '30 2 * * 6,0'  # Sat–Sun 08:00 IST
-    - cron: '30 6 * * 6,0'  # Sat–Sun 12:00 IST
+    - cron: '30 6 * * 1-5'   # New Delhi window closes (05:30–06:30 UTC, weekdays)
+    - cron: '0 8 * * 0,2,5,6' # Dublin Tue, Abu Dhabi Fri, Abuja Sat, Ankara Sun (06:00–08:00 UTC)
+    # Beijing has no fixed schedule; whichever run follows a snapshot catches it.
 
 jobs:
   scrape:
