@@ -284,7 +284,9 @@ export async function handleTriggerScraper(request, env) {
         'X-GitHub-Api-Version': '2022-11-28',
         'User-Agent': 'irish-visa-tracker-admin'
       },
-      body: JSON.stringify({ ref: env.GITHUB_DISPATCH_REF || 'main' })
+      // scrape.yml skips dispatches that do not confirm; this authenticated
+      // admin path is allowed to run it.
+      body: JSON.stringify({ ref: env.GITHUB_DISPATCH_REF || 'main', inputs: { confirm: 'run' } })
     }
   );
   if (!response.ok) {

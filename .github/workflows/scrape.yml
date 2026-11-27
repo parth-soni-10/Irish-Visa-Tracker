@@ -1,7 +1,15 @@
 name: Scrape Visa Decisions
 
 on:
-  workflow_dispatch: {}   # manual "Run workflow" button - still available for on-demand runs
+  # The confirm input is the kill switch for blind API dispatches: a caller that
+  # sends no inputs still creates a run, but the job below skips it. The UI
+  # requires the field, so a human "Run workflow" click must type the word.
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type run to start a manual scrape'
+        required: true
+        type: string
   # One poll per publication window, just after it closes, so a file that
   # lands anywhere in its office's window is caught the same day. Windows come
   # from shared/publication-schedule.js; the old 30-minute ladder polled mostly
@@ -14,6 +22,10 @@ on:
 
 jobs:
   scrape:
+    # Scheduled runs never see the input; a dispatch without confirm=run is
+    # skipped rather than executed, so an accidental or unknown dispatcher
+    # cannot start a scrape (and a skipped job sends no failure notification).
+    if: github.event_name != 'workflow_dispatch' || github.event.inputs.confirm == 'run'
     runs-on: ubuntu-latest
     permissions:
       contents: write   # needed to commit data/*.json back to the repo
