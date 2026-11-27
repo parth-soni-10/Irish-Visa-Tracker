@@ -239,6 +239,7 @@ export async function onRequestPost(context) {
     const body = await request.json();
     const query = body.query; // Text query for fuzzy matching
     const mode = body.mode || 'hybrid'; // 'fuzzy', 'nearest', 'filter', 'hybrid'
+    const hasQuery = Boolean(query && String(query).trim());
 
     // Accept both { filters: { embassy } } and the flat fields posted by the
     // advanced-search form. Before this, the office/decision selects were
@@ -257,7 +258,9 @@ export async function onRequestPost(context) {
     // "020" and the Load more button never reports another page.
     const limit = Math.min(100, Math.max(1, Number(body.limit) || 20));
     const offset = Math.max(0, Number(body.offset) || 0);
-    const sort = body.sort || 'date_desc';
+    // A text query is ranked by relevance unless the caller asks for a
+    // specific order; a filter-only request keeps the historical date order.
+    const sort = body.sort || (hasQuery ? 'relevance' : 'date_desc');
     
     // Load all decisions and their office-level provenance
     const loaded = await loadAllDecisions(request, env);
@@ -266,11 +269,10 @@ export async function onRequestPost(context) {
     
     // Build search results based on mode
     let results = [];
-    const hasQuery = Boolean(query && query.trim());
     
     if (mode === 'fuzzy' || mode === 'hybrid') {
       if (hasQuery) {
-        results = fuzzySearch(allDecisions, query, limit * 2, filters);
+        results = fuzzySearch(allDecisions, query, filters);
       }
     }
     
@@ -301,8 +303,9 @@ export async function onRequestPost(context) {
     // Get total count for pagination
     const total = results.length;
     
-    // Apply pagination
-    const paginated = results.slice(offset, offset + limit);
+    // Apply pagination. Ranking fields are internal-only, so they never reach
+    // the response body.
+    const paginated = results.slice(offset, offset + limit).map(publicResult);
     
     return new Response(JSON.stringify({
       success: true,
@@ -335,42 +338,73 @@ export async function onRequestPost(context) {
   }
 }
 
+// Field weights decide what "more relevant" means. Matches in a specific field
+// (an application number, an office, a visa type) count for more than a match
+// in a label every other row also carries, so "approved beijing" puts Beijing
+// approvals above newer approvals from another office.
+const FIELD_WEIGHTS = Object.freeze({
+  number: 4,
+  visa_type: 3,
+  embassy: 3,
+  country: 3,
+  decision: 1,
+  application_date: 1
+});
+
+const SCORED_FIELDS = Object.keys(FIELD_WEIGHTS);
+
+function digitsOf(value) {
+  return String(value || '').replace(/\D/g, '');
+}
+
+// An application number a visitor types should outrank a text coincidence.
+// Exact digits beat a prefix, a prefix beats the digits appearing mid-number,
+// and a longer typed prefix beats a shorter one.
+function numberScore(number, queryDigits) {
+  const digits = digitsOf(number).replace(/^0+/, '');
+  const wanted = queryDigits.replace(/^0+/, '');
+  if (!digits || wanted.length < 3) return 0;
+  if (digits === wanted) return 100;
+  if (digits.startsWith(wanted)) {
+    return 60 + Math.round(30 * wanted.length / digits.length);
+  }
+  if (digits.includes(wanted)) return 30;
+  return 0;
+}
+
 // Fuzzy text search
-function fuzzySearch(decisions, query, limit, filters) {
-  const terms = query.toLowerCase().split(/\s+/).filter(t => t.length > 1);
+function fuzzySearch(decisions, query, filters) {
+  const terms = String(query).toLowerCase().split(/\s+/).filter(t => t.length > 1);
   if (terms.length === 0) return [];
-  
+  const queryDigits = digitsOf(query);
+
   // Apply filters first
-  let filtered = applyFilters(decisions, filters);
-  
-  // Score each decision based on term matches
-  const scored = filtered.map(decision => {
+  const filtered = applyFilters(decisions, filters);
+
+  // Score each decision on field-weighted term hits plus number proximity
+  const scored = [];
+  for (const decision of filtered) {
+    const fields = {
+      number: String(decision.number || '').toLowerCase(),
+      visa_type: String(decision.visa_type || '').toLowerCase(),
+      embassy: String(decision.embassy || '').toLowerCase(),
+      country: String(decision.country || '').toLowerCase(),
+      decision: String(decision.decision || '').toLowerCase(),
+      application_date: String(decision.application_date || '').toLowerCase()
+    };
+
     let score = 0;
-    const searchableText = [
-      decision.number || '',
-      decision.decision || '',
-      decision.embassy || '',
-      decision.visa_type || '',
-      decision.country || '',
-      decision.application_date || ''
-    ].join(' ').toLowerCase();
-    
     for (const term of terms) {
-      if (searchableText.includes(term)) {
-        score += 1;
-        // Bonus for exact matches in number
-        if (decision.number && decision.number.toLowerCase().includes(term)) score += 2;
-        if (decision.decision && decision.decision.toLowerCase().includes(term)) score += 1;
+      for (const field of SCORED_FIELDS) {
+        if (fields[field] && fields[field].includes(term)) score += FIELD_WEIGHTS[field];
       }
     }
-    
-    return { ...decision, _search_score: score };
-  });
-  
-  // Sort by score descending, then by date
-  return scored
-    .filter(d => d._search_score > 0)
-    .sort((a, b) => b._search_score - a._search_score || new Date(b.date) - new Date(a.date));
+    score += numberScore(fields.number, queryDigits);
+
+    if (score > 0) scored.push({ ...decision, _search_score: score });
+  }
+
+  return scored.sort(relevanceSort);
 }
 
 // Nearest neighbor search using application number proximity
@@ -427,6 +461,26 @@ function applyFilters(decisions, filters) {
   });
 }
 
+// Relevance order: scored rows first, then nearest-neighbour rows by distance
+// (fuzzy hits carry no distance), then newest, then number.
+function relevanceSort(a, b) {
+  return ((b._search_score || 0) - (a._search_score || 0)) ||
+    (distanceOf(a) - distanceOf(b)) ||
+    (new Date(b.date) - new Date(a.date)) ||
+    String(a.number || '').localeCompare(String(b.number || ''));
+}
+
+function distanceOf(row) {
+  return typeof row._distance === 'number' ? row._distance : Infinity;
+}
+
+// Drop internal ranking fields so the public row shape is unchanged.
+function publicResult(row) {
+  if (!row || typeof row !== 'object') return row;
+  const { _search_score, _distance, ...rest } = row;
+  return rest;
+}
+
 // Merge and deduplicate results
 function mergeResults(results1, results2) {
   const seen = new Set();
@@ -448,6 +502,8 @@ function applySorting(results, sort) {
   const sorted = [...results];
   
   switch (sort) {
+    case 'relevance':
+      return sorted.sort(relevanceSort);
     case 'date_asc':
       return sorted.sort((a, b) => new Date(a.date) - new Date(b.date));
     case 'date_desc':
@@ -476,7 +532,7 @@ export async function onRequestGet(context) {
         'embassy', 'visa_type', 'decision', 'date_from', 'date_to',
         'application_date_from', 'application_date_to', 'country', 'number_range'
       ],
-      sort_options: ['date_desc', 'date_asc', 'number_asc', 'number_desc', 'embassy', 'decision'],
+      sort_options: ['relevance', 'date_desc', 'date_asc', 'number_asc', 'number_desc', 'embassy', 'decision'],
       provenance: [
         'source', 'source_kind', 'source_label', 'source_url', 'source_file',
         'report_date', 'official_report_date', 'observed_date', 'observed_at',

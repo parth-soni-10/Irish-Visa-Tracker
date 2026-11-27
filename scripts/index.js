@@ -1813,6 +1813,7 @@
                     '</select></div>' +
                     '<div class="search-field"><label for="search-sort">Sort by</label>' +
                     '<select id="search-sort" name="sort">' +
+                    '<option value="relevance">Best match</option>' +
                     '<option value="date_desc">Date (newest first)</option>' +
                     '<option value="date_asc">Date (oldest first)</option>' +
                     '<option value="number_desc">Application number (desc)</option>' +
@@ -3258,7 +3259,7 @@
                         mode: 'fuzzy',
                         filters: filters,
                         limit: 100,
-                        sort: 'date_desc'
+                        sort: 'relevance'
                     })
                 }).then(function(res) {
                     if (!res.ok) throw new Error('Search HTTP ' + res.status);
