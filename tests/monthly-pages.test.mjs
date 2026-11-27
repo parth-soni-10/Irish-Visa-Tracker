@@ -20,6 +20,34 @@ function longDate(value) {
   return `${Number(day)} ${MONTHS[Number(month) - 1]} ${year}`;
 }
 
+function monthKey(value) {
+  return String(value).slice(0, 7);
+}
+
+function monthLabel(month) {
+  const [year, index] = month.split("-");
+  return `${MONTHS[Number(index) - 1]} ${year}`;
+}
+
+function shiftMonth(month, delta) {
+  const [year, index] = month.split("-").map(Number);
+  const date = new Date(Date.UTC(year, index - 1 + delta, 1));
+  return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}`;
+}
+
+// The current month is the month of the newest dated decision, never a literal:
+// on the first of a month the page must follow the data, not the calendar.
+async function monthly() {
+  const data = await loadMonthlyData(ROOT);
+  const latestMonth = monthKey(data.latestDate);
+  return {
+    data,
+    latestMonth,
+    previousMonth: shiftMonth(latestMonth, -1),
+    report: buildMonthlyReport(data.rows, latestMonth, data.officeList),
+  };
+}
+
 async function build(t) {
   const temp = await mkdtemp(path.join(os.tmpdir(), "monthly-pages-"));
   t.after(() => rm(temp, { recursive: true, force: true }));
@@ -32,22 +60,30 @@ async function build(t) {
 
 test("the latest monthly report is static and keeps the interactive shell", async (t) => {
   const { dist, result } = await build(t);
-  assert.equal(result.latestMonth, "2026-11");
+  const { latestMonth, previousMonth, report } = await monthly();
+  assert.equal(result.latestMonth, latestMonth);
+  assert.match(result.latestMonth, /^\d{4}-\d{2}$/);
   // The cards print the selected month's totals, so read them from the same
   // builder the page uses rather than pinning one day's figure.
-  const monthlyData = await loadMonthlyData(ROOT);
-  const latestReport = buildMonthlyReport(monthlyData.rows, result.latestMonth, monthlyData.officeList);
-  const datedTotal = latestReport.totals.total.toLocaleString("en-IE");
-  const dataThrough = longDate(latestReport.latest_date);
+  const datedTotal = report.totals.total.toLocaleString("en-IE");
+  const dataThrough = longDate(report.latest_date);
+  const partialCopy = report.partial_month
+    ? ` ${monthLabel(latestMonth)} is a partial month: totals cover dated decisions recorded so far.`
+    : "";
   assert.ok(result.pages >= 10, "expected the latest page and prior months");
 
   const html = await readFile(path.join(dist, "monthly-report.html"), "utf8");
   assert.match(html, /class="cards" id="summary-cards"/);
   assert.ok(html.includes(`<div class="value">${datedTotal}</div>`), `the dated-decisions card shows ${datedTotal}`);
   assert.match(html, /class="month-nav"/);
-  assert.match(html, /href="\/monthly-report\/2026-10"/);
-  assert.match(html, /id="report-month"[^>]*value="2026-11"/);
-  assert.ok(html.includes(`id="report-data-through">Data to ${dataThrough}. November 2026 is a partial month`), "the report states the data-through date it was built from");
+  assert.ok(html.includes(`href="/monthly-report/${previousMonth}"`), `the month nav links the previous month, ${previousMonth}`);
+  assert.match(html, new RegExp(`id="report-month"[^>]*value="${latestMonth}"`));
+  assert.ok(html.includes(`id="report-data-through">Data to ${dataThrough}.${partialCopy}`), "the report states the data-through date it was built from");
+  if (report.partial_month) {
+    assert.match(html, new RegExp(`${monthLabel(latestMonth)} is a partial month`));
+  } else {
+    assert.doesNotMatch(html, /is a partial month/);
+  }
   assert.match(html, /id="digest-form"/);
   assert.match(html, /src="\/scripts\/monthly-report-1\.js"/);
   assert.doesNotMatch(html, /Loading the official files/);
@@ -70,7 +106,7 @@ test("the latest monthly report is static and keeps the interactive shell", asyn
   const article = monthlyGraph.find((node) => node['@type'] === 'Article');
   const breadcrumb = monthlyGraph.find((node) => node['@type'] === 'BreadcrumbList');
   assert.ok(article, 'latest monthly report needs Article schema');
-  assert.equal(article.datePublished, '2026-11-01');
+  assert.equal(article.datePublished, `${latestMonth}-01`);
   assert.equal(article.author.name, 'Parth Soni');
   assert.equal(article.publisher.logo.url, `${SITE}/icon-512.png`);
   assert.equal(breadcrumb.itemListElement.length, 2);
@@ -112,31 +148,34 @@ test("offices with no dated rows leave their dated cells empty", async (t) => {
 
 test("prior months are self-canonical archive pages without a duplicate current month", async (t) => {
   const { dist } = await build(t);
-  const archive = await readFile(path.join(dist, "monthly-report", "2026-10.html"), "utf8");
-  assert.match(archive, /Data to 30 October 2026/);
-  assert.doesNotMatch(archive, /October 2026 is a partial month/);
-  assert.match(archive, /<title>Irish visa decisions — October 2026 \| Monthly report<\/title>/);
-  assert.match(archive, new RegExp(`<link rel="canonical" href="${SITE}/monthly-report/2026-10">`));
-  assert.match(archive, /assets\/social\/month-2026-10\.png/);
-  assert.doesNotMatch(archive, /href="\/monthly-report\/2026-11"/);
+  const { data, latestMonth, previousMonth } = await monthly();
+  const archiveReport = buildMonthlyReport(data.rows, previousMonth, data.officeList);
+  const before = shiftMonth(previousMonth, -1);
+  const archive = await readFile(path.join(dist, "monthly-report", `${previousMonth}.html`), "utf8");
+  assert.ok(archive.includes(`Data to ${longDate(archiveReport.latest_date)}`), "the archive states its own data-through date");
+  assert.doesNotMatch(archive, new RegExp(`${monthLabel(previousMonth)} is a partial month`));
+  assert.ok(archive.includes(`<title>Irish visa decisions — ${monthLabel(previousMonth)} | Monthly report</title>`));
+  assert.ok(archive.includes(`<link rel="canonical" href="${SITE}/monthly-report/${previousMonth}">`));
+  assert.ok(archive.includes(`assets/social/month-${previousMonth}.png`));
+  assert.ok(!archive.includes(`href="/monthly-report/${latestMonth}"`), "the archive must not advertise the current month as an archive");
   assert.match(archive, /By visa office/);
   assert.match(archive, /Daily dated decisions/);
   assert.doesNotMatch(archive, /Loading/);
-  assert.match(archive, /href="\/monthly-report\/2026-09"/);
+  assert.ok(archive.includes(`href="/monthly-report/${before}"`), `the archive links the month before it, ${before}`);
   const archive$ = cheerio.load(archive);
   const archiveGraph = JSON.parse(archive$('script[data-monthly-schema]').text())['@graph'];
   assert.ok(archiveGraph.some((node) => node['@type'] === 'Article'));
   const archiveBreadcrumb = archiveGraph.find((node) => node['@type'] === 'BreadcrumbList');
   assert.equal(archiveBreadcrumb.itemListElement.length, 3);
-  assert.equal(archiveBreadcrumb.itemListElement[2].name, 'October 2026');
+  assert.equal(archiveBreadcrumb.itemListElement[2].name, monthLabel(previousMonth));
 
   await assert.rejects(
-    stat(path.join(dist, "monthly-report", "2026-11.html")),
+    stat(path.join(dist, "monthly-report", `${latestMonth}.html`)),
     /ENOENT/,
     "the current month belongs on /monthly-report, not a duplicate archive URL",
   );
 
   const sitemap = await readFile(path.join(dist, "sitemap.xml"), "utf8");
-  assert.match(sitemap, new RegExp(`${SITE}/monthly-report/2026-10`));
-  assert.doesNotMatch(sitemap, new RegExp(`${SITE}/monthly-report/2026-11<`));
+  assert.ok(sitemap.includes(`${SITE}/monthly-report/${previousMonth}`), "the archive is in the sitemap");
+  assert.ok(!sitemap.includes(`${SITE}/monthly-report/${latestMonth}<`), "the current month is not duplicated in the sitemap");
 });
