@@ -392,5 +392,9 @@
 <script src="/scripts/index-seo.js" defer></script>
 <script src="/scripts/index-sw.js" defer></script>
   <script src="/site-chrome.js" defer></script>
+  <!-- One explicit state model for the tab, alert-permission and freshness
+       flows. Both files only read what scripts/index.js already writes. -->
+  <script src="/scripts/state-machine.js" defer></script>
+  <script src="/scripts/app-machines.js" defer></script>
 </body>
 </html>

@@ -181,3 +181,13 @@ current. Community timelines and projections are estimates, not official process
 
 For an individual immigration case, contact the Embassy of Ireland in New Delhi, ISD or a
 qualified immigration adviser. This project cannot intervene in an application.
+
+## Page state
+
+The page's state is readable without a screenshot: `data-<machine>-state` on the
+host (`data-tab-state="history"`), a bubbling `machine:change` event, and
+`window.StateMachine.snapshot()` from the console.
+
+- `tab`: `search`, `history`, `alerts`, `saved`, `tools`
+- `alerts`: `unsupported`, `default`, `granted`, `denied` (Notification.permission)
+- `freshness`: `unknown`, `current`, `stale`, `error`

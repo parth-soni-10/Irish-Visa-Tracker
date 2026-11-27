@@ -14,9 +14,9 @@
 - D1 binding: `DB`, database `irish-visa-tracker-submissions`.
 - Static data: `data/*.json`. The Pages assets and the router serve it with a
   short cache; generated decisions are committed by the scraper workflow.
-- Email: the app posts a provider-neutral payload to `EMAIL_WEBHOOK_URL`; the
-  deployment’s `/api/email/send` bridge authenticates that call and uses the
-  server-side Resend key. Never expose mail credentials to the browser.
+- Digest: the tracker sends no email. The monthly report is announced as one
+  post in the Telegram channel (`TELEGRAM_CHANNEL_ID`); per-application alerts
+  use Telegram or browser push.
 - Scheduled work: GitHub Actions, because Pages Functions do not support cron
   triggers. Alert and digest endpoints require `X-Cron-Secret`.
 
@@ -80,3 +80,19 @@ publish or rotate production secrets without explicit authorization.
 
 Native mobile is deferred; the PWA is the supported mobile product. Keep the
 native plan in `IMPLEMENTATION_PLAN.md` as a future option, not active work.
+
+## Explicit state machines
+
+`scripts/state-machine.js` names the states the tracker already moves through
+and projects them onto the DOM; `scripts/app-machines.js` declares the machines.
+Both are observers - they read what `scripts/index.js` writes and never drive it.
+
+| machine | host | states | source of truth |
+| --- | --- | --- | --- |
+| tab | `#visa-dash` | search, history, alerts, saved, tools | `.navpill.active` |
+| alerts | `#visa-dash` | unsupported, default, granted, denied | `Notification.permission` |
+| freshness | `#landing-freshness` | unknown, current, stale, error | the landing freshness sentence |
+
+`data-<machine>-state` on the host is the inspection view, a bubbling
+`machine:change` event is the runtime view, and `window.StateMachine.snapshot()`
+is the agent view.
