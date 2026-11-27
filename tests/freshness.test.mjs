@@ -6,6 +6,8 @@ import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 
 import { loadFreshness } from "../tools/freshness.mjs";
+import { loadMonthlyData } from "../tools/monthly-pages.mjs";
+import { buildMonthlyReport } from "../functions/report-data.js";
 
 const ROOT = fileURLToPath(new URL("../", import.meta.url));
 // Page assertions read the build output when a caller provides it. The scrape
@@ -214,5 +216,17 @@ test("the daily page separates official file, observed day and decision date", a
 test("the latest monthly page states its data-through date and partial month", async () => {
   const html = await readPage("monthly-report.html");
   assert.match(html, /id="report-data-through">Data to \d{1,2} [A-Z][a-z]+ \d{4}\./);
-  assert.match(html, /November 2026 is a partial month: totals cover dated decisions recorded so far\./);
+  // "The latest month" is the month of the newest dated row, so it rolls over
+  // as soon as the first December decision lands. Read it from the data instead
+  // of pinning a calendar month, which would freeze this gate the same way.
+  const data = await loadMonthlyData(ROOT);
+  const month = String(data.latestDate).slice(0, 7);
+  const report = buildMonthlyReport(data.rows, month, data.officeList);
+  if (report.partial_month) {
+    const label = longDate(`${month}-01`).replace(/^1 /, "");
+    const copy = `${label} is a partial month: totals cover dated decisions recorded so far.`;
+    assert.ok(html.includes(copy), `the latest page should call ${label} a partial month`);
+  } else {
+    assert.doesNotMatch(html, /is a partial month/);
+  }
 });
