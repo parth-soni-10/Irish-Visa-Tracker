@@ -47,7 +47,6 @@
     var end = new Date(Date.UTC(Number(report.month.slice(0, 4)), Number(report.month.slice(5, 7)), 0)).toISOString().slice(0, 10);
     return latest < end;
   }
-  function statusClass(key) { return ['expired', 'critical', 'warning', 'notice', 'ok', 'missing'].indexOf(key) >= 0 ? key : 'missing'; }
 
   function showStatus(message, error) {
     statusEl.textContent = message || '';

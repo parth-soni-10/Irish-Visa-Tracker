@@ -350,10 +350,10 @@ ${monthlySchemaBlock(report, route, title, description)}
       </table></div>
     </section>
     ${storyPackage(report, route)}
-    <section class="panel" aria-labelledby="digest-heading">
-      <h2 id="digest-heading">Get the monthly report by email</h2>
-      <p class="note">One email a month with the report and the week’s change summary. Double opt-in; unsubscribe from every email.</p>
-      <p><a class="button" href="/monthly-report?utm_source=monthly_archive&amp;utm_medium=referral&amp;utm_campaign=monthly_email#digest-heading">Subscribe on the latest report</a></p>
+    <section class="panel" aria-labelledby="latest-report-heading">
+      <h2 id="latest-report-heading">Latest monthly report</h2>
+      <p class="note">Every month is rebuilt from the official files, so a correction or a late report can change a figure quoted from an earlier copy.</p>
+      <p><a class="button" href="/monthly-report?utm_source=monthly_archive&amp;utm_medium=referral&amp;utm_campaign=monthly_report">Open the latest report</a></p>
     </section>
     <p class="note"><a href="/monthly-report">Latest monthly report</a> · <a href="/api/reports/monthly?month=${report.month}">Download this month’s JSON</a> · <a href="/data">Open data</a></p>
     ${freshnessFooterHTML(freshness)}

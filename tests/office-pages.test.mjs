@@ -45,7 +45,8 @@ test("office pages carry unique crawl metadata and working schema", async () => 
     assert.match(html, COUNTRY_INTENT[page.slug], `${page.file}: country intent missing from visible copy`);
     assert.match(html, new RegExp(`<link rel="alternate" type="text/markdown" href="${page.route}\\.md"`), page.file);
     assert.match(html, new RegExp(`og:image" content="${SITE}/assets/social/office-${page.slug}\\.png"`), page.file);
-    assert.match(html, /Get the monthly report by email/, page.file);
+    assert.match(html, /href="\/monthly-report\?utm_source=office_page/, page.file);
+    assert.doesNotMatch(html, /by email/i, page.file);
     assert.match(html, /data-office="decisions"/);
     assert.match(html, /data-office="latest-date"/);
     assert.match(html, /data-office="source-file"/);

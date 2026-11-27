@@ -245,8 +245,6 @@ tbody tr:hover td { background: var(--raised); }
 .month-nav a[aria-current="page"] { color: var(--ink); border-bottom-color: var(--ink); background: transparent; }
 .note-tight { margin-top: -4px; }
 .control-grow { flex: 1 1 180px; }
-.subscribe { display: flex; align-items: end; flex-wrap: wrap; gap: 8px; }
-.subscribe input { flex: 1 1 220px; min-width: 0; }
 .bars { display: flex; align-items: end; gap: 4px; height: 110px; padding: 8px 0 0; overflow-x: auto; }
 .bar { position: relative; flex: 1; min-width: 8px; border-radius: 2px 2px 0 0; background: #a3a3a3; }
 .bar span { position: absolute; right: 0; bottom: -20px; left: 0; color: var(--faint); font-size: 9px; text-align: center; white-space: nowrap; }
@@ -273,10 +271,8 @@ footer.site a { color: var(--muted); }
   .controls .control-grow,
   .controls button,
   .controls .button { width: 100%; }
-  input[type=month],
-  input[type=email] { width: 100%; min-height: 44px; font-size: 16px; }
+  input[type=month] { width: 100%; min-height: 44px; font-size: 16px; }
   button, .button { min-height: 44px; }
-  .subscribe input { flex-basis: 100%; }
   .table-wrap { overflow: visible; }
   .table-wrap table { display: block; min-width: 0; font-size: 14px; }
   .table-wrap thead {
