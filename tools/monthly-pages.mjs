@@ -401,7 +401,15 @@ function injectLatest(shell, report, months, latestMonth, freshness) {
   // The story package is regenerated each build; drop an earlier copy first so
   // the checked-in shell cannot accumulate one per month.
   html = html.replace(/<section class="panel" id="story-package"[\s\S]*?<\/section>\s*/g, '');
-  html = html.replace(/(\s*<section class="panel" aria-labelledby="digest-heading">)/, `\n    ${storyPackage(report)}$1`);
+  // The checked-in shell has no digest section to anchor to, so append the
+  // package before </main> when that target is absent. Without the fallback the
+  // page shipped no #story-package and every /monthly-report#story-package
+  // link on the site pointed at nothing.
+  if (/(<section class="panel" aria-labelledby="digest-heading">)/.test(html)) {
+    html = html.replace(/(\s*<section class="panel" aria-labelledby="digest-heading">)/, `\n    ${storyPackage(report)}$1`);
+  } else {
+    html = html.replace('</main>', `${storyPackage(report)}\n</main>`);
+  }
   html = html.replace(/<nav class="month-nav"[\s\S]*?<\/nav>\s*/g, '');
   html = html.replace('  <div class="cards" id="summary-cards"', `  ${archiveNav(months, report.month, latestMonth)}\n\n  <div class="cards" id="summary-cards"`);
   // The interactive shell is also a checked-in generated page, so a previous

@@ -63,6 +63,28 @@ test('office Markdown is negotiated from the clean URL too', async () => {
   assert.match(await response.text(), /44,284/);
 });
 
+test('status Markdown is built from the manifest and freshness files', async () => {
+  const response = await router.fetch(new Request('https://tracker.test/status.md'),
+    { ASSETS: assetsWith(MANIFEST, FRESHNESS) });
+  assert.equal(response.status, 200);
+  const body = await response.text();
+  assert.match(body, /# Irish visa decision data status/);
+  assert.match(body, /New Delhi.*latest official report 26 November 2026/);
+  assert.match(body, /44,284 decisions \(37,290 approved, 6,994 refused\)/);
+  assert.match(body, /12 July 2026 to 27 November 2026 \(daily tracker\)/);
+  assert.match(body, /data\/search_index\.json/);
+});
+
+test('help Markdown answers the common questions without assets', async () => {
+  const response = await router.fetch(new Request('https://tracker.test/help.md'),
+    { ASSETS: { async fetch() { return new Response('missing', { status: 404 }); } } });
+  assert.equal(response.status, 200);
+  const body = await response.text();
+  assert.match(body, /# How to check an Irish visa application/);
+  assert.match(body, /A missing number is not a refusal/);
+  assert.match(body, /\/office/);
+});
+
 test('office Markdown falls back to the static document without assets', async () => {
   const response = await router.fetch(new Request('https://tracker.test/beijing-visa-decisions.md'),
     { ASSETS: { async fetch() { return new Response('missing', { status: 404 }); } } });

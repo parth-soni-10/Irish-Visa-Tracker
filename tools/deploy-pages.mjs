@@ -1048,7 +1048,8 @@ export function injectLatestReports(options = {}) {
       ? `<td data-label="${label}">${timeHTML(value)}</td>`
       : `<td data-label="${label}">—</td>`;
     return `<tr data-freshness-slug="${office.slug}" data-freshness-view="status">` +
-      `<td><a href="/${office.slug}-visa-decisions"><strong>${escapeHtml(office.name)}</strong></a><br>` +
+      `<td><a href="/${office.slug}-visa-decisions"><strong>${escapeHtml(office.name)}</strong></a> ` +
+      `<a class="small-note" data-office-alerts="${office.slug}" href="#" hidden>Get updates</a><br>` +
       `<span class="status-pill${statusClass}" data-freshness-status${statusTitle ? ` title="${escapeHtml(statusTitle)}"` : ''}>${escapeHtml(statusLabel)}</span></td>` +
       `<td data-label="What this means for your search"><span data-freshness-impact>${escapeHtml(impact)}</span>` +
       (ageNote ? `<br><span class="small-note" data-freshness-age>${escapeHtml(ageNote)}</span>` : '') + `</td>` +
@@ -1098,6 +1099,7 @@ export function injectOfficeFreshness(options = {}) {
       `<span class="freshness-chip${statusClass}">${escapeHtml(office.status_label)}</span> ` +
       `${summary}` +
       (office.observation_note ? ` <span class="office-freshness-observation">${escapeHtml(office.observation_note)}</span>` : '') +
+      (office.search_from ? ` <span class="office-freshness-search">A search matches ${escapeHtml(searchWindowText(office))}.</span>` : '') +
       (office.last_attempt_at ? ` <span class="office-freshness-attempt">Last attempt ${timeHTML(office.last_attempt_at)}</span>` : '') +
       (office.warning_at_build ? ` <span class="office-freshness-warning">${escapeHtml(office.warning_at_build)}</span>` : '') +
       `</p>`;

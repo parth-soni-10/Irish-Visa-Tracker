@@ -797,6 +797,128 @@ export async function liveOfficeMarkdown(env, slug, request, origin) {
   });
 }
 
+const HELP_MARKDOWN = lines(
+  "# How to check an Irish visa application",
+  "",
+  "The Irish Visa Decision Tracker searches the decision files the six Irish visa offices",
+  "publish. It is independent and unofficial, and it cannot see an application that has not",
+  "been published.",
+  "",
+  "- **Canonical HTML:** https://irishvisaupdatetracker.pages.dev/help",
+  "- **Search:** https://irishvisaupdatetracker.pages.dev/?tracker=visa&tab=search",
+  "- **Data status:** https://irishvisaupdatetracker.pages.dev/status",
+  "",
+  "## Find the application number",
+  "",
+  "Use the application number on the receipt, acknowledgement email or decision email. It is",
+  "usually eight digits; an IRL prefix, spaces and dashes are optional. Do not use a VFS",
+  "reference, passport number, payment reference or courier tracking number.",
+  "",
+  "## What a result means",
+  "",
+  "- **Approved** means the published file records an approval. It is not the visa itself and",
+  "  does not say when a passport will be returned.",
+  "- **Refused** means the published file records a refusal. The file gives no reason; the",
+  "  decision letter does, with any review or appeal deadline.",
+  "- **Tracker observation** rows are dated when the tracker read them, not necessarily the",
+  "  official decision date. The office file remains the authority.",
+  "",
+  "## When the number is not listed",
+  "",
+  "A missing number is not a refusal. It may be unpublished, handled by another office,",
+  "absent from a snapshot, or misread by OCR where the office publishes scanned files.",
+  "Check `/status` for each office's searchable window before concluding anything, and search",
+  "all six offices.",
+  "",
+  "## Alerts",
+  "",
+  "Telegram and browser push can send one message when a watched number appears in a later",
+  "published file. There are no accounts; subscriptions are anonymous. A Telegram `/office`",
+  "subscription sends one message when an office publishes a new file, even when the reader's",
+  "own number is not in it.",
+  "",
+  "## Official sources",
+  "",
+  "- ISD visa decisions: https://www.irishimmigration.ie/visa-decisions/",
+  "- ISD visa offices: https://www.irishimmigration.ie/visa-offices/",
+  "- Each office page links its own official source and latest file.",
+  "",
+  "## Related pages",
+  "",
+  "- [Find my office](https://irishvisaupdatetracker.pages.dev/find-my-office)",
+  "- [After approval](https://irishvisaupdatetracker.pages.dev/after-approval)",
+  "- [After refusal](https://irishvisaupdatetracker.pages.dev/after-refusal)",
+  "- [Missing decision](https://irishvisaupdatetracker.pages.dev/missing-decision)",
+  "- [Data status](https://irishvisaupdatetracker.pages.dev/status)",
+  "",
+);
+
+/** /status and /status.md are served from the live manifest, not a constant. */
+export const STATUS_MARKDOWN_PATHS = new Set(["/status", "/status.md"]);
+
+export async function liveStatusMarkdown(env, request, origin) {
+  const manifest = await readJsonAsset(env, request, "/data/data_manifest.json");
+  const freshness = await readJsonAsset(env, request, "/data/freshness.json");
+  const offices = manifest && Array.isArray(manifest.offices) ? manifest.offices : [];
+  if (!offices.length) {
+    return lines(
+      "# Irish visa decision data status",
+      "",
+      "The current manifest could not be read. The machine-readable source is",
+      "`/data/data_manifest.json`.",
+      "",
+    );
+  }
+  const freshBySlug = new Map();
+  for (const office of (freshness && freshness.offices) || []) {
+    if (office && office.slug) freshBySlug.set(office.slug, office);
+  }
+  const rows = offices.map((office) => {
+    const fresh = freshBySlug.get(office.slug) || {};
+    const counts = `${(Number(office.decisions) || 0).toLocaleString("en-IE")} decisions` +
+      ` (${(Number(office.approved) || 0).toLocaleString("en-IE")} approved, ` +
+      `${(Number(office.refused) || 0).toLocaleString("en-IE")} refused)`;
+    const window = fresh.search_from
+      ? `${formatLongDate(fresh.search_from)}` +
+        (fresh.search_through && fresh.search_through !== fresh.search_from
+          ? ` to ${formatLongDate(fresh.search_through)}` : "") +
+        (fresh.search_scope ? ` (${fresh.search_scope})` : "")
+      : "latest file only";
+    return `- **${office.name || office.slug}** \u2014 latest official report ${formatLongDate(office.report_date)}` +
+      ` \u00b7 ${counts} \u00b7 status ${office.status || "official"}` +
+      ` \u00b7 a search matches ${window}`;
+  });
+  return lines(
+    "# Irish visa decision data status",
+    "",
+    "What each of the six offices has published, when the tracker last read it, and the window",
+    "a search can actually match. Read the JSON below for exact timestamps.",
+    "",
+    ...rows,
+    "",
+    "## How to read these figures",
+    "",
+    "Counts are the published rows in each office's newest file, not applications received.",
+    "A snapshot office (Beijing, Dublin) has no dated history beyond the snapshot it holds; a",
+    "dated office keeps each report it has ingested. A missing application number is not a",
+    "refusal.",
+    "",
+    "## Machine-readable",
+    "",
+    "- `/data/data_manifest.json` \u2014 report dates, counts and source links.",
+    "- `/data/freshness.json` \u2014 status plus `search_from`, `search_through`, `search_scope`.",
+    "- `/data/reports/index.json` \u2014 the dated report archive.",
+    "- `/data/search_index.json` \u2014 the compact lookup index; `/api/search` serves it.",
+    "",
+    "## Related pages",
+    "",
+    "- [Tracker](https://irishvisaupdatetracker.pages.dev/) \u2014 search an application number.",
+    "- [Reports](https://irishvisaupdatetracker.pages.dev/reports) \u2014 every report with its source.",
+    "- [Open data](https://irishvisaupdatetracker.pages.dev/data) \u2014 JSON and CSV files.",
+    "",
+  );
+}
+
 const OPEN_DATA_MARKDOWN = lines(
   "# Irish visa decision open data",
   "",
@@ -822,6 +944,7 @@ const OPEN_DATA_MARKDOWN = lines(
 export const DOCUMENTS = new Map([
   ["/", { markdown: HOME_MARKDOWN, alternate: "/index.md", file: "/index.html", sharedCache: true }],
   ["/about", { markdown: ABOUT_MARKDOWN, alternate: "/about.md", file: "/about.html" }],
+  ["/help", { markdown: HELP_MARKDOWN, alternate: "/help.md", file: "/help.html" }],
   ["/contact", { markdown: CONTACT_MARKDOWN, alternate: "/contact.md", file: "/contact.html" }],
   ["/privacy", { markdown: PRIVACY_MARKDOWN, alternate: "/privacy.md", file: "/privacy.html" }],
   [
@@ -868,6 +991,7 @@ export const DOCUMENTS = new Map([
 export const MARKDOWN_ALIASES = new Map([
   ["/index.md", HOME_MARKDOWN],
   ["/about.md", ABOUT_MARKDOWN],
+  ["/help.md", HELP_MARKDOWN],
   ["/contact.md", CONTACT_MARKDOWN],
   ["/privacy.md", PRIVACY_MARKDOWN],
   ["/daily-summaries.md", DAILY_SUMMARIES_MARKDOWN],

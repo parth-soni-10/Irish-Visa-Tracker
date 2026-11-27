@@ -59,6 +59,23 @@
     return dateKey(now || new Date());
   }
 
+  // New Delhi publishes on its own calendar day. At 23:30 UTC it is already
+  // tomorrow in Delhi, so a due date must be judged there or the page offers a
+  // Friday file on Saturday morning.
+  function newDelhiToday(now) {
+    try {
+      return new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit'
+      }).format(now || new Date());
+    } catch (error) {
+      return todayKey(now);
+    }
+  }
+
+  function officeToday(slug, now) {
+    return slug === 'new-delhi' ? newDelhiToday(now) : todayKey(now);
+  }
+
   function daysBetween(from, to) {
     var start = parseDay(from);
     var end = parseDay(to);
@@ -270,7 +287,7 @@
   function compute(office, now) {
     office = office || {};
     var slug = office.slug || '';
-    var today = todayKey(now);
+    var today = officeToday(slug, now);
     var reportDate = dateKey(office.report_date);
     var age = daysBetween(reportDate, today);
     var rule = ruleFor(office);
@@ -316,7 +333,7 @@
   function schedule(office, now) {
     office = office || {};
     var slug = office.slug || '';
-    var today = todayKey(now);
+    var today = officeToday(slug, now);
     var reportDate = dateKey(office.report_date);
     var age = daysBetween(reportDate, today);
     var rule = ruleFor(office);

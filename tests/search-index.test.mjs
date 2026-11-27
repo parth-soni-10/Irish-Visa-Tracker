@@ -32,6 +32,48 @@ test('the compact index covers every office and keeps tracker rows distinct', as
   }
 });
 
+test('a rebuild with the same rows keeps generated_at stable', async () => {
+  const outFile = path.join(ROOT, '.cache', 'search-index-determinism.json');
+  await fs.mkdir(path.dirname(outFile), { recursive: true });
+  try {
+    buildSearchIndex({ outFile });
+    const first = JSON.parse(await fs.readFile(outFile, 'utf8'));
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    buildSearchIndex({ outFile });
+    const second = JSON.parse(await fs.readFile(outFile, 'utf8'));
+    assert.equal(second.generated_at, first.generated_at);
+    assert.equal(second.rows.length, first.rows.length);
+  } finally {
+    await fs.rm(outFile, { force: true });
+  }
+});
+
+test('the search API accepts the office spelling used by the site forms', async () => {
+  const env = {
+    DB: { prepare() { return { async run() {} }; } },
+    ASSETS: {
+      async fetch(request) {
+        const relative = new URL(request.url).pathname.replace(/^\/+/, '');
+        if (!['data/search_index.json', 'data/data_manifest.json', 'data/freshness.json'].includes(relative)) {
+          return new Response('missing', { status: 404 });
+        }
+        return new Response(await fs.readFile(path.join(ROOT, relative)), { status: 200 });
+      },
+    },
+  };
+  const response = await onRequestPost({
+    request: new Request('https://tracker.test/api/search', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query: '86826162', office: 'beijing', limit: 5 }),
+    }),
+    env,
+  });
+  const payload = await response.json();
+  assert.ok(payload.results.length > 0);
+  assert.ok(payload.results.every((row) => row.embassy === 'beijing'));
+});
+
 test('the search API answers from the compact index without the full archives', async () => {
   const env = {
     DB: { prepare() { return { async run() {} }; } },

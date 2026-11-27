@@ -113,12 +113,21 @@ export function buildSearchIndex({ root = ROOT, outFile = OUT } = {}) {
     .sort((a, b) => officeList.indexOf(a[0]) - officeList.indexOf(b[0]) ||
       a[1].localeCompare(b[1], 'en', { numeric: true }));
 
+  const rows = ordered.map(([slug, number, date, decision, reportDate, source]) => [
+    officeList.indexOf(slug), number, date, decision, reportDate, source,
+  ]);
+  // A build that finds the same rows should not dirty the committed file by
+  // rewriting its timestamp. Keeping generated_at stable keeps the deploy
+  // content hash (and git status) stable on data-free rebuilds.
+  const previous = readJson(outFile, null);
+  const unchanged = previous && Array.isArray(previous.rows) &&
+    previous.generated_at &&
+    JSON.stringify(previous.offices) === JSON.stringify(officeList) &&
+    JSON.stringify(previous.rows) === JSON.stringify(rows);
   const payload = {
-    generated_at: new Date().toISOString(),
+    generated_at: unchanged ? previous.generated_at : new Date().toISOString(),
     offices: officeList,
-    rows: ordered.map(([slug, number, date, decision, reportDate, source]) => [
-      officeList.indexOf(slug), number, date, decision, reportDate, source,
-    ]),
+    rows,
   };
   fs.writeFileSync(outFile, JSON.stringify(payload) + '\n');
   return {

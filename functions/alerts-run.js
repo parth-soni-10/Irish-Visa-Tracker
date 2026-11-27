@@ -241,10 +241,12 @@ async function runOfficeAlerts(env, report, dryRun) {
   if (!rows.length) return emptyCounters();
 
   const latestByOffice = new Map();
+  const nameByOffice = new Map();
   for (const office of report.offices || []) {
     if (!office || !office.slug) continue;
     const date = String(office.report_date || '').slice(0, 10);
     if (date) latestByOffice.set(office.slug, date);
+    nameByOffice.set(office.slug, office.name || office.slug);
   }
   const base = String(env.APP_BASE_URL || DEFAULT_BASE).replace(/\/+$/, '');
   let checked = 0;
@@ -272,7 +274,7 @@ async function runOfficeAlerts(env, report, dryRun) {
     const result = await sendTelegram(
       env,
       row.chat_id,
-      'New ' + office + ' decisions file published (' + latest + ').\n' +
+      'New ' + (nameByOffice.get(office) || office) + ' decisions file published (' + latest + ').\n' +
         'Open the updated office page: ' + base + '/' + office + '-visa-decisions\n\n' +
         'Send /office off ' + office + ' to stop these office updates.'
     );

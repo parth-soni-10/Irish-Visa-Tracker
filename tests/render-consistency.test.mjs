@@ -97,6 +97,31 @@ test('office pages offer the office-publication link and the today page its snap
   assert.ok(today.includes('Snapshot day:'));
 });
 
+test('office pages state their searchable window and the monthly report keeps its anchor', async () => {
+  for (const office of freshness.offices) {
+    const html = await page(`${office.slug}-visa-decisions.html`);
+    assert.ok(
+      html.includes('A search matches') && html.includes(longDate(office.search_from)),
+      `${office.slug} office page does not state its search window`,
+    );
+  }
+  const monthly = await page('monthly-report.html');
+  assert.ok(monthly.includes('id="story-package"'), 'monthly report lost its story-package anchor');
+});
+
+test('status offers office updates and the 404 page can recover with a search', async () => {
+  const status = await page('status.html');
+  for (const office of freshness.offices) {
+    assert.ok(status.includes(`data-office-alerts="${office.slug}"`), `${office.slug} update link missing`);
+  }
+  assert.ok(status.includes('public-channel.js'), 'status page does not load the config-driven links');
+
+  const notFound = await page('404.html');
+  assert.match(notFound, /<form class="notfound-search" action="\/" method="get" role="search">/);
+  assert.match(notFound, /name="q"/);
+  assert.match(notFound, /name="tracker" value="visa"/);
+});
+
 test('every page keeps its meta description within a search result', async () => {
   const { readdir } = await import('node:fs/promises');
   const names = (await readdir(PAGES)).filter((name) => name.endsWith('.html'));

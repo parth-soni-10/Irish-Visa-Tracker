@@ -57,6 +57,22 @@ test("relative age changes at the UTC midnight boundary", () => {
   assert.equal(freshness.ageLabel(2, true), "2 days old at last build");
 });
 
+test("New Delhi's next file is judged on the New Delhi calendar day", () => {
+  const freshness = loadClient();
+  const delhi = office({ slug: "new-delhi", name: "New Delhi", report_date: "2026-11-26", cadence_days: 1 });
+
+  assert.equal(freshness.schedule(delhi, new Date("2026-11-27T12:00:00Z")).expected_at, "2026-11-27");
+
+  // 23:30 UTC on Friday is already Saturday in Delhi: the Friday file is due
+  // but not overdue, and the next expected file is Monday, not a stale Friday.
+  const saturday = freshness.schedule(delhi, new Date("2026-11-27T23:30:00Z"));
+  assert.equal(saturday.expected_at, "2026-11-30");
+  assert.equal(saturday.overdue, false);
+  const view = freshness.compute(delhi, new Date("2026-11-27T23:30:00Z"));
+  assert.match(view.due_label, /30 November 2026/);
+  assert.doesNotMatch(view.due_label, /Expected 27 November/);
+});
+
 test("a missed weekly window becomes overdue at UTC midnight", () => {
   const freshness = loadClient();
   const before = freshness.compute(office(), new Date("2026-11-14T23:59:59Z"));

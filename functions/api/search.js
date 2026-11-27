@@ -327,6 +327,10 @@ export async function onRequestPost(context) {
       if (body[key]) filters[key] = body[key];
     }
     if (body.number_range) filters.number_range = body.number_range;
+    // The site calls the office select "office" in its own forms; accept that
+    // spelling at the API edge so a caller copying the form fields is not
+    // silently given results from every office.
+    if (body.office && !filters.embassy) filters.embassy = body.office;
 
     // FormData values are strings; parse pagination or `0 + "20"` turns into
     // "020" and the Load more button never reports another page.

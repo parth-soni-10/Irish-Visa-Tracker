@@ -614,6 +614,12 @@ a:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; border-rad
 }
 .notfound h1 { margin: 10px 0 0; font-size: clamp(34px, 6vw, 48px); line-height: 1.08; letter-spacing: -.03em; }
 .notfound p { margin: 16px 0 0; color: var(--ink-soft); font-size: 16px; }
+.notfound-search { margin-top: 24px; }
+.notfound-search label { display: block; font-size: 14px; font-weight: 600; color: var(--ink); margin-bottom: 6px; }
+.notfound-search-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.notfound-search-row input { flex: 1 1 200px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; font: inherit; background: var(--paper); color: var(--ink); }
+.notfound-search-row button { padding: 10px 18px; border: 1px solid var(--green); border-radius: 10px; background: var(--green); color: #fff; font: inherit; font-weight: 600; cursor: pointer; }
+.notfound-search-note { margin: 8px 0 0; font-size: 13px; color: var(--ink-soft); }
 .notfound-links { margin-top: 28px; display: flex; flex-wrap: wrap; gap: 10px; }
 .notfound-links a {
   display: inline-block;

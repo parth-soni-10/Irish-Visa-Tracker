@@ -107,6 +107,17 @@
       This page has moved, or the link was mistyped. The tracker itself is still at the home page,
       and the published pages are listed in the sitemap.
     </p>
+    <form class="notfound-search" action="/" method="get" role="search">
+      <label for="notfound-q">Search by application number instead</label>
+      <input type="hidden" name="tracker" value="visa">
+      <input type="hidden" name="tab" value="search">
+      <div class="notfound-search-row">
+        <input id="notfound-q" name="q" type="text" inputmode="numeric" autocomplete="off"
+               placeholder="e.g. 48850812" aria-describedby="notfound-search-note" required>
+        <button type="submit">Search</button>
+      </div>
+      <p class="notfound-search-note" id="notfound-search-note">The 8-digit number on your receipt or decision email. All six offices are searched.</p>
+    </form>
     <div class="notfound-links">
       <a href="/">Back to the tracker</a>
       <a href="/sitemap.xml">Sitemap</a>

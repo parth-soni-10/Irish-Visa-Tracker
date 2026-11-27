@@ -30,7 +30,9 @@ import {
   MARKDOWN_ALIASES,
   NOT_ACCEPTABLE_MARKDOWN,
   OFFICE_MARKDOWN_PATHS,
+  STATUS_MARKDOWN_PATHS,
   liveOfficeMarkdown,
+  liveStatusMarkdown,
   markdownResponse,
   negotiate,
   notFoundMarkdown,
@@ -710,6 +712,16 @@ async function handleRequest(request, env) {
         // Office Markdown is built from the current manifest so its counts and
         // report date match the HTML page, not a constant frozen at authoring.
         const body = await liveOfficeMarkdown(env, officeSlug, request, requestOrigin);
+        return markdownResponse(body, 200, request.method, requestOrigin);
+      }
+      if (choice === "not-acceptable") {
+        return markdownResponse(NOT_ACCEPTABLE_MARKDOWN, 406, request.method, requestOrigin);
+      }
+    }
+    if (STATUS_MARKDOWN_PATHS.has(pathname)) {
+      const choice = negotiate(request.headers.get("Accept"));
+      if (pathname.endsWith(".md") || choice === "markdown") {
+        const body = await liveStatusMarkdown(env, request, requestOrigin);
         return markdownResponse(body, 200, request.method, requestOrigin);
       }
       if (choice === "not-acceptable") {
