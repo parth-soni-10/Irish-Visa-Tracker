@@ -63,7 +63,7 @@ alert destination.
   `functions/api/model-trees.js` and commits the artifacts.
 - `timelines.yml`, `track_1g.yml`, `track_permits.yml`: community and queue data.
 - `uptime.yml`: external health and data-freshness probe.
-- `cron-failure-alerts.yml`: forwards failed scheduled runs to the alert webhook.
+- `cron-failure-alerts.yml`: forwards every failed run to the alert webhook, or opens an issue when it is unset.
 
 ## Deploy
 

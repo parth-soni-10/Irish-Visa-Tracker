@@ -80,7 +80,7 @@ Scheduled GitHub Actions cover scraping, community timelines, Stamp 1G and permi
 
 ## Monitoring
 
-Sentry was removed. `GET /api/health` is a readiness probe for D1 and static assets, and Pages Functions emit privacy-light JSON request/error logs. A separate [monitoring Worker](docs/monitoring.md) enables Workers Logs/Logpush for persisted uptime checks, while `uptime.yml` probes production from GitHub and `cron-failure-alerts.yml` forwards every failed run of those workflows to `ALERT_WEBHOOK_URL`.
+Sentry was removed. `GET /api/health` is a readiness probe for D1 and static assets, and Pages Functions emit privacy-light JSON request/error logs. A separate [monitoring Worker](docs/monitoring.md) enables Workers Logs/Logpush for persisted uptime checks, while `uptime.yml` probes production from GitHub and `cron-failure-alerts.yml` forwards every failed run of those workflows to `ALERT_WEBHOOK_URL`, or records it in a GitHub issue when that secret is not set.
 
 ## Scope decision: mobile
 

@@ -86,10 +86,13 @@ service (for example, an HTTP monitor every five minutes with the expected body
 scraper, alerts, digest, exports, ML retraining, community timeline, Stamp 1G
 and permit workflows, whatever triggered them (schedule, workflow_dispatch or
 push). It posts the workflow name, conclusion, trigger and run URL to
-`ALERT_WEBHOOK_URL`. If the secret is absent the job emits a `::warning::` and
-stays green: the original run is already red, so a missing channel must not
-turn one failure into two. A configured endpoint that rejects the POST still
-fails the alert job, so a broken alerting path stays visible.
+`ALERT_WEBHOOK_URL`. If the secret is absent, the job records the failure in a
+GitHub issue instead — one open issue per workflow, commented on for each later
+failure — and adds a `::warning::` to the run summary. That needs no setup and
+notifies the repository owner, and it keeps the alert job green because the
+original run is already red: a missing channel must not turn one failure into
+two. A configured endpoint that rejects the POST still fails the alert job, so
+a broken alerting path stays visible.
 
 GitHub's native scheduled-workflow notification goes only to the person who
 last changed the cron syntax, and a manual dispatch notifies only the account

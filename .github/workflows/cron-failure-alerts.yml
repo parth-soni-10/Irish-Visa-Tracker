@@ -6,8 +6,8 @@ name: Cron Failure Alerts
 # sixteen times while the repo stayed quiet. This companion workflow forwards
 # every failed run of the workflows below, whatever triggered it (schedule,
 # dispatch or push), to the repository's ALERT_WEBHOOK_URL. If that secret is
-# absent the job warns and stays green, so an unconfigured channel never turns
-# one failed run into two.
+# absent the job records the failure in a GitHub issue and stays green, so a
+# failure is still announced without turning one failed run into two.
 on:
   workflow_run:
     workflows:
@@ -23,6 +23,7 @@ on:
 
 permissions:
   contents: read
+  issues: write   # fallback channel when ALERT_WEBHOOK_URL is not configured
 
 concurrency:
   group: cron-failure-alert-${{ github.event.workflow_run.id }}
@@ -52,3 +53,31 @@ jobs:
           WORKFLOW_BRANCH: ${{ github.event.workflow_run.head_branch }}
           WORKFLOW_RUN_URL: ${{ github.event.workflow_run.html_url }}
         run: node tools/alert-run-failure.mjs
+
+      # Without a webhook the failure would only be visible to whoever opens the
+      # Actions tab. GitHub issues need no setup and notify the repository owner,
+      # so they are the default channel: one open issue per workflow, commented
+      # on for each later failure instead of one issue per run.
+      - name: Record the failure in an issue when no webhook is configured
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ALERT_WEBHOOK_URL: ${{ secrets.ALERT_WEBHOOK_URL }}
+          WORKFLOW_NAME: ${{ github.event.workflow_run.name }}
+          WORKFLOW_EVENT: ${{ github.event.workflow_run.event }}
+          WORKFLOW_RUN_URL: ${{ github.event.workflow_run.html_url }}
+        run: |
+          if [ -n "${ALERT_WEBHOOK_URL}" ]; then
+            echo "ALERT_WEBHOOK_URL is set; the webhook carried this failure."
+            exit 0
+          fi
+          title="Workflow failure: ${WORKFLOW_NAME}"
+          body=$(printf '%s failed.\n\n- Trigger: %s\n- Run: %s\n- Detected: %s\n\nSet the ALERT_WEBHOOK_URL repository secret to route these to Slack, Teams, Discord or Telegram instead of this issue.' \
+            "${WORKFLOW_NAME}" "${WORKFLOW_EVENT}" "${WORKFLOW_RUN_URL}" "$(date -u +'%Y-%m-%d %H:%M UTC')")
+          existing=$(gh issue list --state open --limit 100 --json number,title \
+            --jq '.[] | "\(.number)\t\(.title)"' | awk -F'\t' -v title="${title}" '$2 == title { print $1; exit }')
+          if [ -n "${existing}" ]; then
+            gh issue comment "${existing}" --body "${body}"
+            echo "Commented on issue #${existing}."
+          else
+            gh issue create --title "${title}" --body "${body}"
+          fi
