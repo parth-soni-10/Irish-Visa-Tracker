@@ -60,7 +60,6 @@ const ALERTS_PATH = "/api/alerts/run";
 const CONFIG_PATH = "/api/config";
 const EVENTS_PATH = "/api/events";
 const EMAIL_WEBHOOK_PATH = "/api/email/send";
-const FAILURE_ALERT_PATH = "/api/alert/failure";
 const REPORT_PATHS = new Set([
   "/api/reports/monthly", "/api/reports/changes", "/api/reports/corrections", "/api/digest/preview",
   "/api/digest/subscribe", "/api/digest/verify", "/api/digest/unsubscribe", "/api/digest/send"
@@ -468,14 +467,6 @@ async function handleRequest(request, env) {
   if (pathname === EMAIL_WEBHOOK_PATH && request.method === 'POST') {
     const { handleEmailWebhook } = await import('./email-webhook.js');
     return handleEmailWebhook(request, env);
-  }
-
-  // GitHub Actions posts failure alerts here; the route emails them with the
-  // server-side Resend key, so no third-party webhook service is needed. It is
-  // token-authenticated, so it sits before the per-client API limiter.
-  if (pathname === FAILURE_ALERT_PATH && request.method === 'POST') {
-    const { handleFailureAlert } = await import('./alert-endpoint.js');
-    return handleFailureAlert(request, env);
   }
 
   // Rate limiting for API endpoints. D1 is the shared counter, so one client

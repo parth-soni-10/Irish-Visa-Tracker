@@ -77,9 +77,7 @@ D1 also stores the operational counters and the activation funnel:
 |---|---|---|
 | `APP_BASE_URL` | Configured | Links fall back to the production origin |
 | `PAGES_DEV_REDIRECT_ORIGIN` | Optional until a custom domain is live | The old `pages.dev` host returns no redirect |
-| `ALERT_WEBHOOK_URL` | Configured to this deployment's `/api/alert/failure` | External uptime and cron-failure alerts have no out-of-band delivery |
-| `ALERT_ENDPOINT_SECRET` | Configured (deployment secret) | `/api/alert/failure` rejects every call with 503 |
-| `ALERT_EMAIL_TO` | Configured to the owner mailbox | `/api/alert/failure` rejects every call with 503 |
+| `ALERT_WEBHOOK_URL` | Optional shared alert destination | External uptime and cron-failure alerts have no out-of-band delivery |
 | `SCRAPER_CRON_SECRET` | Configured | `/api/alerts/run` and `/api/digest/send` return 503 |
 | `EMAIL_WEBHOOK_URL` | Configured to the deployment’s `/api/email/send` bridge | Email delivery is disabled |
 | `EMAIL_WEBHOOK_SECRET` | Configured (deployment secret) | Email bridge rejects requests |
@@ -234,10 +232,5 @@ with the same value as the Pages secret, then run each workflow once with
 `workflow_dispatch` to verify it.
 
 Failed runs of those workflows are forwarded to the shared alert webhook by
-`cron-failure-alerts.yml`, whatever triggered them. That webhook is this
-deployment's `POST /api/alert/failure?token=…`: it authenticates the call with
-`ALERT_ENDPOINT_SECRET` and emails the alert to `ALERT_EMAIL_TO` through the
-same server-side Resend key, so no third-party webhook service is involved.
-Without `ALERT_WEBHOOK_URL` the workflow records the failure in a GitHub issue
-instead. The external uptime and freshness check does not use
+`cron-failure-alerts.yml`, whatever triggered them. The external uptime and freshness check does not use
 `SCRAPER_CRON_SECRET`; it only reads public endpoints.

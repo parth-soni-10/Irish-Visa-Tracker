@@ -85,9 +85,7 @@ service (for example, an HTTP monitor every five minutes with the expected body
 `.github/workflows/cron-failure-alerts.yml` listens for failed runs of the
 scraper, alerts, digest, exports, ML retraining, community timeline, Stamp 1G
 and permit workflows, whatever triggered them (schedule, workflow_dispatch or
-push). `ALERT_WEBHOOK_URL` points at this deployment's `POST
-/api/alert/failure`, which authenticates with `ALERT_ENDPOINT_SECRET` and
-emails the alert to `ALERT_EMAIL_TO` through the existing Resend key. It posts the workflow name, conclusion, trigger and run URL to
+push). It posts the workflow name, conclusion, trigger and run URL to
 `ALERT_WEBHOOK_URL`. If the secret is absent, the job records the failure in a
 GitHub issue instead — one open issue per workflow, commented on for each later
 failure — and adds a `::warning::` to the run summary. That needs no setup and
