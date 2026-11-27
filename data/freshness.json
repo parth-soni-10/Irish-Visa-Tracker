@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-27T11:29:35.290Z",
+  "generated_at": "2026-11-27T11:37:09.732Z",
   "as_of": "2026-11-27",
   "offices": [
     {
@@ -15,12 +15,12 @@
       "decisions": 44284,
       "approved": 37290,
       "refused": 6994,
-      "checked_at": "2026-11-27T11:29:16.703Z",
-      "checked_label": "27 Nov 2026, 11:29 UTC",
-      "last_success_at": "2026-11-27T11:29:16.703Z",
-      "last_attempt_at": "2026-11-27T11:29:35.290Z",
-      "last_success_label": "27 Nov 2026, 11:29 UTC",
-      "last_attempt_label": "27 Nov 2026, 11:29 UTC",
+      "checked_at": "2026-11-27T11:36:51.296Z",
+      "checked_label": "27 Nov 2026, 11:36 UTC",
+      "last_success_at": "2026-11-27T11:36:51.296Z",
+      "last_attempt_at": "2026-11-27T11:37:09.732Z",
+      "last_success_label": "27 Nov 2026, 11:36 UTC",
+      "last_attempt_label": "27 Nov 2026, 11:37 UTC",
       "status": "official",
       "status_label": "Official",
       "status_tone": "",
@@ -50,11 +50,11 @@
         "max_days": 5,
         "median_days": 2,
         "latest_report_date": "2026-11-26",
-        "latest_observed_at": "2026-11-27T11:29:16.703Z",
+        "latest_observed_at": "2026-11-27T11:36:51.296Z",
         "history": [
           {
             "report_date": "2026-11-26",
-            "observed_at": "2026-11-27T11:29:16.703Z",
+            "observed_at": "2026-11-27T11:36:51.296Z",
             "backfilled": false,
             "lag_days": 1
           },
@@ -91,9 +91,9 @@
         ]
       },
       "observation_note": "Tracker observed decisions dated through 27 November 2026; these are not in the 26 November 2026 official file.",
-      "summary_at_build": "New Delhi — report 26 November 2026 · 44,284 decisions · 1 day old at last build · checked 27 Nov 2026, 11:29 UTC",
+      "summary_at_build": "New Delhi — report 26 November 2026 · 44,284 decisions · 1 day old at last build · checked 27 Nov 2026, 11:36 UTC",
       "warning_at_build": "",
-      "summary": "New Delhi — report 26 November 2026 · 44,284 decisions · 1 day old at last build · checked 27 Nov 2026, 11:29 UTC",
+      "summary": "New Delhi — report 26 November 2026 · 44,284 decisions · 1 day old at last build · checked 27 Nov 2026, 11:36 UTC",
       "warning": ""
     },
     {
@@ -109,12 +109,12 @@
       "decisions": 14425,
       "approved": 11993,
       "refused": 2432,
-      "checked_at": "2026-11-27T11:29:18.415Z",
-      "checked_label": "27 Nov 2026, 11:29 UTC",
-      "last_success_at": "2026-11-27T11:29:18.415Z",
-      "last_attempt_at": "2026-11-27T11:29:35.290Z",
-      "last_success_label": "27 Nov 2026, 11:29 UTC",
-      "last_attempt_label": "27 Nov 2026, 11:29 UTC",
+      "checked_at": "2026-11-27T11:36:53.474Z",
+      "checked_label": "27 Nov 2026, 11:36 UTC",
+      "last_success_at": "2026-11-27T11:36:53.474Z",
+      "last_attempt_at": "2026-11-27T11:37:09.732Z",
+      "last_success_label": "27 Nov 2026, 11:36 UTC",
+      "last_attempt_label": "27 Nov 2026, 11:37 UTC",
       "status": "official",
       "status_label": "Snapshot",
       "status_tone": "",
@@ -144,11 +144,11 @@
         "max_days": 17,
         "median_days": 11,
         "latest_report_date": "2026-11-22",
-        "latest_observed_at": "2026-11-27T11:29:18.415Z",
+        "latest_observed_at": "2026-11-27T11:36:53.474Z",
         "history": [
           {
             "report_date": "2026-11-22",
-            "observed_at": "2026-11-27T11:29:18.415Z",
+            "observed_at": "2026-11-27T11:36:53.474Z",
             "backfilled": false,
             "lag_days": 5
           },
@@ -161,9 +161,9 @@
         ]
       },
       "observation_note": "",
-      "summary_at_build": "Beijing — snapshot 22 November 2026 · 14,425 decisions · 5 days old at last build · checked 27 Nov 2026, 11:29 UTC",
+      "summary_at_build": "Beijing — snapshot 22 November 2026 · 14,425 decisions · 5 days old at last build · checked 27 Nov 2026, 11:36 UTC",
       "warning_at_build": "",
-      "summary": "Beijing — snapshot 22 November 2026 · 14,425 decisions · 5 days old at last build · checked 27 Nov 2026, 11:29 UTC",
+      "summary": "Beijing — snapshot 22 November 2026 · 14,425 decisions · 5 days old at last build · checked 27 Nov 2026, 11:36 UTC",
       "warning": ""
     },
     {
@@ -179,12 +179,12 @@
       "decisions": 182,
       "approved": 144,
       "refused": 38,
-      "checked_at": "2026-11-27T11:29:19.278Z",
-      "checked_label": "27 Nov 2026, 11:29 UTC",
-      "last_success_at": "2026-11-27T11:29:19.278Z",
-      "last_attempt_at": "2026-11-27T11:29:35.290Z",
-      "last_success_label": "27 Nov 2026, 11:29 UTC",
-      "last_attempt_label": "27 Nov 2026, 11:29 UTC",
+      "checked_at": "2026-11-27T11:36:54.661Z",
+      "checked_label": "27 Nov 2026, 11:36 UTC",
+      "last_success_at": "2026-11-27T11:36:54.661Z",
+      "last_attempt_at": "2026-11-27T11:37:09.732Z",
+      "last_success_label": "27 Nov 2026, 11:36 UTC",
+      "last_attempt_label": "27 Nov 2026, 11:37 UTC",
       "status": "official",
       "status_label": "Official",
       "status_tone": "",
@@ -214,11 +214,11 @@
         "max_days": 10,
         "median_days": 7,
         "latest_report_date": "2026-11-27",
-        "latest_observed_at": "2026-11-27T11:29:19.278Z",
+        "latest_observed_at": "2026-11-27T11:36:54.661Z",
         "history": [
           {
             "report_date": "2026-11-27",
-            "observed_at": "2026-11-27T11:29:19.278Z",
+            "observed_at": "2026-11-27T11:36:54.661Z",
             "backfilled": false,
             "lag_days": 0
           },
@@ -255,9 +255,9 @@
         ]
       },
       "observation_note": "",
-      "summary_at_build": "Abu Dhabi — report 27 November 2026 · 182 decisions · 0 days old at last build · checked 27 Nov 2026, 11:29 UTC",
+      "summary_at_build": "Abu Dhabi — report 27 November 2026 · 182 decisions · 0 days old at last build · checked 27 Nov 2026, 11:36 UTC",
       "warning_at_build": "",
-      "summary": "Abu Dhabi — report 27 November 2026 · 182 decisions · 0 days old at last build · checked 27 Nov 2026, 11:29 UTC",
+      "summary": "Abu Dhabi — report 27 November 2026 · 182 decisions · 0 days old at last build · checked 27 Nov 2026, 11:36 UTC",
       "warning": ""
     },
     {
@@ -273,12 +273,12 @@
       "decisions": 216,
       "approved": 90,
       "refused": 126,
-      "checked_at": "2026-11-27T11:29:21.416Z",
-      "checked_label": "27 Nov 2026, 11:29 UTC",
-      "last_success_at": "2026-11-27T11:29:21.416Z",
-      "last_attempt_at": "2026-11-27T11:29:35.290Z",
-      "last_success_label": "27 Nov 2026, 11:29 UTC",
-      "last_attempt_label": "27 Nov 2026, 11:29 UTC",
+      "checked_at": "2026-11-27T11:36:54.999Z",
+      "checked_label": "27 Nov 2026, 11:36 UTC",
+      "last_success_at": "2026-11-27T11:36:54.999Z",
+      "last_attempt_at": "2026-11-27T11:37:09.732Z",
+      "last_success_label": "27 Nov 2026, 11:36 UTC",
+      "last_attempt_label": "27 Nov 2026, 11:37 UTC",
       "status": "official",
       "status_label": "Official",
       "status_tone": "",
@@ -308,11 +308,11 @@
         "max_days": 67,
         "median_days": 26,
         "latest_report_date": "2026-11-21",
-        "latest_observed_at": "2026-11-27T11:29:21.416Z",
+        "latest_observed_at": "2026-11-27T11:36:54.999Z",
         "history": [
           {
             "report_date": "2026-11-21",
-            "observed_at": "2026-11-27T11:29:21.416Z",
+            "observed_at": "2026-11-27T11:36:54.999Z",
             "backfilled": false,
             "lag_days": 6
           },
@@ -349,9 +349,9 @@
         ]
       },
       "observation_note": "",
-      "summary_at_build": "Abuja — report 21 November 2026 · 216 decisions · 6 days old at last build · checked 27 Nov 2026, 11:29 UTC",
+      "summary_at_build": "Abuja — report 21 November 2026 · 216 decisions · 6 days old at last build · checked 27 Nov 2026, 11:36 UTC",
       "warning_at_build": "",
-      "summary": "Abuja — report 21 November 2026 · 216 decisions · 6 days old at last build · checked 27 Nov 2026, 11:29 UTC",
+      "summary": "Abuja — report 21 November 2026 · 216 decisions · 6 days old at last build · checked 27 Nov 2026, 11:36 UTC",
       "warning": ""
     },
     {
@@ -367,12 +367,12 @@
       "decisions": 217,
       "approved": 192,
       "refused": 25,
-      "checked_at": "2026-11-27T11:29:22.829Z",
-      "checked_label": "27 Nov 2026, 11:29 UTC",
-      "last_success_at": "2026-11-27T11:29:22.829Z",
-      "last_attempt_at": "2026-11-27T11:29:35.290Z",
-      "last_success_label": "27 Nov 2026, 11:29 UTC",
-      "last_attempt_label": "27 Nov 2026, 11:29 UTC",
+      "checked_at": "2026-11-27T11:36:56.432Z",
+      "checked_label": "27 Nov 2026, 11:36 UTC",
+      "last_success_at": "2026-11-27T11:36:56.432Z",
+      "last_attempt_at": "2026-11-27T11:37:09.732Z",
+      "last_success_label": "27 Nov 2026, 11:36 UTC",
+      "last_attempt_label": "27 Nov 2026, 11:37 UTC",
       "status": "official",
       "status_label": "Official",
       "status_tone": "",
@@ -402,11 +402,11 @@
         "max_days": 15,
         "median_days": 9,
         "latest_report_date": "2026-11-22",
-        "latest_observed_at": "2026-11-27T11:29:22.829Z",
+        "latest_observed_at": "2026-11-27T11:36:56.432Z",
         "history": [
           {
             "report_date": "2026-11-22",
-            "observed_at": "2026-11-27T11:29:22.829Z",
+            "observed_at": "2026-11-27T11:36:56.432Z",
             "backfilled": false,
             "lag_days": 5
           },
@@ -425,9 +425,9 @@
         ]
       },
       "observation_note": "",
-      "summary_at_build": "Ankara — report 22 November 2026 · 217 decisions · 5 days old at last build · checked 27 Nov 2026, 11:29 UTC",
+      "summary_at_build": "Ankara — report 22 November 2026 · 217 decisions · 5 days old at last build · checked 27 Nov 2026, 11:36 UTC",
       "warning_at_build": "",
-      "summary": "Ankara — report 22 November 2026 · 217 decisions · 5 days old at last build · checked 27 Nov 2026, 11:29 UTC",
+      "summary": "Ankara — report 22 November 2026 · 217 decisions · 5 days old at last build · checked 27 Nov 2026, 11:36 UTC",
       "warning": ""
     },
     {
@@ -443,12 +443,12 @@
       "decisions": 4848,
       "approved": 2985,
       "refused": 1863,
-      "checked_at": "2026-11-27T11:29:32.228Z",
-      "checked_label": "27 Nov 2026, 11:29 UTC",
-      "last_success_at": "2026-11-27T11:29:32.228Z",
-      "last_attempt_at": "2026-11-27T11:29:35.290Z",
-      "last_success_label": "27 Nov 2026, 11:29 UTC",
-      "last_attempt_label": "27 Nov 2026, 11:29 UTC",
+      "checked_at": "2026-11-27T11:37:06.061Z",
+      "checked_label": "27 Nov 2026, 11:37 UTC",
+      "last_success_at": "2026-11-27T11:37:06.061Z",
+      "last_attempt_at": "2026-11-27T11:37:09.732Z",
+      "last_success_label": "27 Nov 2026, 11:37 UTC",
+      "last_attempt_label": "27 Nov 2026, 11:37 UTC",
       "status": "official",
       "status_label": "Snapshot",
       "status_tone": "",
@@ -478,11 +478,11 @@
         "max_days": 0,
         "median_days": 0,
         "latest_report_date": "2026-11-27",
-        "latest_observed_at": "2026-11-27T11:29:32.228Z",
+        "latest_observed_at": "2026-11-27T11:37:06.061Z",
         "history": [
           {
             "report_date": "2026-11-27",
-            "observed_at": "2026-11-27T11:29:32.228Z",
+            "observed_at": "2026-11-27T11:37:06.061Z",
             "backfilled": false,
             "lag_days": 0
           },
@@ -519,9 +519,9 @@
         ]
       },
       "observation_note": "",
-      "summary_at_build": "Dublin — snapshot 27 November 2026 · 4,848 decisions · 0 days old at last build · checked 27 Nov 2026, 11:29 UTC",
+      "summary_at_build": "Dublin — snapshot 27 November 2026 · 4,848 decisions · 0 days old at last build · checked 27 Nov 2026, 11:37 UTC",
       "warning_at_build": "",
-      "summary": "Dublin — snapshot 27 November 2026 · 4,848 decisions · 0 days old at last build · checked 27 Nov 2026, 11:29 UTC",
+      "summary": "Dublin — snapshot 27 November 2026 · 4,848 decisions · 0 days old at last build · checked 27 Nov 2026, 11:37 UTC",
       "warning": ""
     }
   ]
