@@ -4422,5 +4422,61 @@
     "processing_date": "2026-05-06",
     "lag_days": 204,
     "lag_weeks": 29.14
+  },
+  {
+    "run_date": "2026-11-27",
+    "run_time": "10:56:31",
+    "category": "Critical Skills",
+    "processing_date": "2026-10-23",
+    "lag_days": 35,
+    "lag_weeks": 5.0
+  },
+  {
+    "run_date": "2026-11-27",
+    "run_time": "10:56:31",
+    "category": "General (New)",
+    "processing_date": "2026-10-25",
+    "lag_days": 33,
+    "lag_weeks": 4.71
+  },
+  {
+    "run_date": "2026-11-27",
+    "run_time": "10:56:31",
+    "category": "ICT (New)",
+    "processing_date": "2026-10-22",
+    "lag_days": 36,
+    "lag_weeks": 5.14
+  },
+  {
+    "run_date": "2026-11-27",
+    "run_time": "10:56:31",
+    "category": "ICT (Renewal)",
+    "processing_date": "2026-10-16",
+    "lag_days": 42,
+    "lag_weeks": 6.0
+  },
+  {
+    "run_date": "2026-11-27",
+    "run_time": "10:56:31",
+    "category": "Other New",
+    "processing_date": "2026-10-25",
+    "lag_days": 33,
+    "lag_weeks": 4.71
+  },
+  {
+    "run_date": "2026-11-27",
+    "run_time": "10:56:31",
+    "category": "Renewals",
+    "processing_date": "2026-10-14",
+    "lag_days": 44,
+    "lag_weeks": 6.29
+  },
+  {
+    "run_date": "2026-11-27",
+    "run_time": "10:56:31",
+    "category": "Reviews",
+    "processing_date": "2026-06-02",
+    "lag_days": 178,
+    "lag_weeks": 25.43
   }
 ]
