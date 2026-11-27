@@ -10,6 +10,24 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { loadFreshness } from './freshness.mjs';
 
+function readPreview(file) {
+  try {
+    const parsed = JSON.parse(fs.readFileSync(file, 'utf8'));
+    return parsed && typeof parsed === 'object' ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function withoutTimestamp(preview) {
+  const { generated_at, ...rest } = preview;
+  return JSON.stringify(rest);
+}
+
+function samePreview(previous, next) {
+  return withoutTimestamp(previous) === withoutTimestamp(next);
+}
+
 export function buildSearchPreview({ dataDir, outFile }) {
   const manifestPath = path.join(dataDir, 'data_manifest.json');
   const decisionsPath = path.join(dataDir, 'visa_decisions.json');
@@ -48,6 +66,16 @@ export function buildSearchPreview({ dataDir, outFile }) {
     },
   };
   fs.mkdirSync(path.dirname(outFile), { recursive: true });
+
+  // A build of unchanged data must not produce a diff. When every field except
+  // the timestamp matches what is already on disk, keep the recorded timestamp
+  // and leave the file untouched instead of rewriting it with a new clock.
+  const previous = readPreview(outFile);
+  if (previous && samePreview(previous, payload)) {
+    const bytes = Buffer.byteLength(JSON.stringify(previous));
+    return { rows: rows.length, bytes, unchanged: true };
+  }
+
   fs.writeFileSync(outFile, JSON.stringify(payload));
   return { rows: rows.length, bytes: Buffer.byteLength(JSON.stringify(payload)) };
 }
