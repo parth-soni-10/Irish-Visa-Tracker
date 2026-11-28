@@ -51,7 +51,9 @@ Use this site when the task is one of these:
 How to call it: fetch the HTML page for a browser, or request Markdown at the same URL with
 `Accept: text/markdown`; `/index.md`, `/about.md`, `/contact.md`, `/privacy.md`, `/daily-summaries.md`,
 `/stamp-1g-processing-dates.md`, `/employment-permit-processing-dates.md`,
-`/visa-processing-times.md`, `/data.md`, `/help.md`, `/status.md` and the six office `.md` paths
+`/visa-processing-times.md`, `/data.md`, `/help.md`, `/status.md`, `/after-approval.md`,
+`/after-refusal.md`, `/missing-decision.md`, `/find-my-office.md`, `/vfs-tracking.md`,
+`/terms.md`, `/corrections.md` and the six office `.md` paths
 always return Markdown. `/status.md` is built from the current manifest and freshness files.
 The data files are plain JSON and need no JavaScript. Example:
 
