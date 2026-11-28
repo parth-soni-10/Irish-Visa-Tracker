@@ -33,3 +33,16 @@ test('funnel events carry device and office dimensions', async () => {
   assert.match(script, /device: \(document\.body/);
   assert.match(script, /payload\.office = selectedOffice/);
 });
+
+test('search guidance, result recovery and install prompts are present', async () => {
+  const script = await read('scripts/index.js');
+  assert.match(script, /function searchFormatState/);
+  assert.match(script, /data-home-search-format/);
+  assert.match(script, /data-landing-search-format/);
+  assert.match(script, /Example: <strong>48850812<\/strong> \(not a real applicant\)/);
+  assert.match(script, /data-lookup-another/);
+  assert.match(script, /Find my office/);
+  assert.match(script, /Why a number may be missing/);
+  assert.match(script, /function promptPWAInstall/);
+  assert.match(script, /data-pwa-install/);
+});

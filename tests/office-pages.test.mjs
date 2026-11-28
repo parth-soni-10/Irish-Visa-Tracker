@@ -36,6 +36,9 @@ test("office pages carry unique crawl metadata and working schema", async () => 
     assert.match(html, /<section class="page-answer"/, page.file);
     assert.match(html, /What this page answers/, page.file);
     assert.match(html, /What it cannot tell you/, page.file);
+    assert.match(html, /<section id="country-faq">/, page.file);
+    assert.match(html, /Country-specific questions/, page.file);
+    assert.match(html, /"@type": "FAQPage"/, page.file);
     assert.match(html, /<h1>[^<]*Irish visa decisions<\/h1>/, page.file);
     const description = html.match(/<meta name="description" content="([^"]*)"/)?.[1] || "";
     assert.ok(description.length > 80 && description.length <= 160, `${page.file}: description is ${description.length} chars`);

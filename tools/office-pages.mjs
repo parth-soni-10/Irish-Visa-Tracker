@@ -104,6 +104,11 @@ const OFFICES = [
       ['Does an Approved result mean my passport is ready?', 'No. The list records the decision, not the passport’s location. Wait for the official decision letter and the VFS return process.'],
       ['How many decisions are in the latest New Delhi file?', `The file dated ${longDate(f.latest)} contains ${f.decisions.toLocaleString('en-IE')} decisions: ${f.approved.toLocaleString('en-IE')} approved and ${f.refused.toLocaleString('en-IE')} refused.`],
     ],
+    countryFaq: () => [
+      ['I applied in India. Is my decision always in the New Delhi file?', 'Most applications lodged in India are decided by the New Delhi visa office and appear in its published file. Some categories are transferred to Dublin, including specified Join Family, EU Free Movement, Minister of Religion and Volunteer applications; those decisions appear in the Dublin list instead.'],
+      ['Do applications from Bangladesh, Nepal and Sri Lanka appear in the same New Delhi file?', 'Yes. The New Delhi visa office covers India, Bangladesh, Nepal and Sri Lanka, and its published file lists decisions for all four. A VFS centre in your country is not a separate visa office.'],
+      ['My number from Bangladesh, Nepal or Sri Lanka is missing. Does that mean refusal?', 'No. It may not be decided or published yet, it may be in Dublin if the application was transferred, or the number may be written differently. A missing number is not a refusal.'],
+    ],
   },
   {
     slug: 'beijing',
@@ -154,6 +159,10 @@ const OFFICES = [
       ['Why is my application number not in the Beijing list?', 'The decision may not be published yet, the snapshot may not include it, your file may be with another office, or the number may be in a different format. A missing number is not a refusal.'],
       ['Is the Beijing data live?', 'No. It is the latest published snapshot the tracker has found, not a live feed or a daily archive.'],
       ['Does an Approved result mean my passport is ready?', 'No. The list records the decision, not the passport’s location. Wait for the official decision letter and the VFS return process.'],
+    ],
+    countryFaq: () => [
+      ['I applied in China. Where are Beijing decisions published?', 'The Beijing visa office publishes a cumulative decision file on its official page for China, Hong Kong, Macau and Mongolia. The tracker holds the latest snapshot it has found; check the official page for a newer file.'],
+      ['Do Hong Kong, Macau and Mongolia applications appear in the Beijing snapshot?', 'Yes. The Beijing office covers China, Hong Kong, Macau and Mongolia. The snapshot is cumulative for the applications it handles, not a dated daily archive.'],
     ],
   },
   {
@@ -206,6 +215,10 @@ const OFFICES = [
       ['What does the report date mean?', 'It is the end of the reporting period, not the date of an individual decision.'],
       ['Does an Approved result mean my passport is ready?', 'No. The report records the decision, not the passport’s location. Wait for the official decision letter and the VFS return process.'],
     ],
+    countryFaq: () => [
+      ['I applied in the UAE. Which file contains my decision?', 'Applications handled by the Abu Dhabi visa office appear in its weekly PDF reports. The report date is the end of the reporting period, not the date of your individual decision.'],
+      ['Does Abu Dhabi handle applications from Saudi Arabia?', 'The Abu Dhabi published country list covers the UAE, Afghanistan, Algeria, Bahrain, Jordan, Kuwait, Lebanon, Libya, Morocco, Oman, Qatar, Sudan, Syria and Tunisia, but not Saudi Arabia or Pakistan. Visa-required nationals resident in Saudi Arabia should check the Ankara office; applications from Pakistan may be handled in Dublin. Search all six offices if unsure.'],
+    ],
   },
   {
     slug: 'abuja',
@@ -256,6 +269,10 @@ const OFFICES = [
       ['What does the report date mean?', 'It is the end of the reporting period, not the date of an individual decision.'],
       ['Does an Approved result mean my passport is ready?', 'No. The report records the decision, not the passport’s location. Wait for the official decision letter and the VFS return process.'],
     ],
+    countryFaq: () => [
+      ['I applied in Nigeria. Where do Abuja decisions appear?', 'Applications handled by the Abuja visa office appear in its weekly PDF reports for Nigeria, Côte d’Ivoire, Ghana and Senegal. Each report covers a period and carries the period-end date.'],
+      ['Do Ghana and Côte d’Ivoire applications appear in the Abuja reports?', 'Yes. The Abuja office covers Nigeria, Ghana, Côte d’Ivoire and Senegal. A number may appear in an earlier or later weekly report rather than the latest one, so search the office archive.'],
+    ],
   },
   {
     slug: 'ankara',
@@ -305,6 +322,10 @@ const OFFICES = [
       ['Why is my number missing from the Ankara list?', 'It may be in an earlier or later report, the decision may not be published yet, OCR may have missed the row, or your file may be with another office. Check the official PDF before treating it as a refusal.'],
       ['Why does Ankara data have an OCR note?', 'Some reports are scanned images. The tracker extracts their text with OCR to make them searchable; the official PDF is the authority.'],
       ['Does an Approved result mean my passport is ready?', 'No. The report records the decision, not the passport’s location. Wait for the official decision letter and the VFS return process.'],
+    ],
+    countryFaq: () => [
+      ['I applied in Türkiye. Where are Ankara decisions published?', 'The Ankara visa office publishes weekly PDF reports for Türkiye, Azerbaijan and visa-required nationals resident in Saudi Arabia. Some reports are scanned, so OCR may miss a row; check the official PDF.'],
+      ['I am a visa-required national resident in Saudi Arabia. Does Ankara handle my application?', 'Ankara’s published scope includes visa-required nationals resident in Saudi Arabia. Your receipt or acknowledgement shows which office has your file; if the number is missing, search all six offices and check the official Ankara PDF.'],
     ],
   },
   {
@@ -359,12 +380,18 @@ const OFFICES = [
       ['What is the Dublin queue?', 'It is a set of processing dates by visa category, not an individual decision list. See the processing times page for the current queue.'],
       ['Does an Approved result mean my passport is ready?', 'No. The list records the decision, not the passport’s location. Wait for the official decision letter and the VFS return process.'],
     ],
+    countryFaq: () => [
+      ['I applied in Pakistan. Is my decision in the Dublin list?', 'Join-family applications from residents of Pakistan are considered by the Dublin Visa Office, and some applications are transferred there. Dublin publishes decisions every Tuesday; check the latest snapshot and search all six offices if the number is missing.'],
+      ['Does Dublin handle every application from Pakistan?', 'No. Dublin handles specified categories and applications transferred from overseas offices, including join-family applications from residents of Pakistan. A VFS centre is not the visa office; your receipt or acknowledgement shows where your file is.'],
+    ],
   },
 ];
 
 function schemaFor(office) {
   const f = office.fallback;
-  const faq = office.faq(f).map(([question, answer]) => ({
+  const faq = office.faq(f)
+    .concat(typeof office.countryFaq === 'function' ? office.countryFaq(f) : [])
+    .map(([question, answer]) => ({
     '@type': 'Question',
     name: question,
     acceptedAnswer: { '@type': 'Answer', text: answer },
@@ -565,12 +592,23 @@ function analysisPlaceholder(office) {
 
 function faqSection(office) {
   const faq = office.faq(office.fallback);
+  const country = typeof office.countryFaq === 'function' ? office.countryFaq(office.fallback) : [];
+  const renderFaq = (items) => items
+    .map(([question, answer]) => `<h3>${question}</h3>\n        <p>${answer}</p>`)
+    .join('\n        ');
   return `<section>
       <h2>Frequently asked questions</h2>
       <div class="faq">
-        ${faq.map(([question, answer]) => `<h3>${question}</h3>\n        <p>${answer}</p>`).join('\n        ')}
+        ${renderFaq(faq)}
       </div>
-    </section>`;
+    </section>
+    ${country.length ? `<section id="country-faq">
+      <h2>Country-specific questions</h2>
+      <p class="small-note">These questions follow the countries covered by the ${office.name} office. Your receipt or acknowledgement shows which office has your file.</p>
+      <div class="faq">
+        ${renderFaq(country)}
+      </div>
+    </section>` : ''}`;
 }
 
 function related(office) {

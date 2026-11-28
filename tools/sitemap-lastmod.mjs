@@ -130,6 +130,7 @@ export function buildLastmodMap(assetsRoot = ROOT) {
       '/embed',
       '/when-are-visa-decisions-published',
       '/reports',
+      '/irish-visa-decision-dates-2026',
     ]) {
       map.set(route, latest);
     }

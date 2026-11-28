@@ -312,6 +312,7 @@ function allPagesPage(data, archives) {
         <li><a href="/visa-processing-times">Processing times</a> — current queues, with caveats.</li>
         <li><a href="/stamp-1g-processing-dates">Stamp 1G dates</a> and <a href="/employment-permit-processing-dates">employment permits</a>.</li>
         <li><a href="/decisions">Decisions by date</a> — the quality-gated date archive.</li>
+        <li><a href="/irish-visa-decision-dates-2026">Irish visa decision dates 2026</a> — every quality-gated date page and dated report, grouped by month and office.</li>
       </ul>
     </section>
 
@@ -428,7 +429,7 @@ function decisionsIndexPage(data, archives) {
     <section>
       <h2>Why some dates are missing</h2>
       <p>A date page is only published for a weekday with at least 10 decisions in the archived reports. That prevents thousands of thin pages for weekends, bank holidays and days when an office did not publish. The absence of a date page is not a statement about any application.</p>
-      <p class="page-nav"><a href="/reports">Official report archive</a> &middot; <a href="/daily-summaries">Ireland visa decisions by date</a> &middot; <a href="/all-pages">All pages</a></p>
+      <p class="page-nav"><a href="/reports">Official report archive</a> &middot; <a href="/irish-visa-decision-dates-2026">Irish visa decision dates 2026</a> &middot; <a href="/daily-summaries">Ireland visa decisions by date</a> &middot; <a href="/all-pages">All pages</a></p>
     </section>`;
   return shell({
     route: '/decisions',
@@ -442,6 +443,92 @@ function decisionsIndexPage(data, archives) {
       name: 'Irish visa decisions by date',
       inLanguage: 'en',
       dateModified: archives[0] ? archives[0].date : data.asOf || EDITORIAL_DATE,
+      isPartOf: { '@id': `${SITE}/#website` },
+    },
+  });
+}
+
+function irishVisaDecisionDates2026Page(data, archives) {
+  const byMonth = new Map();
+  const monthFor = (date) => {
+    const key = String(date).slice(0, 7);
+    if (!byMonth.has(key)) byMonth.set(key, { reports: [], datePages: [] });
+    return byMonth.get(key);
+  };
+  for (const item of data.generatedReportEntries) {
+    const date = iso(item.date);
+    if (!date.startsWith('2026-')) continue;
+    monthFor(date).reports.push(item);
+  }
+  for (const archive of archives) {
+    const date = iso(archive.date);
+    if (!date.startsWith('2026-')) continue;
+    monthFor(date).datePages.push(archive);
+  }
+  const months = [...byMonth.keys()].sort().reverse();
+  const monthSections = months.map((key) => {
+    const group = byMonth.get(key);
+    const datePages = group.datePages
+      .slice()
+      .sort((a, b) => b.date.localeCompare(a.date));
+    const datePageList = datePages.length
+      ? `<ul class="study-list">${datePages.map((archive) => `<li><a href="/decisions/${archive.date}">${esc(longDate(archive.date))}</a> — ${num(archive.total)} decisions across ${archive.reports.length} office${archive.reports.length === 1 ? '' : 's'}.</li>`).join('\n')}</ul>`
+      : '<p class="small-note">No date in this month clears the quality-gated date-page threshold.</p>';
+    const officeSections = OFFICES.map((slug) => {
+      const office = data.bySlug.get(slug);
+      const reports = group.reports
+        .filter((item) => item.slug === slug)
+        .sort((a, b) => b.date.localeCompare(a.date));
+      if (!reports.length) return '';
+      return `<h3><a href="${office.route}">${esc(office.name)}</a></h3>
+        <p class="small-note">${esc(office.countries)} · ${reports.length} dated report${reports.length === 1 ? '' : 's'} this month.</p>
+        <ul class="study-list">${reports.map((item) => `<li><a href="/reports/${slug}/${item.date}">${esc(longDate(item.date))}</a> — ${num(item.entry.decisions)} decisions.</li>`).join('\n')}</ul>`;
+    }).filter(Boolean).join('\n');
+    return `<section>
+      <h2>${esc(monthLabel(key))}</h2>
+      <h3>Quality-gated date pages</h3>
+      ${datePageList}
+      <h3>Dated reports by office</h3>
+      ${officeSections || '<p class="small-note">No dated office reports in this month.</p>'}
+    </section>`;
+  }).join('\n    ');
+  const reportCount = data.generatedReportEntries.filter((item) => iso(item.date).startsWith('2026-')).length;
+  const body = `    ${breadcrumbNav([
+    { name: 'Home', href: '/' },
+    { name: 'Irish visa decision dates 2026' },
+  ])}
+    <p class="page-kicker">2026 archive</p>
+    <h1>Irish visa decision dates 2026</h1>
+    <p class="page-meta">${num(archives.length)} date pages &bull; ${num(reportCount)} dated reports &bull; Six offices</p>
+    <p class="page-lede">This archive links the quality-gated date pages and every dated official report in 2026, grouped by month and office. It answers which dates have published decisions, which office published them, and where the source report is. A date is the report’s publication date or period end, not necessarily the day an individual application was decided. A missing date is a publication gap, not a refusal.</p>
+    <div class="study-grid">
+      <div class="study-stat"><span class="status-kicker">Date pages</span><strong>${num(archives.length)}</strong><span>Weekdays with at least 10 decisions</span></div>
+      <div class="study-stat"><span class="status-kicker">Dated reports</span><strong>${num(reportCount)}</strong><span>Linked to their office and month</span></div>
+      <div class="study-stat"><span class="status-kicker">Offices</span><strong>6</strong><span>With published decision files</span></div>
+    </div>
+    ${monthSections || '<section><h2>2026 dates</h2><p>No dated decisions are archived for 2026 yet.</p></section>'}
+    <section>
+      <h2>What the dates mean</h2>
+      <ul class="study-list">
+        <li><strong>Date pages</strong> group every office report whose own publication date matches the date, but only for weekdays with at least 10 decisions.</li>
+        <li><strong>Dated reports</strong> link the exact report page for each office file. New Delhi’s file date is the official-file date; weekly reports use their period-end date.</li>
+        <li><strong>Decision date</strong> is the date attached to a published row when the office provides one. It can differ from the report date, especially for weekly reports.</li>
+        <li><strong>A missing date</strong> means no report cleared the archive threshold or no file was published. It is not evidence that an application was refused.</li>
+      </ul>
+      <p class="page-nav"><a href="/decisions">Browse by date</a> &middot; <a href="/reports">Official report archive</a> &middot; <a href="/irish-visa-decisions-today">Today’s decisions</a> &middot; <a href="/all-pages">All pages</a></p>
+    </section>`;
+  return shell({
+    route: '/irish-visa-decision-dates-2026',
+    title: 'Irish Visa Decision Dates 2026 — Archive by Month and Office',
+    description: 'Every quality-gated Irish visa decision date page and dated official report in 2026, grouped by month and office, with source links.',
+    body,
+    jsonLd: {
+      '@context': 'https://schema.org',
+      '@type': 'CollectionPage',
+      url: `${SITE}/irish-visa-decision-dates-2026`,
+      name: 'Irish visa decision dates 2026',
+      inLanguage: 'en',
+      dateModified: data.latestPublication || EDITORIAL_DATE,
       isPartOf: { '@id': `${SITE}/#website` },
     },
   });
@@ -922,6 +1009,7 @@ export function buildGrowthPages(options = {}) {
     'find-my-office.html': findMyOfficePage(data),
     'bulk-tools.html': bulkToolsPage(data),
     'decisions.html': decisionsIndexPage(data, archives),
+    'irish-visa-decision-dates-2026.html': irishVisaDecisionDates2026Page(data, archives),
   };
   const shouldWrite = (file) => !only || only.has(file) || only.has('all');
   for (const [file, html] of Object.entries(pages)) {

@@ -115,6 +115,7 @@ export const PAGES = [
   { file: 'find-my-office.html', route: '/find-my-office', current: null, skip: 'content' },
   { file: 'bulk-tools.html', route: '/bulk-tools', current: null, skip: 'content' },
   { file: 'decisions.html', route: '/decisions', current: '/decisions', skip: 'content' },
+  { file: 'irish-visa-decision-dates-2026.html', route: '/irish-visa-decision-dates-2026', current: '/decisions', skip: 'content' },
   // Operational dashboard: available to the maintainer and linked from the
   // crawl hub, but deliberately noindex and excluded from the sitemap.
   { file: 'search-coverage.html', route: '/search-coverage', current: null, skip: 'content', noindex: true },

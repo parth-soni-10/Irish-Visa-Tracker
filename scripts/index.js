@@ -193,10 +193,10 @@
                     keepalive: true
                 }).catch(function() {});
             }
-            async function openAlertForResult(number, office) {
+            async function openAlertForResult(number, office, source) {
                 if (!number) return;
                 var safeOffice = WATCH_OFFICES.indexOf(office) !== -1 ? office : 'new-delhi';
-                trackConversion('alert_telegram_click', 'lookup_result', safeOffice);
+                trackConversion('alert_telegram_click', source || 'lookup_result', safeOffice);
                 await switchTab('alerts');
                 if (activeTab !== 'alerts') return;
                 var form = document.getElementById('alert-form');
@@ -1158,6 +1158,7 @@
                 if (homeSearchEl) {
                     homeSearchEl.addEventListener('input', function(e) {
                         homeSearchTerm = e.target.value;
+                        paintSearchFormat(e.target, '[data-home-search-format]');
                         if (!_homeSearchStarted && homeSearchTerm.trim()) {
                             _homeSearchStarted = true;
                             trackConversion('search_started', 'home_' + homeSearchOffice, homeSearchOffice);
@@ -1192,6 +1193,7 @@
                     });
                     // Don't pop the keyboard on touch devices (env detector sets
                     // body[data-env="touch"]); desktop keeps the search focused.
+                    if (homeSearchTerm.trim()) paintSearchFormat(homeSearchEl, '[data-home-search-format]');
                     if (activeTab === 'search' && document.body.dataset.env !== 'touch') {
                         homeSearchEl.focus();
                         homeSearchEl.setSelectionRange(homeSearchEl.value.length, homeSearchEl.value.length);
@@ -1262,8 +1264,14 @@
                     if (alertBtn) {
                         openAlertForResult(
                             alertBtn.getAttribute('data-lookup-alert'),
-                            alertBtn.getAttribute('data-lookup-alert-office')
+                            alertBtn.getAttribute('data-lookup-alert-office'),
+                            'lookup_result'
                         );
+                        return;
+                    }
+                    var another = target && target.closest('[data-lookup-another]');
+                    if (another) {
+                        focusLookupInput();
                         return;
                     }
                     var noResultWatch = target && target.closest('[data-home-noresult-watch]');
@@ -2516,15 +2524,16 @@
                     '<a href="/reports">Official reports</a>' +
                     '<a href="/help">Help</a>' +
                     '</nav>' +
-                    '<p class="home-lookup-copy" id="home-lookup-copy">Search all six offices at once. Use the application number on your receipt; an IRL prefix is optional. Choose a specific office only if you already know it.</p>' +
+                    '<p class="home-lookup-copy" id="home-lookup-copy">Search all six offices at once. Use the 8-digit application number on your receipt; an IRL prefix, spaces and dashes are optional. Example: <strong>48850812</strong> (not a real applicant).</p>' +
                     '<form class="home-lookup-form" id="home-lookup-form" role="search" novalidate>' +
                     '<div class="home-lookup-field home-lookup-number">' +
                     '<label for="home-search">Application number</label>' +
                     '<div class="searchbar">' + searchIcon() +
-                    '<input type="text" id="home-search" name="q" inputmode="numeric" autocomplete="off" maxlength="200" aria-describedby="home-lookup-copy home-number-help" aria-label="Search by application number" placeholder="e.g. 48850812" value="' +
+                    '<input type="text" id="home-search" name="q" inputmode="numeric" autocomplete="off" maxlength="200" aria-describedby="home-lookup-copy home-search-format home-number-help" aria-label="Search by application number" placeholder="e.g. 48850812" value="' +
                     escapeHtml(homeSearchTerm) + '"></div></div>' +
                     '<button class="btn home-lookup-submit" type="submit" id="home-lookup-submit">Search all offices</button>' +
                     '</form>' +
+                    '<p class="search-format-status" id="home-search-format" data-home-search-format data-format-state="idle" role="status" aria-live="polite">Use the 8-digit number on your receipt. Example: 48850812 (not a real applicant).</p>' +
                     '<details class="search-options" id="home-search-options">' +
                     '<summary>Search options — choose a visa office</summary>' +
                     '<label class="search-options-label" for="home-office">Visa office</label>' +
@@ -2849,9 +2858,9 @@
                     escapeHtml(number) + '" data-lookup-office="' + escapeHtml(office) +
                     '" aria-pressed="' + (saved ? 'true' : 'false') + '" aria-label="' +
                     (saved ? 'Tracking application ' + escapeHtml(number) + '. Remove from your watchlist'
-                        : 'Track this application: ' + escapeHtml(number)) + '" title="' +
+                        : 'Save this application to your watchlist: ' + escapeHtml(number)) + '" title="' +
                     (saved ? 'Remove from your watchlist' : 'Save to your watchlist') + '">' +
-                    (saved ? 'Tracking' : 'Track this application') + '</button>';
+                    (saved ? 'Tracking' : 'Save to watchlist') + '</button>';
             }
 
             function lookupOfficeCtaHTML(office, meta) {
@@ -3020,12 +3029,14 @@
                     escapeHtml(number) + '" data-lookup-share-office="' + escapeHtml(office) +
                     '" aria-label="Copy result link for application ' + escapeHtml(number) + '" aria-describedby="' + privacyId +
                     '">Copy result link</button>' +
+                    '<button type="button" class="btn secondary lookup-result-btn lookup-result-another" data-lookup-another aria-label="Search another application number">Check another number</button>' +
                     '<div class="lookup-result-feedback" data-lookup-feedback-wrap>' +
                     '<span>Was this result useful?</span>' +
                     '<button type="button" class="export-btn tu-btn" data-lookup-feedback="yes">Yes</button>' +
                     '<button type="button" class="export-btn tu-btn" data-lookup-feedback="no">No</button>' +
                     '<span class="note2" data-lookup-feedback-status role="status" aria-live="polite"></span></div>' +
                     '<div class="lookup-result-status" data-lookup-action-status role="status" aria-live="polite"></div>' +
+                    '<p class="lookup-result-watch-note">Saving is browser-local and anonymous: the application number stays on this device.</p>' +
                     '<p class="lookup-result-privacy" id="' + privacyId + '">A copied link contains application number ' +
                     escapeHtml(number) + '. Share it only with people you trust.</p>' +
                     '</div>' + lookupNextStepsHTML(row) + '</article>';
@@ -3164,6 +3175,18 @@
                     '<ul>' + rows.join('') + '</ul></details>';
             }
 
+            function lookupLastCheckedHTML(metas) {
+                var latest = WATCH_OFFICES.map(function(office) {
+                    var meta = lookupOfficeMeta(office, metas);
+                    return meta && meta.freshness && (meta.freshness.last_success_at || meta.freshness.checked_at || '');
+                }).filter(Boolean).sort().pop();
+                if (!latest) return '';
+                var date = String(latest).slice(0, 10);
+                return '<p class="small-note">Last successful office check: <time datetime="' +
+                    escapeHtml(date) + '">' + escapeHtml(lookupFormatChecked(latest)) +
+                    '</time>. Report dates and next expected updates are listed below.</p>';
+            }
+
             function homeLookupNoResultHTML(term, metas) {
                 var scope = homeSearchOffice === 'all'
                     ? 'all six offices'
@@ -3192,10 +3215,12 @@
                 return '<div class="home-lookup-empty">' +
                     '<h3>No matching decision in the reports we could check</h3>' +
                     '<p>We searched ' + escapeHtml(scope) + ' for <strong>' +
-                        escapeHtml(term || homeSearchTerm.trim()) + '</strong>. This is not a refusal: the number is not in the reports we could check.</p>' +
+                        escapeHtml(term || homeSearchTerm.trim()) + '</strong> using the latest report windows listed below. This is not a refusal: the number is not in the reports we could check.</p>' +
                     '<p class="home-lookup-empty-tip">' + (homeSearchOffice === 'all'
                         ? 'Try another number format, or check that the application is under the office on your receipt. We already searched all six offices.'
                         : 'Try another office in the selector above, or choose <strong>All six offices</strong>.') + '</p>' +
+                    lookupLastCheckedHTML(metas) +
+                    '<p class="small-note">The latest report dates, searchable windows and next expected updates are below. A delayed file can make a published decision look missing.</p>' +
                     lookupCoverageSummaryHTML(metas) +
                     staleSearchNoticeHTML(metas, homeSearchOffice) +
                     notify +
@@ -3210,6 +3235,8 @@
                     '<div class="home-lookup-empty-actions">' +
                     (homeSearchOffice !== 'all' ? '<button type="button" class="btn" data-home-office-all>Search all six offices</button>' : '') +
                     '<button type="button" class="btn" data-home-retry>Try this search again</button>' +
+                    '<a class="home-lookup-link" href="/find-my-office">Find my office</a>' +
+                    '<a class="home-lookup-link" href="/missing-decision">Why a number may be missing</a>' +
                     '<a class="home-lookup-link" href="/status">See data status</a>' +
                     '</div>' +
                     '<div class="lookup-result-feedback" data-lookup-feedback-wrap>' +
@@ -3276,7 +3303,7 @@
                     if (status) { status.textContent = 'Choose the office on your receipt first.'; status.classList.add('is-error'); }
                     return;
                 }
-                openAlertForResult(number, office);
+                openAlertForResult(number, office, 'lookup_empty');
             }
 
             function homeLookupErrorHTML() {
@@ -3316,6 +3343,7 @@
                 if (status) status.textContent = countText + (fallback ? ' \u00b7 fallback index' : '');
                 box.innerHTML = fallbackNote + safetyNoticeHTML() + '<div class="home-lookup-result-list">' +
                     rows.map(function(row) { return lookupResultCardHTML(row, metas); }).join('') + '</div>' +
+                    pwaInstallPromptHTML('post_search') +
                     '<p class="home-lookup-foot">Decision and report dates come from the office\'s published report. Always confirm details with the official source and your decision letter.</p>';
             }
 
@@ -3325,10 +3353,54 @@
                 btn.setAttribute('aria-pressed', saved ? 'true' : 'false');
                 btn.setAttribute('aria-label', saved
                     ? 'Tracking application ' + number + '. Remove from your watchlist'
-                    : 'Track this application: ' + number);
+                    : 'Save this application to your watchlist: ' + number);
                 btn.title = saved ? 'Remove from your watchlist' : 'Save to your watchlist';
                 btn.classList.toggle('is-saved', saved);
-                btn.textContent = saved ? 'Tracking' : 'Track this application';
+                btn.textContent = saved ? 'Tracking' : 'Save to watchlist';
+            }
+
+            function focusLookupInput() {
+                homeSearchTerm = '';
+                var input = document.getElementById('home-search');
+                if (input) {
+                    input.value = '';
+                    paintSearchFormat(input, '[data-home-search-format]');
+                    input.focus({ preventScroll: true });
+                    input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+                var box = document.getElementById('home-lookup-results');
+                if (box) {
+                    box.classList.remove('is-active');
+                    box.innerHTML = '';
+                }
+                var status = document.getElementById('home-lookup-status');
+                if (status) status.textContent = 'Enter another application number. All six offices are searched by default.';
+                syncUrl('replace');
+            }
+
+            function promptPWAInstall(source) {
+                trackConversion('pwa_install_click', source || 'post_search');
+                var prompt = window._visaInstallPrompt;
+                if (!prompt) return false;
+                try { prompt.prompt(); } catch (error) { return false; }
+                prompt.userChoice.then(function(result) {
+                    if (result.outcome === 'accepted') console.log('PWA installed');
+                    window._visaInstallPrompt = null;
+                    document.querySelectorAll('[data-pwa-install-nudge]').forEach(function(nudge) { nudge.remove(); });
+                }).catch(function() {});
+                return true;
+            }
+
+            function pwaInstallPromptHTML(source) {
+                if (!window._visaInstallPrompt) return '';
+                return '<div class="pwa-install-nudge" data-pwa-install-nudge>' +
+                    '<div><strong>Keep the tracker on this device.</strong>' +
+                    '<span>Installation is optional, free and does not create an account.</span></div>' +
+                    '<div class="pwa-install-actions">' +
+                    '<button type="button" class="btn" data-pwa-install data-pwa-source="' +
+                    escapeHtml(source || 'post_search') + '">Install tracker</button>' +
+                    '<button type="button" class="export-btn tu-btn" data-pwa-dismiss>Not now</button>' +
+                    '</div></div>';
             }
 
             function shareLookupResult(btn) {
@@ -3410,7 +3482,7 @@
                 var term = normalizeIRL(raw);
                 if (!raw) {
                     homeLookupSeq += 1;
-                    if (status) status.textContent = 'Choose a number and office. All six offices are searched by default.';
+                    if (status) status.textContent = 'Enter a number. All six offices are searched by default.';
                     box.classList.remove('is-active');
                     box.innerHTML = '';
                     return;
@@ -3737,6 +3809,31 @@
                 // as invalid instead of searching and finding no decision.
                 var digits = String(s == null ? '' : s).replace(/\D/g, '');
                 return /^0+$/.test(digits) ? digits : digits.replace(/^0+/, '');
+            }
+            function searchFormatState(value) {
+                var raw = String(value == null ? '' : value).trim();
+                var digits = raw.replace(/\D/g, '');
+                if (!raw) {
+                    return { state: 'idle', text: 'Use the 8-digit number on your receipt. Example: 48850812 (not a real applicant).' };
+                }
+                if (!digits) {
+                    return { state: 'error', text: 'Enter the digits from the application number. Letters and spaces are ignored.' };
+                }
+                if (digits.length > 12) {
+                    return { state: 'error', text: 'That is longer than 12 digits. Check you are using the application number, not a payment or passport reference.' };
+                }
+                if (digits.length < 6) {
+                    return { state: 'pending', text: digits.length + ' digit' + (digits.length === 1 ? '' : 's') + ' so far \u2014 most application numbers have 8 digits.' };
+                }
+                return { state: 'valid', text: 'Format looks right: ' + digits.length + ' digits. Search checks all six offices.' };
+            }
+            function paintSearchFormat(input, selector) {
+                var el = document.querySelector(selector);
+                if (!el) return;
+                var next = searchFormatState(input && input.value);
+                el.textContent = next.text;
+                el.setAttribute('data-format-state', next.state);
+                if (input) input.setAttribute('aria-invalid', next.state === 'error' ? 'true' : 'false');
             }
             function getRecentSearches() {
                 try {
@@ -4561,7 +4658,8 @@
                     'Use Telegram alerts</button></div>' +
                     '<p class="watch-notify-note">Browser notifications work in this browser on this device. ' +
                     'Telegram alerts require linking the bot and are sent to your Telegram account.</p>' +
-                    '<div class="watch-notify-status" data-watch-notify-status role="status" aria-live="polite"></div></div>';
+                    '<div class="watch-notify-status" data-watch-notify-status role="status" aria-live="polite"></div></div>' +
+                    pwaInstallPromptHTML('watchlist_saved');
             }
             function handleWatchNotifyPush(btn) {
                 var app = btn.getAttribute('data-watch-notify-push') || '';
@@ -5458,7 +5556,7 @@ async function renderLandingPage() {
                     '<label class="bp-search-label" for="landing-q">Search by application number</label>' +
                     '<form class="landing-search" id="landing-search" role="search" novalidate>' +
                     '<div class="searchbar landing-search-number">' + searchIcon() +
-                    '<input type="text" id="landing-q" name="q" inputmode="numeric" autocomplete="off" maxlength="200" aria-label="Search by application number" aria-describedby="landing-search-hint" placeholder="e.g. 48850812" required></div>' +
+                    '<input type="text" id="landing-q" name="q" inputmode="numeric" autocomplete="off" maxlength="200" aria-label="Search by application number" aria-describedby="landing-search-hint landing-search-format" placeholder="e.g. 48850812" required></div>' +
                     '<button class="btn" type="submit">Search all offices</button></form>' +
                     '<details class="search-options landing-search-options">' +
                     '<summary>Search options — choose a visa office</summary>' +
@@ -5468,7 +5566,8 @@ async function renderLandingPage() {
                     '<p>All six offices are searched by default. Selecting one narrows the same published-file search.</p>' +
                     '</details>' +
                     '<div class="bp-home-meta">' +
-                    '<p class="landing-search-hint" id="landing-search-hint">8-digit number from your receipt. <a href="/help#find-number">Where do I find it?</a></p>' +
+                    '<p class="landing-search-hint" id="landing-search-hint">8-digit number from your receipt. Example: <strong>48850812</strong> (not a real applicant). <a href="/help#find-number">Where do I find it?</a></p>' +
+                    '<p class="search-format-status landing-search-format" id="landing-search-format" data-landing-search-format data-format-state="idle" role="status" aria-live="polite">Use the 8-digit number on your receipt.</p>' +
                     '<p class="landing-freshness" id="landing-freshness"><a href="/status">Checking report freshness…</a></p>' +
                     '</div>' +
                     '</div>' +
@@ -5532,6 +5631,7 @@ async function renderLandingPage() {
                 }
                 var landingInput = document.getElementById('landing-q');
                 if (landingInput) landingInput.addEventListener('input', function() {
+                    paintSearchFormat(this, '[data-landing-search-format]');
                     if (!_landingSearchStarted && this.value.trim()) {
                         _landingSearchStarted = true;
                         trackConversion('search_started', 'landing');
@@ -5728,6 +5828,19 @@ async function renderLandingPage() {
                 if (push) {
                     e.preventDefault();
                     handleWatchNotifyPush(push);
+                    return;
+                }
+                var install = target.closest('[data-pwa-install]');
+                if (install) {
+                    e.preventDefault();
+                    promptPWAInstall(install.getAttribute('data-pwa-source') || 'post_search');
+                    return;
+                }
+                var dismissInstall = target.closest('[data-pwa-dismiss]');
+                if (dismissInstall) {
+                    e.preventDefault();
+                    var nudge = dismissInstall.closest('[data-pwa-install-nudge]');
+                    if (nudge) nudge.remove();
                     return;
                 }
                 var telegram = target.closest('[data-watch-notify-telegram]');

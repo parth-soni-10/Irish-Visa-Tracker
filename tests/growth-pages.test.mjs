@@ -15,7 +15,7 @@ test('the growth hub has a plain link path and a quality-gated date archive', as
   const dist = await mkdtemp(path.join(tmpdir(), 'iv-growth-'));
   t.after(() => rm(dist, { recursive: true, force: true }));
   const result = buildGrowthPages({ assetsRootDir: ROOT, outDir: dist });
-  assert.equal(result.pages.length, 7);
+  assert.equal(result.pages.length, 8);
   assert.ok(result.datePages >= 1);
   const allPages = await readFile(path.join(dist, 'all-pages.html'), 'utf8');
   assert.match(allPages, /All pages on the Irish Visa Decision Tracker/);
@@ -55,6 +55,15 @@ test('the growth hub has a plain link path and a quality-gated date archive', as
   assert.match(index, /Weekdays only/);
   assert.match(index, /2026-11-23/);
   assert.doesNotMatch(index, /2026-11-22/);
+
+  const datesArchive = await readFile(path.join(dist, 'irish-visa-decision-dates-2026.html'), 'utf8');
+  assert.match(datesArchive, /Irish visa decision dates 2026/);
+  assert.match(datesArchive, /Quality-gated date pages/);
+  assert.match(datesArchive, /Dated reports by office/);
+  assert.match(datesArchive, /November 2026/);
+  assert.match(datesArchive, /\/decisions\/2026-11-23/);
+  assert.match(datesArchive, /\/reports\/new-delhi\/2026-11-23/);
+  assert.match(allPages, /\/irish-visa-decision-dates-2026/);
 });
 
 test('after-decision and bulk pages keep the official-source caveat', async (t) => {
