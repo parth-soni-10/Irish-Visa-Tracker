@@ -56,7 +56,7 @@ const OFFICES = [
     },
     sourceUrl: 'https://www.ireland.ie/en/india/newdelhi/services/visas/processing-times-and-decisions/',
     sourceName: 'Embassy of Ireland, New Delhi — processing times and decisions',
-    sourceFile: 'https://www.ireland.ie/5351/20261123_NDVO_Visa_Decisions.ods',
+    sourceFile: 'https://www.ireland.ie/5384/20261126_NDVO_Visa_Decisions.ods',
     sourceLabel: 'Open the latest New Delhi ODS',
     dataUrl: '/data/visa_decisions.json',
     aboutName: 'Embassy of Ireland, New Delhi',
@@ -663,7 +663,7 @@ ${schemaFor(office)}
     <p class="office-actions">
       <a class="btn" href="${office.sourceUrl}" target="_blank" rel="noopener noreferrer">Official ${office.name} page</a>
       <a class="btn" href="/monthly-report?utm_source=office_page&amp;utm_medium=referral&amp;utm_campaign=monthly_report">Monthly report</a>
-      <button type="button" class="btn" data-office-alerts="${office.slug}" hidden>Get ${office.name} publication updates</button>
+      <button type="button" class="btn" data-office-alerts="${office.slug}" aria-label="Get updates: ${esc(office.name)} publication updates on Telegram" hidden>Get ${office.name} publication updates</button>
       <button type="button" class="btn secondary" data-public-channel hidden>Follow the public Telegram channel</button>
     </p>
 

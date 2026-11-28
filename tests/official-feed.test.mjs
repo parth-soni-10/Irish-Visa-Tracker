@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { buildOfficialFeed, buildJsonFeed, buildRssFeed } from '../functions/official-feed.js';
+import { NDVO_SOURCE_PAGE } from '../functions/_report-sources.js';
 
 const reports = {
   offices: {
@@ -51,6 +52,29 @@ test('feed is one item per official report, newest first, with no applicant rows
   assert.equal(feed.entries[0].corrections, 1);
   assert.equal(feed.entries[0].added, 103);
   assert.equal(JSON.stringify(feed).includes('83289482'), false, 'the feed must not expose row-level applicant numbers');
+});
+
+test('feed redirects a retired New Delhi file to the live official page', () => {
+  const feed = buildOfficialFeed({
+    offices: {
+      'new-delhi': [
+        {
+          report_date: '2026-11-10',
+          decisions: 100,
+          source_file: 'https://www.ireland.ie/5308/20261110_NDVO_Visa_Decisions.ods'
+        },
+        {
+          report_date: '2026-11-26',
+          decisions: 200,
+          source_file: 'https://www.ireland.ie/5384/20261126_NDVO_Visa_Decisions.ods'
+        }
+      ]
+    }
+  }, { manifest });
+  const oldEntry = feed.entries.find((entry) => entry.report_date === '2026-11-10');
+  assert.equal(oldEntry.source_file, NDVO_SOURCE_PAGE);
+  assert.equal(feed.entries.find((entry) => entry.report_date === '2026-11-26').source_file,
+    'https://www.ireland.ie/5384/20261126_NDVO_Visa_Decisions.ods');
 });
 
 test('JSON Feed 1.1 carries the official source and report facts', () => {

@@ -22,6 +22,7 @@ import { loadFreshness, SNAPSHOT_OFFICES, timeHTML } from './freshness.mjs';
 import { expectedAfter, expectedDate } from '../shared/publication-schedule.js';
 import { freshnessFooterHTML, freshnessHistoryHTML } from './freshness-ui.mjs';
 import { OFFICE_SERIES_KIND } from './office-analysis.mjs';
+import { reportSource } from './report-sources.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const SITE = SITE_ORIGIN;
@@ -402,10 +403,12 @@ export function monthlyVolume(data) {
 }
 
 export function newDelhiFileGrowth(data) {
+  const office = (data.offices || []).find((item) => item.slug === 'new-delhi') || { slug: 'new-delhi' };
   const oldest = distinctReports(officeEntries(data, 'new-delhi')).reverse();
   return oldest.map((entry, index) => {
     const prior = oldest[index - 1] || null;
     const decisions = Number(entry.decisions) || 0;
+    const source = reportSource(entry, office);
     return {
       report_date: String(entry.report_date).slice(0, 10),
       decisions,
@@ -414,7 +417,7 @@ export function newDelhiFileGrowth(data) {
       rate: decisions ? ((Number(entry.approved) || 0) / decisions) * 100 : 0,
       added: prior ? decisions - (Number(prior.decisions) || 0) : null,
       prior_date: prior ? String(prior.report_date).slice(0, 10) : '',
-      source_file: entry.source_file || '',
+      source_file: source.href,
       checksum: entry.checksum || '',
     };
   });
@@ -1139,11 +1142,12 @@ function schedulePage(data) {
     const when = /^\d{4}-\d{2}-\d{2}T/.test(observed)
       ? timeHTML(observed)
       : '—';
+    const source = reportSource(entry, office);
     return `<tr>
           <th scope="row">${esc(office.name)}</th>
           <td data-label="Report date"><time datetime="${String(entry.report_date).slice(0, 10)}">${esc(longDate(entry.report_date))}</time></td>
           <td data-label="Tracker observed">${when}</td>
-          <td data-label="Source"><a href="${esc(entry.source_file || office.source_url || office.route)}" target="_blank" rel="noopener noreferrer">Official source</a></td>
+          <td data-label="Source"><a href="${esc(source.href)}" target="_blank" rel="noopener noreferrer">${esc(source.label)}</a></td>
         </tr>`;
   })).join('\n        ');
 
@@ -1811,7 +1815,8 @@ function reportDetailPage(data, office, entry, prior) {
   const refused = Number(entry.refused) || 0;
   const delta = prior ? decisions - (Number(prior.decisions) || 0) : null;
   const changed = Array.isArray(entry.changed) ? entry.changed.length : 0;
-  const sourceFile = httpUrl(entry.source_file);
+  const source = reportSource(entry, office);
+  const sourceFile = httpUrl(source.href);
   const officialPage = httpUrl(office.source_url);
   const route = `/reports/${office.slug}/${date}`;
 
@@ -1839,7 +1844,7 @@ function reportDetailPage(data, office, entry, prior) {
             <tr><th>Observed by tracker</th><td>${entry.fetched_at ? timeHTML(entry.fetched_at) : 'Not recorded'}<br><span class="small-note">When the tracker fetched the file, not the publication time.</span></td></tr>
             <tr><th>Report basis</th><td>${esc(office.basis)}</td></tr>
             <tr><th>Checksum</th><td><code>${esc(entry.checksum || '—')}</code></td></tr>
-            <tr><th>Source file</th><td>${sourceFile ? `<a href="${esc(sourceFile)}" target="_blank" rel="noopener noreferrer">Open the official file</a>` : 'No file URL recorded'}</td></tr>
+            <tr><th>Source file</th><td>${sourceFile ? `<a href="${esc(sourceFile)}" target="_blank" rel="noopener noreferrer">${source.retired ? 'Open the official source page' : 'Open the official file'}</a>` : 'No file URL recorded'}</td></tr>
             <tr><th>Official page</th><td>${officialPage ? `<a href="${esc(officialPage)}" target="_blank" rel="noopener noreferrer">${esc(office.name)} official page</a>` : '—'}</td></tr>
           </tbody>
         </table>

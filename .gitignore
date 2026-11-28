@@ -28,6 +28,9 @@ playwright-report/
 test-results/
 /test-results.json
 
+# Generated accessibility audit output (npm run audit:a11y)
+/accessibility-report.md
+
 # Local logs and scratch output
 *.log
 /wrangler-output.txt

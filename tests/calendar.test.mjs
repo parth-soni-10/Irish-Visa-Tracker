@@ -11,6 +11,7 @@ import {
   officesCalendarResponse
 } from '../functions/calendar.js';
 import { loadFreshness } from '../tools/freshness.mjs';
+import { NDVO_SOURCE_PAGE } from '../functions/_report-sources.js';
 
 test('calendar uses the next weekday 11:00 IST window before the update', () => {
   // Monday 16 Nov 2026, 04:00 UTC = 09:30 IST.
@@ -97,6 +98,24 @@ function fixtureReports() {
 function uidLines(ics) {
   return [...ics.matchAll(/^UID:([^\r\n]+)/gm)].map((match) => match[1]);
 }
+
+test('calendar redirects a retired New Delhi file to the live official page', () => {
+  const reports = {
+    offices: {
+      'new-delhi': [
+        { ...report('2026-11-23'), source_file: 'https://www.ireland.ie/5351/20261123_NDVO_Visa_Decisions.ods' },
+        report('2026-11-26')
+      ]
+    }
+  };
+  const manifest = {
+    offices: [{ slug: 'new-delhi', name: 'New Delhi', source_url: NDVO_SOURCE_PAGE }]
+  };
+  const ics = buildOfficeCalendar(new Date('2026-11-28T12:00:00Z'), { reports, manifest });
+  const unfolded = ics.replace(/\r\n[ \t]/g, '');
+  assert.ok(unfolded.includes(NDVO_SOURCE_PAGE));
+  assert.ok(!unfolded.includes('https://www.ireland.ie/5351/20261123_NDVO_Visa_Decisions.ods'));
+});
 
 test('all-office calendar uses stable expected and published UIDs for all six offices', () => {
   const ics = buildOfficeCalendar(NOW, { reports: fixtureReports(), manifest: MANIFEST });

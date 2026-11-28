@@ -13,6 +13,7 @@ import {
   PUBLICATION_SCHEDULES,
   expectedDate,
 } from '../shared/publication-schedule.js';
+import { reportSource } from './_report-sources.js';
 
 const IST_OFFSET_MINUTES = 330; // UTC+05:30, no daylight saving.
 const UPDATE_HOUR = 11;
@@ -251,12 +252,15 @@ function officePage(slug, manifest) {
   return safeHttpUrl(match && match.source_url) || safeHttpUrl(OFFICE_PAGES[slug]);
 }
 
-function publishedEvent(slug, name, sourcePage, report, now) {
+function publishedEvent(slug, name, sourcePage, report, now, latestReportDate) {
   const reportDate = isoDate(report.report_date);
   if (!reportDate) return null;
   const start = new Date(reportDate + 'T00:00:00Z');
   const end = addUtcDays(start, 1);
-  const source = safeHttpUrl(report.source_file) || sourcePage;
+  const source = safeHttpUrl(reportSource(
+    { source_file: report.source_file, report_date: reportDate },
+    { slug, source_url: sourcePage, report_date: latestReportDate },
+  ).href) || sourcePage;
   const decisions = Math.max(0, Number(report.decisions) || 0);
   const approved = Math.max(0, Number(report.approved) || 0);
   const refused = Math.max(0, Number(report.refused) || 0);
@@ -385,7 +389,7 @@ export function buildOfficeCalendar(now = new Date(), options = {}) {
       // published as well as what is expected.
       if (reportDate > horizonEnd) continue;
       if (reportDate < lookbackStart && reportDate !== latestReportDate) continue;
-      const event = publishedEvent(slug, name, sourcePage, report, current);
+      const event = publishedEvent(slug, name, sourcePage, report, current, latestReportDate);
       if (event) events.push(event);
     }
 

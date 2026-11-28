@@ -10,6 +10,8 @@
  * reported separately with the other snapshot offices.
  */
 
+import { reportSource } from './_report-sources.js';
+
 const OFFICE_FILES = [
   { file: 'embassy-new-delhi.json', slug: 'new-delhi' },
   { file: 'embassy-beijing.json', slug: 'beijing' },
@@ -432,6 +434,15 @@ export function buildCorrectionLedger(reportsDoc, options = {}) {
   const offices = reportsDoc && reportsDoc.offices && typeof reportsDoc.offices === 'object'
     ? reportsDoc.offices
     : {};
+  const latestBySlug = new Map();
+  for (const [slug, reports] of Object.entries(offices)) {
+    if (!Array.isArray(reports)) continue;
+    const latest = reports.reduce((latestDate, report) => {
+      const reportDate = isoDate(report && report.report_date);
+      return reportDate > latestDate ? reportDate : latestDate;
+    }, '');
+    latestBySlug.set(slug, latest);
+  }
   for (const [slug, reports] of Object.entries(offices)) {
     if (!Array.isArray(reports)) continue;
     for (const report of reports) {
@@ -446,8 +457,13 @@ export function buildCorrectionLedger(reportsDoc, options = {}) {
           to: String(change.to || '')
         }));
       if (!added && !removed && !changed.length) continue;
-      const sourceFile = safeHttpUrl(report.source_file);
       const sourcePage = officePages.get(slug) || null;
+      const originalSourceFile = safeHttpUrl(report.source_file);
+      const resolvedSource = reportSource(
+        { source_file: originalSourceFile, report_date: report.report_date },
+        { slug, source_url: sourcePage, report_date: latestBySlug.get(slug) || '' },
+      );
+      const sourceFile = resolvedSource.retired ? safeHttpUrl(resolvedSource.href) : originalSourceFile;
       entries.push({
         office: slug,
         office_name: officeNames.get(slug) || slug,

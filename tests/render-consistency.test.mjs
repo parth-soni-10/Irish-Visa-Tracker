@@ -6,6 +6,7 @@ import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
 import { loadFreshness } from '../tools/freshness.mjs';
+import { NDVO_SOURCE_PAGE, RETIRED_NDVO_SOURCE_URLS } from '../tools/report-sources.mjs';
 
 const ROOT = fileURLToPath(new URL('../', import.meta.url));
 const PAGES = path.resolve(ROOT, process.env.SITE_HTML_BASE || '.pages-dist');
@@ -146,8 +147,13 @@ test('status offers office updates and the 404 page can recover with a search', 
   for (const office of freshness.offices) {
     assert.ok(status.includes(`data-office-alerts="${office.slug}"`), `${office.slug} update link missing`);
     assert.ok(
-      status.includes(`aria-label="Get ${office.name} publication updates on Telegram"`),
+      status.includes(`aria-label="Get updates: ${office.name} publication updates on Telegram"`),
       `${office.slug} update link has no distinct accessible name`,
+    );
+    const officePage = await page(`${office.slug}-visa-decisions.html`);
+    assert.ok(
+      officePage.includes(`aria-label="Get updates: ${office.name} publication updates on Telegram"`),
+      `${office.slug} office update button has no distinct accessible name`,
     );
   }
   assert.ok(status.includes('public-channel.js'), 'status page does not load the config-driven links');
@@ -156,6 +162,37 @@ test('status offers office updates and the 404 page can recover with a search', 
   assert.match(notFound, /<form class="notfound-search" action="\/" method="get" role="search">/);
   assert.match(notFound, /name="q"/);
   assert.match(notFound, /name="tracker" value="visa"/);
+});
+
+test('archived New Delhi source links use the live official page', async () => {
+  assert.equal(RETIRED_NDVO_SOURCE_URLS.size, 12);
+
+  const files = new Set();
+  const walk = (dir, skip) => {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      if (skip.has(entry.name)) continue;
+      const file = path.join(dir, entry.name);
+      if (entry.isDirectory()) walk(file, skip);
+      else if (entry.isFile() && entry.name.endsWith('.html')) files.add(file);
+    }
+  };
+  walk(PAGES, new Set());
+  walk(ROOT, new Set(['.git', 'node_modules', '.pages-dist', '.wrangler']));
+
+  for (const file of files) {
+    const html = await readFile(file, 'utf8');
+    for (const retired of RETIRED_NDVO_SOURCE_URLS) {
+      assert.ok(!html.includes(retired), `${path.relative(ROOT, file)} still links retired ${retired}`);
+    }
+  }
+
+  const growthCsv = await readFile(path.join(ROOT, 'data', 'study', 'new-delhi-file-growth.csv'), 'utf8');
+  for (const retired of RETIRED_NDVO_SOURCE_URLS) {
+    assert.ok(!growthCsv.includes(retired), `growth CSV still links retired ${retired}`);
+  }
+
+  const archived = await page('reports/new-delhi/2026-11-25.html');
+  assert.ok(archived.includes(NDVO_SOURCE_PAGE), 'retired New Delhi report does not link the official page');
 });
 
 test('every page keeps its meta description within a search result', async () => {

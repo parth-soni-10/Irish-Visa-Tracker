@@ -1571,18 +1571,7 @@
             font-weight: 700;
             color: var(--green);
         }
-        /* Landing helpers: live status strip, quick-search form, footer.
-           Reserve the strip's line-height so filling it in never shifts
-           the cards below (CLS). */
-        #visa-dash .landing-status {
-            max-width: 880px;
-            margin: 0 auto 14px;
-            font-size: 13px;
-            color: var(--ink-soft);
-            text-align: center;
-            min-height: 20px;
-        }
-        #visa-dash .landing-status strong { color: var(--ink); }
+        /* Landing helpers: quick-search form and footer. */
         #visa-dash .landing-freshness {
             max-width: 880px;
             min-height: 3em;
@@ -3491,20 +3480,6 @@
   font-size: 12px;
   line-height: 1.45;
 }
-#visa-dash .landing-status {
-  max-width: 1080px;
-  margin: 8px auto 12px;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: var(--ink-soft);
-  font-size: 12.5px;
-  line-height: 1.5;
-  /* Reserve two lines for the live update summary. The placeholder is one
-     line, so without this the search form and cards move down when the
-     summary arrives (mobile CLS). */
-  min-height: 3em;
-}
 #visa-dash .landing-alert-line {
   max-width: 1080px;
   margin: 0 auto 18px;
@@ -3942,26 +3917,6 @@
   #visa-dash .tracker-card { min-height: 128px; }
 }
 
-/* Returning-visitor delta on the landing screen. */
-#visa-dash .landing-visit {
-  max-width: 880px;
-  margin: 0 auto 14px;
-  padding: 10px 14px;
-  border: 1px solid #bbf7d0;
-  border-radius: 8px;
-  background: #f0fdf4;
-  color: var(--green-text, var(--green-deep));
-  font-size: 13px;
-  line-height: 1.5;
-  text-align: center;
-}
-#visa-dash .landing-visit a { color: inherit; font-weight: 650; }
-#visa-dash[data-theme="dark"] .landing-visit {
-  border-color: rgba(52, 211, 153, .35);
-  background: rgba(6, 78, 59, .35);
-  color: #bbf7d0;
-}
-
 /* ===== Vercel interface pass, 2026-11 =================================
    The dashboard already had its decorative chrome removed. This pass makes
    the remaining surfaces use one quiet system: graphite type, hairlines,
@@ -4219,19 +4174,10 @@
 #visa-dash .landing-search .btn { min-height: 44px; }
 /* Reserve the height each late-filled block ends up with, so the data that
    arrives after first paint fills the box instead of resizing it. */
-#visa-dash .landing-status {
-  margin: 10px auto 14px;
-  color: var(--ink-muted);
-  font-size: 13px;
-  line-height: 1.55;
-  text-align: left;
-  min-height: 39px;
-}
 #visa-dash .landing-freshness { min-height: 38px; }
 #visa-dash .landing-alert-line { min-height: 46px; }
 #visa-dash #recent-decisions-section { min-height: 206px; }
 @media (max-width: 760px) {
-  #visa-dash .landing-status { min-height: 40px; }
   #visa-dash .landing-alert-line { min-height: 85px; }
   #visa-dash #recent-decisions-section { min-height: 250px; }
 }
@@ -4944,19 +4890,6 @@
 #visa-dash .badge.category { border-color: transparent; background: var(--surface-raised); color: var(--ink-soft); }
 #visa-dash .embassy-status.live { border-color: transparent; background: transparent; color: var(--green-text); }
 #visa-dash .embassy-status.stale { border-color: transparent; background: transparent; color: var(--amber-text); }
-#visa-dash .landing-visit {
-  max-width: 1080px;
-  margin: 0 auto 16px;
-  padding: 10px 0 10px 12px;
-  border: 0;
-  border-left: 2px solid var(--green);
-  border-radius: 0;
-  background: transparent;
-  color: var(--ink-soft);
-  font-size: 13px;
-  text-align: left;
-}
-#visa-dash[data-theme="dark"] .landing-visit { border-color: var(--green); background: transparent; color: var(--ink-soft); }
 #visa-dash .lookup-result-watch.is-saved {
   border-color: var(--border);
   background: var(--surface-raised);

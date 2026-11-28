@@ -105,8 +105,11 @@ test('ledger keeps office, report date, source URL and changed rows', () => {
   assert.equal(ledger.entries[0].office, 'new-delhi');
   assert.equal(ledger.entries[0].office_name, 'New Delhi');
   assert.equal(ledger.entries[0].report_date, '2026-11-10');
-  assert.equal(ledger.entries[0].source_file, REPORT.source_file);
-  assert.equal(ledger.entries[0].source_url, REPORT.source_file);
+  assert.equal(
+    ledger.entries[0].source_file,
+    'https://www.ireland.ie/en/india/newdelhi/services/visas/processing-times-and-decisions/',
+  );
+  assert.equal(ledger.entries[0].source_url, ledger.entries[0].source_file);
   assert.deepEqual(ledger.entries[0].changed, REPORT.changed);
 });
 

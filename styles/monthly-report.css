@@ -5,7 +5,9 @@
   color-scheme: light;
   --ink: #171717;
   --muted: #525252;
-  --faint: #737373;
+  /* 5.33:1 on white and 4.95:1 on Blueprint's paper tint (#f3f7fa), so
+     secondary text stays AA even if a later body rule supplies the tint. */
+  --faint: #6b6b6b;
   --line: #e5e5e5;
   --paper: #ffffff;
   --card: #ffffff;
@@ -18,7 +20,9 @@
 }
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; }
-body {
+/* site-chrome.css and Blueprint load after this sheet. Scope the report's
+   paper to html body so their later body rule cannot replace the white page. */
+html body {
   margin: 0;
   background: var(--paper);
   color: var(--ink);

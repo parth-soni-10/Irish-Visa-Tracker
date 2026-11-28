@@ -18,6 +18,7 @@ import { fileURLToPath } from 'node:url';
 
 import { PAGES, spliceChrome } from './site-chrome.mjs';
 import { SITE_ORIGIN } from './site-config.mjs';
+import { reportSource } from './report-sources.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const SITE = SITE_ORIGIN;
@@ -453,13 +454,14 @@ function dateArchivePage(data, archive, archives) {
     const decisions = Number(entry.decisions) || 0;
     const approved = Number(entry.approved) || 0;
     const refused = Number(entry.refused) || 0;
-    const source = httpUrl(entry.source_file);
+    const resolved = reportSource(entry, office);
+    const source = httpUrl(resolved.href);
     return `<tr>
       <th scope="row"><a href="/${slug}-visa-decisions">${esc(office.name)}</a></th>
       <td>${num(decisions)}</td>
       <td>${num(approved)}</td>
       <td>${num(refused)}</td>
-      <td><a href="/reports/${slug}/${archive.date}">Report page</a>${source ? ` &middot; <a href="${esc(source)}" rel="noopener">official file</a>` : ''}</td>
+      <td><a href="/reports/${slug}/${archive.date}">Report page</a>${source ? ` &middot; <a href="${esc(source)}" rel="noopener">${resolved.retired ? 'official page' : 'official file'}</a>` : ''}</td>
     </tr>`;
   }).join('\n');
   const body = `    <p class="page-kicker">Decisions by date</p>

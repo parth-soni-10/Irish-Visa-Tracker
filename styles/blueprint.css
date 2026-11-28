@@ -1,6 +1,6 @@
 /* Blueprint site layer.
  *
- * The dossier direction approved in design-proposal/ is the public site's
+ * The approved dossier direction is the public site's
  * design system: a cobalt cover, a drafting grid, pale ruled paper, Chakra
  * Petch for structure and IBM Plex for reading and data. This sheet loads
  * after every page stylesheet. It changes presentation only: IDs, form
@@ -1841,141 +1841,6 @@ textarea:focus-visible {
 #visa-dash .bp-home-cover .landing-freshness.is-warn {
   color: var(--bp-pending);
 }
-#visa-dash .bp-home-aside {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  min-height: 270px;
-  padding: 18px 19px 16px;
-  border: 1px solid var(--bp-cover-rule-2);
-  background: color-mix(in oklab, var(--bp-cover) 78%, var(--bp-cover-2));
-  color: var(--bp-cover-ink);
-  overflow: hidden;
-}
-#visa-dash .bp-home-aside::before {
-  content: '';
-  position: absolute;
-  inset: 6px;
-  border: 1px solid var(--bp-cover-rule);
-  pointer-events: none;
-}
-#visa-dash .bp-home-aside-head {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid var(--bp-cover-rule);
-  color: var(--bp-cover-muted);
-  font-family: var(--bp-font-mono);
-  font-size: 10px;
-  line-height: 1.4;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-}
-#visa-dash .bp-home-aside .landing-status {
-  position: relative;
-  z-index: 1;
-  max-width: none;
-  min-height: 112px;
-  margin: 25px 0 0;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: var(--bp-cover-muted);
-  font-family: var(--bp-font-body);
-  font-size: 12.5px;
-  line-height: 1.6;
-  text-align: left;
-}
-#visa-dash .bp-home-aside .landing-status strong {
-  color: var(--bp-cover-ink);
-  font-weight: 500;
-}
-#visa-dash .bp-home-aside .landing-status a {
-  color: var(--bp-cover-ink);
-  text-decoration-color: var(--bp-cover-rule-2);
-}
-#visa-dash .bp-home-aside .landing-visit {
-  position: relative;
-  z-index: 1;
-  max-width: none;
-  margin: 14px 0 0;
-  padding: 9px 10px;
-  border: 1px solid var(--bp-cover-rule-2);
-  border-radius: 0;
-  background: transparent;
-  color: var(--bp-cover-ink);
-  font-family: var(--bp-font-body);
-  font-size: 11.5px;
-  line-height: 1.5;
-  text-align: left;
-}
-#visa-dash .bp-home-aside .landing-visit a {
-  color: var(--bp-cover-ink);
-}
-#visa-dash .bp-home-aside .landing-visit strong {
-  color: var(--bp-cover-ink);
-  font-weight: 500;
-}
-#visa-dash .bp-home-aside-index {
-  position: relative;
-  z-index: 1;
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  align-items: baseline;
-  gap: 0 10px;
-  margin-top: 18px;
-  padding-top: 14px;
-  border-top: 1px solid var(--bp-cover-rule);
-}
-#visa-dash .bp-home-aside-index strong {
-  grid-row: 1 / 3;
-  color: var(--bp-cover-ink);
-  font-family: var(--bp-font-display);
-  font-size: 2.2rem;
-  font-weight: 500;
-  line-height: 0.9;
-  letter-spacing: 0.01em;
-}
-#visa-dash .bp-home-aside-index > span {
-  color: var(--bp-cover-muted);
-  font-family: var(--bp-font-mono);
-  font-size: 9.5px;
-  line-height: 1.4;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-}
-#visa-dash .bp-home-aside-index p {
-  grid-column: 2;
-  margin: 4px 0 0;
-  color: var(--bp-cover-muted);
-  font-size: 10.5px;
-  line-height: 1.45;
-}
-#visa-dash .bp-home-aside-foot {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  margin-top: auto;
-  padding-top: 18px;
-  color: var(--bp-cover-muted);
-  font-family: var(--bp-font-mono);
-  font-size: 10px;
-  line-height: 1.4;
-}
-#visa-dash .bp-home-aside-foot a {
-  color: var(--bp-cover-ink);
-  text-decoration: none;
-  border-bottom: 1px solid var(--bp-cover-rule-2);
-}
-#visa-dash .bp-home-aside-foot a:hover {
-  border-bottom-color: currentColor;
-  color: var(--bp-cover-ink);
-}
 #visa-dash .bp-signal {
   width: 6px;
   height: 6px;
@@ -2742,9 +2607,6 @@ textarea:focus-visible {
 #visa-dash .small-note {
   color: var(--bp-muted);
 }
-#visa-dash .landing-status {
-  color: var(--bp-muted);
-}
 #visa-dash .site-freshness {
   border: 1px solid color-mix(in oklab, var(--bp-pending) 45%, transparent);
   border-left: 3px solid var(--bp-pending);
@@ -2760,17 +2622,13 @@ textarea:focus-visible {
 }
 /* Cover links must sit above the dashboard's generic link colour. */
 #visa-dash .bp-home-cover .landing-search-hint a:not(.btn):not(.navpill),
-#visa-dash .bp-home-cover .landing-freshness a:not(.btn):not(.navpill),
-#visa-dash .bp-home-aside a:not(.btn):not(.navpill),
-#visa-dash .bp-home-aside-foot a:not(.btn):not(.navpill) {
+#visa-dash .bp-home-cover .landing-freshness a:not(.btn):not(.navpill) {
   color: var(--bp-cover-ink);
   text-decoration-color: var(--bp-cover-rule-2);
   text-underline-offset: 0.2em;
 }
 #visa-dash .bp-home-cover .landing-search-hint a:not(.btn):not(.navpill):hover,
-#visa-dash .bp-home-cover .landing-freshness a:not(.btn):not(.navpill):hover,
-#visa-dash .bp-home-aside a:not(.btn):not(.navpill):hover,
-#visa-dash .bp-home-aside-foot a:not(.btn):not(.navpill):hover {
+#visa-dash .bp-home-cover .landing-freshness a:not(.btn):not(.navpill):hover {
   color: var(--bp-cover-ink);
   text-decoration-color: currentColor;
 }
@@ -2987,14 +2845,6 @@ main.wrap .story-summary {
     align-items: start;
     gap: 30px;
   }
-  #visa-dash .bp-home-aside {
-    max-width: 480px;
-    min-height: 0;
-  }
-  #visa-dash .bp-home-aside .landing-status {
-    min-height: 0;
-    margin-top: 18px;
-  }
   #visa-dash .bp-home-cover .landing-search {
     max-width: 660px;
   }
@@ -3097,9 +2947,6 @@ main.wrap .story-summary {
   }
   #visa-dash .bp-home-cover .landing-freshness {
     margin-top: 14px;
-  }
-  #visa-dash .bp-home-aside {
-    padding: 16px;
   }
   #visa-dash .tracker-grid {
     margin-top: 24px;

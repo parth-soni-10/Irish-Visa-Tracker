@@ -5159,47 +5159,6 @@
                     '<span class="tracker-cta">Open →</span></span></button>';
             }
 
-            // Landing status strip: one glanceable line built from the tiny
-            // meta file + 1G history (never the full visa payload). Pure
-            // function of its inputs so it can be unit-tested; numbers only,
-            // no user-controlled strings - no escaping needed.
-            function landingStatusHTML(meta, g1Rows, todayNewDelhi) {
-                var parts = [];
-                // Ticker tracks the headline 1G series even once other stamp
-                // categories share the file.
-                g1Rows = g1RowsFor(g1Rows, '1G');
-                var wd = new Date(todayNewDelhi + 'T00:00:00').getDay();
-                if (wd === 0 || wd === 6) {
-                    parts.push('New Delhi office closed today - back Monday');
-                } else if (meta && meta.lastRunAt) {
-                    if (String(meta.lastRunAt).slice(0, 10) === todayNewDelhi) {
-                        parts.push('Today\u2019s embassy file is in' +
-                            (meta.newRows ? ' \u00b7 <strong>' + meta.newRows + ' new decisions</strong>' : ''));
-                    } else {
-                        parts.push('Today\u2019s embassy file not yet published (expected ~' +
-                            scheduleTimeNode(NEW_DELHI_UPDATE_HOUR, NEW_DELHI_UPDATE_MINUTE) + ')');
-                    }
-                } else {
-                    parts.push('Visa decisions updated daily');
-                }
-                if (g1Rows && g1Rows.length) {
-                    var lagNow = g1Rows[g1Rows.length - 1].lag_days;
-                    // Weekly movement: compare against the closest observation
-                    // at least 7 days older (archive gaps make "exactly 7" rare).
-                    var move = '';
-                    var cutoff = g1ToDay(g1Rows[g1Rows.length - 1].run_date) - 7;
-                    for (var i = g1Rows.length - 2; i >= 0; i--) {
-                        if (g1ToDay(g1Rows[i].run_date) <= cutoff) {
-                            var d = lagNow - g1Rows[i].lag_days;
-                            if (d !== 0) move = ' (' + (d > 0 ? '\u2191' : '\u2193') + Math.abs(d) + ' this week)';
-                            break;
-                        }
-                    }
-                    parts.push('Stamp 1G lag <strong>' + lagNow + ' days</strong>' + move);
-                }
-                return parts.join(' <span aria-hidden="true">\u00b7</span> ');
-            }
-
             // ===== Landing-page sections =====
             // Everything below is only used by renderLandingPage(). Each
             // section paints independently: a failed fetch can never stop the
@@ -5291,36 +5250,6 @@
                     visaEl.textContent = count.toLocaleString('en-IE') + ' decisions' +
                         (nd && nd.report_date ? ' · report ' + lookupFormatDate(nd.report_date) : ' on record');
                 }
-            }
-
-            // A returning visitor should see why today is different without
-            // opening the tracker. Counts come from the manifest, so this is
-            // stable even when the full 2.3MB history is not loaded.
-            function paintLandingVisitDelta(offices) {
-                var el = document.getElementById('landing-visit');
-                var nd = (offices || []).filter(function(office) { return office.slug === 'new-delhi'; })[0];
-                if (!el || !nd) return;
-                var current = Number(nd.decisions) || 0;
-                if (!current) return;
-                var lastRows = 0, lastSeen = 0;
-                try {
-                    lastRows = Number(localStorage.getItem('visa-landing-rows') || '0') || 0;
-                    lastSeen = Number(localStorage.getItem('visa-landing-seen') || '0') || 0;
-                } catch (error) { /* private mode */ }
-                if (lastRows && lastSeen && current > lastRows) {
-                    var added = current - lastRows;
-                    var seenDate = new Date(lastSeen);
-                    el.hidden = false;
-                    el.innerHTML = '<strong>' + added.toLocaleString('en-IE') + ' new New Delhi decision' +
-                        (added === 1 ? '' : 's') + '</strong> since your last visit' +
-                        (Number.isNaN(seenDate.getTime()) ? '' :
-                            ' on ' + seenDate.toLocaleDateString(displayLocale(), { day: 'numeric', month: 'short' })) + '. ' +
-                        '<a href="?tracker=visa&amp;tab=history&amp;view=daily">See the latest day</a>';
-                }
-                try {
-                    localStorage.setItem('visa-landing-rows', String(current));
-                    localStorage.setItem('visa-landing-seen', String(Date.now()));
-                } catch (error) { /* private mode */ }
             }
 
             function paintLandingCoverageSummary(offices) {
@@ -5540,7 +5469,6 @@ async function renderLandingPage() {
                             ' decisions' + (nd.report_date ? ' · report ' + lookupFormatDate(nd.report_date) : '');
                     }
                     paintLandingFreshness();
-                    paintLandingVisitDelta(_embassyManifest);
                     paintLandingCoverageSummary(_embassyManifest);
                     paintLookupCoverageLine(map);
                 }).catch(function() {
@@ -5577,11 +5505,10 @@ async function renderLandingPage() {
                 Promise.all([
                     loadVisaCount(),
                     loadG1Data(),
-                    loadPermitsData(),
-                    fetch(VISA_META_URL).then(function(r) { return r.ok ? r.json() : null; }).catch(function() { return null; })
+                    loadPermitsData()
                 ]).then(function(res) {
                     if (activeTracker !== 'home') return;
-                    var n = res[0], grows = res[1] || [], prows = res[2] || [], meta = res[3];
+                    var n = res[0], grows = res[1] || [], prows = res[2] || [];
                     var el = document.getElementById('visa-meta');
                     if (el) el.textContent = n
                         ? n.toLocaleString() + ' decisions' +
@@ -5610,16 +5537,6 @@ async function renderLandingPage() {
                             ? 'Slowest queue: ' + plast.category + ' at ' + fmtG1Date(plast.processing_date) +
                               ' (' + plast.lag_days + 'd lag)'
                             : 'Awaiting first observation';
-                    }
-                    var strip = document.getElementById('landing-status');
-                    if (strip) {
-                        try {
-                            const newDelhiToday = newDelhiNow();
-                            strip.innerHTML = landingStatusHTML(meta, grows, newDelhiToday ? newDelhiToday.date : '');
-                        } catch (e) {
-                            strip.innerHTML = '<span class="note2">Trackers updated daily ~' +
-                                scheduleTimeNode(NEW_DELHI_UPDATE_HOUR, NEW_DELHI_FOLLOW_UP_MINUTE) + '.</span>';
-                        }
                     }
                 });
                 // Initialize new landing page components

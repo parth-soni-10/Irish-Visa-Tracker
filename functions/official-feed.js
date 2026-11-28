@@ -7,6 +7,8 @@
  * readers and feed-to-Telegram relays.
  */
 
+import { reportSource } from './_report-sources.js';
+
 const FEED_LIMIT = 80;
 const CACHE_SECONDS = 300;
 
@@ -79,17 +81,31 @@ export function buildOfficialFeed(reportsDoc, options = {}) {
   const offices = reportsDoc && reportsDoc.offices && typeof reportsDoc.offices === 'object'
     ? reportsDoc.offices
     : {};
+  const latestBySlug = new Map();
+  for (const [slug, entries] of Object.entries(offices)) {
+    if (!Array.isArray(entries)) continue;
+    const latest = entries.reduce((latestDate, entry) => {
+      const reportDate = isoDate(entry && entry.report_date);
+      return reportDate > latestDate ? reportDate : latestDate;
+    }, '');
+    latestBySlug.set(slug, latest);
+  }
 
   for (const [slug, entries] of Object.entries(offices)) {
     if (!Array.isArray(entries)) continue;
     for (const entry of entries) {
       const reportDate = isoDate(entry && entry.report_date);
       if (!reportDate) continue;
-      const sourceFile = safeSource(entry && entry.source_file);
+      const rawSourceFile = safeSource(entry && entry.source_file);
       const sourcePage = OFFICE_PAGES[slug] || '';
+      const resolvedSource = reportSource(
+        { source_file: rawSourceFile, report_date: reportDate },
+        { slug, source_url: sourcePage, report_date: latestBySlug.get(slug) || '' },
+      );
+      const sourceFile = safeSource(resolvedSource.href);
       if (!sourceFile && !sourcePage) continue;
       const checksum = String((entry && entry.checksum) || '').trim();
-      const id = [slug, reportDate, checksum || sourceFile || sourcePage].join(':');
+      const id = [slug, reportDate, checksum || rawSourceFile || sourcePage].join(':');
       if (seen.has(id)) continue;
       const fetchedAt = dateISO(entry && entry.fetched_at, reportDate);
       const decisions = Math.max(0, Number(entry && entry.decisions) || 0);
