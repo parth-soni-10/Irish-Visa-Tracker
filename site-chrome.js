@@ -81,4 +81,48 @@
   }
 
   initTheme();
+
+  // Give the content pages the same cover language as the tracker without
+  // asking 38 hand-maintained documents to repeat the wrapper. The cover is
+  // an enhancement: the heading and lede remain the same elements, in the same
+  // reading order, and the page is fully readable if this script never runs.
+  function wrapPageCover() {
+    if (document.querySelector('.bp-page-cover')) return;
+    var main = document.querySelector('main.page');
+    var monthly = false;
+    if (!main) {
+      main = document.querySelector('main.wrap');
+      monthly = !!main;
+    }
+    if (!main) return;
+
+    var children = Array.prototype.slice.call(main.children);
+    var head = children.filter(function (node) { return node.tagName === 'H1'; })[0];
+    if (!head) return;
+
+    var endClass = monthly ? 'note' : 'page-lede';
+    var end = null;
+    for (var i = children.indexOf(head); i < children.length; i++) {
+      if (children[i].classList && children[i].classList.contains(endClass)) {
+        end = children[i];
+        break;
+      }
+    }
+    if (!end) end = head;
+    var last = children.indexOf(end);
+    if (last < 0) return;
+
+    var cover = document.createElement('div');
+    cover.className = 'bp-page-cover';
+    cover.setAttribute('data-bp-cover', '');
+    main.insertBefore(cover, children[0]);
+    for (var j = 0; j <= last; j++) cover.appendChild(children[j]);
+
+    var line = document.createElement('div');
+    line.className = 'bp-cover-topline';
+    line.innerHTML = '<span>Irish Visa Decision Tracker</span><span>Public record</span><span>Independent and unofficial</span>';
+    cover.insertBefore(line, cover.firstChild);
+  }
+
+  wrapPageCover();
 })();

@@ -605,6 +605,7 @@ ${bing.issues && bing.issues.error ? `<p class="small-note">Bing crawl issues re
   <link rel="icon" href="/icon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/pages.css">
   <link rel="stylesheet" href="/site-chrome.css">
+  <link rel="stylesheet" href="/styles/blueprint.css">
   <link rel="stylesheet" href="/styles/coverage.css">
 </head>
 <body>

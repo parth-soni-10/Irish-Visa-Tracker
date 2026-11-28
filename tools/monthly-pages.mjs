@@ -330,6 +330,7 @@ function archivePage(report, months, latestMonth, freshness) {
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
   <link rel="stylesheet" href="/styles/monthly-report.css">
   <link rel="stylesheet" href="/site-chrome.css">
+  <link rel="stylesheet" href="/styles/blueprint.css">
 ${monthlySchemaBlock(report, route, title, description)}
 </head>
 <body>

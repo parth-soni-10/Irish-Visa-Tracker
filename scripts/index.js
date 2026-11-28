@@ -1067,17 +1067,17 @@
                 if (!el) return;
                 var issues = siteFreshnessIssues();
                 var label = issues.length
-                    ? (issues.length === 1 ? 'One office report needs a check' : issues.length + ' office reports need a check')
-                    : 'All six office reports are current';
+                    ? (issues.length === 1 ? 'One office report is stale' : issues.length + ' office reports are stale')
+                    : 'All six office reports current';
                 el.classList.toggle('is-warn', issues.length > 0);
-                el.innerHTML = label + ' — <a href="/status">check report freshness</a>.';
+                el.innerHTML = label + ' · <a href="/status">Check data status</a>';
             }
 
             function paintLandingFreshnessUnavailable() {
                 var el = document.getElementById('landing-freshness');
                 if (!el) return;
                 el.classList.add('is-warn');
-                el.innerHTML = 'Report freshness is unavailable — <a href="/status">open data status</a>.';
+                el.innerHTML = 'Report freshness unavailable · <a href="/status">Check data status</a>';
             }
 
             function morphHero() {
@@ -5484,18 +5484,25 @@ async function renderLandingPage() {
                 // Clicking a card works from the first paint.
                 root.innerHTML =
                     '<div class="landing-wrap page-title-block">' +
+                    '<div class="bp-home-cover">' +
+                    '<div class="bp-home-grid">' +
+                    '<div class="bp-home-copy">' +
                     '<h1>Check your Irish visa decision</h1>' +
-                    '<p class="page-task">Search six offices by application number, or open a processing-date tracker.</p>' +
-                    '<div class="landing-status" id="landing-status" aria-live="polite"><span class="note2">Checking today’s updates…</span></div>' +
-                    '<p class="landing-visit" id="landing-visit" hidden></p>' +
+                    '<p class="page-task">Search six offices by the application number on your receipt.</p>' +
+                    '<label class="bp-search-label" for="landing-q">Search by application number</label>' +
                     '<form class="landing-search" id="landing-search" role="search" novalidate>' +
                     '<div class="searchbar landing-search-number">' + searchIcon() +
-                    '<input type="text" id="landing-q" name="q" autocomplete="off" maxlength="200" aria-label="Search by application number" placeholder="Application number" required></div>' +
+                    '<input type="text" id="landing-q" name="q" inputmode="numeric" autocomplete="off" maxlength="200" aria-label="Search by application number" aria-describedby="landing-search-hint" placeholder="e.g. 48850812" required></div>' +
                     '<select class="landing-office-select" id="landing-office" name="office" aria-label="Visa office to search">' +
                     officeOptionsHTML(homeSearchOffice) + '</select>' +
                     '<button class="btn" type="submit">Search</button></form>' +
-                    '<p class="landing-search-hint">Use the 8-digit number on your receipt; an IRL prefix is optional. <a href="/help#find-number">Where do I find it?</a></p>' +
+                    '<div class="bp-home-meta">' +
+                    '<p class="landing-search-hint" id="landing-search-hint">8-digit number from your receipt. <a href="/help#find-number">Where do I find it?</a></p>' +
                     '<p class="landing-freshness" id="landing-freshness"><a href="/status">Checking report freshness…</a></p>' +
+                    '</div>' +
+                    '</div>' +
+                    '</div>' +
+                    '</div>' +
                     '<div class="tracker-grid" aria-label="Trackers">' +
                     trackerCardHTML('visa', 'plane', 'Visa decisions',
                         'Search published decisions from six offices by application number.', 'Loading…', 'visa-meta', '') +

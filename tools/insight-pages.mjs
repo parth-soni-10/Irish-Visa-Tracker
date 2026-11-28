@@ -535,6 +535,7 @@ ${robots ? `  <meta name="robots" content="${esc(robots)}">\n` : ''}${markdown ?
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
   <link rel="stylesheet" href="/pages.css">
   <link rel="stylesheet" href="/site-chrome.css">
+  <link rel="stylesheet" href="/styles/blueprint.css">
 ${ld}</head>
 <body>
   <!-- site-chrome:start -->

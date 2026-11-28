@@ -22,6 +22,7 @@
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
   <link rel="stylesheet" href="/pages.css">
   <link rel="stylesheet" href="/site-chrome.css">
+  <link rel="stylesheet" href="/styles/blueprint.css">
   <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -103,6 +104,27 @@
       "name": "Coverage manifest",
       "description": "One record per office: status, report date, counts, archive dates and source links.",
       "contentUrl": "https://irishvisaupdatetracker.pages.dev/data/data_manifest.json",
+      "encodingFormat": "application/json"
+    },
+    {
+      "@type": "DataDownload",
+      "name": "Freshness and search window",
+      "description": "Per office: report date, status, and the earliest and latest date a search can match, with the scope of that history.",
+      "contentUrl": "https://irishvisaupdatetracker.pages.dev/data/freshness.json",
+      "encodingFormat": "application/json"
+    },
+    {
+      "@type": "DataDownload",
+      "name": "Compact search index",
+      "description": "Trimmed rows used by /api/search: office, application number, decision date, outcome, report date and source. The office archives remain authoritative.",
+      "contentUrl": "https://irishvisaupdatetracker.pages.dev/data/search_index.json",
+      "encodingFormat": "application/json"
+    },
+    {
+      "@type": "DataDownload",
+      "name": "Browser fallback index",
+      "description": "The compact index the tracker falls back to when the live search endpoint is unavailable.",
+      "contentUrl": "https://irishvisaupdatetracker.pages.dev/data/search_fallback.json",
       "encodingFormat": "application/json"
     },
     {
@@ -260,8 +282,10 @@
           <tr><th scope="row"><a href="/data/embassy-ankara.json"><code>/data/embassy-ankara.json</code></a><br><span class="small-note">Ankara office file</span></th><td>Latest Ankara weekly report; some rows are OCR-extracted.</td><td>Weekly</td></tr>
           <tr><th scope="row"><a href="/data/embassy-dublin.json"><code>/data/embassy-dublin.json</code></a><br><span class="small-note">Dublin office file</span></th><td>Latest Dublin decision snapshot.</td><td>Tuesday publication</td></tr>
           <tr><th scope="row"><a href="/data/data_manifest.json"><code>/data/data_manifest.json</code></a><br><span class="small-note">Coverage manifest</span></th><td>One record per office: status, report date, counts, archive dates and source links.</td><td>Each data refresh</td></tr>
+          <tr><th scope="row"><a href="/data/freshness.json"><code>/data/freshness.json</code></a><br><span class="small-note">Freshness and search window</span></th><td>Per office: report date, status, and the earliest and latest date a search can match, with the scope of that history.</td><td>Each data refresh</td></tr>
+          <tr><th scope="row"><a href="/data/search_index.json"><code>/data/search_index.json</code></a><br><span class="small-note">Compact search index</span></th><td>Trimmed rows used by /api/search: office, application number, decision date, outcome, report date and source. The office archives remain authoritative.</td><td>Each deploy</td></tr>
+          <tr><th scope="row"><a href="/data/search_fallback.json"><code>/data/search_fallback.json</code></a><br><span class="small-note">Browser fallback index</span></th><td>The compact index the tracker falls back to when the live search endpoint is unavailable.</td><td>Each deploy</td></tr>
           <tr><th scope="row"><a href="/data/reports/index.json"><code>/data/reports/index.json</code></a><br><span class="small-note">Official report archive</span></th><td>Dated official reports with counts, approval shares, checksums and source files.</td><td>Each data refresh</td></tr>
-          <tr><th scope="row"><a href="/data/search_index.json"><code>/data/search_index.json</code></a><br><span class="small-note">Lookup index</span></th><td>Compact index of office, number, decision date and source that powers the application-number search. Same rows as the office files, with internal office positions instead of repeated names.</td><td>Each deploy</td></tr>
           <tr><th scope="row"><a href="/data/study/office-summary.csv"><code>/data/study/office-summary.csv</code></a><br><span class="small-note">Office summary CSV</span></th><td>Latest-file totals by office for the data study.</td><td>Each deploy</td></tr>
           <tr><th scope="row"><a href="/data/study/monthly-volume.csv"><code>/data/study/monthly-volume.csv</code></a><br><span class="small-note">Monthly volume CSV</span></th><td>Dated publication volume by office and month.</td><td>Each deploy</td></tr>
           <tr><th scope="row"><a href="/official-file-feed.json"><code>/official-file-feed.json</code></a><br><span class="small-note">Official file feed</span></th><td>JSON Feed of newly published official files. No applicant rows.</td><td>Each data refresh</td></tr></tbody>

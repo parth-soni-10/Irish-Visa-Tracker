@@ -9,8 +9,9 @@
  * reliably; these measurements do.
  *
  * For every page and every width: one header, one footer, a stable header
- * height across pages, no page-level horizontal overflow, brand and nav on one
- * row whenever they are supposed to be, and disclosure panels inside the
+ * height across pages, no page-level horizontal overflow, brand and nav in the
+ * designed desktop masthead (either the original single row or the Blueprint
+ * two-row grid) without accidental wrapping, and disclosure panels inside the
  * viewport (including a short landscape window).
  *
  *   node tools/check-chrome-layout.mjs --base http://127.0.0.1:8788
@@ -47,10 +48,12 @@ async function measure(page) {
     const brand = document.querySelector('header.sitebar .brand');
     const nav = document.querySelector('header.sitebar .sitebar-nav');
     const footer = document.querySelector('footer.sitebar-footer');
+    const inner = document.querySelector('header.sitebar .sitebar-inner');
     return {
       header: header ? rect(header) : null,
       brand: brand ? rect(brand) : null,
       nav: nav ? rect(nav) : null,
+      innerDisplay: inner ? getComputedStyle(inner).display : null,
       navScrollWidth: nav ? nav.scrollWidth : 0,
       navClientWidth: nav ? nav.clientWidth : 0,
       headers: document.querySelectorAll('header.sitebar').length,
@@ -126,8 +129,14 @@ async function main() {
 
         if (job.width.width >= 961) {
           const sameRow = result.nav.top < result.brand.bottom - 2 && result.brand.top < result.nav.bottom - 2;
-          if (!sameRow) failures.push(`${label}: brand and nav are not on one row at desktop width`);
-          if (result.header.height > 100) failures.push(`${label}: header is ${Math.round(result.header.height)}px tall on one row`);
+          // The Blueprint masthead deliberately puts the brand on its own
+          // line above a full-width nav. Keep that layout honest without
+          // accepting an accidental flex/grid wrap back onto a second line.
+          const blueprintStack = result.innerDisplay === 'grid'
+            && result.nav.top >= result.brand.bottom - 2;
+          if (!sameRow && !blueprintStack) failures.push(`${label}: brand and nav are not in the desktop masthead row`);
+          const maxHeight = blueprintStack ? 160 : 100;
+          if (result.header.height > maxHeight) failures.push(`${label}: header is ${Math.round(result.header.height)}px tall at desktop width`);
         }
 
         const bucket = heights.get(job.width.width) || new Map();

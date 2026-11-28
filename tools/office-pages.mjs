@@ -633,6 +633,7 @@ function render(office) {
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
   <link rel="stylesheet" href="/pages.css">
   <link rel="stylesheet" href="/site-chrome.css">
+  <link rel="stylesheet" href="/styles/blueprint.css">
   <script type="application/ld+json">
 ${schemaFor(office)}
   </script>
