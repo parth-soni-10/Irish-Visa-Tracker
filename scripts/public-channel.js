@@ -13,18 +13,11 @@
   var officeLinks = document.querySelectorAll('[data-office-alerts]');
 
   // The CTAs are buttons until a real Telegram URL exists, so there is no
-  // placeholder href for a reader to follow. Keep anchors working too: the
-  // same attributes appear on older generated pages.
+  // placeholder href for a reader to follow.
   function activate(control, url) {
-    if (control.tagName === 'BUTTON') {
-      control.addEventListener('click', function () {
-        window.open(url, '_blank', 'noopener,noreferrer');
-      });
-    } else {
-      control.href = url;
-      control.target = '_blank';
-      control.rel = 'noopener noreferrer';
-    }
+    control.addEventListener('click', function () {
+      window.open(url, '_blank', 'noopener,noreferrer');
+    });
     control.hidden = false;
   }
 

@@ -494,12 +494,6 @@ function weekdayDate(iso) {
   return `${WEEKDAYS[date.getUTCDay()]} ${longDate(iso)}`;
 }
 
-function addDays(iso, days) {
-  const date = new Date(`${String(iso).slice(0, 10)}T00:00:00Z`);
-  date.setUTCDate(date.getUTCDate() + days);
-  return date.toISOString().slice(0, 10);
-}
-
 const HTML_ESCAPES = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' };
 const esc = (value) => String(value == null ? '' : value).replace(/[&<>"]/g, (char) => HTML_ESCAPES[char]);
 

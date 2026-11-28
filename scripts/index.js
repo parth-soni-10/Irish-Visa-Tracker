@@ -454,10 +454,6 @@
                 return DATE_LOCALES[lang] || 'en-IE';
             }
             function humanDate(value) { return lookupFormatDate(value) || String(value || ''); }
-            // Localised short month names for the hero date ranges (no hardcoded
-            // month arrays - Intl.DateTimeFormat owns locale + format).
-            function shortMonth(d) { return new Intl.DateTimeFormat(displayLocale(), { month: 'short' }).format(d); }
-
             function weekdayLong(dateStr) {
                 const d = new Date(dateStr + 'T00:00:00');
                 return d.toLocaleDateString(displayLocale(), { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });

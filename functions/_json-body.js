@@ -24,9 +24,9 @@ function join(chunks, size) {
  * Resolve to `{ body }` on success, `{ tooLarge: true }` past the limit, or
  * `{ invalid: true }` for a missing, unreadable or non-JSON body.
  */
-export async function readJsonBody(request, limit = MAX_JSON_BODY_BYTES) {
+export async function readJsonBody(request) {
   const declared = Number(request.headers.get('Content-Length') || '');
-  if (Number.isFinite(declared) && declared > limit) return { tooLarge: true };
+  if (Number.isFinite(declared) && declared > MAX_JSON_BODY_BYTES) return { tooLarge: true };
   if (!request.body) return { invalid: true };
 
   const reader = request.body.getReader();
@@ -37,7 +37,7 @@ export async function readJsonBody(request, limit = MAX_JSON_BODY_BYTES) {
       const { done, value } = await reader.read();
       if (done) break;
       size += value.byteLength;
-      if (size > limit) {
+      if (size > MAX_JSON_BODY_BYTES) {
         await reader.cancel().catch(() => {});
         return { tooLarge: true };
       }

@@ -32,10 +32,6 @@
     ankara: 7
   };
 
-  function pad(value) {
-    return String(value).padStart(2, '0');
-  }
-
   function dateKey(value) {
     // Dates can cross a vm/iframe realm boundary in tests and embeds, so use
     // the date protocol instead of an instanceof check.
