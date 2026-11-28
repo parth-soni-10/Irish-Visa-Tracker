@@ -176,12 +176,18 @@ test("the today page lists every office's newest file with a build stamp", async
   const { dist } = await build(t);
   const html = await readFile(path.join(dist, "irish-visa-decisions-today.html"), "utf8");
   const manifest = JSON.parse(await readFile(path.join(ROOT, "data", "data_manifest.json"), "utf8"));
-  assert.match(html, /<h1>Irish visa decisions today — <time datetime="\d{4}-\d{2}-\d{2}">\d{1,2} [A-Z][a-z]+ \d{4}<\/time><\/h1>/);
-  assert.match(html, /<title>Irish Visa Decisions Today — \d{1,2} [A-Z][a-z]+ \d{4}<\/title>/);
-  assert.match(html, /<meta name="description" content="Newest official Irish visa decision file from each of the six offices/);
+  assert.match(html, /<h1>Ireland visa decisions today — <time datetime="\d{4}-\d{2}-\d{2}">\d{1,2} [A-Z][a-z]+ \d{4}<\/time><\/h1>/);
+  assert.match(html, /<title>Ireland Visa Decisions Today — \d{1,2} [A-Z][a-z]+ \d{4}<\/title>/);
+  assert.match(html, /<meta name="description" content="Newest official Ireland visa decision file from each of the six offices/);
   assert.match(html, /data-snapshot-day="\d{4}-\d{2}-\d{2}"/);
   assert.match(html, /<strong>Last checked:<\/strong> <time datetime="/);
+  assert.match(html, /<strong>Next expected New Delhi update:<\/strong> <time datetime="/);
   assert.match(html, /<strong>Newest official file:<\/strong> <time datetime="/);
+  assert.match(html, /<section class="page-answer"/);
+  assert.match(html, /What this page answers/);
+  assert.match(html, /<section id="faq">/);
+  assert.match(html, /"@type": "FAQPage"/);
+  assert.match(html, /New Delhi Ireland visa decisions/);
   assert.match(html, /<strong>Page built:<\/strong> <time datetime="[^"]+">[^<]+<\/time> Dublin time/);
   assert.doesNotMatch(html, /<strong>Last updated:<\/strong>/);
   assert.match(html, /<section id="changes">/);
@@ -211,7 +217,8 @@ test("the today page lists every office's newest file with a build stamp", async
     const reportDate = String(office.report_date || "").slice(0, 10);
     const row = rows.find((candidate) => candidate.includes(`href="/${office.slug}-visa-decisions"`));
     assert.ok(row, `${office.slug} row is missing from the today table`);
-    assert.ok(row.includes(`>${office.name} visa decisions</a>`), `${office.slug} name is missing from its table row`);
+    const anchor = office.slug === "new-delhi" ? "New Delhi Ireland visa decisions" : `${office.name} Ireland visa decisions`;
+    assert.ok(row.includes(`>${anchor}</a>`), `${office.slug} exact-match anchor is missing from its table row`);
     assert.ok(reportDate, `${office.slug} report date is missing from the manifest`);
     assert.match(row, new RegExp(`data-label="Latest publication"><time datetime="${reportDate}"`));
     assert.match(row, new RegExp(`data-label="Decisions">${office.decisions.toLocaleString("en-IE")}</td>`));
@@ -278,6 +285,7 @@ test("every archived report gets a source-linked permalink and no duplicate snap
     path.join(dist, "reports", "new-delhi", `${latest.report_date}.html`),
     "utf8",
   );
+  assert.match(page, /<title>New Delhi Ireland Visa Decisions — \d{1,2} [A-Z][a-z]+ \d{4} — Approved and Refused<\/title>/);
   assert.match(page, new RegExp(latest.decisions.toLocaleString("en-IE")));
   assert.match(page, new RegExp(latest.approved.toLocaleString("en-IE")));
   assert.match(page, new RegExp(latest.checksum));

@@ -49,7 +49,7 @@ const SUBMISSIONS_PATH = "/api/community-submissions";
 const MAX_TIMELINE_ROWS = 5000;
 const PUSH_PATHS = new Set(["/api/push/subscribe", "/api/push/unsubscribe"]);
 const TELEGRAM_PATHS = new Set(["/api/telegram/start", "/api/telegram/webhook"]);
-const ADMIN_PATHS = new Set(["/api/admin/health", "/api/admin/quality", "/api/admin/metrics", "/api/admin/errors", "/api/admin/trigger", "/api/admin/tokens"]);
+const ADMIN_PATHS = new Set(["/api/admin/health", "/api/admin/quality", "/api/admin/metrics", "/api/admin/funnel", "/api/admin/errors", "/api/admin/trigger", "/api/admin/tokens"]);
 const PREDICT_PATH = "/api/predict";
 const PREDICT_FEEDBACK_PATH = "/api/predict/feedback";
 const TELEGRAM_BROADCAST_PATH = "/api/telegram/broadcast";
@@ -679,8 +679,8 @@ async function handleRequest(request, env) {
 
   // Admin routes
   if (ADMIN_PATHS.has(pathname)) {
-    const { handleScraperHealth, handleDataQuality, handleSystemMetrics, 
-            handleErrorLogs, handleTriggerScraper, handleAdminTokens } = await import("./admin-api.js");
+    const { handleScraperHealth, handleDataQuality, handleSystemMetrics,
+            handleConversionFunnel, handleErrorLogs, handleTriggerScraper, handleAdminTokens } = await import("./admin-api.js");
     
     if (pathname === '/api/admin/health' && (request.method === 'GET' || request.method === 'HEAD')) {
       return handleScraperHealth(request, env);
@@ -690,6 +690,9 @@ async function handleRequest(request, env) {
     }
     if (pathname === '/api/admin/metrics' && (request.method === 'GET' || request.method === 'HEAD')) {
       return handleSystemMetrics(request, env);
+    }
+    if (pathname === '/api/admin/funnel' && (request.method === 'GET' || request.method === 'HEAD')) {
+      return handleConversionFunnel(request, env);
     }
     if (pathname === '/api/admin/errors' && (request.method === 'GET' || request.method === 'HEAD')) {
       return handleErrorLogs(request, env);

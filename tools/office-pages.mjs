@@ -19,7 +19,7 @@ import { scopeTableHeaders } from './html-tables.mjs';
 
 import { SITE_ORIGIN } from './site-config.mjs';
 import { longDate } from './freshness.mjs';
-import { OFFICE_SEO } from './office-seo.mjs';
+import { OFFICE_SEO, officeTitle } from './office-seo.mjs';
 import { breadcrumbNav } from './breadcrumbs.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -604,14 +604,28 @@ function officeSearch(office) {
     </form>`;
 }
 
+function answerBlock(office) {
+  const f = office.fallback;
+  const kind = office.snapshot ? 'snapshot' : 'report';
+  return `<section class="page-answer" aria-labelledby="${office.slug}-answers-title">
+      <h2 id="${office.slug}-answers-title">What this page answers</h2>
+      <ul class="answer-list">
+        <li><strong>Latest file:</strong> the newest official ${kind} is dated ${longDate(f.latest)} and contains ${f.decisions.toLocaleString('en-IE')} decisions.</li>
+        <li><strong>What changed:</strong> how this file compares with the previous ${kind} and what moved in the counts. <a href="#what-changed">Read the comparison</a>.</li>
+        <li><strong>What it cannot tell you:</strong> the file records outcomes, not reasons, passport return or a live application status. A missing number is not a refusal.</li>
+      </ul>
+    </section>`;
+}
+
 function render(office) {
   const f = office.fallback;
+  const pageTitle = officeTitle(office.slug, f.latest);
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${esc(office.title)}</title>
+  <title>${esc(pageTitle)}</title>
   <meta name="description" content="${esc(office.description)}">
   <link rel="canonical" href="${SITE}${office.route}">
   <link rel="alternate" type="text/markdown" href="${office.route}.md">
@@ -619,7 +633,7 @@ function render(office) {
   <link rel="describedby" href="/llms.txt" type="text/plain">
   <meta name="theme-color" content="#ffffff">
   <meta property="og:type" content="article">
-  <meta property="og:title" content="${esc(office.title)}">
+  <meta property="og:title" content="${esc(pageTitle)}">
   <meta property="og:description" content="${esc(office.description)}">
   <meta property="og:url" content="${SITE}${office.route}">
   <meta property="og:image" content="${SITE}/assets/social/office-${office.slug}.png">
@@ -627,7 +641,7 @@ function render(office) {
   <meta property="og:image:height" content="630">
   <meta property="og:image:alt" content="${esc(office.name)} latest official Irish visa file">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="${esc(office.title)}">
+  <meta name="twitter:title" content="${esc(pageTitle)}">
   <meta name="twitter:description" content="${esc(office.description)}">
   <meta name="twitter:image" content="${SITE}/assets/social/office-${office.slug}.png">
   <meta name="twitter:image:alt" content="${esc(office.name)} latest official Irish visa file">
@@ -658,6 +672,8 @@ ${schemaFor(office)}
     <p class="office-freshness" data-freshness="${office.slug}">${office.name} — latest official ${office.snapshot ? 'snapshot' : 'report'}: ${longDate(f.latest)} &middot; ${f.decisions.toLocaleString('en-IE')} decisions &middot; checked ${longDate(f.checked)} &middot; ${office.snapshot ? 'Snapshot' : 'Official'}${f.observation ? ` <span class="office-freshness-observation">${esc(f.observation)}</span>` : ''}</p>
 
     <p class="page-lede">${office.lede}</p>
+
+    ${answerBlock(office)}
 
     ${stats(office)}
     <p class="small-note">${office.historyHtml}</p>

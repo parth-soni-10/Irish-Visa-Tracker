@@ -5,6 +5,7 @@
       health: document.getElementById('admin-health'),
       quality: document.getElementById('admin-quality'),
       metrics: document.getElementById('admin-metrics'),
+      funnel: document.getElementById('admin-funnel'),
       errors: document.getElementById('admin-errors')
     };
     token.value = sessionStorage.getItem('admin-token') || '';
@@ -19,7 +20,7 @@
       if (!value) { setStatus('Enter an admin token first.', 'error'); return; }
       sessionStorage.setItem('admin-token', value);
       setStatus('Loading\u2026');
-      var endpoints = ['health', 'quality', 'metrics', 'errors'];
+      var endpoints = ['health', 'quality', 'metrics', 'funnel', 'errors'];
       Promise.all(endpoints.map(function (name) {
         return fetch('/api/admin/' + name, { headers: { Authorization: 'Bearer ' + value } })
           .then(function (r) { return r.json().then(function (body) { return { name: name, ok: r.ok, body: body }; }); })

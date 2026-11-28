@@ -6,7 +6,7 @@ import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 
 import { injectOfficePages } from "../tools/deploy-pages.mjs";
-import { OFFICE_SEO } from "../tools/office-seo.mjs";
+import { OFFICE_SEO, officeTitle } from "../tools/office-seo.mjs";
 
 const ROOT = fileURLToPath(new URL("../", import.meta.url));
 
@@ -104,7 +104,7 @@ test("deploy office-page injection writes current manifest data into a temporary
     assert.doesNotMatch(html, /STALE-/, `${file}: injector left a stale field`);
     assert.match(
       html,
-      new RegExp(`<title>${escapeRegExp(OFFICE_SEO[office.slug].title.replace(/&/g, "&amp;"))}<\\/title>`),
+      new RegExp(`<title>${escapeRegExp(officeTitle(office.slug, office.report_date).replace(/&/g, "&amp;"))}<\\/title>`),
       `${file}: title is not the office intent title`,
     );
     assert.match(

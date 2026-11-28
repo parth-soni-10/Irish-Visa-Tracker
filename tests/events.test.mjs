@@ -30,21 +30,32 @@ function eventDB() {
 
 test('conversion events accept only the fixed vocabulary', async () => {
   const env = { DB: eventDB() };
-  const accepted = await handleEvents(request({ event: 'alert_telegram_click', source: 'home' }), env);
+  const accepted = await handleEvents(request({
+    event: 'alert_telegram_click',
+    source: 'home',
+    device: 'mobile',
+    office: 'new-delhi'
+  }), env);
   assert.equal(accepted.status, 202);
   const useful = await handleEvents(request({ event: 'search_result_useful', source: 'lookup_result' }), env);
   assert.equal(useful.status, 202);
   const empty = await handleEvents(request({ event: 'search_no_result', source: 'home' }), env);
   assert.equal(empty.status, 202);
+  const viewed = await handleEvents(request({ event: 'homepage_view', source: 'landing' }), env);
+  assert.equal(viewed.status, 202);
+  const started = await handleEvents(request({ event: 'search_started', source: 'landing' }), env);
+  assert.equal(started.status, 202);
   assert.deepEqual(env.DB.inserts, [
-    ['alert_telegram_click', 'home', null],
-    ['search_result_useful', 'lookup_result', null],
-    ['search_no_result', 'home', null]
+    ['alert_telegram_click', 'home', null, 'mobile', 'new-delhi'],
+    ['search_result_useful', 'lookup_result', null, null, null],
+    ['search_no_result', 'home', null, null, null],
+    ['homepage_view', 'landing', null, null, null],
+    ['search_started', 'landing', null, null, null]
   ]);
 
   const rejected = await handleEvents(request({ event: 'pasted-free-text', source: 'home' }), env);
   assert.equal(rejected.status, 400);
-  assert.equal(env.DB.inserts.length, 3);
+  assert.equal(env.DB.inserts.length, 5);
 });
 
 test('application numbers are stored only when they are public eight-digit values', async () => {
@@ -60,8 +71,8 @@ test('application numbers are stored only when they are public eight-digit value
     application_number: '1234'
   }), env);
   assert.deepEqual(env.DB.inserts, [
-    ['application_search', 'home', '12345678'],
-    ['application_search', 'home', null]
+    ['application_search', 'home', '12345678', null, null],
+    ['application_search', 'home', null, null, null]
   ]);
 });
 

@@ -100,8 +100,8 @@ const CONTENT_PAGES = [
   {
     file: 'irish-visa-decisions-today.html',
     route: '/irish-visa-decisions-today',
-    title: 'Irish Visa Decisions Today — Latest by Office',
-    description: 'What each Irish visa office has published most recently, with today’s date, decision counts, approved and refused totals, and the tracker’s last successful check.',
+    title: 'Ireland Visa Decisions Today — Latest by Office',
+    description: 'What each of the six Irish visa offices has published most recently, with decision counts, approved and refused totals, and when the tracker last checked.',
   },
   {
     file: 'press.html',
@@ -124,8 +124,8 @@ const CONTENT_PAGES = [
   {
     file: 'reports.html',
     route: '/reports',
-    title: 'Official report archive | Irish Visa Decision Tracker',
-    description: 'Every official report and snapshot check in the tracker archive, with decision counts, approval rates, checksums and links to the published source file.',
+    title: 'Ireland Visa Decision Reports — Official Archive',
+    description: 'Every official Ireland visa decision report and snapshot check in the tracker archive, with counts, approval rates, checksums and source links.',
   },
   {
     file: 'all-pages.html',
@@ -826,6 +826,10 @@ function dublinNow() {
   return { iso: now.toISOString(), today, label };
 }
 
+const todayOfficeAnchor = (office) => office.slug === 'new-delhi'
+  ? 'New Delhi Ireland visa decisions'
+  : `${office.name} Ireland visa decisions`;
+
 function todayPage(data) {
   const page = CONTENT_PAGES.find((entry) => entry.route === '/irish-visa-decisions-today');
   const fresh = data.freshness && Array.isArray(data.freshness.offices) && data.freshness.offices.length
@@ -849,6 +853,10 @@ function todayPage(data) {
     .filter(Boolean)
     .sort()
     .pop() || '';
+  const newDelhiFresh = fresh.find((office) => office.slug === 'new-delhi') || null;
+  const nextExpected = newDelhiFresh
+    ? (newDelhiFresh.next_due_at || expectedAfter(newDelhiFresh.report_date, 'new-delhi', today))
+    : '';
   // The snippet has to answer the query on its own: the newest file date and
   // the New Delhi count, not just a description of the page's structure.
   const snippetOffice = fresh.find((office) => office.slug === 'new-delhi') || null;
@@ -856,7 +864,7 @@ function todayPage(data) {
   const snippetFacts = snippetOffice && snippetOffice.report_date && snippetCount
     ? ` Latest New Delhi file: ${longDate(snippetOffice.report_date)} — ${snippetCount.toLocaleString('en-IE')} decisions.`
     : '';
-  const description = 'Newest official Irish visa decision file from each of the six offices.' + snippetFacts;
+  const description = 'Newest official Ireland visa decision file from each of the six offices, what changed, and the last check.' + snippetFacts;
 
   // Daily change: compare each office's newest file with its previous distinct
   // one. Repeated snapshots (same checksum and counts) are skipped, so a
@@ -883,10 +891,10 @@ function todayPage(data) {
   const changeRows = fresh.map((office) => {
     const { latest, previous } = changeBySlug.get(office.slug) || {};
     if (!latest) {
-      return `<tr>\n            <th scope="row"><a href="/${esc(office.slug)}-visa-decisions">${esc(office.name)} visa decisions</a></th>\n            <td data-label="Latest file">—</td>\n            <td data-label="Previous file">—</td>\n            <td data-label="Decisions">—</td>\n            <td data-label="Approved">—</td>\n            <td data-label="Refused">—</td>\n          </tr>`;
+      return `<tr>\n            <th scope="row"><a href="/${esc(office.slug)}-visa-decisions">${esc(todayOfficeAnchor(office))}</a></th>\n            <td data-label="Latest file">—</td>\n            <td data-label="Previous file">—</td>\n            <td data-label="Decisions">—</td>\n            <td data-label="Approved">—</td>\n            <td data-label="Refused">—</td>\n          </tr>`;
     }
     const latestDate = String(latest.report_date || '').slice(0, 10);
-    return `<tr>\n            <th scope="row"><a href="/${esc(office.slug)}-visa-decisions">${esc(office.name)} visa decisions</a></th>\n            <td data-label="Latest file"><time datetime="${latestDate}">${esc(longDate(latestDate))}</time></td>\n            <td data-label="Previous file">${previous ? `<time datetime="${String(previous.report_date || '').slice(0, 10)}">${esc(longDate(previous.report_date))}</time>` : 'No earlier distinct file'}</td>\n            <td data-label="Decisions">${changeCell(latest, previous, 'decisions')}</td>\n            <td data-label="Approved">${changeCell(latest, previous, 'approved')}</td>\n            <td data-label="Refused">${changeCell(latest, previous, 'refused')}</td>\n          </tr>`;
+    return `<tr>\n            <th scope="row"><a href="/${esc(office.slug)}-visa-decisions">${esc(todayOfficeAnchor(office))}</a></th>\n            <td data-label="Latest file"><time datetime="${latestDate}">${esc(longDate(latestDate))}</time></td>\n            <td data-label="Previous file">${previous ? `<time datetime="${String(previous.report_date || '').slice(0, 10)}">${esc(longDate(previous.report_date))}</time>` : 'No earlier distinct file'}</td>\n            <td data-label="Decisions">${changeCell(latest, previous, 'decisions')}</td>\n            <td data-label="Approved">${changeCell(latest, previous, 'approved')}</td>\n            <td data-label="Refused">${changeCell(latest, previous, 'refused')}</td>\n          </tr>`;
   }).join('\n');
   const noNewToday = fresh
     .map((office) => ({ office, latest: (changeBySlug.get(office.slug) || {}).latest }))
@@ -894,6 +902,11 @@ function todayPage(data) {
   const noNewCopy = noNewToday.length
     ? `${noNewToday.length === 1 ? 'One office still has' : `${noNewToday.length} offices still have`} an older file: ${noNewToday.map((item) => `${item.office.name} (latest ${longDate(item.latest.report_date)})`).join(', ')}.`
     : 'Every office has a file dated today.';
+  const todayFaq = [
+    ['What Irish visa decisions were published today?', todayCopy],
+    ['Why is there no new file from every office today?', 'The six offices publish on different schedules: New Delhi on weekdays, Abu Dhabi, Abuja, Ankara and Dublin weekly, and Beijing irregularly. A single snapshot day will often contain a new file from some offices and not others.'],
+    ['Does no new file today mean no decision?', 'No. A decision can be made before its file is published, and a file can be delayed or corrected. Check the office page and its latest report date before concluding that a number is missing.'],
+  ];
 
   // Previous and next cross-office date views, using the same quality gate as
   // the /decisions archive: weekdays only and at least 10 published decisions.
@@ -938,7 +951,7 @@ function todayPage(data) {
         ? '<br><span class="small-note">Report overdue</span>'
         : '';
     return `<tr>
-            <th scope="row"><a href="/${esc(office.slug)}-visa-decisions">${esc(office.name)} visa decisions</a></th>
+            <th scope="row"><a href="/${esc(office.slug)}-visa-decisions">${esc(todayOfficeAnchor(office))}</a></th>
             <td data-label="Usual pattern">${esc(meta.cadence || '')}</td>
             <td data-label="Latest publication">${reportDate ? `<time datetime="${reportDate}">${esc(longDate(reportDate))}</time><br><span class="small-note">${reportDate === today ? 'New file today' : 'No newer file today'}</span>` : '—'}</td>
             <td data-label="Decisions">${num(office.decisions)}</td>
@@ -949,16 +962,25 @@ function todayPage(data) {
   }).join('\n');
 
   const body = `    <p class="page-kicker">Published decision files</p>
-    <h1>Irish visa decisions today — <time datetime="${today}">${esc(longDate(today))}</time></h1>
+    <h1>Ireland visa decisions today — <time datetime="${today}">${esc(longDate(today))}</time></h1>
     <p class="page-meta">Independent and unofficial &bull; Not immigration advice</p>
 
     <p class="page-lede">
-      Each office publishes on its own schedule. This page shows the newest official publication
-      from each office, the decisions it contains, and when the tracker last checked it.
+      <strong>${esc(todayCopy)}</strong> This page answers that by office: the newest official file date,
+      its decision and approved/refused counts, and what changed since that office’s previous distinct file.
     </p>
 
+    <section class="page-answer" aria-labelledby="today-answers-title">
+      <h2 id="today-answers-title">What this page answers</h2>
+      <ul class="answer-list">
+        <li><strong>What was published today:</strong> ${esc(todayCopy)}</li>
+        <li><strong>What changed:</strong> each office’s latest file compared with its previous distinct file. <a href="#changes">See the change table</a>.</li>
+        <li><strong>How to check a number:</strong> search the published files of all six offices. <a href="#check">Check an application number</a>.</li>
+      </ul>
+    </section>
+
     <p class="small-note"><strong>Office decision pages:</strong>
-      ${fresh.map((office) => `<a href="/${esc(office.slug)}-visa-decisions">${esc(office.name)} visa decisions</a>`).join(' · ')}
+      ${fresh.map((office) => `<a href="/${esc(office.slug)}-visa-decisions">${esc(todayOfficeAnchor(office))}</a>`).join(' · ')}
     </p>
 
     <p class="page-nav"><strong>Daily cross-office views:</strong>
@@ -972,6 +994,7 @@ function todayPage(data) {
       <strong>Snapshot day:</strong> <time datetime="${today}">${esc(longDate(today))}</time> &middot;
       <strong>Newest official file:</strong> ${newest ? `<time datetime="${newest}">${esc(longDate(newest))}</time>` : '—'} &middot;
       <strong>Last checked:</strong> ${lastChecked ? timeHTML(lastChecked) : '—'} &middot;
+      <strong>Next expected New Delhi update:</strong> ${nextExpected ? `<time datetime="${nextExpected}">${esc(longDate(nextExpected))}</time> (weekdays around 11:00 IST)` : '—'} &middot;
       <strong>Page built:</strong> <time datetime="${esc(iso)}">${esc(label)}</time> Dublin time
     </p>
 
@@ -1016,6 +1039,13 @@ ${crossOfficeDates.map((date) => `        <li><a href="/decisions/${date}">${esc
       </ul>
     </section>
 
+    <section id="faq">
+      <h2>Frequently asked questions</h2>
+      <div class="faq">
+        ${todayFaq.map(([question, answer]) => `<h3>${esc(question)}</h3>\n        <p>${esc(answer)}</p>`).join('\n        ')}
+      </div>
+    </section>
+
     <section id="what-today-means">
       <h2>What “today” means here</h2>
       <ul>
@@ -1041,7 +1071,7 @@ ${crossOfficeDates.map((date) => `        <li><a href="/decisions/${date}">${esc
 
   return shell({
     route: page.route,
-    title: `Irish Visa Decisions Today — ${longDate(today)}`,
+    title: `Ireland Visa Decisions Today — ${longDate(today)}`,
     description,
     body,
     jsonLd: {
@@ -1095,6 +1125,15 @@ ${crossOfficeDates.map((date) => `        <li><a href="/decisions/${date}">${esc
             position: index + 1,
             name: office.name,
             item: `${SITE}/${office.slug}-visa-decisions`,
+          })),
+        },
+        {
+          '@type': 'FAQPage',
+          '@id': `${SITE}${page.route}#faq`,
+          mainEntity: todayFaq.map(([question, answer]) => ({
+            '@type': 'Question',
+            name: question,
+            acceptedAnswer: { '@type': 'Answer', text: answer },
           })),
         },
       ],
@@ -1663,7 +1702,7 @@ function signed(value) {
 }
 
 function reportTitle(office, entry) {
-  return `${office.name} visa decisions — ${shortDate(entry.report_date)} | Tracker`;
+  return `${office.name} Ireland Visa Decisions — ${longDate(entry.report_date)} — Approved and Refused`;
 }
 
 function reportsIndexPage(data) {
@@ -1814,8 +1853,8 @@ function officeReportsPage(data, office) {
 
   return shell({
     route: `/reports/${office.slug}`,
-    title: `${office.name} reports | Irish Visa Tracker`,
-    description: `${SNAPSHOT_OFFICES.has(office.slug) ? 'Snapshot checks' : 'Dated'} ${office.name} Irish visa decision reports with counts, approval rates, checksums and official source links.`,
+    title: `${office.name} Ireland Visa Decision Reports | Tracker`,
+    description: `${SNAPSHOT_OFFICES.has(office.slug) ? 'Snapshot checks' : 'Dated'} ${office.name} Ireland visa decision reports with report dates, counts, approval rates, checksums and official source links.`,
     body,
     jsonLd: {
       '@context': 'https://schema.org',
@@ -1920,7 +1959,7 @@ function reportDetailPage(data, office, entry, prior, next) {
   return shell({
     route,
     title: reportTitle(office, entry),
-    description: `The ${office.name} official file dated ${longDate(date)} records ${num(decisions)} decisions: ${num(approved)} approved and ${num(refused)} refused.`,
+    description: `The ${office.name} Ireland visa decision report dated ${longDate(date)} records ${num(decisions)} decisions: ${num(approved)} approved and ${num(refused)} refused, with the official source file.`,
     body,
     jsonLd: {
       '@context': 'https://schema.org',
@@ -1929,7 +1968,7 @@ function reportDetailPage(data, office, entry, prior, next) {
           '@type': 'WebPage',
           '@id': `${SITE}${route}#webpage`,
           url: `${SITE}${route}`,
-          name: `${office.name} visa decisions — ${longDate(date)}`,
+          name: `${office.name} Ireland visa decisions — ${longDate(date)}`,
           description: `${num(decisions)} decisions in the ${office.name} official report dated ${longDate(date)}.`,
           inLanguage: 'en',
           isPartOf: { '@id': `${SITE}/#website` },

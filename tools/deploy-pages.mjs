@@ -22,7 +22,7 @@ import { loadFreshness, writeFreshness, longDate, checkedStamp, timeHTML, SNAPSH
 import { freshnessFooterHTML, freshnessHistoryHTML } from './freshness-ui.mjs';
 import { versionAssets } from './version-assets.mjs';
 import { auditDiscovery } from './audit-discovery.mjs';
-import { OFFICE_SEO } from './office-seo.mjs';
+import { OFFICE_SEO, officeTitle } from './office-seo.mjs';
 import { reportSource } from './report-sources.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -793,17 +793,17 @@ export function injectHomepageSeo(options = {}) {
   if (!decisions) return;
 
   const reportDate = String(office.report_date).slice(0, 10);
-  const short = checkedStamp(reportDate) || longDate(reportDate);
   const count = decisions.toLocaleString('en-IE');
-  const approved = (Number(office.approved) || 0).toLocaleString('en-IE');
-  const refused = (Number(office.refused) || 0).toLocaleString('en-IE');
   // "ireland visa decisions", "ireland visa decisions today" and "ireland visa
   // decision new delhi" already sit on page one at a ~2% CTR, so the snippet
   // leads with the query word ("Ireland", not only "Irish"), keeps the count
   // and file date that no official page states, and stays inside the ~60
   // characters a desktop result shows before it truncates.
-  const title = `Ireland Visa Decisions Today: ${count} Decided (${short})`;
-  const description = `Ireland visa decisions, ${longDate(reportDate)}: ${count} decided in the latest New Delhi file — ${approved} approved, ${refused} refused. Search an application number.`;
+  const title = `Ireland Visa Decisions Today: 6 Offices, ${count} Decided`;
+  const description = `Ireland visa decisions for all six offices: latest New Delhi file ${longDate(reportDate)}, ${count} decided. Search an application number.`;
+  const checked = checkedStamp(office.last_success_at) || checkedStamp(reportDate);
+  const nextUpdate = office.next_due_at ? longDate(office.next_due_at) : 'the next weekday';
+  const freshnessLine = `<strong>Last checked:</strong> <time datetime="${escapeHtml(String(office.last_success_at || '').slice(0, 10))}">${escapeHtml(checked)}</time> &middot; <strong>Next expected New Delhi update:</strong> ${escapeHtml(nextUpdate)}, weekdays around 11:00 IST. <a href="/status">All six offices</a>.`;
   const indiaLine = `<strong>India:</strong> <a href="/new-delhi-visa-decisions">New Delhi Irish visa decisions</a> — latest official file ${longDate(reportDate)}, ${count} decisions.`;
 
   let html = fs.readFileSync(pagePath, 'utf8');
@@ -816,6 +816,10 @@ export function injectHomepageSeo(options = {}) {
   html = html.replace(
     /(<p[^>]*data-india-line[^>]*>)[\s\S]*?(<\/p>)/,
     `$1${indiaLine}$2`,
+  );
+  html = html.replace(
+    /(<p[^>]*data-freshness-line[^>]*>)[\s\S]*?(<\/p>)/,
+    `$1${freshnessLine}$2`,
   );
   fs.writeFileSync(pagePath, html);
   console.log(`Homepage snippet: ${title}`);
@@ -869,7 +873,8 @@ export function injectOfficePages(options = {}) {
     const refused = canonical ? canonical.refused : Number(office.refused) || 0;
     const approvalShare = decisions ? `${((approved / decisions) * 100).toFixed(1)}%` : '0.0%';
     const refusedShare = decisions ? `${((refused / decisions) * 100).toFixed(1)}%` : '0.0%';
-    const latest = longDate(canonical ? canonical.report_date : office.report_date);
+    const latestDate = canonical ? canonical.report_date : office.report_date;
+    const latest = longDate(latestDate);
     const isSnapshot = canonical ? canonical.snapshot : SNAPSHOT_OFFICES.has(office.slug);
     const checked = canonical
       ? checkedStamp(canonical.checked_at) || latest
@@ -976,7 +981,7 @@ export function injectOfficePages(options = {}) {
       dublin: 'Pakistan and transferred applications',
     }[office.slug] || 'its published applications';
     const officeSeo = OFFICE_SEO[office.slug];
-    const seoTitle = (officeSeo && officeSeo.title) || `${office.name} Visa Decisions — Latest ${latest}`;
+    const seoTitle = officeTitle(office.slug, latestDate) || `${office.name} Ireland Visa Decisions — ${latest}`;
     const seoDescription = (officeSeo && officeSeo.description) || `Search Irish visa decisions for ${seoCoverage}. Latest official ${isSnapshot ? 'snapshot' : 'report'}: ${latest} — ${decisions.toLocaleString('en-IE')} decisions. Search by application number.`;
     html = html.replace(/<title>[\s\S]*?<\/title>/i, `<title>${escapeHtml(seoTitle)}</title>`);
     html = replaceMetaContent(html, 'property="og:title"', seoTitle);

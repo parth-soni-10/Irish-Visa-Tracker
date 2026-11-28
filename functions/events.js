@@ -7,6 +7,8 @@
  */
 
 const EVENTS = new Set([
+  'homepage_view',
+  'search_started',
   'alert_cta_view',
   'alert_telegram_click',
   'alert_telegram_opened',
@@ -22,6 +24,9 @@ const EVENTS = new Set([
   'activation_step_completed',
   'pwa_install_click'
 ]);
+
+const DEVICES = new Set(['mobile', 'desktop', 'unknown']);
+const OFFICES = new Set(['new-delhi', 'beijing', 'dublin', 'abu-dhabi', 'abuja', 'ankara', 'all']);
 
 function json(body, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -49,13 +54,19 @@ export async function handleEvents(request, env) {
   const applicationNumber = /^\d{8}$/.test(String(body.application_number || ''))
     ? String(body.application_number)
     : null;
+  const device = DEVICES.has(String(body.device || '').toLowerCase())
+    ? String(body.device).toLowerCase()
+    : null;
+  const office = OFFICES.has(String(body.office || '').toLowerCase())
+    ? String(body.office).toLowerCase()
+    : null;
 
   try {
     const { ensureSchema } = await import('./db-schema.js');
     await ensureSchema(env.DB);
     await env.DB.prepare(
-      'INSERT INTO conversion_events (event, source, application_number) VALUES (?, ?, ?)'
-    ).bind(event, source, applicationNumber).run();
+      'INSERT INTO conversion_events (event, source, application_number, device, office) VALUES (?, ?, ?, ?, ?)'
+    ).bind(event, source, applicationNumber, device, office).run();
     return json({ ok: true }, 202);
   } catch (error) {
     console.error('Conversion event store failed:', error.message);

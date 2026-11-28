@@ -104,6 +104,8 @@ CREATE TABLE IF NOT EXISTS conversion_events (
   event TEXT NOT NULL,
   source TEXT,
   application_number TEXT,
+  device TEXT,
+  office TEXT,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 CREATE INDEX IF NOT EXISTS idx_conversion_events_event ON conversion_events(event, created_at);
@@ -149,6 +151,18 @@ export async function ensureSchema(db) {
         console.error('Error:', error.message);
         throw error;
       }
+    }
+  }
+
+  // Existing deployments created conversion_events before it carried the
+  // funnel dimensions. Add them in place; a fresh table already has them.
+  // Legacy rows stay readable with NULL device/office and are reported as
+  // "unknown" rather than being backfilled with guessed values.
+  for (const column of ['device', 'office']) {
+    try {
+      await db.prepare(`ALTER TABLE conversion_events ADD COLUMN ${column} TEXT`).run();
+    } catch (error) {
+      if (!/duplicate column|already exists/i.test(String(error.message))) throw error;
     }
   }
 

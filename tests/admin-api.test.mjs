@@ -13,6 +13,7 @@ import { test } from 'node:test';
 
 import {
   handleAdminTokens,
+  handleConversionFunnel,
   handleErrorLogs,
   handleSystemMetrics
 } from '../functions/admin-api.js';
@@ -53,8 +54,20 @@ function adminDB() {
           if (/FROM admin_tokens ORDER BY created_at DESC/.test(sql)) {
             return { results: [...tokens.values()].map(({ token_hash, ...rest }) => rest) };
           }
+          if (/COALESCE\(device/.test(sql)) {
+            return { results: [{ device: 'mobile', event: 'homepage_view', count: 10 }, { device: 'desktop', event: 'homepage_view', count: 5 }] };
+          }
+          if (/COALESCE\(office/.test(sql)) {
+            return { results: [{ office: 'new-delhi', event: 'application_search', count: 4 }, { office: 'all', event: 'application_search', count: 6 }] };
+          }
           if (/FROM conversion_events/.test(sql)) {
-            return { results: [{ event: 'alert_telegram_click', count: 2 }, { event: 'alert_telegram_opened', count: 1 }] };
+            return { results: [
+              { event: 'homepage_view', count: 15 },
+              { event: 'search_started', count: 9 },
+              { event: 'application_search', count: 10 },
+              { event: 'alert_telegram_click', count: 2 },
+              { event: 'alert_telegram_opened', count: 1 }
+            ] };
           }
           return { results: [] };
         },
@@ -133,6 +146,23 @@ test('metrics expose subscription counts and conversion events', async () => {
   } finally {
     restore();
   }
+});
+
+test('conversion funnel reports ordered steps with device and office splits', async () => {
+  const response = await handleConversionFunnel(
+    request('/api/admin/funnel', { headers: authHeader(BOOTSTRAP) }),
+    env()
+  );
+  assert.equal(response.status, 200);
+  const body = await response.json();
+  assert.equal(body.windowDays, 30);
+  assert.equal(body.funnel[0].event, 'homepage_view');
+  assert.equal(body.funnel[0].count, 15);
+  assert.equal(body.funnel[2].count, 10);
+  assert.equal(body.funnel[2].conversionFromPrevious, 111.1);
+  assert.equal(body.byDevice.mobile.homepage_view, 10);
+  assert.equal(body.byOffice['new-delhi'].application_search, 4);
+  assert.ok(body.funnel.every((step) => typeof step.shareOfHomepage === 'number'));
 });
 
 test('named admin tokens are hashed, listed, and revoked immediately', async () => {

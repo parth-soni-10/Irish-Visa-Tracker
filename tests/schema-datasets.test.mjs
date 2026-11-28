@@ -44,6 +44,6 @@ test("every Dataset declares the site Organization as creator and the terms lice
 
 test("the homepage title and description target the dominant query language", async () => {
   const html = await readFile(new URL("index.html", ROOT), "utf8");
-  assert.match(html, /<title>Irish Visa Decisions — Search All 6 Offices<\/title>/);
-  assert.match(html, /<meta name="description" content="Search Irish visa decisions by application number across all six offices/);
+  assert.match(html, /<title>Ireland Visa Decisions Today — All 6 Offices<\/title>/);
+  assert.match(html, /<meta name="description" content="Check Ireland visa decisions across all six offices by application number/);
 });

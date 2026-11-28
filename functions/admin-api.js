@@ -239,6 +239,82 @@ export async function handleSystemMetrics(request, env) {
   }
 }
 
+const FUNNEL_STEPS = [
+  { label: 'Homepage view', event: 'homepage_view' },
+  { label: 'Search started', event: 'search_started' },
+  { label: 'Valid search', event: 'application_search' },
+  { label: 'Decision found', event: 'search_match_office' },
+  { label: 'Alert click', event: 'alert_telegram_click' },
+  { label: 'Telegram opened', event: 'alert_telegram_opened' },
+];
+
+function countsBy(rows, key) {
+  const result = {};
+  for (const row of rows || []) {
+    const bucket = String(row[key] == null || row[key] === '' ? 'unknown' : row[key]);
+    result[bucket] = result[bucket] || {};
+    result[bucket][row.event] = Number(row.count) || 0;
+  }
+  return result;
+}
+
+export async function handleConversionFunnel(request, env) {
+  const auth = await requireAdmin(request, env);
+  if (!auth.authorized) return auth.response;
+
+  try {
+    const windowDays = 30;
+    const [events, devices, offices] = await Promise.all([
+      env.DB.prepare(`
+        SELECT event, COUNT(*) AS count
+        FROM conversion_events
+        WHERE created_at >= datetime('now', '-30 days')
+        GROUP BY event
+        ORDER BY count DESC
+      `).all().catch(() => ({ results: [] })),
+      env.DB.prepare(`
+        SELECT COALESCE(device, 'unknown') AS device, event, COUNT(*) AS count
+        FROM conversion_events
+        WHERE created_at >= datetime('now', '-30 days')
+        GROUP BY device, event
+      `).all().catch(() => ({ results: [] })),
+      env.DB.prepare(`
+        SELECT COALESCE(office, 'unknown') AS office, event, COUNT(*) AS count
+        FROM conversion_events
+        WHERE created_at >= datetime('now', '-30 days')
+        GROUP BY office, event
+      `).all().catch(() => ({ results: [] })),
+    ]);
+
+    const eventCounts = {};
+    for (const row of events.results || []) eventCounts[row.event] = Number(row.count) || 0;
+    let previous = null;
+    const funnel = FUNNEL_STEPS.map((step) => {
+      const count = eventCounts[step.event] || 0;
+      const conversionFromPrevious = previous == null
+        ? null
+        : previous === 0 ? 0 : Number(((count / previous) * 100).toFixed(1));
+      const item = { ...step, count, conversionFromPrevious };
+      previous = count;
+      return item;
+    });
+    const top = funnel[0] ? funnel[0].count : 0;
+    for (const step of funnel) step.shareOfHomepage = top === 0 ? 0 : Number(((step.count / top) * 100).toFixed(1));
+
+    return json({
+      generatedAt: new Date().toISOString(),
+      windowDays,
+      events: eventCounts,
+      byDevice: countsBy(devices.results, 'device'),
+      byOffice: countsBy(offices.results, 'office'),
+      funnel,
+    });
+  } catch (error) {
+    console.error('Conversion funnel error:', error);
+    return json({ error: 'Failed to fetch conversion funnel' }, 500);
+  }
+}
+
 export async function handleErrorLogs(request, env) {
   const auth = await requireAdmin(request, env);
   if (!auth.authorized) return auth.response;

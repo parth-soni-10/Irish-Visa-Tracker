@@ -67,9 +67,11 @@ D1 also stores the operational counters and the activation funnel:
   bucket; `predict-feedback` is a separate, stricter bucket. Old rows are pruned
   opportunistically; losing this table only degrades the limiter to a
   per-isolate fallback.
-- `conversion_events` — fixed-vocabulary funnel events (`alert_cta_view`,
-  Telegram click and open, watchlist add, search, activation step, PWA install).
-  It stores no email address, IP address, cookie or free text.
+- `conversion_events` — fixed-vocabulary funnel events (`homepage_view`,
+  `search_started`, `application_search`, `search_match_office`,
+  `alert_telegram_click`, `alert_telegram_opened`, watchlist, activation and PWA
+  events), with optional `device` and `office` dimensions. It stores no email
+  address, IP address, cookie or free text.
 
 ## Current status
 
