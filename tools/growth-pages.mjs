@@ -107,6 +107,15 @@ function pageDescriptor(route) {
     || { route, current: null, skip: 'content' };
 }
 
+// Routes that also answer Markdown at `<route>.md`. The alternate link lets a
+// crawler or agent find the Markdown copy without guessing the URL.
+const MARKDOWN_ROUTES = new Set([
+  '/after-approval',
+  '/after-refusal',
+  '/missing-decision',
+  '/find-my-office'
+]);
+
 function shell({ route, title, description, body, jsonLd, robots, extraHead = '', extraScripts = '' }) {
   const ld = jsonLd
     ? `  <script type="application/ld+json">\n${JSON.stringify(jsonLd, null, 2)}\n  </script>\n`
@@ -119,6 +128,7 @@ function shell({ route, title, description, body, jsonLd, robots, extraHead = ''
   <title>${esc(title)}</title>
   <meta name="description" content="${esc(description)}">
   <link rel="canonical" href="${SITE}${route}">
+${MARKDOWN_ROUTES.has(route) ? `  <link rel="alternate" type="text/markdown" href="${route}.md">\n` : ''}
 ${robots ? `  <meta name="robots" content="${esc(robots)}">\n` : ''}  <link rel="manifest" href="/manifest.json">
   <link rel="describedby" href="/llms.txt" type="text/plain">
   <meta name="theme-color" content="#ffffff">
@@ -611,7 +621,7 @@ function afterRefusalPage(data) {
   return shell({
     route: '/after-refusal',
     title: 'Refused: appeal, review or reapply for an Irish visa',
-    description: 'What to check after an Irish visa refusal, how appeal rights and deadlines differ, the 2026 short-stay change, and how to reapply without relying on a generic template.',
+    description: 'What to check after an Irish visa refusal: appeal rights and deadlines, the 2026 short-stay rule, and how to reapply with better evidence.',
     body,
     jsonLd: {
       '@context': 'https://schema.org',
@@ -761,7 +771,7 @@ function findMyOfficePage(data) {
   return shell({
     route: '/find-my-office',
     title: 'Find my Irish visa office | Tracker',
-    description: 'Use country, visa category and application date to identify the Irish visa office that likely handles a file, with links to the official processing and decisions pages.',
+    description: 'Use country, visa category and date to identify the Irish visa office that likely handles a file, with links to official processing and decision pages.',
     body,
     extraScripts: '  <script src="/scripts/find-office.js" defer></script>\n',
     jsonLd: {
