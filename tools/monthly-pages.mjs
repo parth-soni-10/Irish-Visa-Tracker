@@ -182,10 +182,24 @@ function storyPackage(report, route = '/monthly-report') {
   const partial = isPartialMonth(report);
   const monthLabelText = partial ? `${monthLabel(report.month)} to date` : monthLabel(report.month);
   const earlier = monthLabel(report.previous_month);
-  const direction = changeTotal > 0 ? 'rose' : changeTotal < 0 ? 'fell' : 'was unchanged';
+  // A partial month is compared with a complete one, so say so rather than
+  // implying November's first weeks already lost to October. "1 more dated
+  // decisions" was also ungrammatical.
+  const changeNoun = Math.abs(changeTotal) === 1 ? 'dated decision' : 'dated decisions';
   const changeCopy = changeTotal === 0
-    ? `unchanged from ${earlier}`
-    : `${num(Math.abs(changeTotal))} ${changeTotal > 0 ? 'more' : 'fewer'} dated decisions than ${earlier}`;
+    ? (partial ? `the same as all of ${earlier}, with the month incomplete` : `unchanged from ${earlier}`)
+    : partial
+      ? `${num(Math.abs(changeTotal))} ${changeTotal > 0 ? 'more' : 'fewer'} ${changeNoun} than all of ${earlier}, with the month incomplete`
+      : `${num(Math.abs(changeTotal))} ${changeTotal > 0 ? 'more' : 'fewer'} ${changeNoun} than ${earlier}`;
+  const headlineCompare = partial
+    ? changeTotal === 0
+      ? `matches all of ${earlier} so far`
+      : changeTotal > 0
+        ? `is already ${num(changeTotal)} above all of ${earlier}`
+        : `is ${num(Math.abs(changeTotal))} below all of ${earlier}, with the month incomplete`
+    : changeTotal === 0
+      ? `is unchanged from ${earlier}`
+      : `rose by ${num(Math.abs(changeTotal))} against ${earlier}`;
   const offices = Array.isArray(report.offices) ? report.offices : [];
   const busiest = offices.slice().sort((a, b) => (Number(b.total) || 0) - (Number(a.total) || 0))[0];
   // The newest month lives at /monthly-report; completed months get their own
@@ -200,7 +214,7 @@ function storyPackage(report, route = '/monthly-report') {
       <h2 id="story-package-heading">Story package: ${esc(monthLabelText)}</h2>
       <p class="note">One finding, one paragraph, the method and the files. Use it in a student paper, a data-journalism class or a newsroom; attribution and a link are the only conditions.</p>
       <p class="story-headline"><strong>${esc(monthLabelText)}: ${num(total)} dated decisions, ${pct(rate)} approved.</strong>
-        Published volume ${direction} ${changeTotal === 0 ? 'against' : `by ${num(Math.abs(changeTotal))} against`} ${esc(earlier)}.</p>
+        Published volume ${esc(headlineCompare)}.</p>
       <div class="story-summary">
         <p>${esc(summary)}</p>
       </div>

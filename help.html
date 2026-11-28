@@ -6,6 +6,7 @@
   <title>How to Check Your Irish Visa Application Status | Help</title>
   <meta name="description" content="Check your Irish visa application status by application number, understand approved and refused results, and see what to do when a result is missing.">
   <link rel="canonical" href="https://irishvisaupdatetracker.pages.dev/help">
+  <link rel="alternate" type="text/markdown" href="/help.md" title="Markdown version">
   <link rel="describedby" href="/llms.txt" type="text/plain">
   <meta name="theme-color" content="#ffffff">
   <meta property="og:type" content="article">
@@ -443,6 +444,7 @@
       <h2>How do Telegram and browser alerts work?</h2>
       <ul>
         <li><strong>Telegram:</strong> add an application number in the <a href="/?tracker=visa&amp;tab=alerts">Alerts tab</a>, then open the Telegram bot link. The bot sends one message when the number appears in a later published report.</li>
+        <li><strong>Office updates:</strong> each office page, and the <a href="/status">data status</a> page, can subscribe you to one message when that office publishes a new decisions file. No application number is needed, and the subscription stays inside Telegram.</li>
         <li><strong>Browser push:</strong> save an application in <a href="/?tracker=visa&amp;tab=saved">Saved</a>, enable notifications for that browser, and allow notifications when prompted. Push is per browser and per application.</li>
         <li><strong>Telegram digest:</strong> if you track several applications in the Telegram bot, send <code>/digest weekly</code> or <code>/digest daily</code>. Add an hour and IANA timezone to choose delivery, for example <code>/digest daily 8 Europe/Dublin</code>. One message groups applications by office and says which ones have no change. <code>/digest status</code> shows the schedule and the last actual delivery; <code>/digest preview</code> shows what the next message would contain without changing the schedule, including when a daily no-change digest would be skipped. Only applications linked to the Telegram bot are included; applications saved only in this browser stay local and use browser push instead. Use <code>/immediate 12345678</code> to keep one application immediate while the others are in the digest, <code>/digest 12345678</code> to return that one application to the digest, and <code>/remove 12345678</code> to stop alerts for one application.</li>
         <li><strong>Management:</strong> Saved shows what this browser remembers. Telegram subscriptions and digest frequency are managed inside the Telegram bot; this site does not receive a server-side list of your Telegram chats.</li>

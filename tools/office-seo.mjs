@@ -8,7 +8,7 @@ export const OFFICE_SEO = {
     description: 'Latest New Delhi Irish visa decisions for India, Bangladesh, Nepal and Sri Lanka, with approved and refused counts, processing times and a free number search.',
   },
   beijing: {
-    title: 'Beijing Ireland Visa Decisions — China, Hong Kong, Macau, Mongolia',
+    title: 'Beijing Ireland Visa Decisions — China & Mongolia',
     description: 'Search Irish visa decisions for China, Hong Kong, Macau and Mongolia in the latest Beijing snapshot, with approved and refused counts.',
   },
   'abu-dhabi': {
@@ -16,11 +16,11 @@ export const OFFICE_SEO = {
     description: 'Search Irish visa decisions for the UAE, Gulf states and North Africa in the latest Abu Dhabi report, with approved and refused counts.',
   },
   abuja: {
-    title: 'Abuja Ireland Visa Decisions — Nigeria, Ghana, Côte d’Ivoire, Senegal',
+    title: 'Abuja Ireland Visa Decisions — Nigeria & Ghana',
     description: 'Search Irish visa decisions for Nigeria, Ghana, Côte d’Ivoire and Senegal in the latest Abuja report, with weekly approved and refused counts.',
   },
   ankara: {
-    title: 'Ankara Ireland Visa Decisions — Türkiye, Azerbaijan & Saudi Residents',
+    title: 'Ankara Ireland Visa Decisions — Türkiye & Azerbaijan',
     description: 'Search Irish visa decisions for Türkiye, Azerbaijan and Saudi residents in the latest Ankara report, with approved, refused and OCR notes.',
   },
   dublin: {

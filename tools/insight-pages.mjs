@@ -1320,7 +1320,7 @@ function dataPage(data) {
           <tbody>${rows}</tbody>
         </table>
       </div>
-      <p class="small-note">Every file is served with <code>Cache-Control: no-store</code>. Read <a href="/status">Data status</a> for the latest successful check, and <a href="/data/data_manifest.json">the manifest</a> for machine-readable coverage.</p>
+      <p class="small-note">Every file is served with <code>Cache-Control: no-store</code>. Read <a href="/status">Data status</a> for the latest successful check, <a href="/status.md">its Markdown version</a> for an agent-readable summary, and <a href="/data/data_manifest.json">the manifest</a> for machine-readable coverage.</p>
     </section>
 
     <section>

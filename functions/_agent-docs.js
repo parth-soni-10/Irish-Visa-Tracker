@@ -884,15 +884,29 @@ export async function liveStatusMarkdown(env, request, origin) {
           ? ` to ${formatLongDate(fresh.search_through)}` : "") +
         (fresh.search_scope ? ` (${fresh.search_scope})` : "")
       : "latest file only";
-    return `- **${office.name || office.slug}** \u2014 latest official report ${formatLongDate(office.report_date)}` +
-      ` \u00b7 ${counts} \u00b7 status ${office.status || "official"}` +
-      ` \u00b7 a search matches ${window}`;
+    // The introduction promises the last read time, so each row carries it;
+    // an office in a warning state also says so instead of always reading
+    // "status official".
+    const checked = fresh.last_success_at
+      ? ` \u00b7 checked ${formatLongDate(fresh.last_success_at)}`
+      : "";
+    const warning = fresh.attention || fresh.status === "error"
+      ? ` \u00b7 warning: ${fresh.warning || fresh.status_label || "data needs attention"}`
+      : "";
+    const page = `https://irishvisaupdatetracker.pages.dev/${office.slug}-visa-decisions`;
+    return `- **[${office.name || office.slug}](${page})** \u2014 latest official report ${formatLongDate(office.report_date)}` +
+      ` \u00b7 ${counts} \u00b7 status ${office.status || "official"}${checked}` +
+      ` \u00b7 a search matches ${window}${warning}`;
   });
   return lines(
     "# Irish visa decision data status",
     "",
     "What each of the six offices has published, when the tracker last read it, and the window",
     "a search can actually match. Read the JSON below for exact timestamps.",
+    "",
+    manifest.generated_at
+      ? `Manifest generated ${formatLongDate(manifest.generated_at)}.`
+      : "",
     "",
     ...rows,
     "",

@@ -5,7 +5,7 @@ import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
 import { buildSearchIndex } from '../tools/build-search-index.mjs';
-import { onRequestPost } from '../functions/api/search.js';
+import { onRequestGet, onRequestPost } from '../functions/api/search.js';
 
 const ROOT = fileURLToPath(new URL('../', import.meta.url));
 
@@ -46,6 +46,55 @@ test('a rebuild with the same rows keeps generated_at stable', async () => {
   } finally {
     await fs.rm(outFile, { force: true });
   }
+});
+
+test('the search API rejects filters it cannot honour instead of returning no results', async () => {
+  const env = {
+    DB: { prepare() { return { async run() {} }; } },
+    ASSETS: { async fetch() { return new Response('missing', { status: 404 }); } },
+  };
+  const post = async (body) => onRequestPost({
+    request: new Request('https://tracker.test/api/search', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: typeof body === 'string' ? body : JSON.stringify(body),
+    }),
+    env,
+  });
+
+  const office = await post({ query: '86826162', office: 'toronto' });
+  assert.equal(office.status, 400);
+  const officeBody = await office.json();
+  assert.match(officeBody.error, /Unknown office/);
+  assert.ok(officeBody.offices.includes('new-delhi'));
+
+  const mode = await post({ query: 'x', mode: 'magic' });
+  assert.equal(mode.status, 400);
+  assert.match((await mode.json()).error, /Unknown mode/);
+
+  const date = await post({ filters: { date_from: 'last-week' } });
+  assert.equal(date.status, 400);
+  assert.match((await date.json()).error, /date_from/);
+
+  const range = await post({ filters: { number_range: [9000, 1000] } });
+  assert.equal(range.status, 400);
+  assert.match((await range.json()).error, /number_range/);
+
+  const broken = await post('{not json');
+  assert.equal(broken.status, 400);
+  assert.match((await broken.json()).error, /valid JSON/);
+});
+
+test('the search API advertises the office alias and accepts a well-formed range', async () => {
+  const response = await onRequestGet({
+    env: {
+      DB: { prepare() { return { async run() {} }; } },
+      ASSETS: { async fetch() { return new Response('missing', { status: 404 }); } },
+    },
+  });
+  const body = await response.json();
+  assert.ok(body.filters.includes('office'));
+  assert.equal(body.aliases.office, 'embassy');
 });
 
 test('the search API accepts the office spelling used by the site forms', async () => {

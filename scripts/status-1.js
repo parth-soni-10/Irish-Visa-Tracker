@@ -137,8 +137,11 @@
 
       // Public channel link is optional; only show it when the deployment has
       // a valid TELEGRAM_CHANNEL_URL configured.
-      fetch('/api/config', { headers: { Accept: 'application/json' } })
-        .then(function (response) { return response.ok ? response.json() : null; })
+      (window.VisaConfig && window.VisaConfig.load
+        ? window.VisaConfig.load()
+        : fetch('/api/config', { headers: { Accept: 'application/json' } })
+          .then(function (response) { return response.ok ? response.json() : null; })
+          .catch(function () { return null; }))
         .then(function (config) {
           var link = document.getElementById('telegram-channel-link');
           if (!link || !config || !config.telegram_channel_url) return;

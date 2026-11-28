@@ -11,10 +11,23 @@
 (function () {
   var channelLinks = document.querySelectorAll('[data-public-channel]');
   var officeLinks = document.querySelectorAll('[data-office-alerts]');
+
+  // status-1.js wants the same config for the channel link. Share one request
+  // instead of fetching the same JSON twice on a page that has both scripts.
+  window.VisaConfig = window.VisaConfig || {
+    load: function () {
+      if (!window.__visaConfigPromise) {
+        window.__visaConfigPromise = fetch('/api/config', { headers: { Accept: 'application/json' } })
+          .then(function (response) { return response.ok ? response.json() : null; })
+          .catch(function () { return null; });
+      }
+      return window.__visaConfigPromise;
+    }
+  };
+
   if (!channelLinks.length && !officeLinks.length) return;
 
-  fetch('/api/config', { headers: { Accept: 'application/json' } })
-    .then(function (response) { return response.ok ? response.json() : null; })
+  window.VisaConfig.load()
     .then(function (config) {
       var channel = config && typeof config.telegram_channel_url === 'string'
         ? config.telegram_channel_url

@@ -41,6 +41,7 @@ const FRESHNESS = {
     search_from: '2026-07-12',
     search_through: '2026-11-27',
     search_scope: 'daily tracker',
+    last_success_at: '2026-11-27T12:10:00Z',
   }],
 };
 
@@ -73,6 +74,9 @@ test('status Markdown is built from the manifest and freshness files', async () 
   assert.match(body, /44,284 decisions \(37,290 approved, 6,994 refused\)/);
   assert.match(body, /12 July 2026 to 27 November 2026 \(daily tracker\)/);
   assert.match(body, /data\/search_index\.json/);
+  assert.match(body, /\[New Delhi\]\(https:\/\/tracker\.test\/new-delhi-visa-decisions\)/);
+  assert.match(body, /checked 27 November 2026/);
+  assert.match(body, /Manifest generated 27 November 2026/);
 });
 
 test('help Markdown answers the common questions without assets', async () => {

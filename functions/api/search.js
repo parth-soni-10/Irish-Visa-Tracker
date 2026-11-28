@@ -21,6 +21,10 @@ const OFFICE_FILES = [
   'embassy-ankara.json'
 ];
 
+const OFFICE_SLUGS = OFFICE_FILES.map((file) => file.replace(/^embassy-|\.json$/g, ''));
+const SEARCH_MODES = new Set(['fuzzy', 'nearest', 'filter', 'hybrid']);
+const DATE_FILTERS = ['date_from', 'date_to', 'application_date_from', 'application_date_to'];
+
 function normalizeDecision(value) {
   const v = String(value || '').trim().toLowerCase();
   if (v === 'approved' || v === 'granted') return 'Approved';
@@ -307,13 +311,34 @@ async function loadAllDecisions(request, env) {
 export async function onRequestPost(context) {
   const { request, env } = context;
   
+  // A bad filter used to return an empty 200, which reads as "no such
+  // decision" instead of "your filter was wrong". Say which value is wrong
+  // and what the API accepts.
+  const invalid = (message, extra = {}) => new Response(JSON.stringify({
+    success: false,
+    error: message,
+    ...extra,
+  }), {
+    status: 400,
+    headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
+  });
+
   try {
     await ensureSchema(env.DB);
-    
-    const body = await request.json();
+
+    let body;
+    try {
+      body = await request.json();
+    } catch (error) {
+      return invalid('Body must be valid JSON.');
+    }
     const query = body.query; // Text query for fuzzy matching
     const mode = body.mode || 'hybrid'; // 'fuzzy', 'nearest', 'filter', 'hybrid'
     const hasQuery = Boolean(query && String(query).trim());
+
+    if (!SEARCH_MODES.has(mode)) {
+      return invalid(`Unknown mode "${String(mode).slice(0, 24)}".`, { modes: [...SEARCH_MODES] });
+    }
 
     // Accept both { filters: { embassy } } and the flat fields posted by the
     // advanced-search form. Before this, the office/decision selects were
@@ -331,6 +356,24 @@ export async function onRequestPost(context) {
     // spelling at the API edge so a caller copying the form fields is not
     // silently given results from every office.
     if (body.office && !filters.embassy) filters.embassy = body.office;
+
+    if (filters.embassy && !OFFICE_SLUGS.includes(String(filters.embassy))) {
+      return invalid(`Unknown office "${String(filters.embassy).slice(0, 32)}".`, { offices: OFFICE_SLUGS });
+    }
+    for (const key of DATE_FILTERS) {
+      if (!filters[key]) continue;
+      if (!/^\d{4}-\d{2}-\d{2}(?:[T ][0-9:.Z+-]+)?$/.test(String(filters[key]).trim())) {
+        return invalid(`${key} must be a YYYY-MM-DD date.`);
+      }
+    }
+    if (filters.number_range) {
+      const range = filters.number_range;
+      const numbers = Array.isArray(range) && range.length === 2 ? range.map(Number) : null;
+      if (!numbers || !numbers.every(Number.isFinite) || numbers[0] > numbers[1]) {
+        return invalid('number_range must be [from, to] with two numbers and from <= to.');
+      }
+      filters.number_range = numbers;
+    }
 
     // FormData values are strings; parse pagination or `0 + "20"` turns into
     // "020" and the Load more button never reports another page.
@@ -607,9 +650,10 @@ export async function onRequestGet(context) {
     return new Response(JSON.stringify({
       modes: ['fuzzy', 'nearest', 'filter', 'hybrid'],
       filters: [
-        'embassy', 'visa_type', 'decision', 'date_from', 'date_to',
+        'embassy', 'office', 'visa_type', 'decision', 'date_from', 'date_to',
         'application_date_from', 'application_date_to', 'country', 'number_range'
       ],
+      aliases: { office: 'embassy' },
       sort_options: ['relevance', 'date_desc', 'date_asc', 'number_asc', 'number_desc', 'embassy', 'decision'],
       provenance: [
         'source', 'source_kind', 'source_label', 'source_url', 'source_file',

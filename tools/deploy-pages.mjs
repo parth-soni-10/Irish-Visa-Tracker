@@ -995,6 +995,28 @@ function searchWindowText(office) {
 /** The status page's static latest-report table. Kept separate from the
  *  JavaScript coverage table so a no-JS reader still gets the six offices and
  *  one internal link to each office page. */
+// Social previews had a picture but no alt text on most static pages. Add one
+// from the page title so every OG image has a description, and mirror it for
+// Twitter where that image tag exists.
+function injectSocialImageAlt(distDir) {
+  let changed = 0;
+  for (const entry of fs.readdirSync(distDir)) {
+    if (!entry.endsWith('.html')) continue;
+    const file = path.join(distDir, entry);
+    const html = fs.readFileSync(file, 'utf8');
+    if (!/property="og:image"/.test(html) || /property="og:image:alt"/.test(html)) continue;
+    const title = ((html.match(/<title>([\s\S]*?)<\/title>/) || [])[1] || 'Irish Visa Decision Tracker').trim();
+    const alt = escapeHtml(title);
+    let next = html.replace(/(<meta property="og:image"[^>]*>)/i, `$1\n<meta property="og:image:alt" content="${alt}">`);
+    if (/name="twitter:image"/.test(next) && !/name="twitter:image:alt"/.test(next)) {
+      next = next.replace(/(<meta name="twitter:image"[^>]*>)/i, `$1\n<meta name="twitter:image:alt" content="${alt}">`);
+    }
+    fs.writeFileSync(file, next);
+    changed++;
+  }
+  return changed;
+}
+
 export function injectLatestReports(options = {}) {
   const assetsRoot = path.resolve(options.assetsRootDir || assetsRootDir);
   const dist = path.resolve(options.distDir || distDir);
@@ -1049,7 +1071,8 @@ export function injectLatestReports(options = {}) {
       : `<td data-label="${label}">—</td>`;
     return `<tr data-freshness-slug="${office.slug}" data-freshness-view="status">` +
       `<td><a href="/${office.slug}-visa-decisions"><strong>${escapeHtml(office.name)}</strong></a> ` +
-      `<a class="small-note" data-office-alerts="${office.slug}" href="#" hidden>Get updates</a><br>` +
+      `<a class="small-note" data-office-alerts="${office.slug}" href="#" ` +
+      `aria-label="Get ${escapeHtml(office.name)} publication updates on Telegram" hidden>Get updates</a><br>` +
       `<span class="status-pill${statusClass}" data-freshness-status${statusTitle ? ` title="${escapeHtml(statusTitle)}"` : ''}>${escapeHtml(statusLabel)}</span></td>` +
       `<td data-label="What this means for your search"><span data-freshness-impact>${escapeHtml(impact)}</span>` +
       (ageNote ? `<br><span class="small-note" data-freshness-age>${escapeHtml(ageNote)}</span>` : '') + `</td>` +
@@ -1384,6 +1407,8 @@ async function main() {
     + `${Object.entries(sitemapIndex.counts).map(([family, count]) => `${family} ${count}`).join(', ')}.`);
 
   rewriteSiteOrigin();
+  const socialAlt = injectSocialImageAlt(distDir);
+  console.log(`Social image alt: ${socialAlt} page(s) gained an og:image:alt.`);
   const assetVersion = versionAssets(distDir);
   console.log(`Asset version: ${assetVersion.version} (${assetVersion.htmlFiles} HTML, ${assetVersion.cssFiles} CSS files).`);
 

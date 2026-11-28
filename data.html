@@ -241,12 +241,13 @@
           <tr><th scope="row"><a href="/data/embassy-dublin.json"><code>/data/embassy-dublin.json</code></a><br><span class="small-note">Dublin office file</span></th><td>Latest Dublin decision snapshot.</td><td>Tuesday publication</td></tr>
           <tr><th scope="row"><a href="/data/data_manifest.json"><code>/data/data_manifest.json</code></a><br><span class="small-note">Coverage manifest</span></th><td>One record per office: status, report date, counts, archive dates and source links.</td><td>Each data refresh</td></tr>
           <tr><th scope="row"><a href="/data/reports/index.json"><code>/data/reports/index.json</code></a><br><span class="small-note">Official report archive</span></th><td>Dated official reports with counts, approval shares, checksums and source files.</td><td>Each data refresh</td></tr>
+          <tr><th scope="row"><a href="/data/search_index.json"><code>/data/search_index.json</code></a><br><span class="small-note">Lookup index</span></th><td>Compact index of office, number, decision date and source that powers the application-number search. Same rows as the office files, with internal office positions instead of repeated names.</td><td>Each deploy</td></tr>
           <tr><th scope="row"><a href="/data/study/office-summary.csv"><code>/data/study/office-summary.csv</code></a><br><span class="small-note">Office summary CSV</span></th><td>Latest-file totals by office for the data study.</td><td>Each deploy</td></tr>
           <tr><th scope="row"><a href="/data/study/monthly-volume.csv"><code>/data/study/monthly-volume.csv</code></a><br><span class="small-note">Monthly volume CSV</span></th><td>Dated publication volume by office and month.</td><td>Each deploy</td></tr>
           <tr><th scope="row"><a href="/official-file-feed.json"><code>/official-file-feed.json</code></a><br><span class="small-note">Official file feed</span></th><td>JSON Feed of newly published official files. No applicant rows.</td><td>Each data refresh</td></tr></tbody>
         </table>
       </div>
-      <p class="small-note">Every file is served with <code>Cache-Control: no-store</code>. Read <a href="/status">Data status</a> for the latest successful check, and <a href="/data/data_manifest.json">the manifest</a> for machine-readable coverage.</p>
+      <p class="small-note">Every file is served with <code>Cache-Control: no-store</code>. Read <a href="/status">Data status</a> for the latest successful check, <a href="/status.md">its Markdown version</a> for an agent-readable summary, and <a href="/data/data_manifest.json">the manifest</a> for machine-readable coverage.</p>
     </section>
 
     <section>

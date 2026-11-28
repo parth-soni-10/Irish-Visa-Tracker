@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { existsSync } from 'node:fs';
+import { existsSync, readdirSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { test } from 'node:test';
@@ -107,12 +107,48 @@ test('office pages state their searchable window and the monthly report keeps it
   }
   const monthly = await page('monthly-report.html');
   assert.ok(monthly.includes('id="story-package"'), 'monthly report lost its story-package anchor');
+  assert.ok(!monthly.includes('1 more dated decisions'), 'story package pluralisation regressed');
+});
+
+test('every social image has alt text and office titles fit a search result', async () => {
+  const files = readdirSync(PAGES).filter((file) => file.endsWith('.html'));
+  assert.ok(files.length > 30, 'run npm run build before this check');
+  for (const file of files) {
+    const html = await page(file);
+    if (!html.includes('property="og:image"')) continue;
+    assert.ok(html.includes('property="og:image:alt"'), `${file} has an og:image without alt text`);
+  }
+  for (const office of freshness.offices) {
+    const html = await page(`${office.slug}-visa-decisions.html`);
+    const title = (html.match(/<title>([\s\S]*?)<\/title>/) || [])[1] || '';
+    assert.ok(title.length <= 65, `${office.slug} title is ${title.length} characters: ${title}`);
+  }
+});
+
+test('status and help advertise their Markdown alternates', async () => {
+  const status = await page('status.html');
+  assert.match(status, /<link rel="alternate" type="text\/markdown" href="\/status\.md"/);
+  assert.match(status, /<a href="\/status\.md">this page as Markdown<\/a>/);
+  assert.match(status, /<a href="\/data\/freshness\.json">freshness\.json<\/a>/);
+  const help = await page('help.html');
+  assert.match(help, /<link rel="alternate" type="text\/markdown" href="\/help\.md"/);
+  assert.ok(help.includes('Office updates:'), 'help does not explain office-level alerts');
+});
+
+test('the data page documents the lookup index and the Markdown status', async () => {
+  const data = await page('data.html');
+  assert.ok(data.includes('/data/search_index.json'), 'lookup index missing from the data page');
+  assert.ok(data.includes('/status.md'), 'data page does not link the Markdown status');
 });
 
 test('status offers office updates and the 404 page can recover with a search', async () => {
   const status = await page('status.html');
   for (const office of freshness.offices) {
     assert.ok(status.includes(`data-office-alerts="${office.slug}"`), `${office.slug} update link missing`);
+    assert.ok(
+      status.includes(`aria-label="Get ${office.name} publication updates on Telegram"`),
+      `${office.slug} update link has no distinct accessible name`,
+    );
   }
   assert.ok(status.includes('public-channel.js'), 'status page does not load the config-driven links');
 

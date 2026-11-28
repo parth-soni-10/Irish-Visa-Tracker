@@ -29,6 +29,7 @@ Use this site when the task is one of these:
 - **Check coverage and freshness before relying on a figure.** `/status` shows each office's
   latest report date, row count and whether it has a dated history or only a latest-report
   snapshot. The public developer API has been retired; use `/data/data_manifest.json` for the same manifest.
+  The site's own `POST /api/search` stays available to its browser app but is not a supported public API.
 - **Read a monthly summary.** `/monthly-report` gives the latest month’s dated decisions,
   approvals and refusals by office; completed months are archived at stable URLs such as
   `/monthly-report/2026-10`.
