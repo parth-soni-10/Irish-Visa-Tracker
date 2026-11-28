@@ -2631,6 +2631,22 @@
 #visa-dash .home-lookup-number .searchbar input[type=text] { font-size: 14px; }
 #visa-dash .home-lookup-office select { width: 100%; height: 44px; font-size: 13px; }
 #visa-dash .home-lookup-submit { height: 44px; white-space: nowrap; }
+#visa-dash .home-office-strip {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 4px 12px;
+    margin: 10px 0 0;
+    font-size: 12.5px;
+    line-height: 1.5;
+}
+#visa-dash .home-office-strip-label { font-weight: 700; color: var(--ink-soft); }
+#visa-dash .home-office-strip a {
+    color: var(--green-text);
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
 #visa-dash .home-lookup-tools {
     display: flex;
     align-items: center;
@@ -2802,6 +2818,12 @@
     border-color: var(--amber-border, #e6c47a);
     background: var(--amber-soft, #fff8e5);
     color: var(--ink);
+}
+#visa-dash .lookup-result-office-link { margin: 12px 0 0; }
+#visa-dash .lookup-result-office-link .btn {
+    min-height: 38px;
+    padding: 8px 12px;
+    font-size: 12px;
 }
 #visa-dash .lookup-result-actions {
     display: flex;

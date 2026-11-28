@@ -51,6 +51,13 @@ test("the split writes one urlset per family and an index at /sitemap.xml", asyn
     assert.match(child, /<urlset/);
     assert.doesNotMatch(child, /<sitemapindex/);
   }
+  const indexedFamilies = [...index.matchAll(/<loc>([^<]+)<\/loc>/g)].map((match) => match[1]);
+  assert.deepEqual(indexedFamilies, [
+    `${SITE}/sitemap-offices.xml`,
+    `${SITE}/sitemap-decisions.xml`,
+    `${SITE}/sitemap-pages.xml`,
+    `${SITE}/sitemap-reports.xml`,
+  ], "office hubs and date pages lead the sitemap index");
   const reports = await readFile(path.join(dir, "sitemap-reports.xml"), "utf8");
   assert.match(reports, /<loc>https:\/\/irishvisaupdatetracker\.pages\.dev\/reports\/new-delhi\/2026-11-23<\/loc>/);
   assert.doesNotMatch(reports, /\/reports\/new-delhi</, "an office report index belongs to the office family");

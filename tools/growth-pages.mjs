@@ -381,33 +381,47 @@ function allPagesPage(data, archives) {
   });
 }
 
+function archiveLead(archive, data) {
+  const largest = archive.reports
+    .slice()
+    .sort((a, b) => (Number(b.entry.decisions) || 0) - (Number(a.entry.decisions) || 0))[0];
+  const largestOffice = largest ? data.bySlug.get(largest.slug) : null;
+  if (archive.reports.length === 1 && largestOffice) {
+    return `${num(archive.total)} decisions in the ${esc(largestOffice.name)} report, ${pct(archive.approved, archive.total)} approved.`;
+  }
+  return `${num(archive.total)} decisions across ${archive.reports.length} offices, ${pct(archive.approved, archive.total)} approved` +
+    (largestOffice ? `; ${esc(largestOffice.name)} led with ${num(Number(largest.entry.decisions) || 0)}` : '') + '.';
+}
+
+function monthLabel(key) {
+  const [year, month] = String(key).split('-');
+  return `${MONTHS[Number(month) - 1] || month} ${year}`;
+}
+
 function decisionsIndexPage(data, archives) {
-  const rows = archives.map((archive) => `<tr>
-        <th scope="row"><a href="/decisions/${archive.date}">${esc(longDate(archive.date))}</a></th>
-        <td>${num(archive.total)}</td>
-        <td>${num(archive.approved)}</td>
-        <td>${num(archive.refused)}</td>
-        <td>${pct(archive.approved, archive.total)}</td>
-        <td>${archive.reports.map((item) => `<a href="/reports/${item.slug}/${archive.date}">${esc(data.bySlug.get(item.slug).name)}</a>`).join(', ')}</td>
-      </tr>`).join('\n');
+  const months = new Map();
+  for (const archive of archives) {
+    const key = archive.date.slice(0, 7);
+    if (!months.has(key)) months.set(key, []);
+    months.get(key).push(archive);
+  }
+  const monthSections = [...months.entries()].map(([key, list]) => {
+    const items = list.map((archive) => `<li><a href="/decisions/${archive.date}">${esc(longDate(archive.date))}</a> — ${archiveLead(archive, data)}</li>`).join('\n');
+    return `<section>
+      <h2>${esc(monthLabel(key))}</h2>
+      <p class="small-note">${list.length} date page${list.length === 1 ? '' : 's'}, newest ${esc(longDate(list[0].date))}.</p>
+      <ul class="study-list">${items}</ul>
+    </section>`;
+  }).join('\n    ');
   const body = `    <p class="page-kicker">Date archive</p>
     <h1>Irish visa decisions by date</h1>
     <p class="page-meta">Weekdays only &bull; At least 10 published decisions &bull; Six offices</p>
-    <p class="page-lede">One page per weekday where the public files contain a meaningful set of decisions. Weekends and days with no publication are deliberately not generated. A date page is a record of what was published, not a claim that every application was decided.</p>
-    <section>
-      <h2>Dates in the archive</h2>
-      ${archives.length ? `<div class="table-wrap" role="region" aria-label="Decision dates" tabindex="0">
-        <table class="office-table stack-table">
-          <caption>Newest first; every value comes from a dated official report</caption>
-          <thead><tr><th scope="col">Date</th><th scope="col">Decisions</th><th scope="col">Approved</th><th scope="col">Refused</th><th scope="col">Approval share</th><th scope="col">Reports</th></tr></thead>
-          <tbody>${rows}</tbody>
-        </table>
-      </div>` : '<p>No date currently clears the minimum data threshold.</p>'}
-    </section>
+    <p class="page-lede">One page per weekday where the six offices' public files contain at least 10 decisions. Irish visa decisions by date is the archive view: it answers what was published on a given day, which offices published it, and how many of those decisions were approved or refused. Each date page links to the exact report page and the office's official file, so a count can be checked at source. Weekends and days with no publication are deliberately not generated; a date is the report's own publication date, not the date an individual application was decided. Use the month sections below to move from a date to the offices that published that day, or open an office page for its full report history and latest file.</p>
+    ${monthSections || '<section><h2>Dates in the archive</h2><p>No date currently clears the minimum data threshold.</p></section>'}
     <section>
       <h2>Why some dates are missing</h2>
       <p>A date page is only published for a weekday with at least 10 decisions in the archived reports. That prevents thousands of thin pages for weekends, bank holidays and days when an office did not publish. The absence of a date page is not a statement about any application.</p>
-      <p class="page-nav"><a href="/reports">Official report archive</a> &middot; <a href="/all-pages">All pages</a> &middot; <a href="/daily-summaries">Ireland visa decisions by date</a></p>
+      <p class="page-nav"><a href="/reports">Official report archive</a> &middot; <a href="/daily-summaries">Ireland visa decisions by date</a> &middot; <a href="/all-pages">All pages</a></p>
     </section>`;
   return shell({
     route: '/decisions',
@@ -450,7 +464,7 @@ function dateArchivePage(data, archive, archives) {
   const body = `    <p class="page-kicker">Decisions by date</p>
     <h1>Irish visa decisions published on ${esc(longDate(archive.date))}</h1>
     <p class="page-meta">${num(archive.total)} decisions &bull; ${num(archive.approved)} approved &bull; ${num(archive.refused)} refused &bull; ${esc(pct(archive.approved, archive.total))} approved share</p>
-    <p class="page-lede">This page groups the official reports whose own publication date is ${esc(longDate(archive.date))}. It exists because the date is a weekday with at least 10 published decisions. Counts are published rows, not applications received; a number that is absent from one file may be in another office's file or still awaiting publication.</p>
+    <p class="page-lede"><strong>On ${esc(longDate(archive.date))}, ${archiveLead(archive, data)}</strong> This page groups the official reports whose own publication date is ${esc(longDate(archive.date))}. It exists because the date is a weekday with at least 10 published decisions. Counts are published rows, not applications received; a number that is absent from one file may be in another office's file or still awaiting publication.</p>
     <section>
       <h2>All office counts</h2>
       <div class="table-wrap" role="region" aria-label="Office counts for ${esc(longDate(archive.date))}" tabindex="0">

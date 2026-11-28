@@ -1042,7 +1042,8 @@
                     '<ul class="site-freshness-list">' + issues.map(function(office) {
                         var impact = officeSearchImpact(office.slug, office);
                         return '<li>' + escapeHtml(impact) +
-                            ' <a href="/' + escapeHtml(office.slug) + '-visa-decisions">Open the office page</a></li>';
+                            ' <a href="/' + escapeHtml(office.slug) + '-visa-decisions">' +
+                            escapeHtml(officeName(office.slug)) + ' visa decisions</a></li>';
                     }).join('') + '</ul>' +
                     '<p>Check the office page before assuming a decision is not published. ' +
                     '<a href="/status">See what each office covers</a>.</p>';
@@ -2498,6 +2499,13 @@
                     '<select id="home-office" name="office" aria-label="Visa office to search">' + officeOptionsHTML(homeSearchOffice) + '</select></div>' +
                     '<button class="btn home-lookup-submit" type="submit" id="home-lookup-submit">Search</button>' +
                     '</form>' +
+                    '<nav class="home-office-strip" aria-label="Browse visa decisions by office">' +
+                    '<span class="home-office-strip-label">Browse by office</span>' +
+                    ['new-delhi', 'beijing', 'abu-dhabi', 'abuja', 'ankara', 'dublin'].map(function(slug) {
+                        return '<a href="/' + escapeHtml(slug) + '-visa-decisions">' +
+                            escapeHtml(WATCH_OFFICE_NAMES[slug]) + ' visa decisions</a>';
+                    }).join('') +
+                    '</nav>' +
                     '<p class="home-lookup-coverage" data-lookup-coverage-line><strong>Coverage:</strong> New Delhi: daily decisions &middot; Beijing and Dublin: latest snapshot &middot; Abu Dhabi, Abuja and Ankara: dated reports.</p>' +
                     '<div class="home-lookup-tools">' +
                     '<div id="recent-searches">' + recentSearchesHTML() + '</div>' +
@@ -2765,7 +2773,8 @@
                     '<ul>' + issues.map(function(office) {
                         var impact = officeSearchImpact(office.slug, office);
                         return '<li>' + escapeHtml(impact) +
-                            ' <a href="/' + escapeHtml(office.slug) + '-visa-decisions">Open the office page</a></li>';
+                            ' <a href="/' + escapeHtml(office.slug) + '-visa-decisions">' +
+                            escapeHtml(officeName(office.slug)) + ' visa decisions</a></li>';
                     }).join('') + '</ul>' +
                     '<p>Check the office page before assuming a decision is not published. <a href="/status">See what each office covers</a>.</p></div>';
             }
@@ -2811,6 +2820,15 @@
                         : 'Track this application: ' + escapeHtml(number)) + '" title="' +
                     (saved ? 'Remove from your watchlist' : 'Save to your watchlist') + '">' +
                     (saved ? 'Tracking' : 'Track this application') + '</button>';
+            }
+
+            function lookupOfficeCtaHTML(office, meta) {
+                var name = officeName(office);
+                var count = Number(meta && meta.decisions);
+                var label = 'See the full ' + name + ' list' +
+                    (count > 0 ? ' \u2014 ' + count.toLocaleString('en-IE') + ' decisions' : '');
+                return '<p class="lookup-result-office-link"><a class="btn secondary" href="/' +
+                    escapeHtml(office) + '-visa-decisions">' + escapeHtml(label) + '</a></p>';
             }
 
             function lookupNextStepsHTML(row) {
@@ -2933,7 +2951,8 @@
                     '</div><span class="pill ' + (row._pillClass || 'amber') + ' lookup-result-decision">' +
                     escapeHtml(decision) + '</span></div>' +
                     '<dl class="lookup-result-facts">' +
-                    '<div class="lookup-result-fact"><dt>Office</dt><dd>' + escapeHtml(officeName(office)) + '</dd></div>' +
+                    '<div class="lookup-result-fact"><dt>Office</dt><dd><a href="/' + escapeHtml(office) +
+                    '-visa-decisions">' + escapeHtml(officeName(office)) + ' visa decisions</a></dd></div>' +
                     '<div class="lookup-result-fact"><dt>Coverage</dt><dd>' +
                     escapeHtml(lookupCoverageLabel(meta.freshness) || OFFICE_COVERAGE[office] || 'Published report') +
                     (meta.freshness && meta.freshness.search_from
@@ -2959,6 +2978,7 @@
                         : '') + '</p>' +
                     exactSource +
                     lookupFreshnessHTML(meta, office) +
+                    lookupOfficeCtaHTML(office, meta) +
                     '<div class="lookup-result-actions">' +
                     lookupWatchButtonHTML(number, office) +
                     '<button type="button" class="btn lookup-result-btn lookup-result-alert" data-lookup-alert="' +

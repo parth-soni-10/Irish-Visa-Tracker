@@ -465,7 +465,7 @@ function loadOfficeDecisionSummary(assetsRoot, slug) {
  * counts and source are one unchanged snapshot checked again (Dublin's list)
  * and are collapsed into one row.
  */
-function reportHistoryHtml(office, reports, decisionSummary = new Map()) {
+function buildReportHistory(office, reports, decisionSummary = new Map()) {
   const entries = reports && reports.offices && Array.isArray(reports.offices[office.slug])
     ? reports.offices[office.slug]
     : [];
@@ -545,9 +545,9 @@ function reportHistoryHtml(office, reports, decisionSummary = new Map()) {
     });
   }
 
-  if (!rows.length) return '<tr><td colspan="6">No dated reports are recorded yet.</td></tr>';
-
-  return rows.map((row) => {
+  const html = !rows.length
+    ? '<tr><td colspan="6">No dated reports are recorded yet.</td></tr>'
+    : rows.map((row) => {
     const rate = row.hasOutcomes && row.decisions
       ? `${((row.approved / row.decisions) * 100).toFixed(1)}%`
       : '—';
@@ -565,6 +565,86 @@ function reportHistoryHtml(office, reports, decisionSummary = new Map()) {
       `<td>${rate}</td>` +
       `<td>${source}</td></tr>`;
   }).join('\n            ');
+  return { rows, html };
+}
+
+function isWeekday(date) {
+  const value = new Date(`${date}T00:00:00Z`);
+  return value.getUTCDay() !== 0 && value.getUTCDay() !== 6;
+}
+
+function addDays(date, days) {
+  const value = new Date(`${date}T00:00:00Z`);
+  value.setUTCDate(value.getUTCDate() + days);
+  return value.toISOString().slice(0, 10);
+}
+
+function reportDateLinks(rows) {
+  const links = rows
+    .filter((row) => row.decisions >= 10 && isWeekday(row.reportDate))
+    .slice(0, 8)
+    .map((row) => `<a href="/decisions/${row.reportDate}">${escapeHtml(longDate(row.reportDate))}</a>`);
+  return `${links.length ? `${links.join(' · ')} · ` : ''}<a href="/decisions">All dates in the archive</a>`;
+}
+
+function nextExpectedDate(office, latestDate) {
+  if (!latestDate || SNAPSHOT_OFFICES.has(office.slug)) return '';
+  const today = new Date().toISOString().slice(0, 10);
+  if (office.slug === 'new-delhi') {
+    let date = addDays(latestDate > today ? latestDate : today, 1);
+    while (!isWeekday(date)) date = addDays(date, 1);
+    return date;
+  }
+  let date = addDays(latestDate, 7);
+  while (date < today) date = addDays(date, 7);
+  return date;
+}
+
+function share(approved, total) {
+  return total ? `${((approved / total) * 100).toFixed(1)}%` : '0.0%';
+}
+
+function whatChangedHtml(office, reports) {
+  const entries = ((reports && reports.offices && reports.offices[office.slug]) || [])
+    .filter((entry) => /^\d{4}-\d{2}-\d{2}/.test(String(entry && entry.report_date || '')))
+    .slice()
+    .sort((a, b) => String(b.report_date).localeCompare(String(a.report_date)));
+  const latest = entries[0] || {};
+  const latestDate = String(latest.report_date || office.report_date || '').slice(0, 10);
+  const latestDecisions = Math.max(0, Number(latest.decisions ?? office.decisions) || 0);
+  const latestApproved = Math.max(0, Number(latest.approved ?? office.approved) || 0);
+  const previous = entries.find((entry) => String(entry.report_date).slice(0, 10) !== latestDate) || null;
+  const prevDate = previous ? String(previous.report_date).slice(0, 10) : '';
+  const prevDecisions = previous ? Math.max(0, Number(previous.decisions) || 0) : 0;
+  const prevApproved = previous ? Math.max(0, Number(previous.approved) || 0) : 0;
+  const latestShare = share(latestApproved, latestDecisions);
+  const prevShare = share(prevApproved, prevDecisions);
+  const shareText = prevShare === latestShare
+    ? `the approval share is unchanged at ${latestShare}`
+    : `the approval share moved from ${prevShare} to ${latestShare}`;
+
+  let change;
+  if (!previous) {
+    change = `The tracker holds one ${office.name} ${SNAPSHOT_OFFICES.has(office.slug) ? 'snapshot' : 'report'} (${longDate(latestDate)}, ${latestDecisions.toLocaleString('en-IE')} decisions), so there is no earlier file to compare.`;
+  } else if (latestDecisions === prevDecisions) {
+    change = `The latest ${office.name} file (${longDate(latestDate)}) contains ${latestDecisions.toLocaleString('en-IE')} decisions, the same total as the file dated ${longDate(prevDate)}; ${shareText}.`;
+  } else {
+    const delta = latestDecisions - prevDecisions;
+    change = `The latest ${office.name} file (${longDate(latestDate)}) contains ${latestDecisions.toLocaleString('en-IE')} decisions, ${Math.abs(delta).toLocaleString('en-IE')} ${delta > 0 ? 'more' : 'fewer'} than the file dated ${longDate(prevDate)}; ${shareText}.`;
+  }
+
+  const next = nextExpectedDate(office, latestDate);
+  let nextText;
+  if (next) {
+    nextText = office.slug === 'new-delhi'
+      ? `The next weekday file is expected on ${longDate(next)}; New Delhi normally publishes each weekday morning.`
+      : `The next weekly report is expected on ${longDate(next)}.`;
+  } else if (office.slug === 'dublin') {
+    nextText = 'Dublin publishes its list on Tuesdays; the tracker checks daily for a newer snapshot.';
+  } else {
+    nextText = 'This office publishes a snapshot rather than a dated series; the tracker checks daily for a newer file.';
+  }
+  return `${change} ${nextText}`;
 }
 
 /**
@@ -831,8 +911,15 @@ export function injectOfficePages(options = {}) {
     }
 
     let html = replaceFields(fs.readFileSync(pagePath, 'utf8'), 'data-office', fields);
+    const reportHistory = buildReportHistory(office, reports, decisionSummary);
     html = replaceFields(html, 'data-report-history', {
-      [office.slug]: reportHistoryHtml(office, reports, decisionSummary),
+      [office.slug]: reportHistory.html,
+    });
+    html = replaceFields(html, 'data-report-dates', {
+      [office.slug]: reportDateLinks(reportHistory.rows),
+    });
+    html = replaceFields(html, 'data-office-change', {
+      [office.slug]: whatChangedHtml(office, reports),
     });
     // The analysis section is rebuilt from the whole archived series so an
     // office page never shows a stale cadence or a summed cumulative file.

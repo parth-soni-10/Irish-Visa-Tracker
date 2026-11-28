@@ -517,6 +517,7 @@ function reportHistory(office) {
           </tbody>
         </table>
       </div>
+      <p class="small-note date-links" data-report-dates="${office.slug}"><a href="/decisions">All dates in the archive</a></p>
       <p class="small-note">Approval rate is approved decisions divided by the decisions in that report. The latest official file table above remains the authority for the current counts. <a href="/reports/${office.slug}">Open the full ${office.name} report archive</a> for every dated report with its checksum and official file.</p>
     </section>`;
 }
@@ -583,7 +584,7 @@ function related(office) {
   // The daily page is New Delhi only, so the descriptive label is the same on
   // every office page; "Daily summaries" stays in the global navigation.
   const dailyLabel = 'New Delhi decisions by date';
-  return `<p class="page-nav">${links} · <a href="/irish-visa-decisions-today">Irish visa decisions today</a> · <a href="/visa-processing-times">Processing times</a> · <a href="/daily-summaries">${dailyLabel}</a> · <a href="/data-study">Data study</a> · <a href="/monthly-report#story-package">Monthly story package</a> · <a href="/press">Press kit</a> · <a href="/help">Help</a></p>`;
+  return `<p class="page-nav">${links} · <a href="/decisions">Irish visa decisions by date</a> · <a href="/irish-visa-decisions-today">Irish visa decisions today</a> · <a href="/visa-processing-times">Processing times</a> · <a href="/daily-summaries">${dailyLabel}</a> · <a href="/data-study">Data study</a> · <a href="/monthly-report#story-package">Monthly story package</a> · <a href="/press">Press kit</a> · <a href="/help">Help</a></p>`;
 }
 
 function officeSearch(office) {
@@ -652,6 +653,11 @@ ${schemaFor(office)}
 
     ${stats(office)}
     <p class="small-note">${office.historyHtml}</p>
+
+    <section id="what-changed">
+      <h2>What changed in this file</h2>
+      <p data-office-change="${office.slug}">The latest file is dated ${longDate(f.latest)} with ${f.decisions.toLocaleString('en-IE')} decisions. This build compares it with the previous report and states the movement in decisions, the approval share and the next expected publication date.</p>
+    </section>
 
     <p class="office-actions">
       <a class="btn" href="${office.sourceUrl}" target="_blank" rel="noopener noreferrer">Official ${office.name} page</a>

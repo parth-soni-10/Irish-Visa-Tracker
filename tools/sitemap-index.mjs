@@ -17,7 +17,11 @@ import { fileURLToPath } from 'node:url';
 
 import { SITE_ORIGIN } from './site-config.mjs';
 
-export const SITEMAP_FAMILIES = ['pages', 'offices', 'reports', 'decisions'];
+// Ordered by crawl priority, not alphabetically: the office hubs and the date
+// archive are the pages that need discovery first. Report permalinks stay in
+// the index, but last, so they do not lead the queue for a site whose hubs are
+// still unknown to Google.
+export const SITEMAP_FAMILIES = ['offices', 'decisions', 'pages', 'reports'];
 
 const XMLEscapes = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;' };
 const esc = (value) => String(value == null ? '' : value).replace(/[&<>"']/g, (char) => XMLEscapes[char]);

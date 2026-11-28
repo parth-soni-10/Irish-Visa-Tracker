@@ -31,7 +31,20 @@ const PRIMARY_LINKS = [
   { href: '/', label: 'Tracker' },
   { href: '/daily-summaries', label: 'Daily summaries' },
   { href: '/visa-processing-times', label: 'Processing times' },
+  { href: '/decisions', label: 'Decisions by date' },
   { href: '/about', label: 'About' },
+];
+
+// The office hubs are the pages that need internal links most: they are
+// currently footer-only and have no external referrals. A disclosure keeps the
+// desktop row short while putting all six one click from every page.
+const OFFICE_LINKS = [
+  { href: '/new-delhi-visa-decisions', label: 'New Delhi visa decisions' },
+  { href: '/beijing-visa-decisions', label: 'Beijing visa decisions' },
+  { href: '/abu-dhabi-visa-decisions', label: 'Abu Dhabi visa decisions' },
+  { href: '/abuja-visa-decisions', label: 'Abuja visa decisions' },
+  { href: '/ankara-visa-decisions', label: 'Ankara visa decisions' },
+  { href: '/dublin-visa-decisions', label: 'Dublin visa decisions' },
 ];
 
 const MORE_LINKS = [
@@ -101,7 +114,7 @@ export const PAGES = [
   { file: 'missing-decision.html', route: '/missing-decision', current: null, skip: 'content' },
   { file: 'find-my-office.html', route: '/find-my-office', current: null, skip: 'content' },
   { file: 'bulk-tools.html', route: '/bulk-tools', current: null, skip: 'content' },
-  { file: 'decisions.html', route: '/decisions', current: null, skip: 'content' },
+  { file: 'decisions.html', route: '/decisions', current: '/decisions', skip: 'content' },
   // Operational dashboard: available to the maintainer and linked from the
   // crawl hub, but deliberately noindex and excluded from the sitemap.
   { file: 'search-coverage.html', route: '/search-coverage', current: null, skip: 'content', noindex: true },
@@ -146,7 +159,14 @@ function headerLines(page) {
     '      <span>Irish Visa Decision Tracker</span>',
     '    </a>',
     '    <nav class="sitebar-nav" aria-label="Site">',
-    ...PRIMARY_LINKS.map((link) => navLink(page, link, '      ')),
+    ...PRIMARY_LINKS.slice(0, 2).map((link) => navLink(page, link, '      ')),
+    '      <details class="sitebar-more sitebar-offices">',
+    '        <summary>Offices</summary>',
+    '        <div class="sitebar-more-panel">',
+    ...OFFICE_LINKS.map((link) => navLink(page, link, '          ')),
+    '        </div>',
+    '      </details>',
+    ...PRIMARY_LINKS.slice(2).map((link) => navLink(page, link, '      ')),
     `      <details class="sitebar-more${moreCurrent ? ' is-current' : ''}">`,
     // The summary is a disclosure control, not the current page. Marking it
     // aria-current made screen readers announce two current pages in one nav.
@@ -181,7 +201,10 @@ function headerLines(page) {
     '      <summary><span class="sitebar-mobile-bars" aria-hidden="true"></span>Menu</summary>',
     '      <div class="sitebar-more-panel sitebar-mobile-panel">',
     '        <p class="sitebar-mobile-title">Tracker</p>',
-    ...PRIMARY_LINKS.map((link) => navLink(page, link, '        ')),
+    ...PRIMARY_LINKS.slice(0, 2).map((link) => navLink(page, link, '        ')),
+    '        <p class="sitebar-mobile-title">Offices</p>',
+    ...OFFICE_LINKS.map((link) => navLink(page, link, '        ')),
+    ...PRIMARY_LINKS.slice(2).map((link) => navLink(page, link, '        ')),
     '        <p class="sitebar-mobile-title">More</p>',
     ...moreLinks.map((link) => navLink(page, link, '        ')),
     '        <p class="sitebar-mobile-title">Preferences</p>',
@@ -230,7 +253,6 @@ function footerLines() {
     '        <li><a href="/when-are-visa-decisions-published">Publication schedule</a></li>',
     '        <li><a href="/press">Press &amp; citation</a></li>',
     '        <li><a href="/embed">Embed badge</a></li>',
-        '        <li><a href="/decisions">Decisions by date</a></li>',
     '      </ul>',
     '    </div>',
     '    <div class="sitebar-footer-col">',
