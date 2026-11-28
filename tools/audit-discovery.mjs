@@ -26,6 +26,64 @@ const pathnameOf = (loc) => {
   try { return new URL(loc).pathname.replace(/\/$/, '') || '/'; } catch { return String(loc || '').replace(/\/$/, '') || '/'; }
 };
 const iso = (value) => String(value || '').slice(0, 10);
+const SITE_HOST_ORIGIN = new URL(SITE).origin;
+
+function routeFromHref(href) {
+  if (!href || href.startsWith('#') || /^(mailto:|tel:|javascript:)/i.test(href)) return '';
+  let url;
+  try { url = new URL(href, SITE); } catch { return ''; }
+  if (url.origin !== SITE_HOST_ORIGIN) return '';
+  let pathname;
+  try { pathname = decodeURIComponent(url.pathname); } catch { return ''; }
+  pathname = pathname.replace(/\/+$/, '') || '/';
+  if (pathname.endsWith('.html')) pathname = pathname.slice(0, -5) || '/';
+  return pathname;
+}
+
+function fileForRoute(route, distDir) {
+  if (route === '/') return path.join(distDir, 'index.html');
+  const clean = route.replace(/^\//, '');
+  for (const candidate of [
+    path.join(distDir, `${clean}.html`),
+    path.join(distDir, clean, 'index.html'),
+  ]) {
+    if (fs.existsSync(candidate)) return candidate;
+  }
+  return '';
+}
+
+function clickDepth(entries, distDir) {
+  const routeFiles = new Map();
+  for (const entry of entries) {
+    const file = fileForRoute(entry.pathname, distDir);
+    if (file) routeFiles.set(entry.pathname, file);
+  }
+  const depths = new Map([['/', 0]]);
+  const queue = ['/'];
+  while (queue.length) {
+    const route = queue.shift();
+    const file = routeFiles.get(route);
+    if (!file) continue;
+    const html = read(file);
+    for (const match of html.matchAll(/\bhref="([^"]+)"/g)) {
+      const target = routeFromHref(match[1]);
+      if (!target || !routeFiles.has(target) || depths.has(target)) continue;
+      depths.set(target, depths.get(route) + 1);
+      queue.push(target);
+    }
+  }
+  const unreachable = entries
+    .map((entry) => entry.pathname)
+    .filter((route) => !depths.has(route));
+  const tooDeep = entries
+    .map((entry) => entry.pathname)
+    .filter((route) => depths.has(route) && depths.get(route) > 3);
+  return {
+    unreachable,
+    tooDeep,
+    maxDepth: depths.size ? Math.max(...depths.values()) : 0,
+  };
+}
 
 export function auditDiscovery({ distDir = path.join(ROOT, '.pages-dist'), root = ROOT } = {}) {
   const failures = [];
@@ -64,6 +122,14 @@ export function auditDiscovery({ distDir = path.join(ROOT, '.pages-dist'), root 
     seen.add(entry.pathname);
     if (!entry.loc.startsWith(SITE)) failures.push(`sitemap URL is not on ${SITE}: ${entry.loc}`);
     if (!entry.lastmod) warnings.push(`sitemap has no lastmod: ${entry.pathname}`);
+  }
+
+  const crawl = clickDepth(entries, distDir);
+  for (const route of crawl.unreachable) {
+    failures.push(`sitemap URL is unreachable from /: ${route}`);
+  }
+  for (const route of crawl.tooDeep) {
+    failures.push(`sitemap URL is more than three clicks from /: ${route}`);
   }
 
   const reports = readJson(path.join(root, 'data', 'reports', 'index.json'), { offices: {} });
@@ -164,13 +230,14 @@ export function auditDiscovery({ distDir = path.join(ROOT, '.pages-dist'), root 
     reportPermalinks,
     datePages,
     sitemapDocuments: sitemapDocuments.length,
+    maxDepth: crawl.maxDepth,
   };
 }
 
 const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
 if (isMain) {
   const result = auditDiscovery();
-  console.log(`Discovery audit: ${result.checked} sitemap URLs, ${result.reportPermalinks} report permalinks, ${result.datePages} date pages.`);
+  console.log(`Discovery audit: ${result.checked} sitemap URLs, ${result.reportPermalinks} report permalinks, ${result.datePages} date pages, max crawl depth ${result.maxDepth}.`);
   for (const warning of result.warnings) console.warn(`Warning: ${warning}`);
   if (result.failures.length) {
     for (const failure of result.failures) console.error(`FAIL: ${failure}`);

@@ -20,6 +20,7 @@ import { scopeTableHeaders } from './html-tables.mjs';
 import { SITE_ORIGIN } from './site-config.mjs';
 import { longDate } from './freshness.mjs';
 import { OFFICE_SEO } from './office-seo.mjs';
+import { breadcrumbNav } from './breadcrumbs.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const SITE = SITE_ORIGIN;
@@ -413,7 +414,8 @@ function schemaFor(office) {
       '@id': `${SITE}${office.route}#breadcrumb`,
       itemListElement: [
         { '@type': 'ListItem', position: 1, name: 'Tracker', item: `${SITE}/` },
-        { '@type': 'ListItem', position: 2, name: `${office.name} visa decisions`, item: `${SITE}${office.route}` },
+        { '@type': 'ListItem', position: 2, name: 'Visa offices', item: `${SITE}/all-pages#visa-offices` },
+        { '@type': 'ListItem', position: 3, name: `${office.name} visa decisions`, item: `${SITE}${office.route}` },
       ],
     },
     {
@@ -584,7 +586,7 @@ function related(office) {
   // The daily page is New Delhi only, so the descriptive label is the same on
   // every office page; "Daily summaries" stays in the global navigation.
   const dailyLabel = 'New Delhi decisions by date';
-  return `<p class="page-nav">${links} · <a href="/decisions">Irish visa decisions by date</a> · <a href="/irish-visa-decisions-today">Irish visa decisions today</a> · <a href="/visa-processing-times">Processing times</a> · <a href="/daily-summaries">${dailyLabel}</a> · <a href="/data-study">Data study</a> · <a href="/monthly-report#story-package">Monthly story package</a> · <a href="/press">Press kit</a> · <a href="/help">Help</a></p>`;
+  return `<nav class="page-nav related-pages" aria-label="Related pages"><strong>Related pages:</strong> <a href="/reports/${office.slug}">${office.name} official reports</a> · <a href="/irish-visa-decisions-today">Irish visa decisions today</a> · ${links} · <a href="/decisions">Irish visa decisions by date</a> · <a href="/visa-processing-times">Processing times</a> · <a href="/daily-summaries">${dailyLabel}</a> · <a href="/data-study">Data study</a> · <a href="/monthly-report#story-package">Monthly story package</a> · <a href="/press">Press kit</a> · <a href="/vfs-tracking">VFS tracking</a> · <a href="/help">Help</a> · <a href="/all-pages">All pages</a></nav>`;
 }
 
 function officeSearch(office) {
@@ -642,6 +644,11 @@ ${schemaFor(office)}
   <!-- site-chrome:start -->
   <!-- site-chrome:end -->
   <main id="main-content" tabindex="-1" class="page">
+    ${breadcrumbNav([
+      { name: 'Home', href: '/' },
+      { name: 'Visa offices', href: '/all-pages#visa-offices' },
+      { name: `${office.name} visa decisions` },
+    ])}
     <p class="page-kicker">${office.kicker}</p>
     <h1>${office.h1}</h1>
     <p class="page-subhead">${office.subhead}</p>

@@ -19,6 +19,7 @@ import { fileURLToPath } from 'node:url';
 import { PAGES, spliceChrome } from './site-chrome.mjs';
 import { SITE_ORIGIN } from './site-config.mjs';
 import { reportSource } from './report-sources.mjs';
+import { breadcrumbNav } from './breadcrumbs.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const SITE = SITE_ORIGIN;
@@ -279,7 +280,7 @@ function allPagesPage(data, archives) {
     </div>
 
     <section>
-      <h2>Six visa office pages</h2>
+      <h2 id="visa-offices">Six visa office pages</h2>
       <p>These are the primary landing pages for the six published decision files. Each one links to its office report archive, official source and application search.</p>
       <ul class="office-directory-list">
         ${officeLinks}
@@ -415,7 +416,11 @@ function decisionsIndexPage(data, archives) {
       <ul class="study-list">${items}</ul>
     </section>`;
   }).join('\n    ');
-  const body = `    <p class="page-kicker">Date archive</p>
+  const body = `    ${breadcrumbNav([
+    { name: 'Home', href: '/' },
+    { name: 'Decisions by date' },
+  ])}
+    <p class="page-kicker">Date archive</p>
     <h1>Irish visa decisions by date</h1>
     <p class="page-meta">Weekdays only &bull; At least 10 published decisions &bull; Six offices</p>
     <p class="page-lede">One page per weekday where the six offices' public files contain at least 10 decisions. Irish visa decisions by date is the archive view: it answers what was published on a given day, which offices published it, and how many of those decisions were approved or refused. Each date page links to the exact report page and the office's official file, so a count can be checked at source. Weekends and days with no publication are deliberately not generated; a date is the report's own publication date, not the date an individual application was decided. Use the month sections below to move from a date to the offices that published that day, or open an office page for its full report history and latest file.</p>
@@ -464,7 +469,12 @@ function dateArchivePage(data, archive, archives) {
       <td><a href="/reports/${slug}/${archive.date}">Report page</a>${source ? ` &middot; <a href="${esc(source)}" rel="noopener">${resolved.retired ? 'official page' : 'official file'}</a>` : ''}</td>
     </tr>`;
   }).join('\n');
-  const body = `    <p class="page-kicker">Decisions by date</p>
+  const body = `    ${breadcrumbNav([
+    { name: 'Home', href: '/' },
+    { name: 'Decisions by date', href: '/decisions' },
+    { name: longDate(archive.date) },
+  ])}
+    <p class="page-kicker">Decisions by date</p>
     <h1>Irish visa decisions published on ${esc(longDate(archive.date))}</h1>
     <p class="page-meta">${num(archive.total)} decisions &bull; ${num(archive.approved)} approved &bull; ${num(archive.refused)} refused &bull; ${esc(pct(archive.approved, archive.total))} approved share</p>
     <p class="page-lede"><strong>On ${esc(longDate(archive.date))}, ${archiveLead(archive, data)}</strong> This page groups the official reports whose own publication date is ${esc(longDate(archive.date))}. It exists because the date is a weekday with at least 10 published decisions. Counts are published rows, not applications received; a number that is absent from one file may be in another office's file or still awaiting publication.</p>

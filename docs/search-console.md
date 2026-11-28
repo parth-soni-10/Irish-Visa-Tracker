@@ -203,6 +203,41 @@ For each: open URL Inspection, confirm the live URL and canonical, press
 not repeat a request for an unchanged page, and do not treat a request as an
 indexing guarantee. The pending sitemap remains the path for the archive.
 
+### 28 November 2026 post-change batch
+
+The navigation release changed all six office pages, the report hubs, the dated
+report pages, the date archive and the monthly archive. After that release is
+live, request indexing for the following twelve URLs in three daily batches.
+Do not request them before the deploy: URL Inspection would inspect the old
+page. Record the request date beside each URL.
+
+**Batch A — the first screen and the office hub:**
+
+1. `https://irishvisaupdatetracker.pages.dev/`
+2. `https://irishvisaupdatetracker.pages.dev/irish-visa-decisions-today`
+3. `https://irishvisaupdatetracker.pages.dev/all-pages`
+4. `https://irishvisaupdatetracker.pages.dev/new-delhi-visa-decisions`
+
+**Batch B — the report family:**
+
+5. `https://irishvisaupdatetracker.pages.dev/reports`
+6. `https://irishvisaupdatetracker.pages.dev/reports/new-delhi`
+7. `https://irishvisaupdatetracker.pages.dev/reports/new-delhi/2026-11-24`
+8. `https://irishvisaupdatetracker.pages.dev/monthly-report`
+
+**Batch C — the remaining office pages and archives:**
+
+9. `https://irishvisaupdatetracker.pages.dev/beijing-visa-decisions`
+10. `https://irishvisaupdatetracker.pages.dev/abu-dhabi-visa-decisions`
+11. `https://irishvisaupdatetracker.pages.dev/abuja-visa-decisions`
+12. `https://irishvisaupdatetracker.pages.dev/decisions/2026-11-24`
+
+The 26 November five-page queue above still has priority if any of those URLs
+remain `URL is unknown to Google`. Do not replace it with this batch; merge the
+lists and keep one request per URL. Recheck sitemap status and the sampled URLs
+on **5 December 2026**. If a page is still unknown after the request, do not
+press Request indexing again; fix the internal links or wait for the next crawl.
+
 ## Yandex Webmaster (manual, blocked)
 
 No Yandex account or integration is connected to this project, so verification

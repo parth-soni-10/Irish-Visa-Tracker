@@ -31,6 +31,7 @@ import { OFFICE_SERIES_KIND } from './office-analysis.mjs';
 import { SITE_ORIGIN } from './site-config.mjs';
 import { loadFreshness, timeHTML } from './freshness.mjs';
 import { freshnessFooterHTML } from './freshness-ui.mjs';
+import { breadcrumbNav } from './breadcrumbs.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const SITE = SITE_ORIGIN;
@@ -337,6 +338,11 @@ ${monthlySchemaBlock(report, route, title, description)}
   <!-- site-chrome:start -->
   <!-- site-chrome:end -->
   <main id="main-content" tabindex="-1" class="wrap">
+    ${breadcrumbNav([
+      { name: 'Home', href: '/' },
+      { name: 'Monthly report', href: '/monthly-report' },
+      { name: report.label },
+    ])}
     <p class="kicker">Monthly report archive</p>
     <h1>Irish visa decisions — ${esc(report.label)}</h1>
     <p class="lede">Dated decisions recorded in the public embassy files for ${esc(report.label)}, plus the latest cumulative report from each office. Independent and unofficial; not immigration advice.</p>
@@ -393,6 +399,10 @@ function injectLatest(shell, report, months, latestMonth, freshness) {
   const title = `Irish visa decisions — ${report.label} | Monthly report`;
   const description = `Irish visa decisions published in ${report.label}: ${num(report.totals.total)} dated decisions, ${num(report.totals.approved)} approved and ${num(report.totals.refused)} refused. Independent and unofficial.`;
   let html = shell;
+  html = html.replace(/(<main id="main-content"[^>]*>)/, `$1\n    ${breadcrumbNav([
+      { name: 'Home', href: '/' },
+      { name: 'Monthly report' },
+    ])}`);
   html = html.replace(/<script type="application\/ld\+json" data-monthly-schema>[\s\S]*?<\/script>\s*/g, '');
   html = html.replace(/<title>[\s\S]*?<\/title>/, `<title>${esc(title)}</title>`);
   html = html.replace(/(<meta name="description" content=")[^"]*(">)/, `$1${esc(description)}$2`);

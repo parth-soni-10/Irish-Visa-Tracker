@@ -23,6 +23,7 @@ import { expectedAfter, expectedDate } from '../shared/publication-schedule.js';
 import { freshnessFooterHTML, freshnessHistoryHTML } from './freshness-ui.mjs';
 import { OFFICE_SERIES_KIND } from './office-analysis.mjs';
 import { reportSource } from './report-sources.mjs';
+import { breadcrumbNav } from './breadcrumbs.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const SITE = SITE_ORIGIN;
@@ -323,7 +324,11 @@ export function reportHistory(entries) {
   const oldest = [...newest].reverse();
   const prior = new Map();
   oldest.forEach((entry, index) => prior.set(entry, oldest[index - 1] || null));
-  return newest.map((entry) => ({ entry, prior: prior.get(entry) || null }));
+  return newest.map((entry, index) => ({
+    entry,
+    prior: prior.get(entry) || null,
+    next: newest[index - 1] || null,
+  }));
 }
 
 export function latestStats(data) {
@@ -1692,7 +1697,11 @@ function reportsIndexPage(data) {
     return `<li><a href="/${office.slug}-visa-decisions">${esc(office.name)} visa decisions</a> <span class="small-note">${num(history.length)} ${isSnapshot ? 'snapshot' : 'dated report'}${history.length === 1 ? '' : 's'}</span> · <a class="small-note" href="/reports/${office.slug}">report archive</a></li>`;
   }).join('\n        ');
 
-  const body = `    <p class="page-kicker">Official report archive</p>
+  const body = `    ${breadcrumbNav([
+    { name: 'Home', href: '/' },
+    { name: 'Official report archive' },
+  ])}
+    <p class="page-kicker">Official report archive</p>
     <h1>Every official report in the archive</h1>
     <p class="page-meta">${num(archive.count)} reports &bull; ${num(archive.datedCount)} dated + ${num(archive.snapshotCount)} snapshot re-checks &bull; ${esc(shortDate(archive.earliest))} to ${esc(shortDate(archive.latest))}</p>
 
@@ -1724,7 +1733,7 @@ function reportsIndexPage(data) {
         </table>
       </div>
       <p class="small-note">The archive records what each office published. A missing date is a publication gap, never a reconstructed report. Beijing and Dublin publish live snapshots: their dates are the day the tracker checked an unchanged list, not a new dated decision report.</p>
-      <p class="page-nav"><a href="/irish-visa-decisions-today">Latest Irish visa decisions today</a> &middot; <a href="/irish-visa-decisions-today#changes">What changed since the previous report</a> &middot; <a href="/data-study">Data study</a> &middot; <a href="/when-are-visa-decisions-published">Publication schedule</a> &middot; <a href="/press">Press &amp; citation</a> &middot; <a href="/status">Data status</a></p>
+      <nav class="page-nav related-pages" aria-label="Related pages"><strong>Related pages:</strong> <a href="/irish-visa-decisions-today">Latest Irish visa decisions today</a> &middot; <a href="/irish-visa-decisions-today#changes">What changed since the previous report</a> &middot; <a href="/data-study">Data study</a> &middot; <a href="/when-are-visa-decisions-published">Publication schedule</a> &middot; <a href="/press">Press &amp; citation</a> &middot; <a href="/status">Data status</a></nav>
     </section>`;
 
   return shell({
@@ -1741,6 +1750,13 @@ function reportsIndexPage(data) {
       inLanguage: 'en',
       dateModified: asOf,
       isPartOf: { '@id': `${SITE}/#website` },
+      breadcrumb: {
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          { '@type': 'ListItem', position: 1, name: 'Home', item: `${SITE}/` },
+          { '@type': 'ListItem', position: 2, name: 'Official report archive', item: `${SITE}/reports` },
+        ],
+      },
     },
   });
 }
@@ -1765,7 +1781,12 @@ function officeReportsPage(data, office) {
         </tr>`;
   }).join('\n        ');
 
-  const body = `    <p class="page-kicker">${esc(office.name)} report archive</p>
+  const body = `    ${breadcrumbNav([
+    { name: 'Home', href: '/' },
+    { name: 'Reports', href: '/reports' },
+    { name: `${office.name} reports` },
+  ])}
+    <p class="page-kicker">${esc(office.name)} report archive</p>
     <h1>${esc(office.name)} official reports</h1>
     <p class="page-meta">${num(history.length)} ${SNAPSHOT_OFFICES.has(office.slug) ? 'snapshot check' : 'dated report'}${history.length === 1 ? '' : 's'} &bull; ${esc(office.basis)} &bull; Archive through ${esc(longDate(asOf))}</p>
 
@@ -1788,7 +1809,7 @@ function officeReportsPage(data, office) {
         </table>
       </div>
       <p class="small-note">${esc(office.basis)}. The report date is the file's own date or period end, not the date the tracker saw it.</p>
-      <p class="page-nav"><a href="${office.route}">${esc(office.name)} decisions</a> &middot; <a href="/reports">All reports</a> &middot; <a href="/data-study">Data study</a></p>
+      <nav class="page-nav related-pages" aria-label="Related pages"><strong>Related pages:</strong> <a href="${office.route}">${esc(office.name)} decisions</a> &middot; <a href="/reports">All reports</a> &middot; <a href="/data-study">Data study</a> &middot; <a href="/all-pages">All pages</a></nav>
     </section>`;
 
   return shell({
@@ -1804,11 +1825,19 @@ function officeReportsPage(data, office) {
       inLanguage: 'en',
       dateModified: asOf || undefined,
       isPartOf: { '@id': `${SITE}/#website` },
+      breadcrumb: {
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          { '@type': 'ListItem', position: 1, name: 'Home', item: `${SITE}/` },
+          { '@type': 'ListItem', position: 2, name: 'Reports', item: `${SITE}/reports` },
+          { '@type': 'ListItem', position: 3, name: `${office.name} reports`, item: `${SITE}/reports/${office.slug}` },
+        ],
+      },
     },
   });
 }
 
-function reportDetailPage(data, office, entry, prior) {
+function reportDetailPage(data, office, entry, prior, next) {
   const date = String(entry.report_date).slice(0, 10);
   const decisions = Number(entry.decisions) || 0;
   const approved = Number(entry.approved) || 0;
@@ -1820,9 +1849,21 @@ function reportDetailPage(data, office, entry, prior) {
   const officialPage = httpUrl(office.source_url);
   const route = `/reports/${office.slug}/${date}`;
 
-  const body = `    <p class="page-kicker">Official report</p>
+  const body = `    ${breadcrumbNav([
+    { name: 'Home', href: '/' },
+    { name: 'Reports', href: '/reports' },
+    { name: office.name, href: `/reports/${office.slug}` },
+    { name: longDate(date) },
+  ])}
+    <p class="page-kicker">Official report</p>
     <h1>${esc(office.name)} visa decisions — ${esc(longDate(date))}</h1>
     <p class="page-meta">${esc(office.basis)} &bull; ${num(decisions)} decisions &bull; Independent and unofficial</p>
+
+    <nav class="page-nav report-nav" aria-label="Report navigation">
+      ${next ? `<a href="/reports/${office.slug}/${String(next.report_date).slice(0, 10)}">Newer report: ${esc(longDate(next.report_date))}</a>` : 'Newer report: none'} &middot;
+      <a href="/reports/${office.slug}">All ${esc(office.name)} reports</a> &middot;
+      ${prior ? `<a href="/reports/${office.slug}/${String(prior.report_date).slice(0, 10)}">Older report: ${esc(longDate(prior.report_date))}</a>` : 'Older report: none'}
+    </nav>
 
     <p class="page-lede">The ${esc(office.name)} official file dated ${esc(longDate(date))} records ${num(decisions)} decisions: ${num(approved)} approved and ${num(refused)} refused. This page preserves the dated report and its source link; it is not an individual decision notice.</p>
 
@@ -1873,7 +1914,7 @@ function reportDetailPage(data, office, entry, prior) {
       <h2>How to use this page</h2>
       <p>Use the report counts to verify a published figure, or follow the source file to the office's own document. To check one application number, use <a href="/?tracker=visa&amp;tab=search&amp;office=${office.slug}">office search</a> with the number from your receipt.</p>
       <p>A missing number is not a refusal. The report records decisions, not passport collection, and the official document remains the authority.</p>
-      <p class="page-nav"><a href="/reports/${office.slug}">${esc(office.name)} report archive</a> &middot; <a href="${office.route}">${esc(office.name)} office page</a> &middot; <a href="/reports">All reports</a> &middot; <a href="/irish-visa-decisions-today#changes">What changed since the previous report</a> &middot; <a href="/data-study">Data study</a></p>
+      <nav class="page-nav related-pages" aria-label="Related pages"><strong>Related pages:</strong> <a href="/reports/${office.slug}">${esc(office.name)} report archive</a> &middot; <a href="${office.route}">${esc(office.name)} office page</a> &middot; <a href="/reports">All reports</a> &middot; <a href="/irish-visa-decisions-today#changes">What changed since the previous report</a> &middot; <a href="/data-study">Data study</a> &middot; <a href="/all-pages">All pages</a></nav>
     </section>`;
 
   return shell({
@@ -2178,9 +2219,9 @@ export function buildInsightPages(options = {}) {
   for (const office of data.offices) {
     const history = reportHistory(officeEntries(data, office.slug));
     writeFile(path.join(outDir, 'reports', `${office.slug}.html`), withFooter(officeReportsPage(data, office)));
-    for (const { entry, prior } of history) {
+    for (const { entry, prior, next } of history) {
       const date = String(entry.report_date).slice(0, 10);
-      writeFile(path.join(outDir, 'reports', office.slug, `${date}.html`), withFooter(reportDetailPage(data, office, entry, prior)));
+      writeFile(path.join(outDir, 'reports', office.slug, `${date}.html`), withFooter(reportDetailPage(data, office, entry, prior, next)));
       reportPages += 1;
     }
   }

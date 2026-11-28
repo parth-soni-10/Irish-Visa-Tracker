@@ -929,6 +929,46 @@ time {
 .page .page-nav a {
   color: var(--bp-ink);
 }
+
+/* A visible trail for every generated content family. The matching
+ * BreadcrumbList schema is in the page head; this is the human-readable path. */
+.breadcrumbs {
+  margin: 0 0 18px;
+  font-family: var(--bp-font-mono);
+  font-size: 10.5px;
+  line-height: 1.5;
+  color: var(--bp-muted);
+}
+.breadcrumbs ol {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.breadcrumbs li {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.breadcrumbs li + li::before {
+  content: '›';
+  color: var(--bp-rule-2);
+}
+.breadcrumbs a {
+  color: var(--bp-muted);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+}
+.breadcrumbs a:hover {
+  color: var(--bp-ink);
+  border-bottom-color: currentColor;
+}
+.breadcrumbs [aria-current='page'] {
+  color: var(--bp-ink);
+}
 .page .page-data-freshness {
   margin: 15px 0 0;
   padding: 10px 0;

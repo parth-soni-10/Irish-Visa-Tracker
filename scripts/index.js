@@ -2487,6 +2487,14 @@
                     '<div>' +
                     '<h2 id="home-lookup-title">Find your application</h2></div>' +
                     '</div>' +
+                    '<nav class="home-task-strip" aria-label="Start here">' +
+                    '<span class="home-task-strip-label">Start here</span>' +
+                    '<a href="/irish-visa-decisions-today">Today’s decisions</a>' +
+                    '<a href="/new-delhi-visa-decisions">New Delhi decisions</a>' +
+                    '<a href="/help#check-status">Check application status</a>' +
+                    '<a href="/reports">Official reports</a>' +
+                    '<a href="/help">Help</a>' +
+                    '</nav>' +
                     '<p class="home-lookup-copy" id="home-lookup-copy">Search all six offices at once. Use the application number on your receipt; an IRL prefix is optional.</p>' +
                     '<form class="home-lookup-form" id="home-lookup-form" role="search" novalidate>' +
                     '<div class="home-lookup-field home-lookup-number">' +
