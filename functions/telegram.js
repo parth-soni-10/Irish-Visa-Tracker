@@ -13,6 +13,7 @@
  */
 
 import { loadReportData } from './report-data.js';
+import { MAX_JSON_BODY_BYTES, readJsonBody } from './_json-body.js';
 import {
   DEFAULT_BASE_URL,
   buildDigestMessage,
@@ -386,8 +387,10 @@ async function currentDecisionDate(env, request, applicationNumber, embassy) {
  */
 export async function handleTelegramStart(request, env) {
   if (!env.DB) return json({ error: 'Database not configured' }, 503);
-  let body;
-  try { body = await request.json(); } catch { return json({ error: 'Malformed body' }, 400); }
+  const parsedBody = await readJsonBody(request);
+  if (parsedBody.tooLarge) return json({ error: `Body must be at most ${MAX_JSON_BODY_BYTES} bytes` }, 413);
+  if (parsedBody.invalid) return json({ error: 'Malformed body' }, 400);
+  const body = parsedBody.body;
   if (!body || typeof body !== 'object') return json({ error: 'Malformed body' }, 400);
   const applicationNumber = normalizeApplicationNumber(body.application_number);
   const embassy = String(body.embassy || '').trim();
@@ -441,8 +444,10 @@ export async function handleTelegramWebhook(request, env) {
     return json({ error: 'Unauthorized' }, 401);
   }
 
-  let update;
-  try { update = await request.json(); } catch { return json({ ok: true }); }
+  const parsedUpdate = await readJsonBody(request);
+  if (parsedUpdate.tooLarge) return json({ error: 'Body too large' }, 413);
+  // A malformed update is acknowledged and dropped: Telegram retries otherwise.
+  const update = parsedUpdate.body || {};
   const message = update && update.message;
   const chatId = message && message.chat ? message.chat.id : null;
   const text = String((message && message.text) || '').trim();

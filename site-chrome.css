@@ -35,9 +35,6 @@
   --sc-hover: #f5f5f5;
   --sc-border: #e5e5e5;
   --sc-accent: #171717;
-  --sc-green: #0f7a43;
-  --sc-green-deep: #0b6336;
-  --sc-green-soft: #eef8f1;
   --sc-sans: 'Inter', 'Inter Fallback', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
 }
 
@@ -52,9 +49,6 @@ html[data-theme="dark"] {
   --sc-hover: #1c1c1c;
   --sc-border: #2a2a2a;
   --sc-accent: #ededed;
-  --sc-green: #4ade80;
-  --sc-green-deep: #86efac;
-  --sc-green-soft: rgba(74, 222, 128, 0.12);
   color-scheme: dark;
   background: #0a0a0a;
 }

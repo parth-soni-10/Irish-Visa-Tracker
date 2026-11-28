@@ -32,7 +32,6 @@
   --surface-raised: var(--raised);
   --r-container: 8px;
   --r-control: 6px;
-  --shadow-sm: none;
 
   --sans: 'Inter', 'Inter Fallback', -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif;
   --mono: ui-monospace, 'SF Mono', Consolas, Menlo, monospace;
@@ -123,6 +122,17 @@ body {
 a { color: var(--ink); text-decoration-thickness: 1px; text-underline-offset: 3px; text-decoration-color: #a3a3a3; }
 a:hover { color: var(--ink); text-decoration-color: currentColor; }
 a:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; border-radius: 2px; }
+
+/* The status table's update control is a button until JS supplies a Telegram
+   URL; keep it looking like the small-note text it replaced. */
+button.small-note {
+  border: 0;
+  padding: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
 
 .btn {
   display: inline-flex;

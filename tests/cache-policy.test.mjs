@@ -35,6 +35,12 @@ function assetsEnv() {
             headers: { 'Content-Type': 'application/json' }
           });
         }
+        if (path === '/search-coverage.html') {
+          return new Response(null, {
+            status: 308,
+            headers: { Location: '/search-coverage', 'Cache-Control': 'public, max-age=3600' }
+          });
+        }
         return new Response('missing', { status: 404 });
       }
     }
@@ -43,6 +49,14 @@ function assetsEnv() {
 
 const env = assetsEnv();
 const ctx = { waitUntil() {}, passThroughOnException() {} };
+
+test('a .html to clean-URL redirect is revalidated rather than cached as a static file', async () => {
+  const response = await router.fetch(new Request('https://tracker.test/search-coverage.html'), env, ctx);
+  assert.equal(response.status, 308);
+  assert.equal(response.headers.get('Location'), '/search-coverage');
+  assert.match(response.headers.get('Cache-Control'), /no-cache/);
+  assert.doesNotMatch(response.headers.get('Cache-Control'), /max-age=3600/);
+});
 
 test('the homepage revalidates in the browser but may be edge-cached, while update entry points never cache', async () => {
   // The browser must revalidate before reuse so a deploy is visible; only the

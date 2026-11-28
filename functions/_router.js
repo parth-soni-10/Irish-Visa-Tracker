@@ -842,6 +842,10 @@ async function handleRequest(request, env) {
     if (pathname === "/index.html") setSharedHtmlCache(headers);
     else if (NO_STORE_ASSETS.has(pathname)) setNoStore(headers);
     else if (isImmutableAsset(pathname)) setAssetCache(headers);
+    // A .html to clean-URL redirect is not an immutable asset: it carries the
+    // page's robots policy and can change on the next deploy, so an hour of
+    // cache would keep serving a stale redirect after the policy changed.
+    else if (assetResponse.status >= 300 && assetResponse.status < 400) setHtmlCache(headers);
     else setStaticCache(headers);
     mergeVary(headers);
     return addSecurityHeaders(new Response(request.method === "HEAD" ? null : assetResponse.body, {

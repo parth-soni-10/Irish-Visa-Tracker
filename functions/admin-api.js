@@ -7,6 +7,7 @@
  */
 
 import { sha256 } from './crypto.js';
+import { MAX_JSON_BODY_BYTES, readJsonBody } from './_json-body.js';
 import { loadReportData } from './report-data.js';
 
 function hashToken(token) {
@@ -255,12 +256,10 @@ export async function handleTriggerScraper(request, env) {
   if (!auth.authorized) return auth.response;
   if (request.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
 
-  let body;
-  try {
-    body = await request.json();
-  } catch {
-    return json({ error: 'Invalid JSON' }, 400);
-  }
+  const parsedBody = await readJsonBody(request);
+  if (parsedBody.tooLarge) return json({ error: `Body must be at most ${MAX_JSON_BODY_BYTES} bytes` }, 413);
+  if (parsedBody.invalid) return json({ error: 'Invalid JSON' }, 400);
+  const body = parsedBody.body;
   const embassy = String(body.embassy || '').trim();
   if (!embassy) return json({ error: 'Embassy required' }, 400);
 
@@ -318,12 +317,10 @@ export async function handleAdminTokens(request, env) {
   }
 
   if (request.method === 'POST') {
-    let body;
-    try {
-      body = await request.json();
-    } catch {
-      return json({ error: 'Invalid JSON' }, 400);
-    }
+    const parsedBody = await readJsonBody(request);
+    if (parsedBody.tooLarge) return json({ error: `Body must be at most ${MAX_JSON_BODY_BYTES} bytes` }, 413);
+    if (parsedBody.invalid) return json({ error: 'Invalid JSON' }, 400);
+    const body = parsedBody.body;
     const name = String(body.name || '').trim().slice(0, 100);
     if (!name) return json({ error: 'Name required' }, 400);
     const days = Math.max(1, Math.min(Number(body.expiresDays) || 90, 3650));

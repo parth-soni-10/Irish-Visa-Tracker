@@ -15,6 +15,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { scopeTableHeaders } from './html-tables.mjs';
 
 import { SITE_ORIGIN } from './site-config.mjs';
 import { longDate } from './freshness.mjs';
@@ -655,8 +656,8 @@ ${schemaFor(office)}
     <p class="office-actions">
       <a class="btn" href="${office.sourceUrl}" target="_blank" rel="noopener noreferrer">Official ${office.name} page</a>
       <a class="btn" href="/monthly-report?utm_source=office_page&amp;utm_medium=referral&amp;utm_campaign=monthly_report">Monthly report</a>
-      <a class="btn" data-office-alerts="${office.slug}" href="#" hidden>Get ${office.name} publication updates</a>
-      <a class="btn secondary" data-public-channel href="#" hidden>Follow the public Telegram channel</a>
+      <button type="button" class="btn" data-office-alerts="${office.slug}" hidden>Get ${office.name} publication updates</button>
+      <button type="button" class="btn secondary" data-public-channel hidden>Follow the public Telegram channel</button>
     </p>
 
     <section>
@@ -780,7 +781,7 @@ function main() {
   for (const office of OFFICES) {
     const file = path.resolve(ROOT, office.file);
     const existing = fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : '';
-    const next = preserveChrome(render(office), existing);
+    const next = scopeTableHeaders(preserveChrome(render(office), existing));
     if (next !== existing) {
       changed += 1;
       if (mode === 'write') fs.writeFileSync(file, next);

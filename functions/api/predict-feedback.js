@@ -13,6 +13,7 @@ import { readCalibration } from '../calibration.js';
 import { ensureSchema } from '../db-schema.js';
 import { checkRateLimit, getClientIp } from '../rate-limit.js';
 import { estimateBaseline, MODEL_METADATA } from './predict.js';
+import { MAX_JSON_BODY_BYTES, readJsonBody } from '../_json-body.js';
 
 const MAX_DAYS = 730;
 const DAILY_LIMIT = 5;
@@ -48,12 +49,10 @@ export async function onRequestPost(context) {
   const { request, env } = context;
   if (!env.DB) return json({ error: 'Database not configured' }, 503);
 
-  let body;
-  try {
-    body = await request.json();
-  } catch {
-    return json({ error: 'Invalid JSON body' }, 400);
-  }
+  const parsedBody = await readJsonBody(request);
+  if (parsedBody.tooLarge) return json({ error: `Body must be at most ${MAX_JSON_BODY_BYTES} bytes` }, 413);
+  if (parsedBody.invalid) return json({ error: 'Invalid JSON body' }, 400);
+  const body = parsedBody.body;
   if (!body || typeof body !== 'object' || Array.isArray(body)) {
     return json({ error: 'Body must be a JSON object' }, 400);
   }

@@ -26,6 +26,7 @@ import {
   loadReportData,
 } from '../functions/report-data.js';
 import { spliceChrome } from './site-chrome.mjs';
+import { scopeTableHeaders } from './html-tables.mjs';
 import { OFFICE_SERIES_KIND } from './office-analysis.mjs';
 import { SITE_ORIGIN } from './site-config.mjs';
 import { loadFreshness, timeHTML } from './freshness.mjs';
@@ -463,13 +464,13 @@ export async function buildMonthlyPages(options = {}) {
   const latestReport = reports.get(latestMonth);
   fs.mkdirSync(outDir, { recursive: true });
   const shell = fs.readFileSync(path.join(assetsRoot, 'monthly-report.html'), 'utf8');
-  fs.writeFileSync(path.join(outDir, 'monthly-report.html'), injectLatest(shell, latestReport, months, latestMonth, freshness));
+  fs.writeFileSync(path.join(outDir, 'monthly-report.html'), scopeTableHeaders(injectLatest(shell, latestReport, months, latestMonth, freshness)));
 
   let pages = 1;
   for (const month of months.filter((item) => item !== latestMonth)) {
     const report = reports.get(month);
     fs.mkdirSync(path.join(outDir, 'monthly-report'), { recursive: true });
-    fs.writeFileSync(path.join(outDir, 'monthly-report', `${month}.html`), archivePage(report, months, latestMonth, freshness));
+    fs.writeFileSync(path.join(outDir, 'monthly-report', `${month}.html`), scopeTableHeaders(archivePage(report, months, latestMonth, freshness)));
     pages += 1;
   }
 

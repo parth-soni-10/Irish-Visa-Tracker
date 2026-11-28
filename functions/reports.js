@@ -8,6 +8,7 @@
  */
 
 import { loadReportData, buildMonthlyReport, buildWeeklyChanges, buildCorrectionLedger } from './report-data.js';
+import { MAX_JSON_BODY_BYTES, readJsonBody } from './_json-body.js';
 import { isTelegramConfigured, sendTelegramChannel } from './telegram.js';
 
 const MONTH_RE = /^\d{4}-(0[1-9]|1[0-2])$/;
@@ -150,7 +151,10 @@ async function sendResponse(request, env) {
   if (!authorized(request, env)) return json({ error: 'Unauthorized' }, 401);
   if (!env.DB) return json({ error: 'Database is not configured' }, 503);
   let body = {};
-  try { body = await request.json(); } catch { /* query string below is enough */ }
+  const parsedBody = await readJsonBody(request);
+  if (parsedBody.tooLarge) return json({ error: `Body must be at most ${MAX_JSON_BODY_BYTES} bytes` }, 413);
+  // No body or a malformed one is fine here: the query string below is enough.
+  if (parsedBody.body) body = parsedBody.body;
   const url = new URL(request.url);
   const data = await loadReportData(env, request);
   const month = body.month || url.searchParams.get('month') || (data.latestDate ? data.latestDate.slice(0, 7) : '');

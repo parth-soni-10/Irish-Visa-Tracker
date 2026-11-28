@@ -12,6 +12,22 @@
   var channelLinks = document.querySelectorAll('[data-public-channel]');
   var officeLinks = document.querySelectorAll('[data-office-alerts]');
 
+  // The CTAs are buttons until a real Telegram URL exists, so there is no
+  // placeholder href for a reader to follow. Keep anchors working too: the
+  // same attributes appear on older generated pages.
+  function activate(control, url) {
+    if (control.tagName === 'BUTTON') {
+      control.addEventListener('click', function () {
+        window.open(url, '_blank', 'noopener,noreferrer');
+      });
+    } else {
+      control.href = url;
+      control.target = '_blank';
+      control.rel = 'noopener noreferrer';
+    }
+    control.hidden = false;
+  }
+
   // status-1.js wants the same config for the channel link. Share one request
   // instead of fetching the same JSON twice on a page that has both scripts.
   window.VisaConfig = window.VisaConfig || {
@@ -33,12 +49,7 @@
         ? config.telegram_channel_url
         : '';
       if (/^https:\/\/t\.me\/[A-Za-z0-9_]{3,64}\/?$/.test(channel)) {
-        channelLinks.forEach(function (link) {
-          link.href = channel;
-          link.target = '_blank';
-          link.rel = 'noopener noreferrer';
-          link.hidden = false;
-        });
+        channelLinks.forEach(function (link) { activate(link, channel); });
       }
 
       var bot = config && typeof config.telegram_bot_username === 'string'
@@ -48,10 +59,7 @@
       officeLinks.forEach(function (link) {
         var office = link.getAttribute('data-office-alerts');
         if (!/^[a-z0-9-]{3,32}$/.test(office)) return;
-        link.href = 'https://t.me/' + bot + '?start=office_' + office;
-        link.target = '_blank';
-        link.rel = 'noopener noreferrer';
-        link.hidden = false;
+        activate(link, 'https://t.me/' + bot + '?start=office_' + office);
       });
     })
     .catch(function () {

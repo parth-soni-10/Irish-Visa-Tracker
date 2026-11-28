@@ -5,6 +5,7 @@
  */
 
 import { ensureSchema } from '../_router.js';
+import { MAX_JSON_BODY_BYTES, readJsonBody } from '../_json-body.js';
 
 // Shared cache for decisions data (module-level, survives across requests)
 let decisionsCache = null;
@@ -325,24 +326,24 @@ export async function onRequestPost(context) {
   // A bad filter used to return an empty 200, which reads as "no such
   // decision" instead of "your filter was wrong". Say which value is wrong
   // and what the API accepts.
-  const invalid = (message, extra = {}) => new Response(JSON.stringify({
+  const invalid = (message, extra = {}, status = 400) => new Response(JSON.stringify({
     success: false,
     error: message,
     ...extra,
   }), {
-    status: 400,
+    status,
     headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
   });
 
   try {
     await ensureSchema(env.DB);
 
-    let body;
-    try {
-      body = await request.json();
-    } catch (error) {
-      return invalid('Body must be valid JSON.');
+    const parsedBody = await readJsonBody(request);
+    if (parsedBody.tooLarge) {
+      return invalid(`Body must be at most ${MAX_JSON_BODY_BYTES} bytes.`, { max_bytes: MAX_JSON_BODY_BYTES }, 413);
     }
+    if (parsedBody.invalid) return invalid('Body must be valid JSON.');
+    const body = parsedBody.body;
     if (!body || typeof body !== 'object' || Array.isArray(body)) {
       return invalid('Body must be a JSON object.');
     }

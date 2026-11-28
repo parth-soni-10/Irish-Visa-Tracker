@@ -3,6 +3,8 @@
  * Returns visa-type specific document checklists with embassy/country rules
  */
 
+import { MAX_JSON_BODY_BYTES, readJsonBody } from '../_json-body.js';
+
 // Base document requirements by visa type
 const VISA_DOCUMENTS = {
   'study': {
@@ -187,15 +189,19 @@ export async function onRequestPost(context) {
   const { request } = context;
   
   try {
-    let body;
-    try {
-      body = await request.json();
-    } catch {
+    const parsedBody = await readJsonBody(request);
+    if (parsedBody.tooLarge) {
+      return new Response(JSON.stringify({ error: `Body must be at most ${MAX_JSON_BODY_BYTES} bytes.` }), {
+        status: 413, headers: JSON_HEADERS
+      });
+    }
+    if (parsedBody.invalid) {
       // A malformed body is the caller's mistake, not a server failure.
       return new Response(JSON.stringify({ error: 'Body must be valid JSON.' }), {
         status: 400, headers: JSON_HEADERS
       });
     }
+    const body = parsedBody.body;
     const visa_type = body && body.visa_type;
     const embassy = body && body.embassy;
     const applicant_profile = normalizeApplicantProfile(body);

@@ -145,7 +145,11 @@
         .then(function (config) {
           var link = document.getElementById('telegram-channel-link');
           if (!link || !config || !config.telegram_channel_url) return;
-          link.href = config.telegram_channel_url;
+          // The CTA is a button until this point, so there is no placeholder
+          // href to follow; open the channel only once the URL is known.
+          link.addEventListener('click', function () {
+            window.open(config.telegram_channel_url, '_blank', 'noopener,noreferrer');
+          });
           link.hidden = false;
         })
         .catch(function () { /* feed links remain available */ });

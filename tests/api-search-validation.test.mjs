@@ -115,3 +115,14 @@ test('the search capability document describes what the endpoint now accepts', a
     assert.ok(data.provenance.includes(field), field);
   }
 });
+
+test('an oversized JSON body is rejected before it is parsed', async () => {
+  const response = await post({ mode: 'filter', query: 'x'.repeat(17 * 1024) });
+  assert.equal(response.status, 413);
+  assert.match(response.headers.get('Cache-Control') || '', /no-store/);
+  assert.deepEqual(await response.json(), {
+    success: false,
+    error: 'Body must be at most 16384 bytes.',
+    max_bytes: 16384,
+  });
+});

@@ -126,9 +126,6 @@
             gap: 8px;
             margin-bottom: 24px;
             flex-wrap: wrap;
-            /* gooey-nav.js slides the active tab's fill between the pills */
-            --gn-fill: var(--green-deep);
-            --gn-radius: 100px;
         }
         #visa-dash .navpill {
             padding: 8px 18px;
@@ -1394,9 +1391,6 @@
         }
 
         #visa-dash .theme-switch {
-            --ss-track: var(--border);
-            --ss-track-on: #0077e6;
-            --ss-thumb-color: #ffffff;
             padding: 6px 0;
             flex-shrink: 0;
         }
@@ -1698,7 +1692,6 @@
         /* The stamp-category row is adopted by Rubber Segment: the thumb is the
            1G blue, so the chosen chip keeps only its ink and the thumb is
            visible crossing the chips between two categories. */
-        #visa-dash #g1-cats { --rs-thumb: #0077E6; }
         #visa-dash #g1-cats .recent-chip { background: transparent; }
         #visa-dash #g1-cats .mode-chip.active,
         #visa-dash #g1-cats .mode-chip.active:hover {
@@ -2030,13 +2023,6 @@
            The two Outcome pickers are chips opening a gliding list. The native
            <select> is still the value submitTimeline() reads. --------------- */
         .glide-select {
-            --gs-surface: var(--surface);
-            --gs-highlight: var(--green-soft);
-            --gs-text: var(--ink);
-            --gs-accent: var(--green);
-            --gs-radius: 10px;
-            --gs-inner-radius: var(--r-control);
-            --gs-menu-w: 150px;
             vertical-align: middle;
         }
         .glide-select .glide-select__trigger {
