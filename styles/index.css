@@ -3539,7 +3539,7 @@
   text-decoration: none;
 }
 #visa-dash .landing-guides a:hover,
-#visa-dash .landing-guides a:focus-visible { border-color: var(--accent); }
+#visa-dash .landing-guides a:focus-visible { border-color: var(--green); }
 #visa-dash .landing-guides strong { display: block; font-size: 13px; font-weight: 650; }
 #visa-dash .landing-guides span {
   display: block;

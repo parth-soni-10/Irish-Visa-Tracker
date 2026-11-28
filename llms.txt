@@ -95,7 +95,8 @@ All are public, read-only and same-origin:
 - `GET /data/community_timelines.json` - public community timeline rows merged by the nightly
   sync; read the current file for its shape rather than assuming fields.
 - `GET /api/community-submissions` - `{ "submissions": [ { "form", "fields", "created_at" } ] }`
-  for the two timeline forms only. It never returns the private `suggestions` or `corrections`
+  for the three timeline forms only (`timelines-visa`, `timelines-1g`, `timelines`). It never
+  returns the private `suggestions` or `corrections`
   forms.
 - `GET /api/reports/corrections` - `{ "success": true, "ledger": { "entries": [...] } }` with
   file-level added/removed counts, changed application rows and the official source URL for each

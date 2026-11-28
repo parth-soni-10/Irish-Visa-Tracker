@@ -170,6 +170,13 @@ const TB_TEST_COUNTRIES = [
   'Zambia', 'Zimbabwe'
 ];
 
+// The checklist embeds the visitor's own profile, so no browser, CDN or shared
+// cache may keep a copy of the response.
+const JSON_HEADERS = Object.freeze({
+  'Content-Type': 'application/json; charset=utf-8',
+  'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0'
+});
+
 const APPLICANT_PROFILE_FIELDS = [
   'age', 'nationality', 'duration_months', 'permit_type', 'regulated_profession',
   'purpose', 'first_time_applicant', 'dependent_applicant',
@@ -180,7 +187,15 @@ export async function onRequestPost(context) {
   const { request } = context;
   
   try {
-    const body = await request.json();
+    let body;
+    try {
+      body = await request.json();
+    } catch {
+      // A malformed body is the caller's mistake, not a server failure.
+      return new Response(JSON.stringify({ error: 'Body must be valid JSON.' }), {
+        status: 400, headers: JSON_HEADERS
+      });
+    }
     const visa_type = body && body.visa_type;
     const embassy = body && body.embassy;
     const applicant_profile = normalizeApplicantProfile(body);
@@ -189,7 +204,7 @@ export async function onRequestPost(context) {
       return new Response(JSON.stringify({ 
         error: 'Invalid visa_type', 
         valid_types: Object.keys(VISA_DOCUMENTS) 
-      }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+      }), { status: 400, headers: JSON_HEADERS });
     }
     
     const embassySlug = Object.prototype.hasOwnProperty.call(EMBASSY_RULES, embassy)
@@ -248,7 +263,7 @@ export async function onRequestPost(context) {
     }
     
     return new Response(JSON.stringify({ success: true, checklist }), {
-      headers: { 'Content-Type': 'application/json' }
+      headers: JSON_HEADERS
     });
     
   } catch (error) {
@@ -312,13 +327,17 @@ function evaluateCondition(condition, profile) {
 
 function normalizeApplicantProfile(body) {
   const nested = body && body.applicant_profile;
-  if (nested && typeof nested === 'object' && !Array.isArray(nested)) return nested;
+  // A nested profile goes through the same allowlist as a flat body, so a
+  // caller cannot add arbitrary fields to the echoed `applicant_profile`.
+  const source = nested && typeof nested === 'object' && !Array.isArray(nested)
+    ? nested
+    : (body && typeof body === 'object' && !Array.isArray(body) ? body : null);
 
   const profile = {};
-  if (body && typeof body === 'object') {
+  if (source) {
     for (const key of APPLICANT_PROFILE_FIELDS) {
-      if (body[key] !== undefined && body[key] !== null && body[key] !== '') {
-        profile[key] = body[key];
+      if (source[key] !== undefined && source[key] !== null && source[key] !== '') {
+        profile[key] = source[key];
       }
     }
   }
@@ -342,6 +361,8 @@ export async function onRequestGet(context) {
       mandatory_count: VISA_DOCUMENTS[vt].mandatory.length,
       conditional_count: VISA_DOCUMENTS[vt].conditional.length
     })),
+    // The profile keys the generator reads, so a caller can see what to send.
+    profile_fields: APPLICANT_PROFILE_FIELDS,
     embassies: Object.keys(EMBASSY_RULES).map(e => ({
       slug: e,
       name: e.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),

@@ -2,6 +2,8 @@
   "name": "Irish Visa Decision Tracker",
   "short_name": "Visa Tracker",
   "description": "Search Embassy of Ireland visa decisions by application number, plus daily approved/refused counts and Stamp 1G processing dates.",
+  "id": "/",
+  "lang": "en",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
@@ -58,7 +60,6 @@
     }
   ],
   "categories": ["utilities", "productivity"],
-  "screenshots": [],
   "shortcuts": [
     {
       "name": "Search Visa Decisions",
@@ -75,10 +76,10 @@
       "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
     },
     {
-      "name": "Analytics",
-      "short_name": "Analytics",
-      "description": "View charts and statistics",
-      "url": "/?tab=analytics",
+      "name": "Data status",
+      "short_name": "Status",
+      "description": "Office coverage, report dates and freshness",
+      "url": "/status",
       "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
     }
   ]

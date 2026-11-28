@@ -5,6 +5,12 @@
 
 import * as webPush from 'web-push';
 
+// A subscription belongs to one visitor and one browser; no cache may keep it.
+const JSON_HEADERS = Object.freeze({
+  'Content-Type': 'application/json',
+  'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0'
+});
+
 let vapidConfigured = false;
 
 export function isPushConfigured(env) {
@@ -201,16 +207,16 @@ export async function handlePushSubscribe(request, env) {
     const { subscription, application_number, embassy } = await request.json();
     if (!subscription || !subscription.endpoint || !subscription.keys || !application_number || !embassy) {
       return new Response(JSON.stringify({ error: 'Missing required fields' }), {
-        status: 400, headers: { 'Content-Type': 'application/json' }
+        status: 400, headers: JSON_HEADERS
       });
     }
     const result = await subscribeToPush(env, subscription, application_number, embassy);
     return new Response(JSON.stringify(result), {
-      status: result.success ? 200 : 500, headers: { 'Content-Type': 'application/json' }
+      status: result.success ? 200 : 500, headers: JSON_HEADERS
     });
   } catch (error) {
     return new Response(JSON.stringify({ error: error.message }), {
-      status: 500, headers: { 'Content-Type': 'application/json' }
+      status: 500, headers: JSON_HEADERS
     });
   }
 }
@@ -223,21 +229,21 @@ export async function handlePushUnsubscribe(request, env) {
     const embassy = params.get('embassy');
     if (!endpoint) {
       return new Response(JSON.stringify({ error: 'Missing endpoint' }), {
-        status: 400, headers: { 'Content-Type': 'application/json' }
+        status: 400, headers: JSON_HEADERS
       });
     }
     if ((applicationNumber && !embassy) || (!applicationNumber && embassy)) {
       return new Response(JSON.stringify({ error: 'Missing application_number or embassy' }), {
-        status: 400, headers: { 'Content-Type': 'application/json' }
+        status: 400, headers: JSON_HEADERS
       });
     }
     const result = await unsubscribeFromPush(env, endpoint, applicationNumber, embassy);
     return new Response(JSON.stringify(result), {
-      status: result.success ? 200 : 500, headers: { 'Content-Type': 'application/json' }
+      status: result.success ? 200 : 500, headers: JSON_HEADERS
     });
   } catch (error) {
     return new Response(JSON.stringify({ error: error.message }), {
-      status: 500, headers: { 'Content-Type': 'application/json' }
+      status: 500, headers: JSON_HEADERS
     });
   }
 }

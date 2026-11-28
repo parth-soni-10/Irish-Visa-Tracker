@@ -24,6 +24,17 @@ const OFFICE_FILES = [
 const OFFICE_SLUGS = OFFICE_FILES.map((file) => file.replace(/^embassy-|\.json$/g, ''));
 const SEARCH_MODES = new Set(['fuzzy', 'nearest', 'filter', 'hybrid']);
 const DATE_FILTERS = ['date_from', 'date_to', 'application_date_from', 'application_date_to'];
+const DECISION_FILTERS = ['Approved', 'Refused'];
+const SORT_OPTIONS = ['relevance', 'date_desc', 'date_asc', 'number_asc', 'number_desc', 'embassy', 'decision'];
+// Every filter the query code reads. A response echoes only these keys, so an
+// arbitrary caller object never comes back in the body.
+const FILTER_KEYS = [
+  'embassy', 'visa_type', 'decision', 'date_from', 'date_to',
+  'application_date_from', 'application_date_to', 'country', 'number_range'
+];
+const MAX_QUERY_LENGTH = 200;
+const DEFAULT_LIMIT = 20;
+const MAX_LIMIT = 100;
 
 function normalizeDecision(value) {
   const v = String(value || '').trim().toLowerCase();
@@ -332,7 +343,18 @@ export async function onRequestPost(context) {
     } catch (error) {
       return invalid('Body must be valid JSON.');
     }
+    if (!body || typeof body !== 'object' || Array.isArray(body)) {
+      return invalid('Body must be a JSON object.');
+    }
     const query = body.query; // Text query for fuzzy matching
+    // A string query is echoed back and split into terms; anything else would
+    // be coerced to "[object Object]" and silently match nothing.
+    if (query !== undefined && query !== null && typeof query !== 'string') {
+      return invalid('query must be a string.');
+    }
+    if (typeof query === 'string' && query.length > MAX_QUERY_LENGTH) {
+      return invalid(`query must be at most ${MAX_QUERY_LENGTH} characters.`, { max_length: MAX_QUERY_LENGTH });
+    }
     const mode = body.mode || 'hybrid'; // 'fuzzy', 'nearest', 'filter', 'hybrid'
     const hasQuery = Boolean(query && String(query).trim());
 
@@ -343,8 +365,16 @@ export async function onRequestPost(context) {
     // Accept both { filters: { embassy } } and the flat fields posted by the
     // advanced-search form. Before this, the office/decision selects were
     // silently ignored by the API.
-    const suppliedFilters = body.filters && typeof body.filters === 'object' ? body.filters : {};
-    const filters = { ...suppliedFilters };
+    const suppliedFilters = body.filters && typeof body.filters === 'object' && !Array.isArray(body.filters)
+      ? body.filters : {};
+    // Copy only the filters this endpoint reads; echoing an arbitrary caller
+    // object back would put unvalidated keys in the response body.
+    const filters = {};
+    for (const key of FILTER_KEYS) {
+      if (suppliedFilters[key] !== undefined && suppliedFilters[key] !== null && suppliedFilters[key] !== '') {
+        filters[key] = suppliedFilters[key];
+      }
+    }
     for (const key of [
       'embassy', 'visa_type', 'decision', 'country',
       'date_from', 'date_to', 'application_date_from', 'application_date_to'
@@ -375,13 +405,28 @@ export async function onRequestPost(context) {
       filters.number_range = numbers;
     }
 
+    if (filters.decision) {
+      // The rows store "Approved" / "Refused"; a form may send any spelling
+      // the tracker itself accepts, and an unknown value returned an empty 200.
+      const decision = normalizeDecision(filters.decision);
+      if (!decision) {
+        return invalid(`Unknown decision "${String(filters.decision).slice(0, 24)}".`, { decisions: DECISION_FILTERS });
+      }
+      filters.decision = decision;
+    }
+
     // FormData values are strings; parse pagination or `0 + "20"` turns into
     // "020" and the Load more button never reports another page.
-    const limit = Math.min(100, Math.max(1, Number(body.limit) || 20));
+    const limit = Math.min(MAX_LIMIT, Math.max(1, Number(body.limit) || DEFAULT_LIMIT));
     const offset = Math.max(0, Number(body.offset) || 0);
     // A text query is ranked by relevance unless the caller asks for a
     // specific order; a filter-only request keeps the historical date order.
     const sort = body.sort || (hasQuery ? 'relevance' : 'date_desc');
+    // applySorting() falls back to the list as built for an unknown key, which
+    // reads as a successful search in arbitrary order. Reject it instead.
+    if (!SORT_OPTIONS.includes(sort)) {
+      return invalid(`Unknown sort "${String(sort).slice(0, 24)}".`, { sort_options: SORT_OPTIONS });
+    }
     
     // Load all decisions and their office-level provenance
     const loaded = await loadAllDecisions(request, env);
@@ -399,7 +444,7 @@ export async function onRequestPost(context) {
     
     if (mode === 'nearest' || mode === 'hybrid') {
       if (hasQuery) {
-        const nearestResults = nearestNeighborSearch(allDecisions, query, limit * 2, filters);
+        const nearestResults = nearestNeighborSearch(allDecisions, query, filters);
         // Merge with fuzzy results, deduplicate
         results = mergeResults(results, nearestResults);
       }
@@ -529,7 +574,9 @@ function fuzzySearch(decisions, query, filters) {
 }
 
 // Nearest neighbor search using application number proximity
-function nearestNeighborSearch(decisions, query, limit, filters) {
+// Bounded by the ±range window rather than by the page size, so the pagination
+// total stays exact; the old `limit` argument was accepted and never read.
+function nearestNeighborSearch(decisions, query, filters) {
   // Try to extract application number from query
   const appNumMatch = query.match(/(\d{6,})/);
   if (!appNumMatch) return [];
@@ -648,18 +695,21 @@ export async function onRequestGet(context) {
   try {
     await ensureSchema(env.DB);
     return new Response(JSON.stringify({
-      modes: ['fuzzy', 'nearest', 'filter', 'hybrid'],
+      modes: [...SEARCH_MODES],
       filters: [
         'embassy', 'office', 'visa_type', 'decision', 'date_from', 'date_to',
         'application_date_from', 'application_date_to', 'country', 'number_range'
       ],
       aliases: { office: 'embassy' },
-      sort_options: ['relevance', 'date_desc', 'date_asc', 'number_asc', 'number_desc', 'embassy', 'decision'],
+      sort_options: SORT_OPTIONS,
+      decisions: DECISION_FILTERS,
+      pagination: { limit_default: DEFAULT_LIMIT, limit_max: MAX_LIMIT, offset_min: 0 },
       provenance: [
         'source', 'source_kind', 'source_label', 'source_url', 'source_file',
         'report_date', 'official_report_date', 'observed_date', 'observed_at',
-        'last_success_at', 'last_success_label', 'stale', 'office_status',
-        'freshness_status', 'office_attention'
+        'last_success_at', 'last_success_label', 'stale', 'office_status', 'office_status_label',
+        'freshness_status', 'freshness_status_label', 'office_attention', 'office_warning',
+        'source_name', 'official_data_through', 'observed_data_through'
       ],
       endpoints: {
         search: 'POST /api/search'

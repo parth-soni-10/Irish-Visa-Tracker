@@ -168,7 +168,10 @@ function addSecurityHeaders(response) {
   headers.set("X-Content-Type-Options", "nosniff");
   headers.set("X-Frame-Options", "DENY");
   headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
-  headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+  // Mirrors the static layer's Permissions-Policy in _headers; the two must not
+  // drift, or the same page would carry different policies depending on which
+  // layer served it.
+  headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=(), payment=()");
   // Inline executable scripts and <style> elements are extracted. Inline
   // style attributes remain for generated geometry, so only that attribute
   // source keeps unsafe-inline; script attributes are disabled entirely. The
@@ -595,7 +598,7 @@ async function handleRequest(request, env) {
     if (!expected) {
       return new Response(JSON.stringify({ error: 'Cron secret not configured' }), {
         status: 500,
-        headers: { 'Content-Type': 'application/json' }
+        headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }
       });
     }
 
@@ -609,7 +612,7 @@ async function handleRequest(request, env) {
     if (secret !== expected) {
       return new Response(JSON.stringify({ error: 'Invalid or missing cron secret' }), {
         status: 401,
-        headers: { 'Content-Type': 'application/json' }
+        headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }
       });
     }
 
@@ -621,7 +624,7 @@ async function handleRequest(request, env) {
       note: 'Actual scraping runs via GitHub Actions on schedule; this endpoint acknowledges the cron trigger'
     }), {
       status: 200,
-      headers: { 'Content-Type': 'application/json' }
+      headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }
     });
   }
 

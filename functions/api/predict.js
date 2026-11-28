@@ -162,6 +162,9 @@ export async function onRequestPost(context) {
     } catch {
       return json({ error: 'Invalid JSON body' }, 400);
     }
+    if (!body || typeof body !== 'object' || Array.isArray(body)) {
+      return json({ error: 'Body must be a JSON object' }, 400);
+    }
 
     const applicationDate = String(body.application_date || '');
     const visaType = String(body.visa_type || 'visit');

@@ -135,6 +135,29 @@
   Cache-Control: public, max-age=31536000, immutable
   CDN-Cache-Control: public, max-age=31536000, immutable
 
+# Root icons are served by the router as immutable assets (it lists them in
+# IMMUTABLE_ROOTS); the static layer must not undercut that with a revalidating
+# default, or the same URL would carry two different policies.
+/icon.svg
+  Cache-Control: public, max-age=31536000, immutable
+  CDN-Cache-Control: public, max-age=31536000, immutable
+
+/apple-touch-icon.png
+  Cache-Control: public, max-age=31536000, immutable
+  CDN-Cache-Control: public, max-age=31536000, immutable
+
+# Generated but not linked from navigation. The clean URL already carries
+# noindex on its route; the .html twin must not become an indexable copy.
+/search-coverage.html
+  X-Robots-Tag: noindex, follow
+  Cache-Control: no-cache, must-revalidate, max-age=0
+  CDN-Cache-Control: no-cache
+
+# The error page is only reachable by mistake; keep both names out of the index.
+/404.html
+  X-Robots-Tag: noindex
+  Cache-Control: no-store
+
 # Data files change with each scrape/deploy; never serve a stale decision list.
 /data/*
   Cache-Control: no-store, no-cache, must-revalidate, max-age=0

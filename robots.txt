@@ -1,7 +1,8 @@
 # Every published page on this site is meant to be crawled, including the two data landing
 # pages (/daily-summaries and /stamp-1g-processing-dates) and the public JSON files under
-# /data/. Nothing here is private, so the whole site stays open to every crawler - search
-# engines and AI agents alike - and this file's only real job is pointing at the sitemap.
+# /data/. The one exception is /search-coverage, an internal weekly snapshot sent with
+# `X-Robots-Tag: noindex` and left out of the sitemap. Nothing else is private, so every
+# crawler - search engines and AI agents alike - may read the rest. The sitemap is below.
 #
 # Markdown alternates (/index.md, /about.md, ...) are the same pages in another format, not
 # separate URLs, so they are deliberately not listed in the sitemap.
