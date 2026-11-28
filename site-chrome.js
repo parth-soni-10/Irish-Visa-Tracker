@@ -56,7 +56,11 @@
     var buttons = document.querySelectorAll('[data-theme-toggle]');
     for (var i = 0; i < buttons.length; i++) {
       buttons[i].setAttribute('aria-pressed', dark ? 'true' : 'false');
-      buttons[i].setAttribute('aria-label', dark ? 'Switch to light theme' : 'Switch to dark theme');
+      // Keep the current visible label (Light/Dark) in the accessible name so
+      // voice-control users can refer to the button by what they see.
+      buttons[i].setAttribute('aria-label', dark
+        ? 'Dark theme. Switch to light theme.'
+        : 'Light theme. Switch to dark theme.');
       var label = buttons[i].querySelector('[data-theme-label]');
       if (label) label.textContent = dark ? 'Dark' : 'Light';
     }

@@ -74,8 +74,13 @@ test.describe('shared header interaction', () => {
   test('theme choice persists across the site', async ({ page }) => {
     await page.goto('/');
     await page.locator('details.sitebar-prefs > summary').click();
-    await page.locator('details.sitebar-prefs [data-theme-toggle]').click();
+    const toggle = page.locator('details.sitebar-prefs [data-theme-toggle]');
+    await expect(toggle).toContainText('Light');
+    await expect(toggle).toHaveAttribute('aria-label', /^Light theme\. Switch to dark theme\.$/);
+    await toggle.click();
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+    await expect(toggle).toContainText('Dark');
+    await expect(toggle).toHaveAttribute('aria-label', /^Dark theme\. Switch to light theme\.$/);
 
     await page.reload();
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
