@@ -663,7 +663,7 @@ ${schemaFor(office)}
     <p class="office-actions">
       <a class="btn" href="${office.sourceUrl}" target="_blank" rel="noopener noreferrer">Official ${office.name} page</a>
       <a class="btn" href="/monthly-report?utm_source=office_page&amp;utm_medium=referral&amp;utm_campaign=monthly_report">Monthly report</a>
-      <button type="button" class="btn" data-office-alerts="${office.slug}" aria-label="Get updates: ${esc(office.name)} publication updates on Telegram" hidden>Get ${office.name} publication updates</button>
+      <button type="button" class="btn" data-office-alerts="${office.slug}" aria-label="Get ${esc(office.name)} publication updates on Telegram" hidden>Get ${office.name} publication updates</button>
       <button type="button" class="btn secondary" data-public-channel hidden>Follow the public Telegram channel</button>
     </p>
 

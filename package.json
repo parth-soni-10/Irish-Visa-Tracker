@@ -23,6 +23,7 @@
     "test:chrome": "playwright test chrome-tests.js",
     "test:e2e:webkit": "playwright test chrome-tests.js --project=\"Mobile Safari\"",
     "audit:a11y": "node accessibility-audit.js",
+    "qa:sweep": "node tools/qa-sweep.mjs",
     "dev": "npx wrangler pages dev .",
     "deploy": "npm run build && npx wrangler pages deploy && npm run smoke",
     "audit:discovery": "node tools/audit-discovery.mjs",

@@ -152,7 +152,7 @@ test('status offers office updates and the 404 page can recover with a search', 
     );
     const officePage = await page(`${office.slug}-visa-decisions.html`);
     assert.ok(
-      officePage.includes(`aria-label="Get updates: ${office.name} publication updates on Telegram"`),
+      officePage.includes(`aria-label="Get ${office.name} publication updates on Telegram"`),
       `${office.slug} office update button has no distinct accessible name`,
     );
   }
