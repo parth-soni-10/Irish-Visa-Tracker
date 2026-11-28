@@ -26,7 +26,7 @@ test.describe('shared header semantics', () => {
 
       // The disclosure summary is a control, not the page. Marking it current
       // made assistive tech announce two current pages inside one nav.
-      const summary = page.locator('details.sitebar-more > summary');
+      const summary = page.locator('details.sitebar-more:not(.sitebar-offices) > summary');
       expect(await summary.getAttribute('aria-current')).toBeNull();
     });
   }
@@ -39,7 +39,7 @@ test.describe('shared header interaction', () => {
 
   test('Escape closes the panel and returns focus to its summary', async ({ page }) => {
     await page.goto('/');
-    const more = page.locator('details.sitebar-more');
+    const more = page.locator('details.sitebar-more:not(.sitebar-offices)');
     const summary = more.locator('summary');
     await summary.click();
     await expect(more).toHaveAttribute('open', '');
@@ -61,7 +61,7 @@ test.describe('shared header interaction', () => {
 
   test('opening Preferences closes More', async ({ page }) => {
     await page.goto('/');
-    const more = page.locator('details.sitebar-more');
+    const more = page.locator('details.sitebar-more:not(.sitebar-offices)');
     const prefs = page.locator('details.sitebar-prefs');
     await more.locator('summary').click();
     await expect(more).toHaveAttribute('open', '');
@@ -88,8 +88,8 @@ test.describe('shared header interaction', () => {
   test('respects prefers-reduced-motion', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.goto('/');
-    await page.locator('details.sitebar-more > summary').click();
-    const panel = page.locator('details.sitebar-more .sitebar-more-panel');
+    await page.locator('details.sitebar-more:not(.sitebar-offices) > summary').click();
+    const panel = page.locator('details.sitebar-more:not(.sitebar-offices) .sitebar-more-panel');
     const animation = await panel.evaluate((element) => getComputedStyle(element).animationName);
     expect(animation).toBe('none');
   });

@@ -136,7 +136,7 @@ async function main() {
 
         if (job.width.width === 390 || job.width.width === 667) {
           for (const [pattern, name] of [
-            ['.sitebar-more', 'More'],
+            ['.sitebar-more:not(.sitebar-offices)', 'More'],
             ['.sitebar-prefs', 'Preferences'],
           ]) {
             const panel = await panelState(page, pattern);
